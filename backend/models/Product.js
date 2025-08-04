@@ -27,7 +27,6 @@ const productSchema = new mongoose.Schema({
         ref: "Category",
     },
 
-    
     supplierId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Supplier",
