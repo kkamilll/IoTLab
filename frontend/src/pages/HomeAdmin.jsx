@@ -1,13 +1,17 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router";
-import axios from "axios";
+import React from "react";
+import Sidebar from '../components/Sidebar';
+import {Outlet} from "react-router";
 
 const Admin = () => {
     return (
         <div>
-            <h1>Admin</h1>
+            <div className='flex'>
+                <Sidebar/>
+                   <div className='flex-1 ml-16 md:ml-64 bg-gray-100 min-h-screen'>
+                    <Outlet/>
+                   </div>
+            </div>
         </div>
-    );
-};
-
+    )
+}
 export default Admin;
