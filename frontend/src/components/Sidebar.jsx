@@ -45,7 +45,6 @@ const Sidebar = () => {
                             end={item.isParent}
                             className={({isActive}) => (isActive ? "bg-gray-700" : "") + " flex items-center p-2 rounded-md hover:bg-gray-700 transition duration-200"}
                             to={item.path} >
-                                {/* Ikonka usunięta */}
                                 <span className='ml-4 md:ml-0 md:ml-4'>{item.name}</span>
                             </NavLink>
                         </li>
