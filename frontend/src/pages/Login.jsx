@@ -1,11 +1,11 @@
-import React, { useState } from "react";
-import { useAuth } from "../context/AuthContext";
-import { useNavigate } from "react-router";
-import axios from "axios";
+import React, { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const Login = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -18,28 +18,25 @@ const Login = () => {
     setError(null);
 
     try {
-      const response = await axios.post("http://localhost:3500/login", {
-        email,
-        password,
-      });
+      const response = await axios.post('http://localhost:3500/login', { email, password });
 
       const { success, user, token, message } = response.data;
 
       if (success) {
         await login(user, token);
-        if (user.role === "admin") {
-          navigate("/home-admin");
+        if (user.role === 'admin') {
+          navigate('/home-admin'); // bez replace - pozwala cofać
         } else {
-          navigate("/home");
+          navigate('/home');
         }
       } else {
-        setError(message || "Login failed");
+        setError(message || 'Login failed');
       }
     } catch (err) {
       if (err.response) {
-        setError(err.response.data.message || "Something went wrong");
+        setError(err.response.data.message || 'Something went wrong');
       } else {
-        setError("Server is not responding");
+        setError('Server is not responding');
       }
     } finally {
       setLoading(false);
@@ -89,7 +86,7 @@ const Login = () => {
             className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 transition"
             disabled={loading}
           >
-            {loading ? "Loading..." : "Login"}
+            {loading ? 'Loading...' : 'Login'}
           </button>
         </form>
       </div>
