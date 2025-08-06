@@ -11,14 +11,14 @@ const Sidebar = () => {
         {name:"Orders", path: "/admin-dashboard/orders", isParent:false},
         {name:"Users", path: "/admin-dashboard/users", isParent:false},
         {name:"Profile", path: "/admin-dashboard/profile", isParent:false},
-        {name:"Logout", path: "/admin-dashboard/logout", isParent:false},
+        {name:"Logout", path: "/logout", isParent:false},
     ];
 
     const customerItems = [
         {name:"Products", path: "/customer-dashboard", isParent:true},
         {name:"Orders", path: "/customer-dashboard/orders", isParent:false},
         {name:"Profile", path: "/customer-dashboard/profile", isParent:false},
-        {name:"Logout", path: "/customer-dashboard/logout", isParent:false},
+        {name:"Logout", path: "/logout", isParent:false},
     ];
 
     const {user} = useAuth();

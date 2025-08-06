@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -18,26 +18,21 @@ const Login = () => {
     setError(null);
 
     try {
-      const response = await axios.post('http://localhost:3500/login', { email, password });
+      const response = await axios.post('http://localhost:3500/login', {
+        email,
+        password,
+      });
 
       const { success, user, token, message } = response.data;
 
       if (success) {
         await login(user, token);
-        if (user.role === 'admin') {
-          navigate('/home-admin'); // bez replace - pozwala cofać
-        } else {
-          navigate('/home');
-        }
+        navigate(user.role === 'admin' ? '/admin-dashboard' : '/customer-dashboard');
       } else {
         setError(message || 'Login failed');
       }
     } catch (err) {
-      if (err.response) {
-        setError(err.response.data.message || 'Something went wrong');
-      } else {
-        setError('Server is not responding');
-      }
+      setError(err.response?.data?.message || 'Server is not responding');
     } finally {
       setLoading(false);
     }
@@ -45,7 +40,9 @@ const Login = () => {
 
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-b from-green-600 to-gray-100 space-y-6">
-      <h2 className="text-3xl text-white font-semibold">Inventory Management System</h2>
+      <h2 className="text-3xl text-white font-semibold">
+        Inventory Management System
+      </h2>
 
       <div className="w-80 bg-white p-6 rounded shadow-lg">
         <h3 className="text-2xl font-bold mb-4 text-gray-800">Login</h3>
@@ -56,30 +53,24 @@ const Login = () => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-1">Email</label>
-            <input
-              type="email"
-              className="w-full px-3 py-2 border rounded"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Email"
+            className="w-full px-3 py-2 border rounded"
+            required
+          />
 
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-1">Password</label>
-            <input
-              type="password"
-              className="w-full px-3 py-2 border rounded"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-            />
-          </div>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Password"
+            className="w-full px-3 py-2 border rounded"
+            required
+          />
 
           <button
             type="submit"

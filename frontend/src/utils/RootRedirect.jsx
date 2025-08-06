@@ -1,7 +1,29 @@
-import { Navigate } from 'react-router-dom';
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const RootRedirect = () => {
-  return <Navigate to="/home" />; // brak replace - zachowuje historię
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      switch (user.role) {
+        case "admin":
+          navigate("/admin-dashboard", { replace: true });
+          break;
+        case "lecturer":
+          navigate("/customer-dashboard", { replace: true });
+          break;
+        default:
+          navigate("/login", { replace: true });
+      }
+    } else {
+      navigate("/login", { replace: true });
+    }
+  }, [user, navigate]);
+
+  return null;
 };
 
 export default RootRedirect;
