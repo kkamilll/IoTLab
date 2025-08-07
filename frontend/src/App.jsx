@@ -13,6 +13,8 @@ import CustomerProducts from './components/CustomerProducts';
 
 import Logout from './components/Logout';
 
+import Products from './pages/Products';
+
 function App() {
   return (
     <Router>
@@ -33,17 +35,16 @@ function App() {
         >
           <Route index element={<h1>Welcome to Admin Dashboard</h1>} />
           <Route path="categories" element={<h1>1</h1>} />
-          <Route path="products" element={<h1>2</h1>} />
-          <Route path="suppliers" element={<h1>3</h1>} />
-          <Route path="orders" element={<h1>4</h1>} />
+          <Route path="products" element={<Products/>} />
+          <Route path="orders" element={<h1>3</h1>} />
           <Route path="users" element={<Users />} />
-          <Route path="profile" element={<h1>5</h1>} />
+          <Route path="profile" element={<h1>4</h1>} />
         </Route>
 
         <Route path="/customer-dashboard" element={<Admin />}>
           <Route index element={<CustomerProducts />} />
-          <Route path="orders" element={<h1>4</h1>} />
-          <Route path="profile" element={<h1>5</h1>} />
+          <Route path="orders" element={<h1>1</h1>} />
+          <Route path="profile" element={<h1>2</h1>} />
         </Route>
 
         <Route path='/logout' element={<Logout />} />
