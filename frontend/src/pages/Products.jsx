@@ -14,6 +14,9 @@ const Products = () => {
     stock: "",
   });
 
+  /* ----------------------------------------------------------------
+   * API helpers
+   * ---------------------------------------------------------------- */
   const fetchProducts = async () => {
     try {
       const res = await axios.get("http://localhost:3500/products", {
@@ -21,8 +24,8 @@ const Products = () => {
       });
 
       if (res.data.success) {
-        setProducts(res.data.data);         // Zmienione z res.data.products na res.data.data
-        setFilteredProducts(res.data.data); // Tak samo tutaj
+        setProducts(res.data.products);
+        setFilteredProducts(res.data.products);
       } else {
         alert(res.data.message || "Error fetching products");
       }
@@ -33,39 +36,52 @@ const Products = () => {
   };
 
   const addProduct = async () => {
-    const res = await axios.post(
-      "http://localhost:3500/products",
-      formData,
-      { headers: { Authorization: `Bearer ${localStorage.getItem("pos-token")}` } }
-    );
-    return res.data;
-  };
+  const res = await axios.post(
+    "http://localhost:3500/products", // bez /add
+    {
+      ...formData,
+      price: Number(formData.price),
+      stock: Number(formData.stock),
+    },
+    { headers: { Authorization: `Bearer ${localStorage.getItem("pos-token")}` } }
+  );
+  return res.data;
+};
 
-  const updateProduct = async () => {
-    const res = await axios.put(
-      `http://localhost:3500/products/${editProduct}`,
-      formData,
-      { headers: { Authorization: `Bearer ${localStorage.getItem("pos-token")}` } }
-    );
-    return res.data;
-  };
+
+const updateProduct = async () => {
+  const res = await axios.put(
+    `http://localhost:3500/products/${editProduct}`,
+    {
+      ...formData,
+      price: Number(formData.price),
+      stock: Number(formData.stock),
+    },
+    { headers: { Authorization: `Bearer ${localStorage.getItem("pos-token")}` } }
+  );
+  return res.data;
+};
+
 
   const deleteProduct = async (id) => {
-    const res = await axios.delete(
-      `http://localhost:3500/api/products/${id}`,
-      { headers: { Authorization: `Bearer ${localStorage.getItem("pos-token")}` } }
-    );
-    return res.data;
-  };
+  const res = await axios.delete(
+    `http://localhost:3500/products/${id}`,
+    { headers: { Authorization: `Bearer ${localStorage.getItem("pos-token")}` } }
+  );
+  return res.data;
+};
 
+  /* ----------------------------------------------------------------
+   * Handlers
+   * ---------------------------------------------------------------- */
   const handleEdit = (product) => {
     setOpenModal(true);
     setEditProduct(product._id);
     setFormData({
-      name: product.name,
-      description: product.description,
-      price: product.price,
-      stock: product.stock,
+      name: product.name || "",
+      description: product.description || "",
+      price: product.price !== undefined ? product.price.toString() : "",
+      stock: product.stock !== undefined ? product.stock.toString() : "",
     });
   };
 
@@ -95,6 +111,19 @@ const Products = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!formData.name.trim()) {
+      alert("Product name is required");
+      return;
+    }
+    if (isNaN(Number(formData.price)) || Number(formData.price) <= 0) {
+      alert("Price must be a number greater than 0");
+      return;
+    }
+    if (isNaN(Number(formData.stock)) || Number(formData.stock) < 0) {
+      alert("Stock must be a non-negative number");
+      return;
+    }
+
     try {
       const data = editProduct ? await updateProduct() : await addProduct();
       if (data.success) {
@@ -105,8 +134,13 @@ const Products = () => {
         alert(data.message || "Operation failed");
       }
     } catch (err) {
-      console.error("handleSubmit error:", err);
-      alert("Server error – check console");
+      // Dokładniejsze logowanie błędu
+      console.error("handleSubmit error response:", err.response);
+      alert(
+        err.response?.data?.message ||
+          err.message ||
+          "Server error – check console"
+      );
     }
   };
 
@@ -127,14 +161,21 @@ const Products = () => {
     }
   };
 
+  /* ----------------------------------------------------------------
+   * Effects
+   * ---------------------------------------------------------------- */
   useEffect(() => {
     fetchProducts();
   }, []);
 
+  /* ----------------------------------------------------------------
+   * JSX
+   * ---------------------------------------------------------------- */
   return (
     <div className="w-full h-full flex flex-col gap-4 p-4">
       <h1 className="text-2xl font-bold">Product Management</h1>
 
+      {/* search + add */}
       <div className="flex justify-between items-center">
         <input
           type="text"
@@ -144,12 +185,17 @@ const Products = () => {
         />
         <button
           className="px-4 py-1.5 bg-blue-500 text-white rounded"
-          onClick={() => setOpenModal(true)}
+          onClick={() => {
+            setEditProduct(null);
+            setFormData({ name: "", description: "", price: "", stock: "" });
+            setOpenModal(true);
+          }}
         >
           Add Product
         </button>
       </div>
 
+      {/* table */}
       <div className="overflow-x-auto">
         <table className="w-full border-collapse border border-gray-300 mt-4">
           <thead>
@@ -180,11 +226,17 @@ const Products = () => {
                   <td className="border p-2">
                     <span className="rounded-full font-semibold">
                       {p.stock === 0 ? (
-                        <span className="bg-red-100 text-red-500 px-2 py-1 rounded-full">{p.stock}</span>
+                        <span className="bg-red-100 text-red-500 px-2 py-1 rounded-full">
+                          {p.stock}
+                        </span>
                       ) : p.stock < 5 ? (
-                        <span className="bg-yellow-100 text-yellow-600 px-2 py-1 rounded-full">{p.stock}</span>
+                        <span className="bg-yellow-100 text-yellow-600 px-2 py-1 rounded-full">
+                          {p.stock}
+                        </span>
                       ) : (
-                        <span className="bg-green-100 text-green-500 px-2 py-1 rounded-full">{p.stock}</span>
+                        <span className="bg-green-100 text-green-500 px-2 py-1 rounded-full">
+                          {p.stock}
+                        </span>
                       )}
                     </span>
                   </td>
@@ -209,6 +261,7 @@ const Products = () => {
         </table>
       </div>
 
+      {/* modal */}
       {openModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded shadow-md w-full max-w-lg relative">
@@ -247,6 +300,9 @@ const Products = () => {
                 onChange={handleChange}
                 placeholder="Price"
                 className="border p-2 rounded"
+                min="0"
+                step="0.01"
+                required
               />
               <input
                 type="number"
@@ -256,6 +312,7 @@ const Products = () => {
                 onChange={handleChange}
                 placeholder="Stock"
                 className="border p-2 rounded"
+                required
               />
 
               <div className="flex gap-2">

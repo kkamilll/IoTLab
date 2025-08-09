@@ -17,6 +17,7 @@ import Products from './pages/Products';
 
 
 import Notes from './pages/Notes';
+import Orders from './components/Orders';
 
 function App() {
   return (
@@ -39,7 +40,7 @@ function App() {
           <Route index element={<h1>Welcome to Admin Dashboard</h1>} />
           <Route path="categories" element={<h1>1</h1>} />
           <Route path="products" element={<Products/>} />
-          <Route path="orders" element={<h1>3</h1>} />
+          <Route path="orders" element={<Orders/>}/>
           <Route path="users" element={<Users />} />
           <Route path="profile" element={<h1>4</h1>} />
           <Route path="notes" element={<Notes />} /> {/* <== tutaj poprawka */}
