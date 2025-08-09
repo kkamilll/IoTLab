@@ -15,6 +15,9 @@ import Logout from './components/Logout';
 
 import Products from './pages/Products';
 
+
+import Notes from './pages/Notes';
+
 function App() {
   return (
     <Router>
@@ -39,6 +42,7 @@ function App() {
           <Route path="orders" element={<h1>3</h1>} />
           <Route path="users" element={<Users />} />
           <Route path="profile" element={<h1>4</h1>} />
+          <Route path="notes" element={<Notes />} /> {/* <== tutaj poprawka */}
         </Route>
 
         <Route path="/customer-dashboard" element={<Admin />}>

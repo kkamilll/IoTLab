@@ -7,21 +7,27 @@ export const AuthProvider = ({ children }) => {
     const storedUser = localStorage.getItem("pos-user");
     return storedUser ? JSON.parse(storedUser) : null;
   });
+  
+  const [token, setToken] = useState(() => {
+    return localStorage.getItem("pos-token") || null;
+  });
 
-  const login = (userData, token) => {
+  const login = (userData, jwtToken) => {
     setUser(userData);
+    setToken(jwtToken);
     localStorage.setItem("pos-user", JSON.stringify(userData));
-    localStorage.setItem("pos-token", token);
+    localStorage.setItem("pos-token", jwtToken);
   };
 
   const logout = () => {
     setUser(null);
+    setToken(null);
     localStorage.removeItem("pos-user");
     localStorage.removeItem("pos-token");
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, token, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

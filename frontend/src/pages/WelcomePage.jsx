@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 
 const WelcomePage = () => {
   const navigate = useNavigate();
+  const { token } = useAuth();
+
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [notes, setNotes] = useState([]);
+  const [notesLoading, setNotesLoading] = useState(false);
+  const [notesError, setNotesError] = useState(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -12,45 +19,71 @@ const WelcomePage = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const formatDateTime = (date) => {
-    return date.toLocaleString('pl-PL', {
-      weekday: 'long',
+  useEffect(() => {
+    const fetchNotes = async () => {
+      setNotesLoading(true);
+      setNotesError(null);
+
+      try {
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const res = await axios.get('http://localhost:3500/notes', { headers });
+
+        if (res.data.success && Array.isArray(res.data.data)) {
+          setNotes(res.data.data);
+        } else {
+          setNotesError('Nieprawidłowa odpowiedź z serwera');
+        }
+      } catch (err) {
+        console.error('Fetch notes error:', err.response ? err.response.data : err.message);
+        setNotesError('Błąd podczas pobierania notatek');
+      } finally {
+        setNotesLoading(false);
+      }
+    };
+
+    fetchNotes();
+  }, [token]);
+
+  const formatDateTime = (date) =>
+    date.toLocaleString('pl-PL', {
       year: 'numeric',
-      month: 'long',
-      day: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
     });
-  };
 
   const handleLoginClick = () => {
     navigate('/login');
   };
 
   return (
-    <div className="w-full text-white font-sans">
+    <div className="w-full min-h-screen font-sans bg-gray-50 text-gray-900">
       {/* TOPBAR WITH DATE & TIME */}
-      <div className="w-full bg-purple-900 text-center py-2 text-sm">
-        {formatDateTime(currentTime)}
+      <div className="w-full bg-gradient-to-r from-blue-800 via-blue-900 to-blue-950 text-center py-2 text-white text-sm font-semibold tracking-wide shadow-md">
+        {currentTime.toLocaleString('pl-PL', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        })}
       </div>
 
-      {/* HERO SECTION */}
-      <section className="min-h-screen flex flex-col justify-center items-center bg-gradient-to-b from-purple-800 to-purple-600 relative">
-        <video
-          className="absolute inset-0 w-full h-full object-cover opacity-30"
-          autoPlay
-          loop
-          muted
-        >
-          <source src="https://www.videvo.net/videvo_files/converted/2016_11/preview/161006A_004_Inventory.mp420486.webm" type="video/webm" />
-        </video>
-        <div className="relative z-10 text-center px-4">
-          <h1 className="text-5xl md:text-6xl font-extrabold mb-6">Inventory Management System</h1>
-          <p className="text-lg md:text-xl mb-8">Efektywne zarządzanie zasobami w Twojej firmie</p>
+      <section className="relative flex flex-col justify-center items-center min-h-[40vh] bg-gradient-to-b from-blue-900 to-blue-700 overflow-hidden">
+        <div className="relative z-20 px-6 max-w-3xl text-center">
+          <h1 className="text-4xl md:text-5xl font-extrabold mb-3 leading-tight drop-shadow-lg text-white">
+            System Inwentaryzacyjny
+          </h1>
+          <p className="text-base md:text-lg mb-6 font-light drop-shadow-md text-blue-200">
+            Efektywne zarządzanie zasobami w Twojej firmie
+          </p>
           <button
             onClick={handleLoginClick}
-            className="px-8 py-3 bg-white text-purple-700 rounded-lg font-semibold hover:bg-gray-100 transition"
+            className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold px-10 py-2.5 rounded-full shadow-lg hover:shadow-xl transition duration-300"
           >
             Zaloguj się
           </button>
@@ -58,62 +91,80 @@ const WelcomePage = () => {
       </section>
 
       {/* FEATURES SECTION */}
-      <section className="py-20 bg-white text-gray-800">
-        <div className="max-w-6xl mx-auto px-4">
-          <h2 className="text-4xl font-bold text-center mb-12">Dlaczego nasz system?</h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="p-6 rounded-xl shadow-md hover:shadow-xl transition">
-              <div className="text-4xl mb-4">📦</div>
-              <h3 className="font-semibold text-xl mb-2">Pełna kontrola magazynu</h3>
-              <p>Śledź ilość, dostępność i lokalizację produktów w czasie rzeczywistym.</p>
+      <section className="py-20 bg-white text-gray-900">
+        <div className="max-w-6xl mx-auto px-6">
+          <h2 className="text-4xl font-extrabold text-center mb-14 tracking-tight text-blue-900">
+            Dlaczego nasz system?
+          </h2>
+          <div className="grid md:grid-cols-3 gap-12">
+            <div className="p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-shadow bg-gradient-to-tr from-blue-50 to-blue-100 cursor-default">
+              <div className="text-5xl mb-5">📦</div>
+              <h3 className="font-semibold text-2xl mb-3 text-blue-800">Pełna kontrola magazynu</h3>
+              <p className="text-gray-700">
+                Śledź ilość, dostępność i lokalizację produktów w czasie rzeczywistym.
+              </p>
             </div>
-            <div className="p-6 rounded-xl shadow-md hover:shadow-xl transition">
-              <div className="text-4xl mb-4">📊</div>
-              <h3 className="font-semibold text-xl mb-2">Raporty & Statystyki</h3>
-              <p>Twórz zaawansowane raporty dotyczące sprzedaży, stanu magazynowego i zamówień.</p>
+            <div className="p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-shadow bg-gradient-to-tr from-blue-50 to-blue-100 cursor-default">
+              <div className="text-5xl mb-5">📊</div>
+              <h3 className="font-semibold text-2xl mb-3 text-blue-800">Raporty & Statystyki</h3>
+              <p className="text-gray-700">
+                Twórz zaawansowane raporty dotyczące sprzedaży, stanu magazynowego i zamówień.
+              </p>
             </div>
-            <div className="p-6 rounded-xl shadow-md hover:shadow-xl transition">
-              <div className="text-4xl mb-4">🔒</div>
-              <h3 className="font-semibold text-xl mb-2">Bezpieczny dostęp</h3>
-              <p>System z autoryzacją dla administratorów i pracowników z różnymi poziomami uprawnień.</p>
+            <div className="p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-shadow bg-gradient-to-tr from-blue-50 to-blue-100 cursor-default">
+              <div className="text-5xl mb-5">🔒</div>
+              <h3 className="font-semibold text-2xl mb-3 text-blue-800">Bezpieczny dostęp</h3>
+              <p className="text-gray-700">
+                System z autoryzacją dla administratorów i pracowników z różnymi poziomami uprawnień.
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ANNOUNCEMENTS SECTION */}
-      <section className="py-20 bg-gradient-to-b from-purple-700 to-purple-500 text-center px-4">
-        <h2 className="text-4xl font-bold mb-6">Ogłoszenia</h2>
-        <p className="max-w-3xl mx-auto text-lg">📢 Nowa wersja systemu 2.0 już dostępna! Sprawdź nowe funkcje dotyczące integracji z zewnętrznymi dostawcami i automatyzacji zamówień.</p>
-      </section>
+      {/* ANNOUNCEMENTS & NOTES SECTION */}
+      <section className="py-20 bg-gradient-to-b from-blue-900 to-blue-950 text-white px-6">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-4xl font-extrabold mb-12 text-center tracking-wide">Ogłoszenia i Notatki</h2>
 
-      {/* ABOUT SECTION */}
-      <section className="py-20 bg-white text-gray-800">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center gap-12">
-          <div className="flex-1">
-            <h2 className="text-4xl font-bold mb-4">O systemie</h2>
-            <p className="text-lg">Nasz Inventory Management System to narzędzie stworzone dla firm, które chcą zoptymalizować zarządzanie zasobami, ograniczyć straty i zyskać pełną kontrolę nad przepływem towarów. Dzięki nowoczesnym technologiom Twoje magazyny staną się w pełni zautomatyzowane.</p>
-          </div>
-          <div className="flex-1">
-            <img src="https://cdn.pixabay.com/photo/2017/08/10/03/29/inventory-2617228_1280.png" alt="Inventory Illustration" className="rounded-xl shadow-lg" />
-          </div>
+          {notesLoading && (
+            <p className="text-center text-lg font-medium opacity-90">Ładowanie ogłoszeń i notatek...</p>
+          )}
+          {notesError && <p className="text-center text-red-400 font-semibold">{notesError}</p>}
+
+          {!notesLoading && !notesError && notes.length === 0 && (
+            <p className="text-center text-lg opacity-80 font-light">
+              Brak aktualnych ogłoszeń i notatek do wyświetlenia.
+            </p>
+          )}
+
+          <ul className="grid gap-8 sm:grid-cols-2">
+            {notes.map((note) => (
+              <li
+                key={note._id}
+                className="bg-blue-800 bg-opacity-90 backdrop-blur-sm rounded-3xl p-8 shadow-2xl cursor-default hover:scale-[1.04] hover:shadow-3xl transition-transform duration-300"
+              >
+                <p className="text-white text-lg leading-relaxed font-medium">{note.text}</p>
+                <div className="mt-4 text-blue-300 text-sm font-light italic">
+                  Dodane przez <strong>{note.author?.name || "Anonim"}</strong> •{' '}
+                  {new Date(note.createdAt).toLocaleString('pl-PL', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                  })}
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
-      </section>
-
-      {/* CALL TO ACTION */}
-      <section className="py-20 bg-gradient-to-b from-purple-500 to-purple-400 text-center px-4">
-        <h2 className="text-4xl font-bold mb-6">Zarządzaj magazynem efektywnie</h2>
-        <button
-          onClick={handleLoginClick}
-          className="px-8 py-3 bg-white text-purple-700 rounded-lg font-semibold hover:bg-gray-100 transition"
-        >
-          Przejdź do logowania
-        </button>
       </section>
 
       {/* FOOTER */}
-      <footer className="bg-purple-900 text-center py-6 text-sm">
-        © {new Date().getFullYear()} Inventory Management System. All rights reserved.
+      <footer className="bg-blue-950 text-center py-6 text-sm text-blue-300 font-light tracking-wide">
+        © {new Date().getFullYear()} System Inwentaryzacyjny. Wszelkie prawa zastrzeżone.
       </footer>
     </div>
   );

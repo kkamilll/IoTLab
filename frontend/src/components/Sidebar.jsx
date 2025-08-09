@@ -10,6 +10,7 @@ const Sidebar = () => {
         {name:"Orders", path: "/admin-dashboard/orders", isParent:false},
         {name:"Users", path: "/admin-dashboard/users", isParent:false},
         {name:"Profile", path: "/admin-dashboard/profile", isParent:false},
+        {name:"Notes", path: "/admin-dashboard/notes", isParent:false},
         {name:"Logout", path: "/logout", isParent:false},
     ];
 
@@ -21,35 +22,43 @@ const Sidebar = () => {
     ];
 
     const {user} = useAuth();
-    const [menuLinks,setMenuLinks]=useState(customerItems);
+    const [menuLinks,setMenuLinks] = useState(customerItems);
 
-   useEffect(() => {
+    useEffect(() => {
         if(user && user.role === "admin"){
             setMenuLinks(menuItems);
         }
-     }, []);
+    }, [user]);
 
     return (
-        <div className='flex flex-col h-screen bg-black text-white w-16 md:w-64 fixed'>
-            <div className='h-16 flex items-center justify-center'>
-                <span className='hidden md:block text-xl font-bold'>Inventory MS</span>
-                <span className='md:hidden text-xl font-bold'>IMS</span>
+        <div className="flex flex-col h-screen fixed w-16 md:w-64 bg-gradient-to-b from-blue-900 via-blue-800 to-blue-950 text-white shadow-lg">
+            <div className="h-16 flex items-center justify-center border-b border-blue-700">
+                <span className="hidden md:block text-2xl font-extrabold tracking-wide drop-shadow-lg">Inventory MS</span>
+                <span className="md:hidden text-2xl font-extrabold tracking-wide drop-shadow-lg">IMS</span>
             </div>
-        
-            <div>
-                <ul className='space-y-2 p-2'>
+
+            <nav className="flex-grow overflow-y-auto mt-4">
+                <ul className="space-y-2 px-2">
                     {menuLinks.map((item) => (
                         <li key={item.name}>
                             <NavLink 
-                            end={item.isParent}
-                            className={({isActive}) => (isActive ? "bg-gray-700" : "") + " flex items-center p-2 rounded-md hover:bg-gray-700 transition duration-200"}
-                            to={item.path} >
-                                <span className='ml-4 md:ml-0 md:ml-4'>{item.name}</span>
+                                end={item.isParent}
+                                to={item.path}
+                                className={({ isActive }) =>
+                                    `flex items-center p-3 rounded-lg transition-colors duration-200
+                                    ${
+                                        isActive 
+                                        ? 'bg-blue-700 font-semibold shadow-md' 
+                                        : 'hover:bg-blue-700/70'
+                                    }`
+                                }
+                            >
+                                <span className="ml-4 md:ml-0 md:ml-4 text-lg">{item.name}</span>
                             </NavLink>
                         </li>
                     ))}
                 </ul>
-            </div>
+            </nav>
         </div>
     );
 };

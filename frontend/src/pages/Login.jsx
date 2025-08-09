@@ -29,37 +29,39 @@ const Login = () => {
         await login(user, token);
         navigate(user.role === 'admin' ? '/admin-dashboard' : '/customer-dashboard');
       } else {
-        setError(message || 'Login failed');
+        setError(message || 'Logowanie nie powiodło się');
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Server is not responding');
+      setError(err.response?.data?.message || 'Serwer nie odpowiada');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-b from-green-600 to-gray-100 space-y-6">
-      <h2 className="text-3xl text-white font-semibold">
-        Inventory Management System
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-blue-900 to-blue-700 px-4">
+      <h2 className="text-4xl font-extrabold mb-8 text-white drop-shadow-lg">
+        System Inwentaryzacyjny
       </h2>
 
-      <div className="w-80 bg-white p-6 rounded shadow-lg">
-        <h3 className="text-2xl font-bold mb-4 text-gray-800">Login</h3>
+      <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-2xl">
+        <h3 className="text-3xl font-bold mb-6 text-blue-900 text-center">
+          Logowanie
+        </h3>
 
         {error && (
-          <div className="bg-red-100 text-red-700 p-3 mb-4 rounded">
+          <div className="bg-red-100 text-red-700 p-3 mb-6 rounded-lg text-center font-medium">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Email"
-            className="w-full px-3 py-2 border rounded"
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
 
@@ -67,17 +69,17 @@ const Login = () => {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
-            className="w-full px-3 py-2 border rounded"
+            placeholder="Hasło"
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
 
           <button
             type="submit"
-            className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 transition"
+            className="w-full bg-blue-700 hover:bg-blue-800 text-white py-3 rounded-full font-semibold shadow-lg transition duration-300 disabled:opacity-50"
             disabled={loading}
           >
-            {loading ? 'Loading...' : 'Login'}
+            {loading ? 'Ładowanie...' : 'Zaloguj się'}
           </button>
         </form>
       </div>
