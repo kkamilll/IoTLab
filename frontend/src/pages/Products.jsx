@@ -6,13 +6,14 @@ const Products = () => {
   const [editProduct, setEditProduct] = useState(null);
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
-
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     price: "",
     stock: "",
   });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" }); // key: 'price' | 'stock' | null
 
   /* ----------------------------------------------------------------
    * API helpers
@@ -36,40 +37,38 @@ const Products = () => {
   };
 
   const addProduct = async () => {
-  const res = await axios.post(
-    "http://localhost:3500/products", // bez /add
-    {
-      ...formData,
-      price: Number(formData.price),
-      stock: Number(formData.stock),
-    },
-    { headers: { Authorization: `Bearer ${localStorage.getItem("pos-token")}` } }
-  );
-  return res.data;
-};
+    const res = await axios.post(
+      "http://localhost:3500/products", // bez /add
+      {
+        ...formData,
+        price: Number(formData.price),
+        stock: Number(formData.stock),
+      },
+      { headers: { Authorization: `Bearer ${localStorage.getItem("pos-token")}` } }
+    );
+    return res.data;
+  };
 
-
-const updateProduct = async () => {
-  const res = await axios.put(
-    `http://localhost:3500/products/${editProduct}`,
-    {
-      ...formData,
-      price: Number(formData.price),
-      stock: Number(formData.stock),
-    },
-    { headers: { Authorization: `Bearer ${localStorage.getItem("pos-token")}` } }
-  );
-  return res.data;
-};
-
+  const updateProduct = async () => {
+    const res = await axios.put(
+      `http://localhost:3500/products/${editProduct}`,
+      {
+        ...formData,
+        price: Number(formData.price),
+        stock: Number(formData.stock),
+      },
+      { headers: { Authorization: `Bearer ${localStorage.getItem("pos-token")}` } }
+    );
+    return res.data;
+  };
 
   const deleteProduct = async (id) => {
-  const res = await axios.delete(
-    `http://localhost:3500/products/${id}`,
-    { headers: { Authorization: `Bearer ${localStorage.getItem("pos-token")}` } }
-  );
-  return res.data;
-};
+    const res = await axios.delete(
+      `http://localhost:3500/products/${id}`,
+      { headers: { Authorization: `Bearer ${localStorage.getItem("pos-token")}` } }
+    );
+    return res.data;
+  };
 
   /* ----------------------------------------------------------------
    * Handlers
@@ -103,10 +102,33 @@ const updateProduct = async () => {
 
   const handleSearch = (e) => {
     const val = e.target.value.toLowerCase();
-    setFilteredProducts(
-      products.filter((p) => p.name.toLowerCase().includes(val))
-    );
+    setSearchTerm(val);
   };
+
+  const handleSort = (key) => {
+    let direction = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+    setSortConfig({ key, direction });
+  };
+
+  // Sortowanie i filtrowanie razem
+  useEffect(() => {
+    let filtered = products.filter((p) =>
+      p.name.toLowerCase().includes(searchTerm)
+    );
+
+    if (sortConfig.key) {
+      filtered.sort((a, b) => {
+        if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === "asc" ? -1 : 1;
+        if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === "asc" ? 1 : -1;
+        return 0;
+      });
+    }
+
+    setFilteredProducts(filtered);
+  }, [products, searchTerm, sortConfig]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -134,7 +156,6 @@ const updateProduct = async () => {
         alert(data.message || "Operation failed");
       }
     } catch (err) {
-      // Dokładniejsze logowanie błędu
       console.error("handleSubmit error response:", err.response);
       alert(
         err.response?.data?.message ||
@@ -182,6 +203,7 @@ const updateProduct = async () => {
           placeholder="Search"
           className="border p-1 bg-white rounded px-4"
           onChange={handleSearch}
+          value={searchTerm}
         />
         <button
           className="px-4 py-1.5 bg-blue-500 text-white rounded"
@@ -203,8 +225,28 @@ const updateProduct = async () => {
               <th className="border p-2">#</th>
               <th className="border p-2">Product Name</th>
               <th className="border p-2">Description</th>
-              <th className="border p-2">Price</th>
-              <th className="border p-2">Stock</th>
+              <th
+                className="border p-2 cursor-pointer select-none"
+                onClick={() => handleSort("price")}
+              >
+                Price{" "}
+                {sortConfig.key === "price"
+                  ? sortConfig.direction === "asc"
+                    ? "↑"
+                    : "↓"
+                  : ""}
+              </th>
+              <th
+                className="border p-2 cursor-pointer select-none"
+                onClick={() => handleSort("stock")}
+              >
+                Stock{" "}
+                {sortConfig.key === "stock"
+                  ? sortConfig.direction === "asc"
+                    ? "↑"
+                    : "↓"
+                  : ""}
+              </th>
               <th className="border p-2">Action</th>
             </tr>
           </thead>

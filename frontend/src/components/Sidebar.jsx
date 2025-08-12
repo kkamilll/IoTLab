@@ -4,8 +4,8 @@ import { useAuth } from "../context/AuthContext";
 
 const Sidebar = () => {
     const menuItems = [
+        {name:"Home Page", path: "/", isParent:true},
         {name:"Dashboard", path: "/admin-dashboard", isParent:true},
-        {name:"Categories", path: "/admin-dashboard/categories", isParent:false},
         {name:"Products", path: "/admin-dashboard/products", isParent:false},
         {name:"Orders", path: "/admin-dashboard/orders", isParent:false},
         {name:"Users", path: "/admin-dashboard/users", isParent:false},
@@ -59,6 +59,18 @@ const Sidebar = () => {
                     ))}
                 </ul>
             </nav>
+
+            {/* Sekcja z info o użytkowniku na dole */}
+            <div className="border-t border-blue-700 p-4 text-center text-sm bg-blue-950/80">
+                {user ? (
+                    <>
+                        <p className="font-semibold">{user.name || user.email}</p>
+                        <p className="text-blue-300 capitalize">{user.role}</p>
+                    </>
+                ) : (
+                    <p>Nie zalogowano</p>
+                )}
+            </div>
         </div>
     );
 };

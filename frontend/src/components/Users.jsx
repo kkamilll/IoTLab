@@ -6,6 +6,9 @@ const Users = () => {
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [submitLoading, setSubmitLoading] = useState(false);
+  const [deleteLoadingId, setDeleteLoadingId] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -17,31 +20,53 @@ const Users = () => {
       setFilteredUsers(res.data.users || []);
     } catch (err) {
       console.error("Error fetching users:", err);
+      alert("Failed to fetch users.");
     }
     setLoading(false);
   };
 
-  const handleSearch = (e) => {
-    setFilteredUsers(users.filter((user) => user.name.toLowerCase().includes(e.target.value.toLowerCase())));
-  };
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setFilteredUsers(users.filter(u => u.name.toLowerCase().includes(searchTerm.toLowerCase())));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm, users]);
 
   const addUser = async () => {
-    const res = await axios.post("http://localhost:3500/users/add", formData, {
-      headers: { Authorization: `Bearer ${localStorage.getItem("pos-token")}` },
-    });
-    return res.data;
+    setSubmitLoading(true);
+    try {
+      const res = await axios.post(
+        "http://localhost:3500/users/add",
+        formData,
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("pos-token")}` },
+        }
+      );
+      setSubmitLoading(false);
+      return res.data;
+    } catch (err) {
+      setSubmitLoading(false);
+      throw err;
+    }
   };
 
   const deleteUser = async (id) => {
-    const res = await axios.delete(`http://localhost:3500/users/${id}`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem("pos-token")}` },
-    });
-    return res.data;
+    setDeleteLoadingId(id);
+    try {
+      const res = await axios.delete(`http://localhost:3500/users/${id}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("pos-token")}` },
+      });
+      setDeleteLoadingId(null);
+      return res.data;
+    } catch (err) {
+      setDeleteLoadingId(null);
+      throw err;
+    }
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
@@ -49,93 +74,165 @@ const Users = () => {
     try {
       const data = await addUser();
       if (data.success) {
-        alert("User added successfully");
+        alert("User added successfully!");
         setFormData({ name: "", email: "", password: "", address: "", role: "" });
         fetchUsers();
       } else {
-        alert("Add user failed. Please try again.");
+        alert("Failed to add user. Please try again.");
       }
     } catch (err) {
       console.error("Error adding user:", err);
-      alert("Server error – see console.");
+      alert("Server error. See console for details.");
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this User?")) {
+    if (window.confirm("Are you sure you want to delete this user?")) {
       try {
         const data = await deleteUser(id);
         if (data.success) {
-          alert("User deleted successfully");
+          alert("User deleted successfully!");
           fetchUsers();
         } else {
-          alert("Delete failed. Please try again.");
+          alert("Failed to delete user. Please try again.");
         }
       } catch (err) {
         console.error("Error deleting user:", err);
-        alert("Server error – see console.");
+        alert("Server error. See console for details.");
       }
     }
   };
 
-  useEffect(() => { fetchUsers(); }, []);
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
-  if (loading) return <div className="p-4">Loading...</div>;
+  if (loading) return <div className="p-8 text-center text-gray-600 font-semibold text-lg">Loading users...</div>;
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-8">User Management</h1>
-      <div className="flex flex-col lg:flex-row gap-4">
-        <div className="lg:w-1/3">
-          <form className="space-y-4 bg-white p-4 rounded shadow" onSubmit={handleSubmit}>
-            <input type="text" name="name" placeholder="Name" value={formData.name} onChange={handleChange} className="w-full p-2 border rounded" required />
-            <input type="email" name="email" placeholder="Email" value={formData.email} onChange={handleChange} className="w-full p-2 border rounded" required />
-            <input type="password" name="password" placeholder="Password" value={formData.password} onChange={handleChange} className="w-full p-2 border rounded" required />
-            <input type="text" name="address" placeholder="Address" value={formData.address} onChange={handleChange} className="w-full p-2 border rounded" />
-            <select name="role" value={formData.role} onChange={handleChange} className="w-full p-2 border rounded" required>
-              <option value="">Select Role</option>
-              <option value="admin">Admin</option>
-              <option value="lecturer">Lecturer</option>
-            </select>
-            <button type="submit" className="w-full bg-green-500 text-white p-3 rounded">Add User</button>
-          </form>
-        </div>
-        <div className="lg:w-2/3">
-          <input type="text" placeholder="Search" onChange={handleSearch} className="w-full mb-2 p-2 border rounded" />
-          <div className="bg-white p-4 rounded shadow overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="p-2 border">S No</th>
-                  <th className="p-2 border">Name</th>
-                  <th className="p-2 border">Email</th>
-                  <th className="p-2 border">Address</th>
-                  <th className="p-2 border">Role</th>
-                  <th className="p-2 border">Action</th>
+    <div className="max-w-3xl mx-auto p-6 space-y-8">
+      <h1 className="text-3xl font-extrabold text-blue-800 text-center">User Management</h1>
+
+      {/* Search input */}
+      <input
+        type="text"
+        placeholder="Search users by name..."
+        value={searchTerm}
+        onChange={e => setSearchTerm(e.target.value)}
+        className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+      />
+
+      {/* Table */}
+      <div className="bg-white rounded shadow overflow-x-auto">
+        <table className="min-w-full border-collapse">
+          <thead>
+            <tr className="bg-blue-100 text-blue-800">
+              <th className="border p-3 text-left">#</th>
+              <th className="border p-3 text-left">Name</th>
+              <th className="border p-3 text-left">Email</th>
+              <th className="border p-3 text-left">Address</th>
+              <th className="border p-3 text-left">Role</th>
+              <th className="border p-3 text-center">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredUsers.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="text-center p-6 text-gray-500 italic">
+                  No users found.
+                </td>
+              </tr>
+            ) : (
+              filteredUsers.map((user, idx) => (
+                <tr
+                  key={user._id}
+                  className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                >
+                  <td className="border p-3">{idx + 1}</td>
+                  <td className="border p-3">{user.name}</td>
+                  <td className="border p-3">{user.email}</td>
+                  <td className="border p-3">{user.address || "-"}</td>
+                  <td className="border p-3 capitalize">{user.role}</td>
+                  <td className="border p-3 text-center">
+                    <button
+                      onClick={() => handleDelete(user._id)}
+                      disabled={deleteLoadingId === user._id}
+                      className={`px-4 py-1 rounded text-white font-semibold transition-colors duration-200 ${
+                        deleteLoadingId === user._id
+                          ? "bg-red-300 cursor-not-allowed"
+                          : "bg-red-600 hover:bg-red-700"
+                      }`}
+                      title="Delete user"
+                    >
+                      {deleteLoadingId === user._id ? "Deleting..." : "Delete"}
+                    </button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {filteredUsers.length === 0 ? (
-                  <tr><td colSpan={6} className="p-4 text-center text-gray-500">No records</td></tr>
-                ) : (
-                  filteredUsers.map((user, index) => (
-                    <tr key={user._id}>
-                      <td className="border p-2">{index + 1}</td>
-                      <td className="border p-2">{user.name}</td>
-                      <td className="border p-2">{user.email}</td>
-                      <td className="border p-2">{user.address}</td>
-                      <td className="border p-2">{user.role}</td>
-                      <td className="border p-2">
-                        <button onClick={() => handleDelete(user._id)} className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">Delete</button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
+
+      {/* Form - one column, inputs full width */}
+      <form onSubmit={handleSubmit} className="flex flex-col space-y-4 bg-white p-6 rounded shadow">
+        <input
+          type="text"
+          name="name"
+          placeholder="Name"
+          value={formData.name}
+          onChange={handleChange}
+          required
+          className="p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
+        <input
+          type="email"
+          name="email"
+          placeholder="Email"
+          value={formData.email}
+          onChange={handleChange}
+          required
+          className="p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
+        <input
+          type="password"
+          name="password"
+          placeholder="Password"
+          value={formData.password}
+          onChange={handleChange}
+          required
+          className="p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
+        <input
+          type="text"
+          name="address"
+          placeholder="Address"
+          value={formData.address}
+          onChange={handleChange}
+          className="p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
+        <select
+          name="role"
+          value={formData.role}
+          onChange={handleChange}
+          required
+          className="p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+        >
+          <option value="">Select Role</option>
+          <option value="admin">Admin</option>
+          <option value="lecturer">Lecturer</option>
+        </select>
+
+        <button
+          type="submit"
+          disabled={submitLoading}
+          className={`p-3 rounded text-white font-semibold ${
+            submitLoading ? "bg-green-300 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"
+          } transition-colors duration-200`}
+        >
+          {submitLoading ? "Adding..." : "Add User"}
+        </button>
+      </form>
     </div>
   );
 };

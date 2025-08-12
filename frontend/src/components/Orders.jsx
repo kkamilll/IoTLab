@@ -103,15 +103,14 @@ const Orders = () => {
               <tr>
                 <th className="border border-gray-300 p-3 text-left">Produkt</th>
                 <th className="border border-gray-300 p-3 text-right">Ilość</th>
-                <th className="border border-gray-300 p-3 text-right">Cena jednostkowa</th>
-                <th className="border border-gray-300 p-3 text-right">Cena łącznie</th>
+                <th className="border border-gray-300 p-3 text-left">Opis</th>
                 <th className="border border-gray-300 p-3 text-center">Akcje</th>
               </tr>
             </thead>
             <tbody>
               {orders.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="text-center p-6 text-gray-500">
+                  <td colSpan="4" className="text-center p-6 text-gray-500">
                     Brak zamówień
                   </td>
                 </tr>
@@ -125,8 +124,9 @@ const Orders = () => {
                       )}
                     </td>
                     <td className="border border-gray-300 p-3 text-right">{order.quantity}</td>
-                    <td className="border border-gray-300 p-3 text-right">{order.product?.price} PLN</td>
-                    <td className="border border-gray-300 p-3 text-right font-semibold">{order.totalPrice} PLN</td>
+                    <td className="border border-gray-300 p-3">
+                      {order.product?.description || "Brak opisu"}
+                    </td>
                     <td className="border border-gray-300 p-3 text-center">
                       <button
                         onClick={() => handleDeleteOrder(order._id)}
@@ -143,102 +143,110 @@ const Orders = () => {
         </div>
       </div>
 
-      {/* Modal */}
-      {/* Modal */}
-{modalOpen && (
-  <div
-    className="fixed inset-0 flex justify-center items-center z-50"
-    style={{
-      backgroundColor: "rgba(255, 255, 255, 0.6)", // jasne półprzezroczyste tło
-      backdropFilter: "blur(5px)", // rozmycie tła
-      WebkitBackdropFilter: "blur(5px)", // Safari
-    }}
-  >
-    <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6 relative">
-      <h2 className="text-2xl font-bold mb-6">Nowe zamówienie</h2>
-
-      <div className="mb-4">
-        <label className="block mb-2 font-semibold text-gray-700">Produkt:</label>
-        <select
-          value={productId}
-          onChange={(e) => setProductId(e.target.value)}
-          className="w-full border rounded p-3 shadow-sm focus:ring-2 focus:ring-blue-400"
+      {/* Modal dodawania zamówienia */}
+      {modalOpen && (
+        <div
+          className="fixed inset-0 flex justify-center items-center z-50 bg-white bg-opacity-60 backdrop-blur-sm"
         >
-          {products.map((p) => (
-            <option key={p._id} value={p._id} disabled={p.stock === 0}>
-              {p.name}
-            </option>
-          ))}
-        </select>
-      </div>
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 relative">
+            <h2 className="text-2xl font-bold mb-6">Nowe zamówienie</h2>
 
-      {/* Formularz z danymi produktu tylko do odczytu */}
-      {productId && (
-        <div className="mb-6 space-y-4">
-          <div>
-            <label className="block mb-1 font-semibold text-gray-700">Nazwa produktu:</label>
-            <input
-              type="text"
-              readOnly
-              value={products.find((p) => p._id === productId)?.name || ""}
-              className="w-full border rounded p-3 bg-gray-100 cursor-not-allowed"
-            />
-          </div>
-          <div>
-            <label className="block mb-1 font-semibold text-gray-700">Cena jednostkowa:</label>
-            <input
-              type="text"
-              readOnly
-              value={products.find((p) => p._id === productId)?.price + " PLN" || ""}
-              className="w-full border rounded p-3 bg-gray-100 cursor-not-allowed"
-            />
-          </div>
-          <div>
-            <label className="block mb-1 font-semibold text-gray-700">Dostępny stock:</label>
-            <input
-              type="number"
-              readOnly
-              value={products.find((p) => p._id === productId)?.stock || 0}
-              className="w-full border rounded p-3 bg-gray-100 cursor-not-allowed"
-            />
+            {/* Lista produktów jako karty */}
+            <div className="max-h-64 overflow-y-auto mb-6 border rounded p-2">
+              {products.length === 0 ? (
+                <p className="text-center text-gray-500">Brak produktów</p>
+              ) : (
+                products.map((p) => (
+                  <div
+                    key={p._id}
+                    onClick={() => {
+                      if (p.stock === 0) return; // nie można wybrać niedostępnego
+                      setProductId(p._id);
+                      setQuantity(1);
+                    }}
+                    className={`cursor-pointer p-3 rounded mb-2 border
+                      ${p._id === productId ? "border-blue-600 bg-blue-50" : "border-gray-300"}
+                      ${p.stock === 0 ? "opacity-50 cursor-not-allowed" : ""}
+                    `}
+                    title={p.stock === 0 ? "Produkt niedostępny" : ""}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="font-semibold">{p.name}</p>
+                        <p className="text-sm text-gray-600">{p.description || "Brak opisu"}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm">{p.price} PLN</p>
+                        <p className={`text-xs ${p.stock === 0 ? "text-red-600" : "text-green-600"}`}>
+                          {p.stock === 0 ? "Niedostępny" : `Dostępny: ${p.stock}`}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Ilość */}
+            <div className="mb-6 flex items-center space-x-4">
+              <label className="font-semibold">Ilość:</label>
+              <button
+                onClick={() => setQuantity((q) => (q > 1 ? q - 1 : 1))}
+                className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400"
+                disabled={quantity <= 1}
+              >
+                -
+              </button>
+              <input
+                type="number"
+                min="1"
+                max={productId ? products.find((p) => p._id === productId)?.stock || 1 : 1}
+                value={quantity}
+                onChange={(e) => {
+                  let val = Number(e.target.value);
+                  const max = productId ? products.find((p) => p._id === productId)?.stock || 1 : 1;
+                  if (val < 1) val = 1;
+                  if (val > max) val = max;
+                  setQuantity(val);
+                }}
+                className="w-16 text-center border rounded p-1"
+                disabled={!productId}
+              />
+              <button
+                onClick={() => {
+                  const max = productId ? products.find((p) => p._id === productId)?.stock || 1 : 1;
+                  setQuantity((q) => (q < max ? q + 1 : q));
+                }}
+                className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400"
+                disabled={
+                  !productId ||
+                  quantity >= (products.find((p) => p._id === productId)?.stock || 1)
+                }
+              >
+                +
+              </button>
+            </div>
+
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={() => setModalOpen(false)}
+                className="px-4 py-2 rounded border border-gray-300 hover:bg-gray-100"
+              >
+                Anuluj
+              </button>
+              <button
+                onClick={handleAddOrder}
+                disabled={!productId}
+                className={`px-6 py-2 rounded text-white ${
+                  productId ? "bg-blue-600 hover:bg-blue-700" : "bg-blue-300 cursor-not-allowed"
+                }`}
+              >
+                Dodaj
+              </button>
+            </div>
           </div>
         </div>
       )}
-
-      <div className="mb-6">
-        <label className="block mb-2 font-semibold text-gray-700">Ilość:</label>
-        <input
-          type="number"
-          min="1"
-          max={productId ? products.find((p) => p._id === productId)?.stock || 1 : 1}
-          value={quantity}
-          onChange={(e) => {
-            const val = Number(e.target.value);
-            const max = productId ? products.find((p) => p._id === productId)?.stock || 1 : 1;
-            setQuantity(val > max ? max : val < 1 ? 1 : val);
-          }}
-          className="w-full border rounded p-3 shadow-sm focus:ring-2 focus:ring-blue-400"
-        />
-      </div>
-
-      <div className="flex justify-end gap-4">
-        <button
-          onClick={() => setModalOpen(false)}
-          className="px-4 py-2 rounded border border-gray-300 hover:bg-gray-100"
-        >
-          Anuluj
-        </button>
-        <button
-          onClick={handleAddOrder}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded"
-        >
-          Dodaj
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-
     </div>
   );
 };

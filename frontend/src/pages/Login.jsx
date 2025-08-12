@@ -38,6 +38,11 @@ const Login = () => {
     }
   };
 
+  // Funkcja obsługująca kliknięcie "Zapomniałem hasła"
+  const handleForgotPassword = () => {
+    navigate('/forgot-password'); // przekierowanie do strony resetu hasła
+  };
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-blue-900 to-blue-700 px-4">
       <h2 className="text-4xl font-extrabold mb-8 text-white drop-shadow-lg">
@@ -82,6 +87,15 @@ const Login = () => {
             {loading ? 'Ładowanie...' : 'Zaloguj się'}
           </button>
         </form>
+
+        {/* Przycisk "Zapomniałem hasła" */}
+       <button
+  onClick={handleForgotPassword}
+  className="mt-6 w-full bg-blue-50 text-blue-700 py-2 px-4 rounded-full border border-blue-200 hover:bg-blue-100 transition-all shadow-sm font-medium"
+  type="button"
+>
+  Zapomniałem hasła
+</button>
       </div>
     </div>
   );

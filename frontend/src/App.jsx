@@ -19,15 +19,19 @@ import Products from './pages/Products';
 import Notes from './pages/Notes';
 import Orders from './components/Orders';
 
+
+import PasswordResetFlow from './pages/PasswordResetFlow';
+
 function App() {
   return (
     <Router>
       <Routes>
-
+        <Route path="/forgot-password" element={<PasswordResetFlow />} />
         <Route path="/" element={<WelcomePage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/unauthorized" element={<>Unauthorized</>} />
         <Route path="/redirect" element={<RootRedirect />} />
+        
 
         <Route
           path="/admin-dashboard"
@@ -38,7 +42,6 @@ function App() {
           }
         >
           <Route index element={<h1>Welcome to Admin Dashboard</h1>} />
-          <Route path="categories" element={<h1>1</h1>} />
           <Route path="products" element={<Products/>} />
           <Route path="orders" element={<Orders/>}/>
           <Route path="users" element={<Users />} />
@@ -48,7 +51,7 @@ function App() {
 
         <Route path="/customer-dashboard" element={<Admin />}>
           <Route index element={<CustomerProducts />} />
-          <Route path="orders" element={<h1>1</h1>} />
+          <Route path="orders" element={<Orders/>}/>
           <Route path="profile" element={<h1>2</h1>} />
         </Route>
 

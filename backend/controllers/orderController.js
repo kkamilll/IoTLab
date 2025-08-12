@@ -63,12 +63,24 @@ export const getOrders = async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error in fetching orders" });
   }
 };
-
 export const deleteOrder = async (req, res) => {
   try {
     const orderId = req.params.id;
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    const product = await Product.findById(order.product);
+    if (product) {
+      product.stock += order.quantity; // Przywróć stock
+      await product.save();
+    }
+
     await Order.findByIdAndDelete(orderId);
-    return res.status(200).json({ success: true, message: "Order deleted" });
+
+    return res.status(200).json({ success: true, message: "Order deleted and stock updated" });
   } catch (error) {
     console.error("Error deleting order:", error);
     return res.status(500).json({ success: false, message: "Server error" });
