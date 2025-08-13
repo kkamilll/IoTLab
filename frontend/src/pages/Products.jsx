@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const Products = () => {
   const [openModal, setOpenModal] = useState(false);
@@ -13,11 +15,9 @@ const Products = () => {
     stock: "",
   });
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" }); // key: 'price' | 'stock' | null
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
 
-  /* ----------------------------------------------------------------
-   * API helpers
-   * ---------------------------------------------------------------- */
+  /* --------------------------- API helpers --------------------------- */
   const fetchProducts = async () => {
     try {
       const res = await axios.get("http://localhost:3500/products", {
@@ -38,7 +38,7 @@ const Products = () => {
 
   const addProduct = async () => {
     const res = await axios.post(
-      "http://localhost:3500/products", // bez /add
+      "http://localhost:3500/products",
       {
         ...formData,
         price: Number(formData.price),
@@ -70,9 +70,7 @@ const Products = () => {
     return res.data;
   };
 
-  /* ----------------------------------------------------------------
-   * Handlers
-   * ---------------------------------------------------------------- */
+  /* --------------------------- Handlers --------------------------- */
   const handleEdit = (product) => {
     setOpenModal(true);
     setEditProduct(product._id);
@@ -87,12 +85,7 @@ const Products = () => {
   const closeModal = () => {
     setOpenModal(false);
     setEditProduct(null);
-    setFormData({
-      name: "",
-      description: "",
-      price: "",
-      stock: "",
-    });
+    setFormData({ name: "", description: "", price: "", stock: "" });
   };
 
   const handleChange = (e) => {
@@ -113,7 +106,7 @@ const Products = () => {
     setSortConfig({ key, direction });
   };
 
-  // Sortowanie i filtrowanie razem
+  // sort + filter
   useEffect(() => {
     let filtered = products.filter((p) =>
       p.name.toLowerCase().includes(searchTerm)
@@ -156,12 +149,8 @@ const Products = () => {
         alert(data.message || "Operation failed");
       }
     } catch (err) {
-      console.error("handleSubmit error response:", err.response);
-      alert(
-        err.response?.data?.message ||
-          err.message ||
-          "Server error – check console"
-      );
+      console.error("handleSubmit error:", err.response);
+      alert(err.response?.data?.message || err.message || "Server error – check console");
     }
   };
 
@@ -182,21 +171,54 @@ const Products = () => {
     }
   };
 
-  /* ----------------------------------------------------------------
-   * Effects
-   * ---------------------------------------------------------------- */
+  /* --------------------------- PDF Export --------------------------- */
+  const generatePDF = () => {
+    if (filteredProducts.length === 0) {
+      alert("No products to export.");
+      return;
+    }
+
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text("Product List", 14, 22);
+
+    const tableColumn = ["#", "Product Name", "Description", "Price", "Stock"];
+    const tableRows = [];
+
+    filteredProducts.forEach((p, index) => {
+      let stockText = `${p.stock}`;
+      if (p.stock === 0) stockText += " (Out of stock)";
+      else if (p.stock < 5) stockText += " (Low stock)";
+      tableRows.push([
+        index + 1,
+        p.name,
+        p.description || "",
+        p.price,
+        stockText,
+      ]);
+    });
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 30,
+      styles: { fontSize: 10 },
+    });
+
+    doc.save(`products_${new Date().toISOString().slice(0, 10)}.pdf`);
+  };
+
+  /* --------------------------- Effects --------------------------- */
   useEffect(() => {
     fetchProducts();
   }, []);
 
-  /* ----------------------------------------------------------------
-   * JSX
-   * ---------------------------------------------------------------- */
+  /* --------------------------- JSX --------------------------- */
   return (
     <div className="w-full h-full flex flex-col gap-4 p-4">
       <h1 className="text-2xl font-bold">Product Management</h1>
 
-      {/* search + add */}
+      {/* search + add + export */}
       <div className="flex justify-between items-center">
         <input
           type="text"
@@ -205,16 +227,24 @@ const Products = () => {
           onChange={handleSearch}
           value={searchTerm}
         />
-        <button
-          className="px-4 py-1.5 bg-blue-500 text-white rounded"
-          onClick={() => {
-            setEditProduct(null);
-            setFormData({ name: "", description: "", price: "", stock: "" });
-            setOpenModal(true);
-          }}
-        >
-          Add Product
-        </button>
+        <div className="flex gap-2">
+          <button
+            className="px-4 py-1.5 bg-green-500 text-white rounded"
+            onClick={generatePDF}
+          >
+            Export to PDF
+          </button>
+          <button
+            className="px-4 py-1.5 bg-blue-500 text-white rounded"
+            onClick={() => {
+              setEditProduct(null);
+              setFormData({ name: "", description: "", price: "", stock: "" });
+              setOpenModal(true);
+            }}
+          >
+            Add Product
+          </button>
+        </div>
       </div>
 
       {/* table */}
@@ -266,21 +296,19 @@ const Products = () => {
                   <td className="border p-2">{p.description}</td>
                   <td className="border p-2">{p.price}</td>
                   <td className="border p-2">
-                    <span className="rounded-full font-semibold">
-                      {p.stock === 0 ? (
-                        <span className="bg-red-100 text-red-500 px-2 py-1 rounded-full">
-                          {p.stock}
-                        </span>
-                      ) : p.stock < 5 ? (
-                        <span className="bg-yellow-100 text-yellow-600 px-2 py-1 rounded-full">
-                          {p.stock}
-                        </span>
-                      ) : (
-                        <span className="bg-green-100 text-green-500 px-2 py-1 rounded-full">
-                          {p.stock}
-                        </span>
-                      )}
-                    </span>
+                    {p.stock === 0 ? (
+                      <span className="bg-red-100 text-red-500 px-2 py-1 rounded-full">
+                        {p.stock}
+                      </span>
+                    ) : p.stock < 5 ? (
+                      <span className="bg-yellow-100 text-yellow-600 px-2 py-1 rounded-full">
+                        {p.stock}
+                      </span>
+                    ) : (
+                      <span className="bg-green-100 text-green-500 px-2 py-1 rounded-full">
+                        {p.stock}
+                      </span>
+                    )}
                   </td>
                   <td className="border p-2">
                     <button

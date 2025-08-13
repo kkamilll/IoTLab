@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 
 const WelcomePage = () => {
   const navigate = useNavigate();
-  const { token } = useAuth();
+  const { token, user, logout } = useAuth();
 
   const [currentTime, setCurrentTime] = useState(new Date());
   const [notes, setNotes] = useState([]);
@@ -44,35 +44,73 @@ const WelcomePage = () => {
     fetchNotes();
   }, [token]);
 
-  const formatDateTime = (date) =>
-    date.toLocaleString('pl-PL', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    });
-
   const handleLoginClick = () => {
     navigate('/login');
   };
 
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+
+  const handleBackToSidebar = () => {
+    if (user?.role === 'admin') {
+      navigate('/admin-dashboard');
+    } else if (user?.role === 'customer') {
+      navigate('/customer-dashboard');
+    } else {
+      navigate('/');
+    }
+  };
+
   return (
     <div className="w-full min-h-screen font-sans bg-gray-50 text-gray-900">
-      {/* TOPBAR WITH DATE & TIME */}
-      <div className="w-full bg-gradient-to-r from-blue-800 via-blue-900 to-blue-950 text-center py-2 text-white text-sm font-semibold tracking-wide shadow-md">
-        {currentTime.toLocaleString('pl-PL', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        })}
+      {/* TOPBAR */}
+      <div className="w-full bg-gradient-to-r from-blue-800 via-blue-900 to-blue-950 py-2 px-4 text-white text-sm font-semibold tracking-wide shadow-md flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+        
+        {/* Data i czas */}
+        <span>
+          {currentTime.toLocaleString('pl-PL', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+          })}
+        </span>
+
+       {user && (
+  <div className="flex flex-col sm:flex-row items-center gap-3 bg-white px-4 py-2 rounded-full shadow-md text-black text-sm font-semibold">
+    <span className="truncate max-w-[140px] sm:max-w-none">{user.name}</span>
+
+    <button
+      onClick={handleBackToSidebar}
+      className="flex items-center gap-2 bg-green-600 hover:bg-green-700 transition-colors text-white rounded-full px-5 py-2 shadow-md shadow-green-400/50
+                 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+      </svg>
+      Powrót
+    </button>
+
+    <button
+      onClick={handleLogout}
+      className="flex items-center gap-2 bg-red-600 hover:bg-red-700 transition-colors text-white rounded-full px-5 py-2 shadow-md shadow-red-400/50
+                 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7" />
+      </svg>
+      Wyloguj
+    </button>
+  </div>
+)}
       </div>
 
+      {/* HERO SECTION */}
       <section className="relative flex flex-col justify-center items-center min-h-[40vh] bg-gradient-to-b from-blue-900 to-blue-700 overflow-hidden">
         <div className="relative z-20 px-6 max-w-3xl text-center">
           <h1 className="text-4xl md:text-5xl font-extrabold mb-3 leading-tight drop-shadow-lg text-white">
@@ -81,12 +119,14 @@ const WelcomePage = () => {
           <p className="text-base md:text-lg mb-6 font-light drop-shadow-md text-blue-200">
             Efektywne zarządzanie zasobami w Twojej firmie
           </p>
-          <button
-            onClick={handleLoginClick}
-            className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold px-10 py-2.5 rounded-full shadow-lg hover:shadow-xl transition duration-300"
-          >
-            Zaloguj się
-          </button>
+          {!user && (
+            <button
+              onClick={handleLoginClick}
+              className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold px-10 py-2.5 rounded-full shadow-lg hover:shadow-xl transition duration-300"
+            >
+              Zaloguj się
+            </button>
+          )}
         </div>
       </section>
 
@@ -146,7 +186,7 @@ const WelcomePage = () => {
               >
                 <p className="text-white text-lg leading-relaxed font-medium">{note.text}</p>
                 <div className="mt-4 text-blue-300 text-sm font-light italic">
-                  Dodane przez <strong>{note.author?.name || "Anonim"}</strong> •{' '}
+                  Dodane przez <strong>{note.author?.name || 'Anonim'}</strong> •{' '}
                   {new Date(note.createdAt).toLocaleString('pl-PL', {
                     year: 'numeric',
                     month: '2-digit',
