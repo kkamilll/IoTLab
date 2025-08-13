@@ -118,11 +118,11 @@ const Orders = () => {
                 orders.map((order) => (
                   <tr key={order._id} className="hover:bg-gray-100">
                     <td className="border border-gray-300 p-3">
-                      {order.product?.name || "Usunięty produkt"}
+                      {order.productRef?.name || "Usunięty produkt"}
                     </td>
                     <td className="border border-gray-300 p-3 text-right">{order.quantity}</td>
                     <td className="border border-gray-300 p-3">
-                      {order.product?.description || "Brak opisu"}
+                      {order.productRef?.description || "Brak opisu"}
                     </td>
                     <td className="border border-gray-300 p-3 text-center">
                       <button

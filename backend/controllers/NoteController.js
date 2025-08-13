@@ -1,28 +1,35 @@
 import Note from "../models/Note.js";
 
+import mongoose from "mongoose";
+import { ValidationError, BadRequestError, UnauthorizedActionError, ResourceNotFoundError, ServerError } from '../errors/CustomErrors.js'
+
 // Pobierz wszystkie notatki (z autorem)
-export const getNotes = async (req, res) => {
+export const getNotes = async (req, res, next) => {
   try {
-    const notes = await Note.find()
-      .populate("author", "name email role") // można dodać role, jeśli potrzebne
-      .sort({ createdAt: -1 });
+    const notes = await Note.find().populate("author", "name email role").sort({ createdAt: -1 }); // można dodać role, jeśli potrzebne
+
     res.status(200).json({ success: true, data: notes });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Błąd serwera" });
+    return next(new ServerError({ message: error.message }));
   }
 };
 
 // Dodaj notatkę (author z tokena)
-export const addNote = async (req, res) => {
+export const createNote = async (req, res, next) => {
   try {
+    const userId = req.user._id;
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return next(new BadRequestError("Invalid user ID"));
+    }
+
     const { text } = req.body;
     if (!text || text.trim() === "") {
-      return res.status(400).json({ success: false, message: "Pole tekst jest wymagane" });
+      return next(new ValidationError("Text is required."));
     }
 
     const newNote = new Note({
       text,
-      author: req.user._id,
+      author: userId,
     });
 
     await newNote.save();
@@ -30,28 +37,37 @@ export const addNote = async (req, res) => {
 
     res.status(201).json({ success: true, data: newNote });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Błąd serwera" });
+    return next(new ServerError({ message: error.message }));
   }
 };
 
-export const deleteNote = async (req, res) => {
+export const deleteNote = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const note = await Note.findById(id);
+    const userId = req.user._id;
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return next(new BadRequestError("Invalid user ID"));
+    }
 
+    const { role } = req.user.role;
+
+    const { noteId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(noteId)) {
+      return next(new BadRequestError("Invalid note ID"));
+    }
+
+    const note = await Note.findById(noteId);
     if (!note) {
-      return res.status(404).json({ success: false, message: "Notatka nie znaleziona" });
+      return next(new ResourceNotFoundError("Note"));
     }
 
-    if (note.author.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: "Brak uprawnień do usunięcia notatki" });
+    if (note.author.toString() !== userId.toString() && role !== 'admin') {
+      return next(new UnauthorizedActionError("Missing permission for deleting this note."));
     }
 
-    await Note.findByIdAndDelete(id);
-    res.status(200).json({ success: true, message: "Notatka usunięta" });
+    await note.deleteOne();
+    res.status(200).json({ success: true, message: "Note Deleted" });
   } catch (error) {
-    console.error("Błąd przy usuwaniu notatki:", error);
-    res.status(500).json({ success: false, message: "Błąd serwera" });
+    return next(new ServerError({ message: error.message }));
   }
 };
 

@@ -51,6 +51,7 @@ export const forgotPassword = async (req, res) => {
     await user.save();
 
     await sendVerificationCode(otpCode, user.email, res);
+    return res.status(200).json({ success: true, message: "Verification Code sent to email" });
   } catch (error) {
     console.error("Error sending OTP code:", error);
     return res.status(500).json({ success: false, message: "Internal server error" });
@@ -76,6 +77,7 @@ export const resetPassword = async (req, res) => {
     }
 
     user.password = newPassword;
+
     user.resetPasswordOtp = null;
     user.resetPasswordOtpExpires = null;
     await user.save();

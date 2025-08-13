@@ -1,12 +1,12 @@
 import express from 'express';
 import authMiddleware from '../middleware/authMiddleware.js';
-import { addUser, getUsers, deleteUser, getUser, updateUserProfile } from '../controllers/userController.js';
+import { createUser, getUsers, deleteUser, getUser, updateUserProfile } from '../controllers/userController.js';
 
 const router = express.Router();
 
-router.post('/add', authMiddleware, addUser);
+router.post('/add', authMiddleware, createUser);
 router.get('/', authMiddleware, getUsers);
-router.delete('/:id', authMiddleware, deleteUser);
+router.delete('/:userId', authMiddleware, deleteUser);
 router.get('/profile', authMiddleware, getUser);
 router.put('/profile', authMiddleware, updateUserProfile);
 

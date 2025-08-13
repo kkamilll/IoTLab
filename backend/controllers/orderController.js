@@ -1,86 +1,103 @@
 import Product from "../models/Product.js";
 import Order from "../models/Order.js";
 
-export const addOrder = async (req, res) => {
+import mongoose from "mongoose";
+import { MongoServerError } from 'mongodb';
+import { ValidationError, BadRequestError, DuplicateKeyError, ResourceNotFoundError, ServerError } from '../errors/CustomErrors.js'
+
+
+export const createOrder = async (req, res, next) => {
   try {
-    const { productId, quantity } = req.body;
     const userId = req.user._id;
-
-    if (!productId || !quantity || quantity < 1) {
-      return res.status(400).json({ error: "Invalid productId or quantity" });
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return next(new ValidationError("Invalid user ID"));
     }
 
-    const product = await Product.findById(productId);
-    if (!product || product.isDeleted) {
-      return res.status(404).json({ error: "Product not found" });
+    const { productId, quantity } = req.body;
+    if (!productId) return next(new BadRequestError("required Product ID"))
+    if (quantity == null) return next(new BadRequestError("required Quantity"))
+    if (quantity < 1) return next(new BadRequestError("Quantity must be at least 1"));
+
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return next(new ValidationError("Invalid product ID"));
     }
 
-    if (quantity > product.stock) {
-      return res.status(400).json({ error: "Not enough stock" });
+    const updatedProduct  = await Product.findOneAndUpdate({ _id: productId, stock: { $gte: quantity }, isDeleted: false }, { $inc: { stock: -quantity }}, { new: true, runValidators: true });
+    if (!updatedProduct) {
+      const productExists = await Product.exists({ _id: productId, isDeleted: false });
+      if (!productExists) return next(new ResourceNotFoundError('Product'));
+      return next(new BadRequestError('quantity exceeds stock'));
     }
-
-    product.stock -= quantity;
-    await product.save();
 
     const order = new Order({
-      customer: userId,
-      product: productId,
+      userRef: userId,
+      productRef: productId,
       quantity
     });
 
     await order.save();
 
-    return res.status(201).json({
-      success: true,
-      message: "Order added successfully",
-      order
-    });
+    return res.status(201).json({ success: true, message: "Order added successfully", order });
   } catch (error) {
-    console.error("Error in addOrder:", error);
-    return res.status(500).json({ success: false, message: "Server error while adding order" });
+    if (error instanceof MongoServerError && error.code === 11000) {
+      const [field, value] = Object.entries(error.keyValue)[0];
+      return next(new DuplicateKeyError({ field, value }));
+    }
+
+    if (error.name === 'ValidationError') {
+      return next(error);
+    }
+
+    return next(new ServerError({ message: error.message }));
   }
 };
 
-export const getOrders = async (req, res) => {
+export const getOrders = async (req, res, next) => {
   try {
     const userId = req.user._id;
-    let query = {};
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return next(new ValidationError("Invalid user ID"));
+    }
+    
+    let mongoQuery = {};
 
+    // since when there is customer role?
     if (req.user.role === "customer") {
-      query = { customer: userId };
+      mongoQuery = { customer: userId };
     }
 
-    const orders = await Order.find(query)
-      .populate("product", "name description stock") // Pobiera też opis produktu
-      .populate("customer", "name email");
+    const orders = await Order.find(mongoQuery)
+      .populate("userRef", "name email")
+      .populate("productRef", "name price");
 
     return res.status(200).json({ success: true, orders });
   } catch (error) {
-    console.error("Error in getOrders:", error);
-    return res.status(500).json({ success: false, message: "Server error in fetching orders" });
+    return next(new ServerError({ message: error.message }));
   }
 };
 
-export const deleteOrder = async (req, res) => {
+export const deleteOrder = async (req, res, next) => {
+  // add transaction, still race condition possible?
   try {
-    const orderId = req.params.id;
+    const { orderId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
+      return next(new BadRequestError("Invalid order ID"));
+    }
 
     const order = await Order.findById(orderId);
     if (!order) {
-      return res.status(404).json({ success: false, message: "Order not found" });
+      return next(new ResourceNotFoundError("Order"));
     }
 
-    const product = await Product.findById(order.product);
-    if (product) {
-      product.stock += order.quantity; // Przywróć stock
-      await product.save();
+    const updatedProduct = await Product.findOneAndUpdate({ _id: order.productRef, isDeleted: false}, { $inc: { stock: order.quantity }}, { new: true, runValidators: true });
+    if (!updatedProduct) {
+      console.warn(`Product ${order.productRef} does not exist. Order ${orderId} will still be deleted.`);
     }
 
-    await Order.findByIdAndDelete(orderId);
+    await order.deleteOne();
 
     return res.status(200).json({ success: true, message: "Order deleted and stock updated" });
   } catch (error) {
-    console.error("Error deleting order:", error);
-    return res.status(500).json({ success: false, message: "Server error" });
+    return next(new ServerError({ message: error.message }));
   }
 };

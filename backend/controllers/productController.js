@@ -1,73 +1,124 @@
-import mongoose from "mongoose";
 import Product from "../models/Product.js";
 
-export const getProducts = async (req, res) => {
+import mongoose from "mongoose";
+import { MongoServerError } from 'mongodb';
+import { ValidationError, BadRequestError, DuplicateKeyError, ResourceNotFoundError, ServerError } from '../errors/CustomErrors.js'
+import { validateRequiredFields } from '../utils/validateRequiredFields.js'
+
+export const getProducts = async (req, res, next) => {
   try {
-    const products = await Product.find({ isDeleted: false });
+    const products = await Product.find({ isDeleted: false }).select('-__v -isDeleted').sort({ name: 1 }).lean();
+    
     return res.status(200).json({ success: true, products });
   } catch (error) {
-    console.error("Error fetching products:", error);
-    return res.status(500).json({ success: false, message: "Server error" });
+    return next(new ServerError({ message: error.message }));
   }
 };
 
-export const createProduct = async (req, res) => {
-  const { name, price, stock, description, extraFields } = req.body;
-  if (!name || price === undefined) {
-    return res.status(400).json({ success: false, message: "Name and price are required" });
-  }
+export const createProduct = async (req, res, next) => {
   try {
+    const { name, stock, description, extraFields } = req.body;
+    validateRequiredFields(Product, req.body); 
+
     const newProduct = new Product({
       name,
-      price,
-      stock: stock || 0,
+      stock,
       description,
-      extraFields: extraFields || {}
+      extraFields
     });
+
     await newProduct.save();
-    return res.status(201).json({ success: true, product: newProduct });
+    return res.status(201).json({ success: true, product: newProduct.toObject() });
   } catch (error) {
-    console.error("Error creating product:", error);
-    return res.status(500).json({ success: false, message: "Server error" });
+    if (error instanceof MongoServerError && error.code === 11000) {
+      const [field, value] = Object.entries(error.keyValue)[0];
+      return next(new DuplicateKeyError({ field, value }));
+    }
+
+    if (error.name === 'ValidationError') {
+      return next(error);
+    }
+
+    return next(new ServerError({ message: error.message }));
   }
 };
 
-export const updateProduct = async (req, res) => {
-  const { id } = req.params;
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({ success: false, message: "Invalid product ID" });
-  }
+export const updateProduct = async (req, res, next) => {
   try {
-    const updatedProduct = await Product.findByIdAndUpdate(id, req.body, { new: true });
-    if (!updatedProduct) {
-      return res.status(404).json({ success: false, message: "Product not found" });
+    const { productId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return next(new ValidationError("Invalid product ID"));
     }
+
+    const { name, stock, description, extraFields } = req.body;
+    const updateData = {};
+    if (name?.trim()) updateData.name = name;
+    if (stock !== undefined) {
+      if (typeof stock !== 'number' || stock < 0) {
+        return next(new BadRequestError('Stock must be a non-negative number'));
+      }
+
+      updateData.stock = stock;
+    }
+    if (description?.trim()) updateData.description = description;
+    if (extraFields !== undefined && typeof extraFields === 'object') updateData.extraFields = extraFields;
+
+    if (Object.keys(updateData).length === 0) {
+      return next(new BadRequestError('No valid fields to update'));
+    }
+
+    const updatedProduct = await Product.findOneAndUpdate({ _id: productId, isDeleted: false }, updateData, { new: true }).select('_id name stock description extraFields').lean();
+    if (!updatedProduct) {
+      return next(new ResourceNotFoundError("Product"));
+    }
+    
     return res.status(200).json({ success: true, product: updatedProduct });
   } catch (error) {
-    console.error("Error updating product:", error);
-    return res.status(500).json({ success: false, message: "Server error" });
+    return next(new ServerError({ message: error.message }));
   }
 };
 
-export const deleteProduct = async (req, res) => {
-  const { id } = req.params;
-
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({ success: false, message: "Invalid product ID" });
-  }
-
+export const archiveProduct = async (req, res, next) => {
   try {
-    const product = await Product.findById(id);
-    if (!product) {
-      return res.status(404).json({ success: false, message: "Product not found" });
+    const { productId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return next(new ValidationError("Invalid product ID"));
     }
 
-    product.isDeleted = true; // ustawienie flagi zamiast fizycznego usuwania
+    const product = await Product.findById(productId);
+    if (!product) {
+      return next(new ResourceNotFoundError('Product'));
+    }
+ 
+    if (product.isDeleted) {
+      return next(new BadRequestError("Product is already archived"));
+    }
+
+    product.isDeleted = true;
+    await product.save();
+
+    return res.status(200).json({ success: true, message: "Product deleted" });
+  } catch (error) {
+    return next(new ServerError({ message: error.message }));
+  }
+};
+
+export const hardDeleteProduct = async (req, res, next) => {
+  try {
+    const { productId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return next(new ValidationError("Invalid product ID"));
+    }
+
+    const product = await Product.findById(productId);
+    if (!product) {
+      return next(new ResourceNotFoundError('Product'));
+    }
+
     await product.deleteOne();
 
     return res.status(200).json({ success: true, message: "Product deleted" });
   } catch (error) {
-    console.error("Error deleting product:", error);
-    return res.status(500).json({ success: false, message: "Server error" });
+    return next(new ServerError({ message: error.message }));
   }
 };

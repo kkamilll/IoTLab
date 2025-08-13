@@ -25,7 +25,7 @@ const ResetPassword = ({ email }) => {
     setLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:3500/api/auth/reset-password', {
+      const response = await axios.post('http://localhost:3500/auth/reset-password', {
         email,
         otpCode: otp, // upewniamy się, że wysyłamy otpCode, nie otp
         newPassword,

@@ -14,7 +14,7 @@ const ForgotPassword = ({ onOtpSent }) => {
     setMessage(null);
 
     try {
-      const response = await axios.post('http://localhost:3500/api/auth/forgot-password', { email });
+      const response = await axios.post('http://localhost:3500/auth/forgot-password', { email });
       setMessage('Kod weryfikacyjny został wysłany na Twój email.');
       onOtpSent(email);  // przekazujemy email do PasswordResetFlow
     } catch (err) {
