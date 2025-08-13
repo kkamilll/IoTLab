@@ -8,16 +8,16 @@ const Products = () => {
   const [editProduct, setEditProduct] = useState(null);
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
+  const [extraColumns, setExtraColumns] = useState([]);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    price: "",
     stock: "",
+    extraFields: {}
   });
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
 
-  /* --------------------------- API helpers --------------------------- */
   const fetchProducts = async () => {
     try {
       const res = await axios.get("http://localhost:3500/products", {
@@ -25,13 +25,27 @@ const Products = () => {
       });
 
       if (res.data.success) {
-        setProducts(res.data.products);
-        setFilteredProducts(res.data.products);
+        const allExtraKeys = new Set(extraColumns);
+        res.data.products.forEach(p => {
+          if (p.extraFields) Object.keys(p.extraFields).forEach(k => allExtraKeys.add(k));
+        });
+
+        const updatedProducts = res.data.products.map(p => {
+          const newExtraFields = {};
+          [...allExtraKeys].forEach(col => {
+            newExtraFields[col] = p.extraFields?.[col] || "";
+          });
+          return { ...p, extraFields: newExtraFields };
+        });
+
+        setExtraColumns([...allExtraKeys]);
+        setProducts(updatedProducts);
+        setFilteredProducts(updatedProducts);
       } else {
         alert(res.data.message || "Error fetching products");
       }
     } catch (err) {
-      console.error("fetchProducts error:", err);
+      console.error(err);
       alert("Server error – check console");
     }
   };
@@ -39,11 +53,7 @@ const Products = () => {
   const addProduct = async () => {
     const res = await axios.post(
       "http://localhost:3500/products",
-      {
-        ...formData,
-        price: Number(formData.price),
-        stock: Number(formData.stock),
-      },
+      { ...formData, stock: Number(formData.stock) },
       { headers: { Authorization: `Bearer ${localStorage.getItem("pos-token")}` } }
     );
     return res.data;
@@ -52,11 +62,7 @@ const Products = () => {
   const updateProduct = async () => {
     const res = await axios.put(
       `http://localhost:3500/products/${editProduct}`,
-      {
-        ...formData,
-        price: Number(formData.price),
-        stock: Number(formData.stock),
-      },
+      { ...formData, stock: Number(formData.stock) },
       { headers: { Authorization: `Bearer ${localStorage.getItem("pos-token")}` } }
     );
     return res.data;
@@ -70,336 +76,249 @@ const Products = () => {
     return res.data;
   };
 
-  /* --------------------------- Handlers --------------------------- */
   const handleEdit = (product) => {
     setOpenModal(true);
     setEditProduct(product._id);
     setFormData({
       name: product.name || "",
       description: product.description || "",
-      price: product.price !== undefined ? product.price.toString() : "",
-      stock: product.stock !== undefined ? product.stock.toString() : "",
+      stock: product.stock?.toString() || "",
+      extraFields: { ...product.extraFields }
     });
   };
 
   const closeModal = () => {
     setOpenModal(false);
     setEditProduct(null);
-    setFormData({ name: "", description: "", price: "", stock: "" });
+    setFormData({ name: "", description: "", stock: "", extraFields: {} });
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSearch = (e) => {
-    const val = e.target.value.toLowerCase();
-    setSearchTerm(val);
+  const handleExtraFieldChange = (key, value) => {
+    setFormData(prev => ({
+      ...prev,
+      extraFields: { ...prev.extraFields, [key]: value }
+    }));
   };
+
+  const addExtraField = () => {
+    const key = prompt("Podaj nazwę nowej kolumny:");
+    if (key && !extraColumns.includes(key)) {
+      setExtraColumns(prev => [...prev, key]);
+      setProducts(prev =>
+        prev.map(p => ({ ...p, extraFields: { ...p.extraFields, [key]: "" } }))
+      );
+      setFormData(prev => ({
+        ...prev,
+        extraFields: { ...prev.extraFields, [key]: "" }
+      }));
+    }
+  };
+
+  const removeExtraField = (key) => {
+    setExtraColumns(prev => prev.filter(col => col !== key));
+    setProducts(prev =>
+      prev.map(p => {
+        const newExtra = { ...p.extraFields };
+        delete newExtra[key];
+        return { ...p, extraFields: newExtra };
+      })
+    );
+    setFormData(prev => {
+      const newExtra = { ...prev.extraFields };
+      delete newExtra[key];
+      return { ...prev, extraFields: newExtra };
+    });
+  };
+
+  const handleSearch = (e) => setSearchTerm(e.target.value.toLowerCase());
 
   const handleSort = (key) => {
     let direction = "asc";
-    if (sortConfig.key === key && sortConfig.direction === "asc") {
-      direction = "desc";
-    }
+    if (sortConfig.key === key && sortConfig.direction === "asc") direction = "desc";
     setSortConfig({ key, direction });
   };
 
-  // sort + filter
   useEffect(() => {
-    let filtered = products.filter((p) =>
-      p.name.toLowerCase().includes(searchTerm)
-    );
-
+    let filtered = products.filter(p => p.name.toLowerCase().includes(searchTerm));
     if (sortConfig.key) {
       filtered.sort((a, b) => {
-        if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === "asc" ? -1 : 1;
-        if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === "asc" ? 1 : -1;
+        let valA = a[sortConfig.key] ?? a.extraFields?.[sortConfig.key] ?? "";
+        let valB = b[sortConfig.key] ?? b.extraFields?.[sortConfig.key] ?? "";
+        if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
+        if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
         return 0;
       });
     }
-
     setFilteredProducts(filtered);
   }, [products, searchTerm, sortConfig]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!formData.name.trim()) {
-      alert("Product name is required");
-      return;
-    }
-    if (isNaN(Number(formData.price)) || Number(formData.price) <= 0) {
-      alert("Price must be a number greater than 0");
-      return;
-    }
-    if (isNaN(Number(formData.stock)) || Number(formData.stock) < 0) {
-      alert("Stock must be a non-negative number");
-      return;
-    }
-
     try {
       const data = editProduct ? await updateProduct() : await addProduct();
       if (data.success) {
-        alert(editProduct ? "Product updated" : "Product added");
         fetchProducts();
         closeModal();
       } else {
         alert(data.message || "Operation failed");
       }
     } catch (err) {
-      console.error("handleSubmit error:", err.response);
-      alert(err.response?.data?.message || err.message || "Server error – check console");
+      console.error(err);
+      alert("Server error");
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this product?")) return;
-
+    if (!window.confirm("Delete this product?")) return;
     try {
       const data = await deleteProduct(id);
-      if (data.success) {
-        alert("Product deleted");
-        fetchProducts();
-      } else {
-        alert(data.message || "Delete failed");
-      }
+      if (data.success) fetchProducts();
     } catch (err) {
-      console.error("handleDelete error:", err);
-      alert("Server error – check console");
+      console.error(err);
     }
   };
 
-  /* --------------------------- PDF Export --------------------------- */
   const generatePDF = () => {
-    if (filteredProducts.length === 0) {
-      alert("No products to export.");
-      return;
-    }
-
+    if (filteredProducts.length === 0) return alert("No products to export.");
     const doc = new jsPDF();
-    doc.setFontSize(18);
     doc.text("Product List", 14, 22);
-
-    const tableColumn = ["#", "Product Name", "Description", "Price", "Stock"];
-    const tableRows = [];
-
-    filteredProducts.forEach((p, index) => {
-      let stockText = `${p.stock}`;
-      if (p.stock === 0) stockText += " (Out of stock)";
-      else if (p.stock < 5) stockText += " (Low stock)";
-      tableRows.push([
-        index + 1,
-        p.name,
-        p.description || "",
-        p.price,
-        stockText,
-      ]);
-    });
-
-    autoTable(doc, {
-      head: [tableColumn],
-      body: tableRows,
-      startY: 30,
-      styles: { fontSize: 10 },
-    });
-
-    doc.save(`products_${new Date().toISOString().slice(0, 10)}.pdf`);
+    const headers = ["#", "Name", "Description", "Stock", ...extraColumns];
+    const rows = filteredProducts.map((p, i) => [
+      i + 1,
+      p.name,
+      p.description || "",
+      p.stock,
+      ...extraColumns.map(c => p.extraFields?.[c] || "")
+    ]);
+    autoTable(doc, { head: [headers], body: rows, startY: 30 });
+    doc.save("products.pdf");
   };
 
-  /* --------------------------- Effects --------------------------- */
-  useEffect(() => {
-    fetchProducts();
-  }, []);
+  useEffect(() => { fetchProducts(); }, []);
 
-  /* --------------------------- JSX --------------------------- */
+  const allColumns = ["name", "description", "stock", ...extraColumns];
+
+  const getStockColor = (stock) => {
+    if (stock >= 50) return "bg-green-200";
+    if (stock >= 20) return "bg-yellow-200";
+    return "bg-red-200";
+  };
+
   return (
-    <div className="w-full h-full flex flex-col gap-4 p-4">
-      <h1 className="text-2xl font-bold">Product Management</h1>
+    <div className="w-full h-full flex flex-col gap-4 p-6 bg-gray-50">
+      <h1 className="text-3xl font-extrabold text-gray-700">Product Management</h1>
 
-      {/* search + add + export */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between gap-3">
         <input
           type="text"
           placeholder="Search"
-          className="border p-1 bg-white rounded px-4"
+          className="border border-gray-300 p-2 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 flex-1"
           onChange={handleSearch}
-          value={searchTerm}
         />
-        <div className="flex gap-2">
-          <button
-            className="px-4 py-1.5 bg-green-500 text-white rounded"
-            onClick={generatePDF}
-          >
-            Export to PDF
+        <div className="flex gap-2 flex-wrap">
+          <button className="px-4 py-2 bg-green-500 text-white rounded shadow hover:bg-green-600 transition" onClick={generatePDF}>
+            Export PDF
           </button>
           <button
-            className="px-4 py-1.5 bg-blue-500 text-white rounded"
-            onClick={() => {
-              setEditProduct(null);
-              setFormData({ name: "", description: "", price: "", stock: "" });
-              setOpenModal(true);
-            }}
+            className="px-4 py-2 bg-blue-500 text-white rounded shadow hover:bg-blue-600 transition"
+            onClick={() => { setEditProduct(null); setOpenModal(true); }}
           >
             Add Product
+          </button>
+          <button
+            className="px-4 py-2 bg-gray-500 text-white rounded shadow hover:bg-gray-600 transition"
+            onClick={addExtraField}
+          >
+            + Add Column
           </button>
         </div>
       </div>
 
-      {/* table */}
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse border border-gray-300 mt-4">
-          <thead>
-            <tr className="bg-gray-200">
-              <th className="border p-2">#</th>
-              <th className="border p-2">Product Name</th>
-              <th className="border p-2">Description</th>
-              <th
-                className="border p-2 cursor-pointer select-none"
-                onClick={() => handleSort("price")}
-              >
-                Price{" "}
-                {sortConfig.key === "price"
-                  ? sortConfig.direction === "asc"
-                    ? "↑"
-                    : "↓"
-                  : ""}
-              </th>
-              <th
-                className="border p-2 cursor-pointer select-none"
-                onClick={() => handleSort("stock")}
-              >
-                Stock{" "}
-                {sortConfig.key === "stock"
-                  ? sortConfig.direction === "asc"
-                    ? "↑"
-                    : "↓"
-                  : ""}
-              </th>
-              <th className="border p-2">Action</th>
+      <div className="overflow-x-auto rounded-lg shadow-lg mt-2">
+        <table className="min-w-full border-collapse overflow-hidden">
+          <thead className="bg-gradient-to-r from-blue-500 to-blue-600 text-white sticky top-0">
+            <tr>
+              <th className="px-4 py-2 text-left">#</th>
+              {allColumns.map(col => (
+                <th key={col} className="px-4 py-2 text-left relative">
+                  <div className="flex items-center justify-between">
+                    <span
+                      className="cursor-pointer select-none hover:text-yellow-200"
+                      onClick={() => handleSort(col)}
+                    >
+                      {col.charAt(0).toUpperCase() + col.slice(1)}
+                      {sortConfig.key === col ? (sortConfig.direction === "asc" ? " ↑" : " ↓") : ""}
+                    </span>
+                    {extraColumns.includes(col) && (
+                      <button
+                        className="ml-2 text-red-200 hover:text-red-400 font-bold"
+                        onClick={() => removeExtraField(col)}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                </th>
+              ))}
+              <th className="px-4 py-2 text-left">Actions</th>
             </tr>
           </thead>
-
-          <tbody>
-            {filteredProducts.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="p-4 text-center text-gray-500">
-                  No records
+          <tbody className="bg-white">
+            {filteredProducts.map((p, idx) => (
+              <tr key={p._id} className="hover:bg-gray-50 transition-all border-b last:border-b-0">
+                <td className="px-4 py-2">{idx + 1}</td>
+                <td className="px-4 py-2">{p.name}</td>
+                <td className="px-4 py-2">{p.description}</td>
+                <td className={`px-4 py-2 ${getStockColor(Number(p.stock))}`}>{p.stock}</td>
+                {extraColumns.map(col => (
+                  <td key={col} className="px-4 py-2">{p.extraFields?.[col]}</td>
+                ))}
+                <td className="px-4 py-2 flex gap-2">
+                  <button
+                    className="px-3 py-1 bg-yellow-400 rounded hover:bg-yellow-500 transition"
+                    onClick={() => handleEdit(p)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition"
+                    onClick={() => handleDelete(p._id)}
+                  >
+                    Delete
+                  </button>
                 </td>
               </tr>
-            ) : (
-              filteredProducts.map((p, i) => (
-                <tr key={p._id}>
-                  <td className="border p-2">{i + 1}</td>
-                  <td className="border p-2">{p.name}</td>
-                  <td className="border p-2">{p.description}</td>
-                  <td className="border p-2">{p.price}</td>
-                  <td className="border p-2">
-                    {p.stock === 0 ? (
-                      <span className="bg-red-100 text-red-500 px-2 py-1 rounded-full">
-                        {p.stock}
-                      </span>
-                    ) : p.stock < 5 ? (
-                      <span className="bg-yellow-100 text-yellow-600 px-2 py-1 rounded-full">
-                        {p.stock}
-                      </span>
-                    ) : (
-                      <span className="bg-green-100 text-green-500 px-2 py-1 rounded-full">
-                        {p.stock}
-                      </span>
-                    )}
-                  </td>
-                  <td className="border p-2">
-                    <button
-                      className="px-2 py-1 bg-yellow-500 text-white rounded mr-2"
-                      onClick={() => handleEdit(p)}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="px-2 py-1 bg-red-500 text-white rounded"
-                      onClick={() => handleDelete(p._id)}
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
+            ))}
           </tbody>
         </table>
       </div>
 
-      {/* modal */}
       {openModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded shadow-md w-full max-w-lg relative">
-            <h2 className="text-xl font-bold">
-              {editProduct ? "Edit Product" : "Add Product"}
-            </h2>
-            <button
-              onClick={closeModal}
-              className="absolute top-4 right-4 text-xl font-bold"
-            >
-              ×
-            </button>
-
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-4">
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                placeholder="Product Name"
-                className="border p-2 rounded"
-                required
-              />
-              <input
-                type="text"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                placeholder="Description"
-                className="border p-2 rounded"
-              />
-              <input
-                type="number"
-                name="price"
-                value={formData.price}
-                onChange={handleChange}
-                placeholder="Price"
-                className="border p-2 rounded"
-                min="0"
-                step="0.01"
-                required
-              />
-              <input
-                type="number"
-                name="stock"
-                min="0"
-                value={formData.stock}
-                onChange={handleChange}
-                placeholder="Stock"
-                className="border p-2 rounded"
-                required
-              />
-
-              <div className="flex gap-2">
-                <button
-                  type="submit"
-                  className="flex-1 bg-green-500 text-white p-2 rounded hover:bg-green-600"
-                >
-                  {editProduct ? "Save Changes" : "Add Product"}
-                </button>
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="flex-1 bg-red-500 text-white p-2 rounded hover:bg-red-600"
-                >
-                  Cancel
-                </button>
-              </div>
+       <div className="fixed inset-0 flex justify-center items-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-lg shadow-lg relative">
+            <button className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl" onClick={closeModal}>×</button>
+            <h2 className="text-xl font-bold mb-4">{editProduct ? "Edit Product" : "Add Product"}</h2>
+            <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
+              <input name="name" placeholder="Name" className="border p-2 rounded" value={formData.name} onChange={handleChange} required />
+              <input name="description" placeholder="Description" className="border p-2 rounded" value={formData.description} onChange={handleChange} />
+              <input type="number" name="stock" placeholder="Stock" className="border p-2 rounded" value={formData.stock} onChange={handleChange} required />
+              {extraColumns.map(col => (
+                <input
+                  key={col}
+                  placeholder={col}
+                  className="border p-2 rounded"
+                  value={formData.extraFields[col] || ""}
+                  onChange={e => handleExtraFieldChange(col, e.target.value)}
+                />
+              ))}
+              <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition mt-2">
+                {editProduct ? "Update" : "Add"}
+              </button>
             </form>
           </div>
         </div>

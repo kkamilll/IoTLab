@@ -22,13 +22,10 @@ export const addOrder = async (req, res) => {
     product.stock -= quantity;
     await product.save();
 
-    const totalPrice = product.price * quantity;
-
     const order = new Order({
       customer: userId,
       product: productId,
-      quantity,
-      totalPrice
+      quantity
     });
 
     await order.save();
@@ -54,7 +51,7 @@ export const getOrders = async (req, res) => {
     }
 
     const orders = await Order.find(query)
-      .populate("product", "name price")
+      .populate("product", "name description stock") // Pobiera też opis produktu
       .populate("customer", "name email");
 
     return res.status(200).json({ success: true, orders });
@@ -63,6 +60,7 @@ export const getOrders = async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error in fetching orders" });
   }
 };
+
 export const deleteOrder = async (req, res) => {
   try {
     const orderId = req.params.id;

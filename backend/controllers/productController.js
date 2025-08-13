@@ -4,7 +4,7 @@ import Product from "../models/Product.js";
 export const getProducts = async (req, res) => {
   try {
     const products = await Product.find({ isDeleted: false });
-    return res.status(200).json({ success: true, products });  // key "products" for frontend consistency
+    return res.status(200).json({ success: true, products });
   } catch (error) {
     console.error("Error fetching products:", error);
     return res.status(500).json({ success: false, message: "Server error" });
@@ -12,14 +12,20 @@ export const getProducts = async (req, res) => {
 };
 
 export const createProduct = async (req, res) => {
-  const { name, price, stock, description } = req.body;
+  const { name, price, stock, description, extraFields } = req.body;
   if (!name || price === undefined) {
     return res.status(400).json({ success: false, message: "Name and price are required" });
   }
   try {
-    const newProduct = new Product({ name, price, stock: stock || 0, description });
+    const newProduct = new Product({
+      name,
+      price,
+      stock: stock || 0,
+      description,
+      extraFields: extraFields || {}
+    });
     await newProduct.save();
-    return res.status(201).json({ success: true, product: newProduct });  // send 'product'
+    return res.status(201).json({ success: true, product: newProduct });
   } catch (error) {
     console.error("Error creating product:", error);
     return res.status(500).json({ success: false, message: "Server error" });
@@ -45,12 +51,21 @@ export const updateProduct = async (req, res) => {
 
 export const deleteProduct = async (req, res) => {
   const { id } = req.params;
+
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({ success: false, message: "Invalid product ID" });
   }
+
   try {
-    await Product.findByIdAndUpdate(id, { isDeleted: true });
-    return res.status(200).json({ success: true, message: "Product deleted successfully" });
+    const product = await Product.findById(id);
+    if (!product) {
+      return res.status(404).json({ success: false, message: "Product not found" });
+    }
+
+    product.isDeleted = true; // ustawienie flagi zamiast fizycznego usuwania
+    await product.deleteOne();
+
+    return res.status(200).json({ success: true, message: "Product deleted" });
   } catch (error) {
     console.error("Error deleting product:", error);
     return res.status(500).json({ success: false, message: "Server error" });

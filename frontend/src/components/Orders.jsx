@@ -55,7 +55,7 @@ const Orders = () => {
         setQuantity(1);
         fetchOrders();
         fetchProducts();
-        setModalOpen(false); // zamknij modal po dodaniu
+        setModalOpen(false);
       }
     } catch (error) {
       alert(error.response?.data?.error || "Błąd dodawania zamówienia");
@@ -119,9 +119,6 @@ const Orders = () => {
                   <tr key={order._id} className="hover:bg-gray-100">
                     <td className="border border-gray-300 p-3">
                       {order.product?.name || "Usunięty produkt"}
-                      {order.product?.stock === 0 && (
-                        <span className="ml-2 text-sm text-red-600">(Niedostępny)</span>
-                      )}
                     </td>
                     <td className="border border-gray-300 p-3 text-right">{order.quantity}</td>
                     <td className="border border-gray-300 p-3">
@@ -160,7 +157,7 @@ const Orders = () => {
                   <div
                     key={p._id}
                     onClick={() => {
-                      if (p.stock === 0) return; // nie można wybrać niedostępnego
+                      if (p.stock === 0) return;
                       setProductId(p._id);
                       setQuantity(1);
                     }}
