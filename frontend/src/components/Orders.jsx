@@ -31,7 +31,6 @@ const Orders = () => {
       const res = await axios.get("http://localhost:3500/products", {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       const productsList = res.data.products || [];
       setProducts(productsList.filter((p) => !p.isDeleted));
     } catch (err) {
@@ -67,12 +66,10 @@ const Orders = () => {
 
   const handleDeleteOrder = async (id) => {
     if (!window.confirm("Czy na pewno chcesz usunąć to zamówienie?")) return;
-
     try {
-      const res = await axios.delete(
-        `http://localhost:3500/orders/${id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const res = await axios.delete(`http://localhost:3500/orders/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (res.data.success) {
         alert("Zamówienie usunięte");
         fetchOrders();
@@ -84,6 +81,25 @@ const Orders = () => {
     }
   };
 
+  const handleReturnOrder = async (orderId) => {
+    if (!window.confirm("Czy na pewno chcesz zwrócić to zamówienie?")) return;
+    try {
+      const res = await axios.post(
+        "http://localhost:3500/orders/returned",
+        { orderId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res.data.success) {
+        alert("Zamówienie zwrócone");
+        // Usuń zamówienie lokalnie z listy
+        setOrders((prev) => prev.filter((o) => o._id !== orderId));
+      }
+    } catch (err) {
+      console.error("Błąd zwracania:", err);
+      alert(err.response?.data?.error || "Błąd zwracania zamówienia");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center p-6">
       <div className="w-full max-w-6xl bg-white rounded shadow-md p-8 flex flex-col gap-8">
@@ -91,7 +107,6 @@ const Orders = () => {
           Zarządzanie Zamówieniami
         </h1>
 
-        {/* Dodawanie zamówienia tylko dla admina */}
         {user?.role === "admin" && (
           <button
             onClick={() => setModalOpen(true)}
@@ -101,7 +116,6 @@ const Orders = () => {
           </button>
         )}
 
-        {/* Tabela zamówień */}
         <div className="overflow-x-auto">
           <table className="w-full border-collapse border border-gray-300">
             <thead className="bg-blue-50">
@@ -129,18 +143,25 @@ const Orders = () => {
                     <td className="border border-gray-300 p-3">
                       {order.product?.description || "Brak opisu"}
                     </td>
-                    <td className="border border-gray-300 p-3 text-center">
-                      {/* Tylko admin może usuwać */}
-                      {user?.role === "admin" ? (
-                        <button
-                          onClick={() => handleDeleteOrder(order._id)}
-                          className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
-                        >
-                          Usuń
-                        </button>
-                      ) : (
-                        <span>-</span>
+                    <td className="border border-gray-300 p-3 text-center flex justify-center gap-2">
+                      {user?.role === "admin" && (
+                        <>
+                          <button
+                            onClick={() => handleDeleteOrder(order._id)}
+                            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
+                          >
+                            Usuń
+                          </button>
+                          <button
+                            onClick={() => handleReturnOrder(order._id)}
+                            className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded"
+                            disabled={order.isReturned}
+                          >
+                            Zwróć
+                          </button>
+                        </>
                       )}
+                      {user?.role !== "admin" && <span>-</span>}
                     </td>
                   </tr>
                 ))
@@ -150,7 +171,6 @@ const Orders = () => {
         </div>
       </div>
 
-      {/* Modal dodawania zamówienia */}
       {modalOpen && (
         <div className="fixed inset-0 flex justify-center items-center z-50 bg-white bg-opacity-60 backdrop-blur-sm">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 relative">

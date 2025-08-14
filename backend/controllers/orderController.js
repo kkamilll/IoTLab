@@ -43,21 +43,10 @@ export const addOrder = async (req, res) => {
 
 export const getOrders = async (req, res) => {
   try {
-    const userId = req.user._id;
-    let query = {};
-
-    if (req.user.role === "customer") {
-      query = { customer: userId };
-    }
-
-    const orders = await Order.find(query)
-      .populate("product", "name description stock") // Pobiera też opis produktu
-      .populate("customer", "name email");
-
-    return res.status(200).json({ success: true, orders });
+    const orders = await Order.find({ isReturned: false }).populate("product");
+    res.json({ success: true, orders });
   } catch (error) {
-    console.error("Error in getOrders:", error);
-    return res.status(500).json({ success: false, message: "Server error in fetching orders" });
+    res.status(500).json({ success: false, message: "Błąd pobierania zamówień" });
   }
 };
 
@@ -84,3 +73,45 @@ export const deleteOrder = async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+export const getReturnedOrders = async (req, res) => {
+  try {
+    // Pobieramy tylko zamówienia, które mają flagę "returned: true"
+const orders = await Order.find({ isReturned: true })
+  .populate("product", "name description stock")
+  .populate("customer", "name email");
+
+    return res.status(200).json({ success: true, orders });
+  } catch (error) {
+    console.error("Error fetching returned orders:", error);
+    return res.status(500).json({ success: false, message: "Błąd serwera przy pobieraniu zwrotów" });
+  }
+};
+export const returnOrder = async (req, res) => {
+  const { orderId } = req.body;
+  if (!orderId) return res.status(400).json({ success: false, error: "Brak ID zamówienia" });
+
+  try {
+    const order = await Order.findById(orderId);
+    if (!order) return res.status(404).json({ success: false, error: "Zamówienie nie istnieje" });
+
+    if (order.isReturned) {
+      return res.status(400).json({ success: false, message: "Zamówienie już zostało zwrócone" });
+    }
+
+    // przywracamy stock produktu
+    const product = await Product.findById(order.product);
+    if (product) {
+      product.stock += order.quantity;
+      await product.save();
+    }
+
+    order.isReturned = true; // oznaczamy zwrot
+    await order.save();
+
+    res.json({ success: true, message: "Zamówienie zwrócone", order });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+

@@ -1,94 +1,138 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { useAuth } from "../context/AuthContext";
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend
+} from "recharts";
 
 const Dashboard = () => {
+  const { token } = useAuth();
   const [orders, setOrders] = useState([]);
-  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const [ordersRes, productsRes] = await Promise.all([
-        axios.get("http://localhost:3500/orders", {
-          headers: { Authorization: `Bearer ${localStorage.getItem("pos-token")}` },
-        }),
-        axios.get("http://localhost:3500/products", {
-          headers: { Authorization: `Bearer ${localStorage.getItem("pos-token")}` },
-        }),
-      ]);
-
-      if (ordersRes.data.success) setOrders(ordersRes.data.orders);
-      if (productsRes.data.success) setProducts(productsRes.data.products);
-    } catch (error) {
-      console.error("fetchData error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 30000); // odśwież co 30 sekund
-    return () => clearInterval(interval);
-  }, []);
+    const fetchOrders = async () => {
+      setLoading(true);
+      try {
+        const res = await axios.get("http://localhost:3500/orders", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.data.success) setOrders(res.data.orders);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchOrders();
+  }, [token]);
 
-  const totalStock = products.reduce((acc, p) => acc + (p.stock || 0), 0);
+  // Statystyki produktów
+  const productStats = orders.reduce((acc, order) => {
+    const name = order.product?.name || "Usunięty produkt";
+    acc[name] = (acc[name] || 0) + order.quantity;
+    return acc;
+  }, {});
+  const barData = Object.entries(productStats).map(([name, qty]) => ({ name, qty }));
 
-  if (loading) {
-    return <div className="p-6 text-gray-700">Ładowanie danych...</div>;
-  }
+  // Statystyki zwrotów
+  const returnedCount = orders.filter(o => o.isReturned).length;
+  const pieData = [
+    { name: "Zwrócone", value: returnedCount },
+    { name: "Nie zwrócone", value: orders.length - returnedCount },
+  ];
+  const COLORS = ["#0088FE", "#FF8042"];
 
   return (
-    <div className="min-h-screen p-6 bg-gray-50 flex flex-col gap-6">
-      <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <h1 className="text-4xl font-bold text-center mb-8">Dashboard Zamówień</h1>
 
-     
+      {loading ? (
+        <p className="text-center text-gray-500">Ładowanie danych...</p>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="p-6 bg-white rounded shadow">
-          <h2 className="text-lg font-semibold text-gray-700">Liczba zamówień</h2>
-          <p className="text-2xl font-bold">{orders.length}</p>
-        </div>
-        <div className="p-6 bg-white rounded shadow">
-          <h2 className="text-lg font-semibold text-gray-700">Liczba produktów</h2>
-          <p className="text-2xl font-bold">{products.length}</p>
-        </div>
-        <div className="p-6 bg-white rounded shadow">
-          <h2 className="text-lg font-semibold text-gray-700">Łączna ilość w magazynie</h2>
-          <p className="text-2xl font-bold">{totalStock}</p>
-        </div>
-        <div className="p-6 bg-white rounded shadow">
-          <h2 className="text-lg font-semibold text-gray-700">Średnia ilość na produkt</h2>
-          <p className="text-2xl font-bold">
-            {products.length ? (totalStock / products.length).toFixed(2) : 0}
-          </p>
-        </div>
-      </div>
+          {/* Wykres słupkowy */}
+          <div className="bg-white p-6 rounded shadow">
+            <h2 className="text-2xl font-semibold mb-4 text-center">Ilość zamówionych produktów</h2>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={barData}>
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="qty" fill="#8884d8" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
 
-      <div className="bg-white p-6 rounded shadow">
-        <h2 className="text-xl font-semibold mb-4">Ostatnie zamówienia</h2>
-        {orders.length === 0 ? (
-          <p>Brak zamówień</p>
-        ) : (
-          <table className="w-full border-collapse border border-gray-300">
-            <thead className="bg-blue-50">
-              <tr>
-                <th className="border border-gray-300 p-2 text-left">Produkt</th>
-                <th className="border border-gray-300 p-2 text-right">Ilość</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[...orders].slice(-5).reverse().map((o) => (
-                <tr key={o._id} className="hover:bg-gray-100">
-                  <td className="border border-gray-300 p-2">{o.product?.name || "Usunięty produkt"}</td>
-                  <td className="border border-gray-300 p-2 text-right">{o.quantity}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+          {/* Wykres kołowy */}
+          <div className="bg-white p-6 rounded shadow">
+            <h2 className="text-2xl font-semibold mb-4 text-center">Procent zwrotów</h2>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={100}
+                  label
+                >
+                  {pieData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Tabela zamówień z historią */}
+          <div className="col-span-1 lg:col-span-2 bg-white p-6 rounded shadow">
+            <h2 className="text-2xl font-semibold mb-4 text-center">Zarządzanie zamówieniami</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse border border-gray-300">
+                <thead className="bg-blue-50">
+                  <tr>
+                    <th className="border border-gray-300 p-3 text-left">Produkt</th>
+                    <th className="border border-gray-300 p-3 text-right">Ilość</th>
+                    <th className="border border-gray-300 p-3 text-left">Opis</th>
+                    <th className="border border-gray-300 p-3 text-left">Historia działań</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orders.map((order) => (
+                    <tr key={order._id} className="hover:bg-gray-100">
+                      <td className="border border-gray-300 p-3">{order.product?.name || "Usunięty produkt"}</td>
+                      <td className="border border-gray-300 p-3 text-right">{order.quantity}</td>
+                      <td className="border border-gray-300 p-3">{order.product?.description || "Brak opisu"}</td>
+                      <td className="border border-gray-300 p-3">
+                        {order.history?.length ? (
+                          <ul className="list-disc ml-5 space-y-1">
+                            {order.history
+                              .sort((a, b) => new Date(a.date) - new Date(b.date))
+                              .map((event, idx) => (
+                                <li key={idx}>
+                                  {new Date(event.date).toLocaleString("pl-PL")} – {event.action}
+                                </li>
+                              ))}
+                          </ul>
+                        ) : (
+                          "-"
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      )}
     </div>
   );
 };
