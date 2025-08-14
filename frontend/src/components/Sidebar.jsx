@@ -8,6 +8,7 @@ const Sidebar = () => {
     {name:"Dashboard", path: "/admin-dashboard", isParent:true},
     {name:"Products", path: "/admin-dashboard/products", isParent:false},
     {name:"Orders", path: "/admin-dashboard/orders", isParent:false},
+    {name:"ReturnedOrders", path: "/admin-dashboard/ReturnedOrders", isParent:false},
     {name:"Users", path: "/admin-dashboard/users", isParent:false},
     {name:"Profile", path: "/admin-dashboard/profile", isParent:false},
     {name:"Notes", path: "/admin-dashboard/notes", isParent:false},
@@ -15,9 +16,9 @@ const Sidebar = () => {
   ];
 
   const customerItems = [
+     {name:"Home Page", path: "/", isParent:true},
     {name:"Products", path: "/customer-dashboard", isParent:true},
     {name:"Orders", path: "/customer-dashboard/orders", isParent:false},
-    {name:"Profile", path: "/customer-dashboard/profile", isParent:false},
     {name:"Logout", path: "/logout", isParent:false},
   ];
 

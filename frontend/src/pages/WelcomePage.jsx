@@ -56,7 +56,7 @@ const WelcomePage = () => {
   const handleBackToSidebar = () => {
     if (user?.role === 'admin') {
       navigate('/admin-dashboard');
-    } else if (user?.role === 'customer') {
+    } else if (user?.role === 'lecturer') {
       navigate('/customer-dashboard');
     } else {
       navigate('/');
