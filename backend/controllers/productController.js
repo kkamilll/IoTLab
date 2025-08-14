@@ -12,14 +12,13 @@ export const getProducts = async (req, res) => {
 };
 
 export const createProduct = async (req, res) => {
-  const { name, price, stock, description, extraFields } = req.body;
-  if (!name || price === undefined) {
-    return res.status(400).json({ success: false, message: "Name and price are required" });
+  const { name, stock, description, extraFields } = req.body;
+  if (!name) {
+    return res.status(400).json({ success: false, message: "Name  are required" });
   }
   try {
     const newProduct = new Product({
       name,
-      price,
       stock: stock || 0,
       description,
       extraFields: extraFields || {}

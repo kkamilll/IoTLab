@@ -1,38 +1,38 @@
 import './App.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
+// Pages
 import WelcomePage from './pages/WelcomePage';
 import Login from './pages/Login';
 import Admin from './pages/HomeAdmin';
+import Products from './pages/Products';
+import Notes from './pages/Notes';
+import PasswordResetFlow from './pages/PasswordResetFlow';
 
+// Components
+import Users from './components/Users';
+import Orders from './components/Orders';
+import Logout from './components/Logout';
+import ReturnedOrders from './components/ReturnedOrders';
+
+// Utils
 import ProtectedRoutes from './utils/ProtectedRoutes';
 import RootRedirect from './utils/RootRedirect';
-
-import Users from './components/Users';
-import CustomerProducts from './components/CustomerProducts';
-
-import Logout from './components/Logout';
-
-import Products from './pages/Products';
-
-
-import Notes from './pages/Notes';
-import Orders from './components/Orders';
-
-
-import PasswordResetFlow from './pages/PasswordResetFlow';
+import Dashboard from './pages/Dashboard';
 
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/forgot-password" element={<PasswordResetFlow />} />
+        {/* Public Routes */}
         <Route path="/" element={<WelcomePage />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<PasswordResetFlow />} />
         <Route path="/unauthorized" element={<>Unauthorized</>} />
         <Route path="/redirect" element={<RootRedirect />} />
-        
+        <Route path="/logout" element={<Logout />} />
 
+        {/* Admin Dashboard - Protected */}
         <Route
           path="/admin-dashboard"
           element={
@@ -41,22 +41,21 @@ function App() {
             </ProtectedRoutes>
           }
         >
-          <Route index element={<h1>Welcome to Admin Dashboard</h1>} />
-          <Route path="products" element={<Products/>} />
-          <Route path="orders" element={<Orders/>}/>
+          <Route index element={<Dashboard />} />
+          <Route path="products" element={<Products />} />
+          <Route path="orders" element={<Orders />} />
           <Route path="users" element={<Users />} />
-          <Route path="profile" element={<h1>4</h1>} />
-          <Route path="notes" element={<Notes />} /> {/* <== tutaj poprawka */}
+          <Route path="profile" element={<h1>Profile</h1>} />
+          <Route path="notes" element={<Notes />} />
+          <Route path="ReturnedOrders" element={<ReturnedOrders />} />
+          
         </Route>
 
+        {/* Customer Dashboard */}
         <Route path="/customer-dashboard" element={<Admin />}>
-          <Route index element={<CustomerProducts />} />
-          <Route path="orders" element={<Orders/>}/>
-          <Route path="profile" element={<h1>2</h1>} />
+          <Route index element={<Products />} />
+          <Route path="orders" element={<Orders />} />
         </Route>
-
-        <Route path='/logout' element={<Logout />} />
-
       </Routes>
     </Router>
   );

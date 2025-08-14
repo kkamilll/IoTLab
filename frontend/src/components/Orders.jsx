@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { useAuth } from "../context/AuthContext";
 
 const Orders = () => {
+  const { user, token } = useAuth();
   const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState([]);
-
-  // Do modalu
   const [modalOpen, setModalOpen] = useState(false);
   const [productId, setProductId] = useState("");
   const [quantity, setQuantity] = useState(1);
@@ -18,22 +18,24 @@ const Orders = () => {
   const fetchOrders = async () => {
     try {
       const res = await axios.get("http://localhost:3500/orders", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("pos-token")}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (res.data.success) setOrders(res.data.orders);
-    } catch (error) {
-      console.error("fetchOrders error:", error);
+    } catch (err) {
+      console.error("Error fetching orders:", err);
     }
   };
 
   const fetchProducts = async () => {
     try {
       const res = await axios.get("http://localhost:3500/products", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("pos-token")}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.data.success) setProducts(res.data.products);
-    } catch (error) {
-      console.error("fetchProducts error:", error);
+
+      const productsList = res.data.products || [];
+      setProducts(productsList.filter((p) => !p.isDeleted));
+    } catch (err) {
+      console.error("Error fetching products:", err);
     }
   };
 
@@ -46,7 +48,7 @@ const Orders = () => {
       const res = await axios.post(
         "http://localhost:3500/orders/add",
         { productId, quantity },
-        { headers: { Authorization: `Bearer ${localStorage.getItem("pos-token")}` } }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (res.data.success) {
@@ -57,9 +59,9 @@ const Orders = () => {
         fetchProducts();
         setModalOpen(false);
       }
-    } catch (error) {
-      alert(error.response?.data?.error || "Błąd dodawania zamówienia");
-      console.error(error);
+    } catch (err) {
+      alert(err.response?.data?.error || "Błąd dodawania zamówienia");
+      console.error(err);
     }
   };
 
@@ -69,16 +71,16 @@ const Orders = () => {
     try {
       const res = await axios.delete(
         `http://localhost:3500/orders/${id}`,
-        { headers: { Authorization: `Bearer ${localStorage.getItem("pos-token")}` } }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       if (res.data.success) {
         alert("Zamówienie usunięte");
         fetchOrders();
         fetchProducts();
       }
-    } catch (error) {
+    } catch (err) {
       alert("Błąd usuwania zamówienia");
-      console.error(error);
+      console.error(err);
     }
   };
 
@@ -89,12 +91,15 @@ const Orders = () => {
           Zarządzanie Zamówieniami
         </h1>
 
-        <button
-          onClick={() => setModalOpen(true)}
-          className="self-start bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded shadow transition"
-        >
-          Dodaj zamówienie
-        </button>
+        {/* Dodawanie zamówienia tylko dla admina */}
+        {user?.role === "admin" && (
+          <button
+            onClick={() => setModalOpen(true)}
+            className="self-start bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded shadow transition"
+          >
+            Dodaj zamówienie
+          </button>
+        )}
 
         {/* Tabela zamówień */}
         <div className="overflow-x-auto">
@@ -125,12 +130,17 @@ const Orders = () => {
                       {order.product?.description || "Brak opisu"}
                     </td>
                     <td className="border border-gray-300 p-3 text-center">
-                      <button
-                        onClick={() => handleDeleteOrder(order._id)}
-                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
-                      >
-                        Usuń
-                      </button>
+                      {/* Tylko admin może usuwać */}
+                      {user?.role === "admin" ? (
+                        <button
+                          onClick={() => handleDeleteOrder(order._id)}
+                          className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
+                        >
+                          Usuń
+                        </button>
+                      ) : (
+                        <span>-</span>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -142,13 +152,10 @@ const Orders = () => {
 
       {/* Modal dodawania zamówienia */}
       {modalOpen && (
-        <div
-          className="fixed inset-0 flex justify-center items-center z-50 bg-white bg-opacity-60 backdrop-blur-sm"
-        >
+        <div className="fixed inset-0 flex justify-center items-center z-50 bg-white bg-opacity-60 backdrop-blur-sm">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 relative">
             <h2 className="text-2xl font-bold mb-6">Nowe zamówienie</h2>
 
-            {/* Lista produktów jako karty */}
             <div className="max-h-64 overflow-y-auto mb-6 border rounded p-2">
               {products.length === 0 ? (
                 <p className="text-center text-gray-500">Brak produktów</p>
@@ -163,8 +170,7 @@ const Orders = () => {
                     }}
                     className={`cursor-pointer p-3 rounded mb-2 border
                       ${p._id === productId ? "border-blue-600 bg-blue-50" : "border-gray-300"}
-                      ${p.stock === 0 ? "opacity-50 cursor-not-allowed" : ""}
-                    `}
+                      ${p.stock === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
                     title={p.stock === 0 ? "Produkt niedostępny" : ""}
                   >
                     <div className="flex justify-between items-center">
@@ -184,7 +190,6 @@ const Orders = () => {
               )}
             </div>
 
-            {/* Ilość */}
             <div className="mb-6 flex items-center space-x-4">
               <label className="font-semibold">Ilość:</label>
               <button
@@ -215,10 +220,7 @@ const Orders = () => {
                   setQuantity((q) => (q < max ? q + 1 : q));
                 }}
                 className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400"
-                disabled={
-                  !productId ||
-                  quantity >= (products.find((p) => p._id === productId)?.stock || 1)
-                }
+                disabled={!productId || quantity >= (products.find((p) => p._id === productId)?.stock || 1)}
               >
                 +
               </button>
@@ -234,9 +236,7 @@ const Orders = () => {
               <button
                 onClick={handleAddOrder}
                 disabled={!productId}
-                className={`px-6 py-2 rounded text-white ${
-                  productId ? "bg-blue-600 hover:bg-blue-700" : "bg-blue-300 cursor-not-allowed"
-                }`}
+                className={`px-6 py-2 rounded text-white ${productId ? "bg-blue-600 hover:bg-blue-700" : "bg-blue-300 cursor-not-allowed"}`}
               >
                 Dodaj
               </button>

@@ -6,7 +6,7 @@ const Notes = () => {
   const [notes, setNotes] = useState([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
-  const { user, token } = useAuth();
+  const { token } = useAuth();
 
   const axiosInstance = axios.create({
     baseURL: "http://localhost:3500",
@@ -55,48 +55,58 @@ const Notes = () => {
   }, [token]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex justify-center py-10 px-4">
-      <div className="w-full max-w-3xl bg-white rounded-xl shadow-lg p-8">
-        <h2 className="text-3xl font-extrabold text-gray-900 mb-8 text-center">Notatki</h2>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex justify-center py-10 px-4">
+      <div className="w-full max-w-3xl bg-white rounded-2xl shadow-2xl p-8">
+        <h2 className="text-4xl font-extrabold text-blue-700 mb-10 text-center">
+          📝 Twoje Notatki
+        </h2>
 
-        <div className="flex mb-6 gap-4">
+        {/* Pole dodawania notatki */}
+        <div className="flex mb-8 gap-4">
           <input
             type="text"
-            placeholder="Wpisz nową notatkę..."
+            placeholder="Dodaj nową notatkę..."
             value={text}
             onChange={(e) => setText(e.target.value)}
-            className="flex-grow border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+            className="flex-grow border border-gray-300 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition"
             disabled={loading}
           />
           <button
             onClick={addNote}
             disabled={loading}
-            className={`bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed`}
+            className={`bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl shadow-lg transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             {loading ? "Dodaję..." : "Dodaj"}
           </button>
         </div>
 
-        <ul>
+        {/* Lista notatek */}
+        <div className="space-y-4">
           {notes.length === 0 && (
-            <li className="text-center text-gray-400 py-16 select-none">Brak notatek</li>
+            <div className="text-center text-gray-400 py-16 select-none italic">
+              Brak notatek — czas coś zapisać!
+            </div>
           )}
+
           {notes.map((note) => (
-            <li
+            <div
               key={note._id}
-              className="flex justify-between items-start border-b border-gray-200 py-4"
+              className="flex justify-between items-start bg-gray-50 border border-gray-200 rounded-xl p-4 hover:shadow-md transition"
             >
               <div className="max-w-[80%]">
-                <p className="font-medium text-gray-800 whitespace-pre-wrap">{note.text}</p>
+                <p className="font-medium text-gray-800 whitespace-pre-wrap">
+                  {note.text}
+                </p>
                 <p className="mt-1 text-sm text-gray-500">
-                  Dodane przez <strong>{note.author?.name || "Anonim"}</strong> •{" "}
+                  Dodane przez{" "}
+                  <strong>{note.author?.name || "Anonim"}</strong> •{" "}
                   {new Date(note.createdAt).toLocaleString("pl-PL")}
                 </p>
               </div>
               <button
                 onClick={() => deleteNote(note._id)}
                 title="Usuń notatkę"
-                className="text-red-600 hover:text-red-800 ml-4 flex items-center justify-center p-2 rounded hover:bg-red-100 transition"
+                className="text-red-500 hover:text-red-700 ml-4 flex items-center justify-center p-2 rounded-full hover:bg-red-100 transition"
                 aria-label="Usuń notatkę"
               >
                 <svg
@@ -114,9 +124,9 @@ const Notes = () => {
                   />
                 </svg>
               </button>
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
       </div>
     </div>
   );
