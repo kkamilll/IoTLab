@@ -41,7 +41,7 @@ export const createNote = async (req, res, next) => {
   }
 };
 
-export const deleteNote = async (req, res, next) => {
+export const hardDeleteNote = async (req, res, next) => {
   try {
     const userId = req.user._id;
     if (!mongoose.Types.ObjectId.isValid(userId)) {
@@ -70,4 +70,3 @@ export const deleteNote = async (req, res, next) => {
     return next(new ServerError({ message: error.message }));
   }
 };
-

@@ -54,29 +54,20 @@ export const createOrder = async (req, res, next) => {
 
 export const getOrders = async (req, res, next) => {
   try {
-    const userId = req.user._id;
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return next(new ValidationError("Invalid user ID"));
+    const orders = await Order.find({ isReturned: false }).populate("productRef");
+    if (orders.length === 0) {
+      return next(new ResourceNotFoundError('Orders'));
     }
-    
-    let mongoQuery = {};
-
-    // since when there is customer role?
-    if (req.user.role === "customer") {
-      mongoQuery = { customer: userId };
-    }
-
-    const orders = await Order.find(mongoQuery)
-      .populate("userRef", "name email")
-      .populate("productRef", "name price");
 
     return res.status(200).json({ success: true, orders });
   } catch (error) {
-    return next(new ServerError({ message: error.message }));
+    // console.error("Error in getOrders:", error);
+    // return res.status(500).json({ success: false, message: "Server error in fetching orders" });
+    return next(new ServerError({ message: `Error fetching orders: ${error.message}` }));
   }
 };
 
-export const deleteOrder = async (req, res, next) => {
+export const hardDeleteOrder = async (req, res, next) => {
   // add transaction, still race condition possible?
   try {
     const { orderId } = req.params;
@@ -99,5 +90,46 @@ export const deleteOrder = async (req, res, next) => {
     return res.status(200).json({ success: true, message: "Order deleted and stock updated" });
   } catch (error) {
     return next(new ServerError({ message: error.message }));
+  }
+};
+
+export const getReturnedOrders = async (req, res, next) => {
+  try {
+    // Pobieramy tylko zamówienia, które mają flagę "returned: true"
+    const orders = await Order.find({ isReturned: true })
+      .populate("productRef", "name description stock")
+      .populate("userRef", "name email");
+    if (orders.length === 0) {
+      return next(new ResourceNotFoundError("Orders"));
+    }
+
+    return res.status(200).json({ success: true, orders });
+  } catch (error) {
+    // console.error("Error fetching returned orders:", error);
+    return next(new ServerError({ message: `Error fetching returned orders: ${error.message }`}));
+  }
+};
+
+// TODO: add transaction
+export const returnOrder = async (req, res, next) => {
+  try {
+    const { orderId } = req.body;
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
+      return next(new BadRequestError("Invalid order ID"));
+    }
+
+    const order = await Order.findOneAndUpdate({ _id: orderId, isReturned: false }, { isReturned: true }, { new: true });
+    // if (!order) return res.status(404).json({ success: false, error: "Zamówienie nie istnieje" });
+    if (!order) return next(new BadRequestError("Order not found or already returned"));
+
+    // przywracamy stock produktu
+    const updatedProduct = await Product.findByIdAndUpdate(order.productRef, {$inc: { stock: order.quantity }}, { runValidators: true });
+    if (!updatedProduct) {
+      console.warn(`Product ${order.productRef} does not exist. Order ${orderId} will still be returned.`);
+    }
+
+    res.json({ success: true, message: "Zamówienie zwrócone", order });
+  } catch (error) {
+    return next(new ServerError({ message: `Error returning orders: ${error.message}` }));
   }
 };
