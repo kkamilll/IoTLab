@@ -1,19 +1,22 @@
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
+
 import express from 'express';
 import morgan from 'morgan';
 import cors from 'cors';
 import connectDB from './config/db.js';
 
-import authMiddleware from './middleware/authMiddleware.js'
-import { errorHandler } from './middleware/errorHandler.js';
+// import authMiddleware from './middleware/authMiddleware.js'
 
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import categoryRoutes from './routes/categoryRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import noteRoutes from './routes/noteRoutes.js';
+
+import { errorHandler } from './middleware/errorHandler.js';
 
 dotenv.config();
 
@@ -28,6 +31,7 @@ app.use(morgan('combined', { stream: accessLogStream }));
 
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // handle wrong JSON requests
 app.use((err, req, res, next) => {
@@ -40,23 +44,14 @@ app.use((err, req, res, next) => {
   next();
 });
 
-// // disallow any communication other than localhost
-// app.use((req, res, next) => {
-//   const ip = req.ip || req.socket.remoteAddress;
-
-//   // Normalize IPv6 localhost (::1) and IPv4 (127.0.0.1)
-//   if (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1') {
-//     next(); // allow
-//   } else {
-//     res.status(403).json({ message: 'Access denied. Only localhost allowed.' });
-//   }
-// });
+app.use('/uploads', express.static('uploads'));
 
 app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
 app.use('/products', productRoutes);
 app.use('/orders', orderRoutes);
 app.use('/notes', noteRoutes);
+app.use("/categories", categoryRoutes);
 
 app.use(errorHandler);
 

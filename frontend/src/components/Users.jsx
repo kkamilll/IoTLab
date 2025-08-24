@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 
 const Users = () => {
-  const [formData, setFormData] = useState({ name: "", email: "", password: "", address: "", role: "" });
+  const [formData, setFormData] = useState({ name: "", email: "", password: "", role: "" });
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -75,7 +75,7 @@ const Users = () => {
       const data = await addUser();
       if (data.success) {
         alert("User added successfully!");
-        setFormData({ name: "", email: "", password: "", address: "", role: "" });
+        setFormData({ name: "", email: "", password: "", role: "" });
         fetchUsers();
       } else {
         alert("Failed to add user. Please try again.");
@@ -130,7 +130,6 @@ const Users = () => {
               <th className="border p-3 text-left">#</th>
               <th className="border p-3 text-left">Name</th>
               <th className="border p-3 text-left">Email</th>
-              <th className="border p-3 text-left">Address</th>
               <th className="border p-3 text-left">Role</th>
               <th className="border p-3 text-center">Action</th>
             </tr>
@@ -151,7 +150,6 @@ const Users = () => {
                   <td className="border p-3">{idx + 1}</td>
                   <td className="border p-3">{user.name}</td>
                   <td className="border p-3">{user.email}</td>
-                  <td className="border p-3">{user.address || "-"}</td>
                   <td className="border p-3 capitalize">{user.role}</td>
                   <td className="border p-3 text-center">
                     <button
@@ -203,14 +201,7 @@ const Users = () => {
           required
           className="p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
         />
-        <input
-          type="text"
-          name="address"
-          placeholder="Address"
-          value={formData.address}
-          onChange={handleChange}
-          className="p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-        />
+       
         <select
           name="role"
           value={formData.role}

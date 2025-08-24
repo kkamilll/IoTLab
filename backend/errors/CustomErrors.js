@@ -4,7 +4,7 @@ export class ValidationError extends Error {
   constructor({ message, errors } = {}) {
     super(message || 'Validation failed');
     this.name = 'ValidationError';
-    this.statusCode = 400;
+    this.statusCode = 422;
     this.logLevel = LOG_LEVELS.WARN;
     if (errors) {
       this.errors = errors;
@@ -33,10 +33,18 @@ export class DuplicateKeyError extends Error {
 }
 // return res.status(400).json({ success: false, message: 'Duplicate key error', errors: [`Email "${error.keyValue.email}" already exists`] });
 
-export class UnauthorizedActionError extends Error {
+export class UnauthorizedError extends Error {
+  constructor(message = "You need to be authorized to perform this action") {
+    super(message);
+    this.name = "UnauthorizedError";
+    this.statusCode = 401;
+  }
+}
+
+export class PermissionError extends Error {
   constructor(message = "You do not have permission to perform this action") {
     super(message);
-    this.name = "UnauthorizedActionError";
+    this.name = "PermissionError";
     this.statusCode = 403;
   }
 }

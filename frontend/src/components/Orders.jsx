@@ -28,9 +28,7 @@ const Orders = () => {
 
   const fetchProducts = async () => {
     try {
-      const res = await axios.get("http://localhost:3500/products", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await axios.get("http://localhost:3500/products");
       const productsList = res.data.products || [];
       setProducts(productsList.filter((p) => !p.isDeleted));
     } catch (err) {
@@ -137,11 +135,11 @@ const Orders = () => {
                 orders.map((order) => (
                   <tr key={order._id} className="hover:bg-gray-100">
                     <td className="border border-gray-300 p-3">
-                      {order.productRef?.name || "Usunięty produkt"}
+                      {order.product?.name || "Usunięty produkt"}
                     </td>
                     <td className="border border-gray-300 p-3 text-right">{order.quantity}</td>
                     <td className="border border-gray-300 p-3">
-                      {order.productRef?.description || "Brak opisu"}
+                      {order.product?.description || "Brak opisu"}
                     </td>
                     <td className="border border-gray-300 p-3 text-center flex justify-center gap-2">
                       {user?.role === "admin" && (

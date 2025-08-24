@@ -6,38 +6,6 @@ import { MongoServerError } from 'mongodb';
 import { ValidationError, BadRequestError, DuplicateKeyError, ResourceNotFoundError, ServerError } from '../errors/CustomErrors.js'
 import { validateRequiredFields } from '../utils/validateRequiredFields.js'
 
-export const createUser = async (req, res, next) => {
-  try {
-    const { name, email, password, address, role } = req.body;
-    validateRequiredFields(User, req.body); 
-    
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const newUser = new User({
-      name,
-      email,
-      password: hashedPassword,
-      address,
-      role,
-    });
-
-    await newUser.save();
-
-    return res.status(201).json({ success: true, message: 'User added successfully' });
-  } catch (error) {
-    if (error instanceof MongoServerError && error.code === 11000) {
-      const [field, value] = Object.entries(error.keyValue)[0];
-      return next(new DuplicateKeyError({ field, value }));
-    }
-
-    if (error.name === 'ValidationError') {
-      return next(error);
-    }
-
-    return next(new ServerError({ message: error.message }));
-  }
-};
-
 export const getUsers = async (req, res, next) => {
   try {
     const users = await User.find().select('_id name email role').sort({ name: 1 }).lean();
@@ -65,6 +33,37 @@ export const getUser = async (req, res, next) => {
   }
 };
 
+export const createUser = async (req, res, next) => {
+  try {
+    const { name, email, password, role } = req.body;
+    validateRequiredFields(User, req.body); 
+    
+    // const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newUser = new User({
+      name,
+      email,
+      password,
+      role,
+    });
+
+    await newUser.save();
+
+    return res.status(201).json({ success: true, message: 'User created successfully' });
+  } catch (error) {
+    if (error instanceof MongoServerError && error.code === 11000) {
+      const [field, value] = Object.entries(error.keyValue)[0];
+      return next(new DuplicateKeyError({ field, value }));
+    }
+
+    if (error.name === 'ValidationError') {
+      return next(error);
+    }
+
+    return next(new ServerError({ message: error.message }));
+  }
+};
+
 export const deleteUser = async (req, res, next) => {
   try {
     const { userId } = req.params;
@@ -73,7 +72,7 @@ export const deleteUser = async (req, res, next) => {
     }
 
     if (req.user._id.toString() === userId) {
-      return next(new BadRequestError("You cannot delete your own account"));
+      return next(new BadRequestError("Deleting your own user account is forbidden"));
     }
 
     const deletedUser = await User.findByIdAndDelete(userId);

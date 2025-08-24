@@ -4,7 +4,38 @@ import Order from "../models/Order.js";
 import mongoose from "mongoose";
 import { MongoServerError } from 'mongodb';
 import { ValidationError, BadRequestError, DuplicateKeyError, ResourceNotFoundError, ServerError } from '../errors/CustomErrors.js'
+import { validateRequiredFields } from '../utils/validateRequiredFields.js'
 
+export const getOrders = async (req, res, next) => {
+  try {
+    const orders = await Order.find({ isReturned: false }).populate("product");
+    // if (orders.length === 0) {
+    //   return next(new ResourceNotFoundError("Orders"));
+    // }
+
+    return res.status(200).json({ success: true, orders });
+  } catch (error) {
+    return next(new ServerError({ message: `Error fetching orders: ${error.message}` }));
+  }
+};
+
+export const getReturnedOrders = async (req, res, next) => {
+  try {
+    // Pobieramy tylko zamówienia, które mają flagę "returned: true"
+    const orders = await Order.find({ isReturned: true })
+      .populate("product", "name description stock")
+      .populate("user", "name email");
+
+    // if (orders.length === 0) {
+    //   return next(new ResourceNotFoundError("Orders"));
+    // }
+
+    return res.status(200).json({ success: true, orders });
+  } catch (error) {
+    // console.error("Error fetching returned orders:", error);
+    return next(new ServerError({ message: `Error fetching returned orders: ${error.message }`}));
+  }
+};
 
 export const createOrder = async (req, res, next) => {
   try {
@@ -14,13 +45,14 @@ export const createOrder = async (req, res, next) => {
     }
 
     const { productId, quantity } = req.body;
-    if (!productId) return next(new BadRequestError("required Product ID"))
-    if (quantity == null) return next(new BadRequestError("required Quantity"))
-    if (quantity < 1) return next(new BadRequestError("Quantity must be at least 1"));
-
     if (!mongoose.Types.ObjectId.isValid(productId)) {
       return next(new ValidationError("Invalid product ID"));
     }
+
+    const newOrder = { user: userId, product: productId, quantity };
+    validateRequiredFields(Order, newOrder);
+
+    if (quantity < 1) return next(new ValidationError("Quantity must be at least 1"));
 
     const updatedProduct  = await Product.findOneAndUpdate({ _id: productId, stock: { $gte: quantity }, isDeleted: false }, { $inc: { stock: -quantity }}, { new: true, runValidators: true });
     if (!updatedProduct) {
@@ -30,8 +62,8 @@ export const createOrder = async (req, res, next) => {
     }
 
     const order = new Order({
-      userRef: userId,
-      productRef: productId,
+      user: userId,
+      product: productId,
       quantity
     });
 
@@ -52,18 +84,27 @@ export const createOrder = async (req, res, next) => {
   }
 };
 
-export const getOrders = async (req, res, next) => {
+// TODO: add transaction
+export const returnOrder = async (req, res, next) => {
   try {
-    const orders = await Order.find({ isReturned: false }).populate("productRef");
-    if (orders.length === 0) {
-      return next(new ResourceNotFoundError('Orders'));
+    const { orderId } = req.body;
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
+      return next(new BadRequestError("Invalid order ID"));
     }
 
-    return res.status(200).json({ success: true, orders });
+    const order = await Order.findOneAndUpdate({ _id: orderId, isReturned: false }, { isReturned: true }, { new: true });
+    // if (!order) return res.status(404).json({ success: false, error: "Zamówienie nie istnieje" });
+    if (!order) return next(new BadRequestError("Order not found or already returned"));
+
+    // przywracamy stock produktu
+    const updatedProduct = await Product.findByIdAndUpdate(order.product, {$inc: { stock: order.quantity }}, { runValidators: true });
+    if (!updatedProduct) {
+      console.warn(`Product ${order.product} does not exist. Order ${orderId} will still be returned.`);
+    }
+
+    res.json({ success: true, message: "Zamówienie zwrócone", order });
   } catch (error) {
-    // console.error("Error in getOrders:", error);
-    // return res.status(500).json({ success: false, message: "Server error in fetching orders" });
-    return next(new ServerError({ message: `Error fetching orders: ${error.message}` }));
+    return next(new ServerError({ message: `Error returning orders: ${error.message}` }));
   }
 };
 
@@ -80,9 +121,9 @@ export const hardDeleteOrder = async (req, res, next) => {
       return next(new ResourceNotFoundError("Order"));
     }
 
-    const updatedProduct = await Product.findOneAndUpdate({ _id: order.productRef, isDeleted: false}, { $inc: { stock: order.quantity }}, { new: true, runValidators: true });
+    const updatedProduct = await Product.findOneAndUpdate({ _id: order.product, isDeleted: false}, { $inc: { stock: order.quantity }}, { new: true, runValidators: true });
     if (!updatedProduct) {
-      console.warn(`Product ${order.productRef} does not exist. Order ${orderId} will still be deleted.`);
+      console.warn(`Product ${order.product} does not exist. Order ${orderId} will still be deleted.`);
     }
 
     await order.deleteOne();
@@ -90,46 +131,5 @@ export const hardDeleteOrder = async (req, res, next) => {
     return res.status(200).json({ success: true, message: "Order deleted and stock updated" });
   } catch (error) {
     return next(new ServerError({ message: error.message }));
-  }
-};
-
-export const getReturnedOrders = async (req, res, next) => {
-  try {
-    // Pobieramy tylko zamówienia, które mają flagę "returned: true"
-    const orders = await Order.find({ isReturned: true })
-      .populate("productRef", "name description stock")
-      .populate("userRef", "name email");
-    if (orders.length === 0) {
-      return next(new ResourceNotFoundError("Orders"));
-    }
-
-    return res.status(200).json({ success: true, orders });
-  } catch (error) {
-    // console.error("Error fetching returned orders:", error);
-    return next(new ServerError({ message: `Error fetching returned orders: ${error.message }`}));
-  }
-};
-
-// TODO: add transaction
-export const returnOrder = async (req, res, next) => {
-  try {
-    const { orderId } = req.body;
-    if (!mongoose.Types.ObjectId.isValid(orderId)) {
-      return next(new BadRequestError("Invalid order ID"));
-    }
-
-    const order = await Order.findOneAndUpdate({ _id: orderId, isReturned: false }, { isReturned: true }, { new: true });
-    // if (!order) return res.status(404).json({ success: false, error: "Zamówienie nie istnieje" });
-    if (!order) return next(new BadRequestError("Order not found or already returned"));
-
-    // przywracamy stock produktu
-    const updatedProduct = await Product.findByIdAndUpdate(order.productRef, {$inc: { stock: order.quantity }}, { runValidators: true });
-    if (!updatedProduct) {
-      console.warn(`Product ${order.productRef} does not exist. Order ${orderId} will still be returned.`);
-    }
-
-    res.json({ success: true, message: "Zamówienie zwrócone", order });
-  } catch (error) {
-    return next(new ServerError({ message: `Error returning orders: ${error.message}` }));
   }
 };

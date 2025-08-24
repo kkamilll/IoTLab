@@ -1,13 +1,13 @@
 import express from "express";
 import authMiddleware from "../middleware/authMiddleware.js";
-import { createOrder, getOrders, hardDeleteOrder, getReturnedOrders, returnOrder } from "../controllers/orderController.js";
+import { getOrders, getReturnedOrders, createOrder, returnOrder, hardDeleteOrder } from "../controllers/orderController.js";
 
 const router = express.Router();
 
+router.get("/", authMiddleware, getOrders);
 router.get("/returned", authMiddleware, getReturnedOrders);
 router.post("/add", authMiddleware, createOrder);
-router.get("/", authMiddleware, getOrders);
-router.delete("/:orderId", authMiddleware, hardDeleteOrder);
 router.post("/returned", authMiddleware, returnOrder);
+router.delete("/:orderId", authMiddleware, hardDeleteOrder);
 
 export default router;

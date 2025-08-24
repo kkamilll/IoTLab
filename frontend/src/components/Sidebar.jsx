@@ -12,6 +12,7 @@ const Sidebar = () => {
     {name:"Users", path: "/admin-dashboard/users", isParent:false},
     {name:"Profile", path: "/admin-dashboard/profile", isParent:false},
     {name:"Notes", path: "/admin-dashboard/notes", isParent:false},
+     {name:"Categories", path: "/admin-dashboard/categories", isParent:false},
     {name:"Logout", path: "/logout", isParent:false},
   ];
 

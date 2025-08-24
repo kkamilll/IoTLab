@@ -19,6 +19,10 @@ import ReturnedOrders from './components/ReturnedOrders';
 import ProtectedRoutes from './utils/ProtectedRoutes';
 import RootRedirect from './utils/RootRedirect';
 import Dashboard from './pages/Dashboard';
+import Profile from './pages/Profile';
+import ProductPreview from './pages/ProductsPreview';
+import CartPage from "./pages/CartPage";
+import Categories from "./pages/Categories";
 
 function App() {
   return (
@@ -31,7 +35,7 @@ function App() {
         <Route path="/unauthorized" element={<>Unauthorized</>} />
         <Route path="/redirect" element={<RootRedirect />} />
         <Route path="/logout" element={<Logout />} />
-
+        <Route path="/cart" element={<CartPage />} />
         {/* Admin Dashboard - Protected */}
         <Route
           path="/admin-dashboard"
@@ -45,10 +49,12 @@ function App() {
           <Route path="products" element={<Products />} />
           <Route path="orders" element={<Orders />} />
           <Route path="users" element={<Users />} />
-          <Route path="profile" element={<h1>Profile</h1>} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="preview" element={<ProductPreview />} />
           <Route path="notes" element={<Notes />} />
+          <Route path="categories" element={<Categories />} />
           <Route path="ReturnedOrders" element={<ReturnedOrders />} />
-          
+
         </Route>
 
         {/* Customer Dashboard */}

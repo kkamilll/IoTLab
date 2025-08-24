@@ -1,7 +1,7 @@
 import Note from "../models/Note.js";
 
 import mongoose from "mongoose";
-import { ValidationError, BadRequestError, UnauthorizedActionError, ResourceNotFoundError, ServerError } from '../errors/CustomErrors.js'
+import { ValidationError, BadRequestError, PermissionError, ResourceNotFoundError, ServerError } from '../errors/CustomErrors.js'
 
 // Pobierz wszystkie notatki (z autorem)
 export const getNotes = async (req, res, next) => {
@@ -61,7 +61,7 @@ export const hardDeleteNote = async (req, res, next) => {
     }
 
     if (note.author.toString() !== userId.toString() && role !== 'admin') {
-      return next(new UnauthorizedActionError("Missing permission for deleting this note."));
+      return next(new PermissionError("Missing permission for deleting this note."));
     }
 
     await note.deleteOne();

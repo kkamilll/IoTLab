@@ -2,14 +2,33 @@ import { createContext, useState, useContext } from "react";
 
 const AuthContext = createContext();
 
-export const AuthProvider = ({ children }) => {
+// --- Helper: check if JWT is expired ---
+const isTokenExpired = (token) => {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    if (!payload.exp) return false; // if token has no exp, assume valid
+    const now = Date.now() / 1000;
+    return payload.exp < now;
+  } catch (err) {
+    return true; // if invalid token, treat as expired
+  }
+};
+
+const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     const storedUser = localStorage.getItem("pos-user");
     return storedUser ? JSON.parse(storedUser) : null;
   });
   
   const [token, setToken] = useState(() => {
-    return localStorage.getItem("pos-token") || null;
+    const storedToken = localStorage.getItem("pos-token");
+    if (storedToken && isTokenExpired(storedToken)) {
+      // clear expired token
+      localStorage.removeItem("pos-token");
+      localStorage.removeItem("pos-user");
+      return null;
+    }
+    return storedToken || null;
   });
 
   const login = (userData, jwtToken) => {
