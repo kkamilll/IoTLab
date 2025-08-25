@@ -43,15 +43,7 @@ export const createProduct = async (req, res, next) => {
     const updateData = { name, description, stock, categories , tag, extraFields, image };
     validateRequiredFields(Product, updateData); 
 
-    const newProduct = new Product({
-      name: updateData.name,
-      description: updateData.description || "",
-      stock: updateData.stock,
-      categories: updateData.categories ,
-      tag: updateData.tag || "",
-      extraFields: updateData.extraFields,
-      image: updateData.image
-    });
+    const newProduct = new Product({ ...updateData });
 
     await newProduct.save();
     return res.status(201).json({ success: true, product: newProduct.toObject() });

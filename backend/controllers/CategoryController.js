@@ -2,56 +2,109 @@ import Category from "../models/Category.js";
 
 import mongoose from "mongoose";
 import { MongoServerError } from 'mongodb';
-import { ValidationError, BadRequestError, PermissionError, ResourceNotFoundError, ServerError } from '../errors/CustomErrors.js'
+import { ValidationError, BadRequestError, ServerError } from '../errors/CustomErrors.js'
 import { validateRequiredFields } from '../utils/validateRequiredFields.js'
+
+async function createParentMap() {
+    const categories = await Category.find().select("_id parent");
+    const parentMap = {};
+    for (const cat of categories) {
+        parentMap[cat._id.toString()] = cat.parent?.toString() || null;
+    }
+    return parentMap;
+}
+
+function isLoop(categoryId, newParentId, parentMap) {
+    let currentParrent = newParentId?.toString();
+    while (currentParrent) {
+        if (currentParrent === categoryId.toString()) return true;
+        currentParrent = parentMap[currentParrent];
+    }
+    return false;
+}
 
 export const getCategories = async (req, res, next) => {
     try {
         const categories = await Category.find().populate("parent", "name").lean();
-        res.json({ success: true, categories });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, message: "Nie udało się pobrać kategorii" });
+        res.status(200).json({ success: true, categories });
+    } catch (error) {
+        return next(new ServerError({ message: error.message }));
     }
 }
 
-export const addCategory = async (req, res, next) => {
+export const createCategory = async (req, res, next) => {
     try {
         const { name, description, parent } = req.body;
-        if (!name) return res.status(400).json({ success: false, message: "Brak nazwy" });
+        const updateData = { name, description, parent };
+        validateRequiredFields(Category, updateData);
 
-        const existing = await Category.findOne({ name });
-        if (existing) return res.status(400).json({ success: false, message: "Kategoria istnieje" });
+        if (parent) {
+            if (!mongoose.Types.ObjectId.isValid(parent)) {
+                return next(new ValidationError("Invalid category reference"));
+            }
 
-        const category = await Category.create({ name, description, parent });
-        res.json({ success: true, category });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, message: "Nie udało się dodać kategorii" });
+            const parentCategory = await Category.findById(parent);
+            if (!parentCategory) return next(new BadRequestError("Category reference has to exist in databse"));
+        }
+
+        const category = await Category.create({ ...updateData });
+        res.status(201).json({ success: true, category });
+    } catch (error) {
+        if (error instanceof MongoServerError && error.code === 11000) {
+            const [field, value] = Object.entries(error.keyValue)[0];
+            return next(new DuplicateKeyError({ field, value }));
+        }
+
+        if (error.name === 'ValidationError') {
+            return next(error);
+        }
+
+        return next(new ServerError({ message: error.message }));
     }
 }
 
 export const updateCategory = async (req, res, next) => {
     try {
-        const { id } = req.params;
+        const { categoryId } = req.params;
+        if (!mongoose.Types.ObjectId.isValid(categoryId)) {
+            return next(new ValidationError("Invalid product ID"));
+        }
+
         const { name, description } = req.body;
         const parent = req.body.parent ? req.body.parent : null;
 
-        if (parent && id.toString() === parent.toString()) {
-        return res.status(400).json({ 
-            success: false, 
-            message: "A category cannot be its own parent" 
-        });
+        if (parent) {
+            if (!mongoose.Types.ObjectId.isValid(parent)) {
+                return next(new ValidationError("Invalid category reference"));
+            }
+
+            const parentMap = await createParentMap();
+            const loop = await isLoop(categoryId, parent, parentMap);
+            if (loop) return next(new BadRequestError("Cannot update category: references cannot create loops"));
         }
 
-        const category = await Category.findByIdAndUpdate(id, { name, description, parent }, { new: true, runValidators: true });
-        res.json({ success: true, category });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, message: "Nie udało się edytować kategorii" });
+        const category = await Category.findByIdAndUpdate(categoryId, { name, description, parent }, { new: true, runValidators: true });
+        res.status(200).json({ success: true, category });
+    } catch (error) {
+        return next(new ServerError({ message: error.message }));
     }
 }
 
 export const deleteCategory = async (req, res, next) => {
+    try {
+        const { categoryId } = req.params;
+        if (!mongoose.Types.ObjectId.isValid(categoryId)) {
+            return next(new ValidationError("Invalid category ID"));
+        }
 
+        const category = await Category.findById(categoryId);
+        if (!category) {
+            return next(new ResourceNotFoundError('Category'));
+        }
+        await category.deleteOne();
+
+        res.status(200).json({ success: true, message: "Category deleted" })
+    } catch (error) {
+        return next(new ServerError({ message: error.message }));
+    }
 }

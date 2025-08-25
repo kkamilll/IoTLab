@@ -16,19 +16,19 @@ const register = async () => {
         await newUser.save();
         console.log("Admin user created succesfully");
 
-        const admin = await User.findOne({ email: "admin@gmail.com" });
-        console.log("Stored hash:", admin.password);
+        // const admin = await User.findOne({ email: "admin@gmail.com" });
+        // console.log("Stored hash:", admin.password);
 
-        const test = await bcrypt.compare("admin", admin.password);
-        console.log("Compare result:", test);
+        // const test = await bcrypt.compare("admin", admin.password);
+        // console.log("Compare result:", test);
 
-        (async () => {
-            const hash = await bcrypt.hash("admin", 10);
-            console.log("Hash:", hash);
+        // (async () => {
+        //     const hash = await bcrypt.hash("admin", 10);
+        //     console.log("Hash:", hash);
 
-            const match = await bcrypt.compare("admin", hash);
-            console.log("Compare:", match); // should be true
-        })();
+        //     const match = await bcrypt.compare("admin", hash);
+        //     console.log("Compare:", match); // should be true
+        // })();
     }
     catch(error){
         console.log(error);

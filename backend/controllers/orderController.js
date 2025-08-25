@@ -102,7 +102,7 @@ export const returnOrder = async (req, res, next) => {
       console.warn(`Product ${order.product} does not exist. Order ${orderId} will still be returned.`);
     }
 
-    res.json({ success: true, message: "Zamówienie zwrócone", order });
+    res.status(200).json({ success: true, message: "Zamówienie zwrócone", order });
   } catch (error) {
     return next(new ServerError({ message: `Error returning orders: ${error.message}` }));
   }

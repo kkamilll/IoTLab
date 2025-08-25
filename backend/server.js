@@ -48,10 +48,10 @@ app.use('/uploads', express.static('uploads'));
 
 app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
+app.use("/categories", categoryRoutes);
 app.use('/products', productRoutes);
 app.use('/orders', orderRoutes);
 app.use('/notes', noteRoutes);
-app.use("/categories", categoryRoutes);
 
 app.use(errorHandler);
 
