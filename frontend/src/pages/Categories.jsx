@@ -3,6 +3,7 @@ import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import CategoryTable from "../components/CategoryTable";
 import { buildTree } from "../utils/categoryUtils";
+import { findDescendants } from "../utils/categoryUtils";
 
 const Categories = () => {
   const { token } = useAuth();
@@ -14,21 +15,25 @@ const Categories = () => {
     description: "",
     parent: null // nowa właściwość dla kategorii
   });
-  
-  const normalizedCategories = useMemo(
-      () => categories.map(c => ({
-        _id: c._id.toString(),
-        name: c.name,
-        description: c.description,
-        parent: c.parent?._id?.toString() || null
-      })),
-      [categories]
-    );
-  const categoryTree = useMemo(() => buildTree(normalizedCategories), [normalizedCategories]);
 
   useEffect(() => {
     fetchCategories();
   }, []);
+
+  const normalizedCategories = useMemo(
+    () => categories.map(c => ({
+      _id: c._id.toString(),
+      name: c.name,
+      description: c.description,
+      parent: c.parent?._id?.toString() || null
+    })),
+    [categories]
+  );
+  const categoryTree = useMemo(() => buildTree(normalizedCategories), [normalizedCategories]);
+
+const excludedIds = useMemo(() => {
+  return editCategory ? [editCategory, ...findDescendants(editCategory, normalizedCategories)] : [];
+}, [editCategory, normalizedCategories]);
 
   const fetchCategories = async () => {
     try {
@@ -68,8 +73,8 @@ const Categories = () => {
       };
 
       const res = editCategory
-      ? await axios.patch(`http://localhost:3500/categories/${editCategory}`, categoryData , config)
-      : await axios.post(`http://localhost:3500/categories/add`, categoryData , config);
+        ? await axios.patch(`http://localhost:3500/categories/${editCategory}`, categoryData, config)
+        : await axios.post(`http://localhost:3500/categories/add`, categoryData, config);
       if (res.data.success) {
         alert(editCategory ? "Kategoria edytowana" : "Kategoria dodana");
         setCategoryData({ name: "", description: "", parent: null });
@@ -121,71 +126,71 @@ const Categories = () => {
         />
       </div>
 
-  {/* Modal dodawania kategorii */}
-  {modalOpen && (
-    <div className="fixed inset-0 flex justify-center items-center z-50 bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 relative">
-        <h2 className="text-2xl font-bold mb-6">Add category</h2>
+      {/* Modal dodawania kategorii */}
+      {modalOpen && (
+        <div className="fixed inset-0 flex justify-center items-center z-50 bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 relative">
+            <h2 className="text-2xl font-bold mb-6">Add category</h2>
 
-        <div className="mb-4">
-          <label className="block mb-1 font-semibold">Name:</label>
-          <input
-            type="text"
-            value={categoryData.name}
-            onChange={(e) => setCategoryData((prev) => ({ ...prev, name: e.target.value }))}
-            className="w-full border rounded p-2"
-            placeholder="np. Elektronika"
-          />
-        </div>
+            <div className="mb-4">
+              <label className="block mb-1 font-semibold">Name:</label>
+              <input
+                type="text"
+                value={categoryData.name}
+                onChange={(e) => setCategoryData((prev) => ({ ...prev, name: e.target.value }))}
+                className="w-full border rounded p-2"
+                placeholder="np. Elektronika"
+              />
+            </div>
 
-        <div className="mb-4">
-          <label className="block mb-1 font-semibold">Description:</label>
-          <textarea
-            value={categoryData.description}
-            onChange={(e) => setCategoryData((prev) => ({ ...prev, description: e.target.value }))}
-            className="w-full border rounded p-2"
-            placeholder="np. Telefony, laptopy..."
-          />
-        </div>
+            <div className="mb-4">
+              <label className="block mb-1 font-semibold">Description:</label>
+              <textarea
+                value={categoryData.description}
+                onChange={(e) => setCategoryData((prev) => ({ ...prev, description: e.target.value }))}
+                className="w-full border rounded p-2"
+                placeholder="np. Telefony, laptopy..."
+              />
+            </div>
 
-        <div className="mb-4">
-          <label className="block mb-1 font-semibold">Parent:</label>
-          <select
-            value={categoryData.parent || ""}
-            onChange={(e) =>
-              setCategoryData(prev => ({ ...prev, parent: e.target.value || null }))
-            }
-            className="w-full border rounded p-2"
-          >
-            <option value="">(None)</option>
-            {categories
-              .filter(cat => editCategory ? cat._id !== editCategory : true)
-              .map(cat => (
-                <option key={cat._id} value={cat._id}>
-                  {cat.name}
-                </option>
-              ))}
-          </select>
-        </div>
+            <div className="mb-4">
+              <label className="block mb-1 font-semibold">Parent:</label>
+              <select
+                value={categoryData.parent || ""}
+                onChange={(e) =>
+                  setCategoryData(prev => ({ ...prev, parent: e.target.value || null }))
+                }
+                className="w-full border rounded p-2"
+              >
+                <option value="">(None)</option>
+                {categories
+                  .filter(cat => !excludedIds.includes(cat._id))
+                  .map(cat => (
+                    <option key={cat._id} value={cat._id}>
+                      {cat.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
 
-        <div className="flex justify-end gap-4">
-          <button
-            onClick={closeModal}
-            className="px-4 py-2 rounded border border-gray-300 hover:bg-gray-100"
-          >
-            Anuluj
-          </button>
-          <button
-            onClick={handleSubmitCategory}
-            className="px-6 py-2 rounded text-white bg-blue-600 hover:bg-blue-700"
-          >
-            Dodaj
-          </button>
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={closeModal}
+                className="px-4 py-2 rounded border border-gray-300 hover:bg-gray-100"
+              >
+                Anuluj
+              </button>
+              <button
+                onClick={handleSubmitCategory}
+                className="px-6 py-2 rounded text-white bg-blue-600 hover:bg-blue-700"
+              >
+                Dodaj
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
-  )}
-</div>
 
   );
 };

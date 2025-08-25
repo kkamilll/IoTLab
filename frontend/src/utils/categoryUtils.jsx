@@ -31,3 +31,21 @@ export function buildTree(categories) {
 
   return roots;
 }
+
+export function findParentChain(id, cats, acc = []) {
+  const cat = cats.find(c => c._id.toString() === id);
+  if (cat && cat.parent) {
+    acc.push(cat.parent.toString());
+    return findParentChain(cat.parent.toString(), cats, acc);
+  }
+  return acc;
+}
+
+export function findDescendants(id, cats) {
+  const children = cats.filter(c => c.parent?.toString() === id.toString());
+  let result = children.map(c => c._id.toString());
+  for (const child of children) {
+    result = [...result, ...findDescendants(child._id, cats)];
+  }
+  return result;
+}

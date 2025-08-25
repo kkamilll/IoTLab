@@ -44,8 +44,8 @@ const [error, setError] = useState(null);
   useEffect(() => {
     if(!product) return;
     setCategoryNames(product ? (product.categories || []).map(cat => cat?.name) : "No category");
-    console.log(product ? product.categories : "no product categories");
-    console.log(categoryNames);
+    // console.log(product ? product.categories : "no product categories");
+    // console.log(categoryNames);
   }, [product])
 
   // Dodanie do koszyka

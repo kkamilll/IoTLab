@@ -1,23 +1,6 @@
 import react, { useState, useEffect, useRef } from "react";
+import { findParentChain, findDescendants } from "../utils/categoryUtils"
 import CategoryTree from "./CategoryTree";
-
-function findParentChain(id, cats, acc = []) {
-  const cat = cats.find(c => c._id.toString() === id);
-  if (cat && cat.parent) {
-    acc.push(cat.parent.toString());
-    return findParentChain(cat.parent.toString(), cats, acc);
-  }
-  return acc;
-}
-
-function findDescendants(id, cats) {
-  const children = cats.filter(c => c.parent?.toString() === id);
-  let result = children.map(c => c._id.toString());
-  for (const child of children) {
-    result = [...result, ...findDescendants(child._id.toString(), cats)];
-  }
-  return result;
-}
 
 export default function CategorySelector({ categoryTree, flatCategories, formData, setFormData }) {
   const [expandedIds, setExpandedIds] = useState([]);
@@ -25,15 +8,15 @@ export default function CategorySelector({ categoryTree, flatCategories, formDat
   const deselectedIdRef = useRef(null);
 
   // Handle collapsing descendants after deselection
-  useEffect(() => {
-    if (autoCollapse && deselectedIdRef.current) {
-      const descendants = findDescendants(deselectedIdRef.current, flatCategories);
-      setExpandedIds(prev =>
-        prev.filter(eid => eid !== deselectedIdRef.current && !descendants.includes(eid))
-      );
-      deselectedIdRef.current = null;
-    }
-  }, [autoCollapse, flatCategories]);
+  // useEffect(() => {
+  //   if (autoCollapse && deselectedIdRef.current) {
+  //     const descendants = findDescendants(deselectedIdRef.current, flatCategories);
+  //     setExpandedIds(prev =>
+  //       prev.filter(eid => eid !== deselectedIdRef.current && !descendants.includes(eid))
+  //     );
+  //     deselectedIdRef.current = null;
+  //   }
+  // }, [autoCollapse, flatCategories]);
 
   const handleSelect = (id) => {
     const isSelected = formData.categories.includes(id);
