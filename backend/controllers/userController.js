@@ -35,6 +35,10 @@ export const getUser = async (req, res, next) => {
 
 export const createUser = async (req, res, next) => {
   try {
+    if (!req.body) {
+        return next(new BadRequestError("Request body is missing"));
+    }
+
     const { name, email, password, role } = req.body;
     validateRequiredFields(User, req.body); 
     
@@ -64,31 +68,13 @@ export const createUser = async (req, res, next) => {
   }
 };
 
-export const deleteUser = async (req, res, next) => {
-  try {
-    const { userId } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return next(new ValidationError("Invalid user ID"));
-    }
-
-    if (req.user._id.toString() === userId) {
-      return next(new BadRequestError("Deleting your own user account is forbidden"));
-    }
-
-    const deletedUser = await User.findByIdAndDelete(userId);
-    if (!deletedUser) {
-      return next(new ResourceNotFoundError('User'));
-    }
-
-    return res.status(200).json({ success: true, message: `User ${deletedUser._id} deleted successfully` });
-  } catch (error) {
-    return next(new ServerError({ message: error.message }));
-  }
-};
-
 // TO DO - checking if email is still correct, also veryfication to change email on old one
 export const updateUserProfile = async (req, res, next) => {
   try {
+    if (!req.body) {
+        return next(new BadRequestError("Request body is missing"));
+    }
+
     const userId = req.user._id;
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return next(new ValidationError("Invalid user ID"));
@@ -117,6 +103,28 @@ export const updateUserProfile = async (req, res, next) => {
       return next(new DuplicateKeyError({ field, value }));
     }
 
+    return next(new ServerError({ message: error.message }));
+  }
+};
+
+export const deleteUser = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return next(new ValidationError("Invalid user ID"));
+    }
+
+    if (req.user._id.toString() === userId) {
+      return next(new BadRequestError("Deleting your own user account is forbidden"));
+    }
+
+    const deletedUser = await User.findByIdAndDelete(userId);
+    if (!deletedUser) {
+      return next(new ResourceNotFoundError('User'));
+    }
+
+    return res.status(200).json({ success: true, message: `User ${deletedUser._id} deleted successfully` });
+  } catch (error) {
     return next(new ServerError({ message: error.message }));
   }
 };

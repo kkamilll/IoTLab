@@ -3,11 +3,24 @@ import mongoose from 'mongoose';
 const productSchema = new mongoose.Schema({
   name: { type: String, required: true },
   description: { type: String },
-  stock: { type: Number, default: 0 },
+  
+  stockTotal: { type: Number, default: 0 }, // amount of product owned
+  stockForRent: { type: Number, default: 0 }, // amount of product offered for rent
+  stockReserved: { type: Number, default: 0 }, // amount of product wanted by users
+  stockRentedOut: { type: Number, default: 0 }, // amount of product rented to users
+
   categories: [{ type: mongoose.Schema.Types.ObjectId, ref: "Category" }], // <-- referencja do kategorii
   tag: { type: String },
   extraFields: { type: Map, of: String, default: {} }, // of: mongoose.Schema.Types.Mixed
-  image: { type: String },
+  images: [{
+    image: { type: String },
+    isVisible: { type: Boolean, default: false }
+  }],
+  files: [String],
+  owner: {type: mongoose.Schema.Types.ObjectId, ref: "User"},
+  
+  isSerialized: { type: Boolean, default: false },
+  isRentable: { type: Boolean, default: false },
   isDeleted: { type: Boolean, default: false },
 }, { timestamps: true });
 

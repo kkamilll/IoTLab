@@ -8,15 +8,15 @@ export default function CategorySelector({ categoryTree, flatCategories, formDat
   const deselectedIdRef = useRef(null);
 
   // Handle collapsing descendants after deselection
-  // useEffect(() => {
-  //   if (autoCollapse && deselectedIdRef.current) {
-  //     const descendants = findDescendants(deselectedIdRef.current, flatCategories);
-  //     setExpandedIds(prev =>
-  //       prev.filter(eid => eid !== deselectedIdRef.current && !descendants.includes(eid))
-  //     );
-  //     deselectedIdRef.current = null;
-  //   }
-  // }, [autoCollapse, flatCategories]);
+  useEffect(() => {
+    if (autoCollapse && deselectedIdRef.current) {
+      const descendants = findDescendants(deselectedIdRef.current, flatCategories);
+      setExpandedIds(prev =>
+        prev.filter(eid => eid !== deselectedIdRef.current && !descendants.includes(eid))
+      );
+      deselectedIdRef.current = null;
+    }
+  }, [autoCollapse, flatCategories]);
 
   const handleSelect = (id) => {
     const isSelected = formData.categories.includes(id);

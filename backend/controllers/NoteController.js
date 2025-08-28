@@ -17,6 +17,10 @@ export const getNotes = async (req, res, next) => {
 // Dodaj notatkę (author z tokena)
 export const createNote = async (req, res, next) => {
   try {
+    if (!req.body) {
+        return next(new BadRequestError("Request body is missing"));
+    }
+    
     const userId = req.user._id;
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return next(new BadRequestError("Invalid user ID"));

@@ -20,7 +20,7 @@ const Dashboard = () => {
         });
         if (res.data.success) setOrders(res.data.orders);
       } catch (err) {
-        console.error(err);
+        alert(`${err.response.data.message}`);
       } finally {
         setLoading(false);
       }
@@ -30,17 +30,29 @@ const Dashboard = () => {
 
   // Statystyki produktów
   const productStats = orders.reduce((acc, order) => {
-    const name = order.product?.name || "Usunięty produkt";
-    acc[name] = (acc[name] || 0) + order.quantity;
+    order.items.forEach(item => {
+      const name = item.product?.name || "Usunięty produkt";
+      const qty = item.requested?.quantity || 0; // or use item.confirmed?.quantity if you prefer
+      acc[name] = (acc[name] || 0) + qty;
+    });
     return acc;
   }, {});
+
   const barData = Object.entries(productStats).map(([name, qty]) => ({ name, qty }));
 
-  // Statystyki zwrotów
-  const returnedCount = orders.filter(o => o.isReturned).length;
+  // Prepare data for PieChart (returns vs non-returns)
+  const returnedCount = orders.reduce((acc, order) => {
+    order.items.forEach(item => {
+      if (item.isReturned) acc += 1;
+    });
+    return acc;
+  }, 0);
+
+  const totalItems = orders.reduce((acc, order) => acc + order.items.length, 0);
+
   const pieData = [
     { name: "Zwrócone", value: returnedCount },
-    { name: "Nie zwrócone", value: orders.length - returnedCount },
+    { name: "Nie zwrócone", value: totalItems - returnedCount },
   ];
   const COLORS = ["#0088FE", "#FF8042"];
 
@@ -55,7 +67,7 @@ const Dashboard = () => {
 
           {/* Wykres słupkowy */}
           <div className="bg-white p-6 rounded shadow">
-            <h2 className="text-2xl font-semibold mb-4 text-center">Ilość zamówionych produktów</h2>
+            <h2 className="text-2xl font-semibold mb-4 text-center">Liczba zamówionych produktów</h2>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={barData}>
                 <XAxis dataKey="name" />
@@ -97,35 +109,41 @@ const Dashboard = () => {
               <table className="w-full border-collapse border border-gray-300">
                 <thead className="bg-blue-50">
                   <tr>
+                    <th className="border border-gray-300 p-3 text-left">Email</th>
                     <th className="border border-gray-300 p-3 text-left">Produkt</th>
-                    <th className="border border-gray-300 p-3 text-right">Ilość</th>
+                    <th className="border border-gray-300 p-3 text-right">Request Amount</th>
+                    <th className="border border-gray-300 p-3 text-right">Rented Amount</th>
                     <th className="border border-gray-300 p-3 text-left">Opis</th>
                     <th className="border border-gray-300 p-3 text-left">Historia działań</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {orders.map((order) => (
-                    <tr key={order._id} className="hover:bg-gray-100">
-                      <td className="border border-gray-300 p-3">{order.product?.name || "Usunięty produkt"}</td>
-                      <td className="border border-gray-300 p-3 text-right">{order.quantity}</td>
-                      <td className="border border-gray-300 p-3">{order.product?.description || "Brak opisu"}</td>
-                      <td className="border border-gray-300 p-3">
-                        {order.history?.length ? (
-                          <ul className="list-disc ml-5 space-y-1">
-                            {order.history
-                              .sort((a, b) => new Date(a.date) - new Date(b.date))
-                              .map((event, idx) => (
-                                <li key={idx}>
-                                  {new Date(event.date).toLocaleString("pl-PL")} – {event.action}
-                                </li>
-                              ))}
-                          </ul>
-                        ) : (
-                          "-"
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                  {orders.map((order) =>
+                    order.items.map((item, idx) => (
+                      <tr key={`${order._id}-${idx}`} className="hover:bg-gray-100">
+                        <td className="border border-gray-300 p-3">{order?.customer?.email || "Order Deleted"}</td>
+                        <td className="border border-gray-300 p-3">{item.product?.name || "Usunięty produkt"}</td>
+                        <td className="border border-gray-300 p-3 text-right">{item.confirmed?.quantity || 0}</td>
+                        <td className="border border-gray-300 p-3 text-right">{item.requested?.quantity || 0}</td>
+                        <td className="border border-gray-300 p-3">{item.product?.description || "Brak opisu"}</td>
+                        <td className="border border-gray-300 p-3">
+                          {item.history?.length ? (
+                            <ul className="list-disc ml-5 space-y-1">
+                              {/* {item.history
+                                .sort((a, b) => new Date(a.date) - new Date(b.date))
+                                .map((event, idx2) => (
+                                  <li key={idx2}>
+                                    {new Date(event.date).toLocaleString("pl-PL")} – {event.action}
+                                  </li>
+                                ))} */}
+                            </ul>
+                          ) : (
+                            "-"
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>

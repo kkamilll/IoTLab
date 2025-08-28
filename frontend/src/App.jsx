@@ -14,6 +14,7 @@ import Users from './components/Users';
 import Orders from './components/Orders';
 import Logout from './components/Logout';
 import ReturnedOrders from './components/ReturnedOrders';
+import Materials from './pages/Materials.jsx';
 
 // Utils
 import ProtectedRoutes from './utils/ProtectedRoutes';
@@ -23,6 +24,9 @@ import Profile from './pages/Profile';
 import ProductPreview from './pages/ProductsPreview';
 import CartPage from "./pages/CartPage";
 import Categories from "./pages/Categories";
+
+import GuestProducts from "./pages/GuestProducts";
+import UserProductS from './pages/UserProductS.jsx';
 
 function App() {
   return (
@@ -36,6 +40,11 @@ function App() {
         <Route path="/redirect" element={<RootRedirect />} />
         <Route path="/logout" element={<Logout />} />
         <Route path="/cart" element={<CartPage />} />
+
+        <Route path="/guest-products/:menuCategory" element={<GuestProducts />} />
+        <Route path="/guest-products" element={<GuestProducts />} />
+        <Route path="/userproduct" element={<UserProductS />} />
+
         {/* Admin Dashboard - Protected */}
         <Route
           path="/admin-dashboard"
@@ -54,6 +63,7 @@ function App() {
           <Route path="notes" element={<Notes />} />
           <Route path="categories" element={<Categories />} />
           <Route path="ReturnedOrders" element={<ReturnedOrders />} />
+          <Route path="materials" element={<Materials />} />
 
         </Route>
 

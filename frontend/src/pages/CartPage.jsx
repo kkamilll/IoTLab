@@ -1,73 +1,181 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { useAuth } from "../context/AuthContext"; // jeśli używasz kontekstu do tokena
+import { useAuth } from "../context/AuthContext";
 
 const CartPage = () => {
   const [cart, setCart] = useState([]);
+  const [customer, setCustomer] = useState({
+    name: "",
+    email: "",
+    index: "",
+  });
+  const [availability, setAvailability] = useState({});
+  const [inDemand, setInDemand] = useState({});
   const navigate = useNavigate();
-  const { user, token } = useAuth(); // token do autoryzacji
+  const { token } = useAuth();
 
+  const today = new Date().toISOString().split("T")[0];
+
+  // Load cart from localStorage
   useEffect(() => {
     const storedCart = JSON.parse(localStorage.getItem("cart")) || [];
-    setCart(storedCart);
+    // ensure each cart item has rental dates
+    const enriched = storedCart.map((item) => ({
+      ...item,
+      startDate: item.startDate || "",
+      endDate: item.endDate || "",
+    }));
+    setCart(enriched);
   }, []);
 
+  // Save cart
   const updateCart = (newCart) => {
     setCart(newCart);
     localStorage.setItem("cart", JSON.stringify(newCart));
   };
 
+  // Change quantity
   const handleQuantityChange = (productId, delta) => {
     const newCart = cart.map((item) => {
       if (item._id === productId) {
-        const newQuantity = item.quantity + delta;
-        return { ...item, quantity: newQuantity > 0 ? newQuantity : 1 };
+        const maxAvailable = availability[item._id] ?? Infinity;
+        let newQuantity = item.quantity + delta;
+        if (newQuantity > maxAvailable) newQuantity = maxAvailable;
+        if (newQuantity < 1) newQuantity = 1;
+        return { ...item, quantity: newQuantity };
       }
       return item;
     });
     updateCart(newCart);
   };
 
+  // Change dates per item
+  const handleDateChange = (productId, field, value) => {
+    const newCart = cart.map((item) =>
+      item._id === productId ? { ...item, [field]: value } : item
+    );
+    updateCart(newCart);
+  };
+
+  // Remove product from cart
   const handleRemove = (productId) => {
     const newCart = cart.filter((item) => item._id !== productId);
     updateCart(newCart);
   };
 
-  const totalPrice = cart.reduce(
-    (sum, item) => sum + (item.price || 0) * item.quantity,
-    0
-  );
+  // Change customer data
+  const handleCustomerChange = (e) => {
+    const { name, value } = e.target;
+    setCustomer((prev) => ({ ...prev, [name]: value }));
+  };
 
+  // Check availability for all items
+  const updateAvailability = async () => {
+    const newAvailability = {};
+    await Promise.all(
+      cart.map(async (item) => {
+        if (!item.startDate || !item.endDate) {
+          newAvailability[item._id] = undefined;
+          return;
+        }
+        try {
+          const res = await axios.post(
+            "http://localhost:3500/products/available",
+            {
+              productId: item._id,
+              startDate: item.startDate,
+              endDate: item.endDate,
+            }
+          );
+          newAvailability[item._id] = res.data.available;
+        } catch {
+          newAvailability[item._id] = 0;
+        }
+      })
+    );
+    setAvailability(newAvailability);
+  };
+
+  const updateInDemand = async () => {
+    const newInDemand = {};
+    await Promise.all(
+      cart.map(async (item) => {
+        if (!item.startDate || !item.endDate) {
+          newInDemand[item._id] = undefined;
+          return;
+        }
+        try {
+          const res = await axios.post(
+            "http://localhost:3500/products/inDemand",
+            {
+              productId: item._id,
+              startDate: item.startDate,
+              endDate: item.endDate,
+            },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          newInDemand[item._id] = res.data.inDemand;
+        } catch {
+          newInDemand[item._id] = 0;
+        }
+      })
+    );
+    setInDemand(newInDemand);
+  };
+
+  useEffect(() => {
+    updateAvailability();
+    updateInDemand();
+  }, [cart]);
+
+  // Checkout
   const handleCheckout = async () => {
-    if (!user || !token) {
-      alert("Musisz być zalogowany, aby złożyć zamówienie");
-      navigate("/login");
-      return;
-    }
+    if (!cart.length) return alert("Koszyk jest pusty!");
+    if (!customer.email || !customer.name || !customer.index)
+      return alert("Podaj dane kontaktowe!");
+
+    const items = cart.map((item) => {
+      if (!item.startDate || !item.endDate)
+        throw new Error(`Brak dat dla produktu: ${item.name}`);
+      if (item.startDate > item.endDate)
+        throw new Error(`Niepoprawny zakres dat dla produktu: ${item.name}`);
+      return {
+        product: item._id,
+        requested: {
+          quantity: item.quantity,
+          startDate: item.startDate,
+          endDate: item.endDate,
+        },
+      };
+    });
 
     try {
-      // Przesyłamy każdy produkt jako osobne zamówienie
-      const promises = cart.map((item) =>
-        axios.post(
-          "http://localhost:3500/orders/add",
-          { productId: item._id, quantity: item.quantity },
-          { headers: { Authorization: `Bearer ${token}` } }
-        )
+      const res = await axios.post(
+        "http://localhost:3500/orders/create",
+        { customer, items },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      await Promise.all(promises);
-      alert("Zamówienie zostało złożone!");
+      const orderId = res.data.order._id;
+
+      await axios.post(
+        "http://localhost:3500/orders/send-order-email",
+        { orderId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      alert("Zamówienie złożone i wysłane na maila!");
       setCart([]);
       localStorage.removeItem("cart");
-      navigate("/orders"); // opcjonalnie przeniesienie do strony zamówień
     } catch (err) {
-      console.error("Błąd składania zamówienia:", err);
-      alert(err.response?.data?.error || "Błąd składania zamówienia");
+      console.error(err);
+      alert(err.response?.data?.message || "Błąd zamówienia");
     }
   };
 
-  if (cart.length === 0) {
+  // UI
+  if (!cart.length) {
     return (
       <div className="p-6 text-center">
         <h2 className="text-2xl font-bold mb-4">Twój koszyk jest pusty</h2>
@@ -82,63 +190,135 @@ const CartPage = () => {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-6 max-w-4xl mx-auto flex flex-col gap-6">
       <h2 className="text-3xl font-bold mb-6">Twój koszyk</h2>
+
+      {/* Products list */}
       <div className="space-y-4">
         {cart.map((item) => (
           <div
             key={item._id}
-            className="flex items-center justify-between p-4 border rounded"
+            className="flex flex-col md:flex-row items-start justify-between p-4 border rounded gap-4"
           >
             <div className="flex items-center gap-4">
-              {item.image && (
+              {item.images && item.images.length > 0 ? (
                 <img
-                  src={`http://localhost:3500/uploads/${item.image}`}
+                  src={`http://localhost:3500/uploads/${item.images[0].image}`}
                   alt={item.name}
                   className="w-20 h-20 object-contain rounded"
                 />
+              ) : (
+                <div className="w-20 h-20 bg-gray-200 flex items-center justify-center rounded text-gray-500">
+                  No Image
+                </div>
               )}
               <div>
                 <h3 className="font-semibold">{item.name}</h3>
-                <p className="text-gray-600">
-                  Cena: {item.price ? item.price + " zł" : "Brak ceny"}
+                <p className="text-sm text-red-600">
+                  {availability[item._id] === undefined
+                    ? "Wybierz daty"
+                    : availability[item._id] === 0
+                      ? "Produkt niedostępny w wybranym okresie"
+                      : `Available: ${availability[item._id]}`}
+                </p>
+                <p className="text-sm text-red-600">
+                  {inDemand[item._id] === undefined
+                    ? "Wybierz daty"
+                    : inDemand[item._id] === 0
+                      ? ""
+                      : `Demanded: ${inDemand[item._id]}`}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => handleQuantityChange(item._id, -1)}
-                className="px-2 py-1 bg-gray-300 rounded hover:bg-gray-400"
-              >
-                -
-              </button>
-              <span>{item.quantity}</span>
-              <button
-                onClick={() => handleQuantityChange(item._id, 1)}
-                className="px-2 py-1 bg-gray-300 rounded hover:bg-gray-400"
-              >
-                +
-              </button>
-              <button
-                onClick={() => handleRemove(item._id)}
-                className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-              >
-                Usuń
-              </button>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleQuantityChange(item._id, -1)}
+                  className="px-2 py-1 bg-gray-300 rounded hover:bg-gray-400"
+                >
+                  -
+                </button>
+                <span>{item.quantity}</span>
+                <button
+                  onClick={() => handleQuantityChange(item._id, 1)}
+                  className="px-2 py-1 bg-gray-300 rounded hover:bg-gray-400"
+                  disabled={
+                    availability[item._id] !== undefined &&
+                    item.quantity >= availability[item._id]
+                  }
+                >
+                  +
+                </button>
+                <button
+                  onClick={() => handleRemove(item._id)}
+                  className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                >
+                  Usuń
+                </button>
+              </div>
+
+              {/* Rental dates per item */}
+              <div className="flex flex-col md:flex-row gap-2">
+                <input
+                  type="date"
+                  value={item.startDate}
+                  onChange={(e) =>
+                    handleDateChange(item._id, "startDate", e.target.value)
+                  }
+                  min={today}
+                  className="border p-2 rounded"
+                />
+                <input
+                  type="date"
+                  value={item.endDate}
+                  onChange={(e) =>
+                    handleDateChange(item._id, "endDate", e.target.value)
+                  }
+                  min={item.startDate || today}
+                  className="border p-2 rounded"
+                />
+              </div>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="mt-6 text-right">
-        <h3 className="text-xl font-bold">Łączna wartość: {totalPrice} zł</h3>
-        <button
-          onClick={handleCheckout}
-          className="mt-4 px-6 py-3 bg-green-500 text-white font-semibold rounded hover:bg-green-600"
-        >
-          Przejdź do płatności
-        </button>
+      {/* Customer info */}
+      <div className="mt-6 p-4 border rounded bg-gray-50">
+        <h3 className="text-2xl font-semibold mb-4">Dane do zamówienia</h3>
+        <div className="flex flex-col gap-4">
+          <input
+            type="text"
+            name="name"
+            placeholder="Imię i nazwisko"
+            value={customer.name}
+            onChange={handleCustomerChange}
+            className="border p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+          <input
+            type="email"
+            name="email"
+            placeholder="Twój e-mail"
+            value={customer.email}
+            onChange={handleCustomerChange}
+            className="border p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+          <input
+            type="tel"
+            name="index"
+            placeholder="Index"
+            value={customer.index}
+            onChange={handleCustomerChange}
+            className="border p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+          <button
+            onClick={handleCheckout}
+            className="px-6 py-3 bg-green-500 text-white font-semibold rounded hover:bg-green-600"
+          >
+            Złóż zamówienie
+          </button>
+        </div>
       </div>
     </div>
   );

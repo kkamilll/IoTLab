@@ -17,7 +17,7 @@ export class BadRequestError extends Error {
     super(message);
     this.name = 'BadRequestError';
     this.statusCode = 400;
-    this.logLevel = 'warn'; // optional, if you have logging
+    this.logLevel = LOG_LEVELS.WARN;
   }
 }
 
@@ -38,6 +38,7 @@ export class UnauthorizedError extends Error {
     super(message);
     this.name = "UnauthorizedError";
     this.statusCode = 401;
+    this.logLevel = LOG_LEVELS.WARN;
   }
 }
 
@@ -46,6 +47,7 @@ export class PermissionError extends Error {
     super(message);
     this.name = "PermissionError";
     this.statusCode = 403;
+    this.logLevel = LOG_LEVELS.WARN;
   }
 }
 
@@ -54,7 +56,7 @@ export class ResourceNotFoundError extends Error {
     super(`${resource} not found`);
     this.name = 'ResourceNotFoundError';
     this.statusCode = 404;
-    this.logLevel = 'warn';
+    this.logLevel = LOG_LEVELS.WARN;
   }
 }
 

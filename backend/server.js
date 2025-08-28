@@ -15,6 +15,7 @@ import categoryRoutes from './routes/categoryRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import noteRoutes from './routes/noteRoutes.js';
+import materialRoutes from "./routes/materialRoutes.js";
 
 import { errorHandler } from './middleware/errorHandler.js';
 
@@ -52,6 +53,7 @@ app.use("/categories", categoryRoutes);
 app.use('/products', productRoutes);
 app.use('/orders', orderRoutes);
 app.use('/notes', noteRoutes);
+app.use("/materials", materialRoutes);
 
 app.use(errorHandler);
 

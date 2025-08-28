@@ -23,7 +23,16 @@ function isLoop(categoryId, newParentId, parentMap) {
     return false;
 }
 
-export const getCategories = async (req, res, next) => {
+export const getCategoriesPublic = async (req, res, next) => {
+    try {
+        const categories = await Category.find().populate("parent", "name").lean();
+        res.status(200).json({ success: true, categories });
+    } catch (error) {
+        return next(new ServerError({ message: error.message }));
+    }
+}
+
+export const getCategoriesPrivate = async (req, res, next) => {
     try {
         const categories = await Category.find().populate("parent", "name").lean();
         res.status(200).json({ success: true, categories });
@@ -34,8 +43,12 @@ export const getCategories = async (req, res, next) => {
 
 export const createCategory = async (req, res, next) => {
     try {
-        const { name, description, parent } = req.body;
-        const updateData = { name, description, parent };
+        if (!req.body) {
+            return next(new BadRequestError("Request body is missing"));
+        }
+
+        const { name, description, parent, isVisible } = req.body;
+        const updateData = { name, description, parent, isVisible };
         validateRequiredFields(Category, updateData);
 
         if (parent) {
@@ -45,6 +58,10 @@ export const createCategory = async (req, res, next) => {
 
             const parentCategory = await Category.findById(parent);
             if (!parentCategory) return next(new BadRequestError("Category reference has to exist in databse"));
+        }
+
+        if (isVisible !== undefined && typeof isVisible !== "boolean") {
+            return next(new ValidationError("Create category: Category visibility must be true or false"))
         }
 
         const category = await Category.create({ ...updateData });
@@ -65,12 +82,16 @@ export const createCategory = async (req, res, next) => {
 
 export const updateCategory = async (req, res, next) => {
     try {
+        if (!req.body) {
+            return next(new BadRequestError("Request body is missing"));
+        }
+        
         const { categoryId } = req.params;
         if (!mongoose.Types.ObjectId.isValid(categoryId)) {
             return next(new ValidationError("Invalid product ID"));
         }
 
-        const { name, description } = req.body;
+        const { name, description, isVisible } = req.body;
         const parent = req.body.parent ? req.body.parent : null;
 
         if (parent) {
@@ -83,7 +104,7 @@ export const updateCategory = async (req, res, next) => {
             if (loop) return next(new BadRequestError("Cannot update category: references cannot create loops"));
         }
 
-        const category = await Category.findByIdAndUpdate(categoryId, { name, description, parent }, { new: true, runValidators: true });
+        const category = await Category.findByIdAndUpdate(categoryId, { name, description, parent, isVisible }, { new: true, runValidators: true });
         res.status(200).json({ success: true, category });
     } catch (error) {
         return next(new ServerError({ message: error.message }));

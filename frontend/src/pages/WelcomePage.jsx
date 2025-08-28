@@ -1,16 +1,42 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import MainMenu from '../components/MainMenu';
+import MainSlider from '../components/MainSlider'
+import { buildTree } from "../utils/categoryUtils";
 
 const WelcomePage = () => {
   const navigate = useNavigate();
   const { token, user, logout } = useAuth();
+  const [categories, setCategories] = useState([]);
 
   const [currentTime, setCurrentTime] = useState(new Date());
   const [notes, setNotes] = useState([]);
   const [notesLoading, setNotesLoading] = useState(false);
   const [notesError, setNotesError] = useState(null);
+
+  useEffect(() => {fetchCategories();}, []);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await axios.get("http://localhost:3500/categories/public");
+      setCategories(res.data.categories || []);
+    } catch (err) {
+      console.error("Błąd pobierania kategorii:", err);
+    }
+  };
+
+  const normalizedCategories = useMemo(
+      () => categories.map(c => ({
+        _id: c._id.toString(),
+        name: c.name,
+        description: c.description,
+        parent: c.parent?._id?.toString() || null
+      })),
+      [categories]
+    );
+  const categoryTree = useMemo(() => buildTree(normalizedCategories), [normalizedCategories]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -64,10 +90,10 @@ const WelcomePage = () => {
   };
 
   return (
-    <div className="w-full min-h-screen font-sans bg-gray-50 text-gray-900">
+    <div className="w-full min-h-screen font-sans bg-gradient-to-b from-blue-900 to-blue-700 text-gray-900 ">
       {/* TOPBAR */}
-      <div className="w-full bg-gradient-to-r from-blue-800 via-blue-900 to-blue-950 py-2 px-4 text-white text-sm font-semibold tracking-wide shadow-md flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-        
+      <div className="w-full bg-transparent py-2 px-4 text-white text-sm font-semibold tracking-wide shadow-md flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+
         {/* Data i czas */}
         <span>
           {currentTime.toLocaleString('pl-PL', {
@@ -81,37 +107,45 @@ const WelcomePage = () => {
           })}
         </span>
 
-       {user && (
-  <div className="flex flex-col sm:flex-row items-center gap-3 bg-white px-4 py-2 rounded-full shadow-md text-black text-sm font-semibold">
-    <span className="truncate max-w-[140px] sm:max-w-none">{user.name}</span>
+        {user && (
+          <div className="flex flex-col sm:flex-row items-center gap-3 bg-white px-4 py-2 rounded-full shadow-md text-black text-sm font-semibold">
+            <span className="truncate max-w-[140px] sm:max-w-none">{user.name}</span>
 
-    <button
-      onClick={handleBackToSidebar}
-      className="flex items-center gap-2 bg-green-600 hover:bg-green-700 transition-colors text-white rounded-full px-5 py-2 shadow-md shadow-green-400/50
+            <button
+              onClick={handleBackToSidebar}
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 transition-colors text-white rounded-full px-5 py-2 shadow-md shadow-green-400/50
                  focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-      </svg>
-      Powrót
-    </button>
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+              Powrót
+            </button>
 
-    <button
-      onClick={handleLogout}
-      className="flex items-center gap-2 bg-red-600 hover:bg-red-700 transition-colors text-white rounded-full px-5 py-2 shadow-md shadow-red-400/50
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 transition-colors text-white rounded-full px-5 py-2 shadow-md shadow-red-400/50
                  focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7" />
-      </svg>
-      Wyloguj
-    </button>
-  </div>
-)}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7" />
+              </svg>
+              Wyloguj
+            </button>
+          </div>
+        )}
       </div>
 
       {/* HERO SECTION */}
-      <section className="relative flex flex-col justify-center items-center min-h-[40vh] bg-gradient-to-b from-blue-900 to-blue-700 overflow-hidden">
+      <section className="relative flex flex-col justify-center items-center min-h-[50vh] bg-gradient-to-b from-blue-900 to-blue-700 overflow-visible py-10">
+        <div className="relative z-20 px-8 max-w-4xl text-center">
+          <div className="mt-6 relative z-50">
+            <MainMenu categoryTree={categoryTree} />
+          </div>
+        </div>
+      </section>
+      
+      <section className="relative flex flex-col justify-center items-center min-h-[40vh] bg-transparent border-4 overflow-hidden">
         <div className="relative z-20 px-6 max-w-3xl text-center">
           <h1 className="text-4xl md:text-5xl font-extrabold mb-3 leading-tight drop-shadow-lg text-white">
             System Inwentaryzacyjny
@@ -120,20 +154,31 @@ const WelcomePage = () => {
             Efektywne zarządzanie zasobami w Twojej firmie
           </p>
           {!user && (
-            <button
-              onClick={handleLoginClick}
-              className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold px-10 py-2.5 rounded-full shadow-lg hover:shadow-xl transition duration-300"
-            >
-              Zaloguj się
-            </button>
+            <div className="flex flex-col sm:flex-row justify-center gap-4 mt-6">
+              <button
+                onClick={handleLoginClick}
+                className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold px-10 py-2.5 rounded-full shadow-lg hover:shadow-xl transition duration-300"
+              >
+                Zaloguj się
+              </button>
+
+              <button
+                onClick={() => navigate('/guest-products')}
+                className="inline-block bg-green-600 hover:bg-green-700 text-white font-semibold px-10 py-2.5 rounded-full shadow-lg hover:shadow-xl transition duration-300"
+              >
+                Zamów jako gość
+              </button>
+            </div>
           )}
         </div>
       </section>
 
       {/* FEATURES SECTION */}
-      <section className="py-20 bg-white text-gray-900">
-        <div className="max-w-6xl mx-auto px-6">
-          <h2 className="text-4xl font-extrabold text-center mb-14 tracking-tight text-blue-900">
+      <section className=" bg-transparent text-gray-900 ">
+        <div className="max-w-8xl  bg-red-400 mx-auto"> 
+          {/* //max-w-[1920px] */}
+          <MainSlider categoryTree={categoryTree}/>
+          {/* <h2 className="text-4xl font-extrabold text-center mb-14 tracking-tight text-blue-900">
             Dlaczego nasz system?
           </h2>
           <div className="grid md:grid-cols-3 gap-12">
@@ -158,7 +203,7 @@ const WelcomePage = () => {
                 System z autoryzacją dla administratorów i pracowników z różnymi poziomami uprawnień.
               </p>
             </div>
-          </div>
+          </div> */}
         </div>
       </section>
 

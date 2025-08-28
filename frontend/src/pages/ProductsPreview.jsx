@@ -8,10 +8,13 @@ const ProductPreview = () => {
   const navigate = useNavigate();
   const { token } = useAuth();
   const { productId } = location.state || {}; // pobieramy tylko productId
-const [product, setProduct] = useState(null);
-const [categoryNames, setCategoryNames] = useState([]);
-// const [categories, setCategories] = useState([]);
-const [error, setError] = useState(null);
+  const [product, setProduct] = useState(null);
+  const [categoryNames, setCategoryNames] = useState([]);
+  // const [categories, setCategories] = useState([]);
+  const [error, setError] = useState(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  useEffect(() => setCurrentImageIndex(0), [productId]);
 
   // Pobranie produktu
   useEffect(() => {
@@ -22,7 +25,7 @@ const [error, setError] = useState(null);
 
     const fetchProduct = async () => {
       try {
-        const res = await axios.get(`http://localhost:3500/products/${productId}`, {
+        const res = await axios.get(`http://localhost:3500/products/privateId/${productId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.data.success) {
@@ -32,17 +35,17 @@ const [error, setError] = useState(null);
         }
       } catch (err) {
         console.error(err);
-        setError("Error fetching product");
+        setError("Error fetching product: [${err.response.data.message}]");
       }
     };
 
     fetchProduct();
 
-    
+
   }, [productId, token]);
 
   useEffect(() => {
-    if(!product) return;
+    if (!product) return;
     setCategoryNames(product ? (product.categories || []).map(cat => cat?.name) : "No category");
     // console.log(product ? product.categories : "no product categories");
     // console.log(categoryNames);
@@ -61,6 +64,16 @@ const [error, setError] = useState(null);
 
     localStorage.setItem("cart", JSON.stringify(cart));
     alert(`${product.name} został dodany do koszyka!`);
+  };
+
+  const showPrevImage = () => {
+    if (!product?.images?.length) return;
+    setCurrentImageIndex((prev) => (prev > 0 ? prev - 1 : product.images.length - 1));
+  };
+
+  const showNextImage = () => {
+    if (!product?.images?.length) return;
+    setCurrentImageIndex((prev) => (prev < product.images.length - 1 ? prev + 1 : 0));
   };
 
   if (error) {
@@ -93,24 +106,49 @@ const [error, setError] = useState(null);
 
       <h1 className="text-2xl font-bold mb-4">{product.name}</h1>
 
-      {product.image && (
-        <img
-          src={`http://localhost:3500/uploads/${product.image}`}
-          alt={product.name}
-          className="w-full max-h-96 object-contain rounded mb-4"
-        />
+      {product.images?.length > 0 ? (
+        <div className="mb-6 flex flex-col items-center">
+          <div className="relative w-full max-w-lg">
+            <img
+              src={`http://localhost:3500/uploads/${product.images[currentImageIndex].image}`}
+              alt={`${product.name} ${currentImageIndex + 1}`}
+              className="w-full max-h-96 object-contain rounded-lg shadow-md"
+            />
+            {product.images.length > 1 && (
+              <>
+                <button
+                  onClick={showPrevImage}
+                  className="absolute top-1/2 left-0 -translate-y-1/2 bg-black bg-opacity-40 text-white px-3 py-2 rounded-l hover:bg-opacity-60 transition"
+                >
+                  ‹
+                </button>
+                <button
+                  onClick={showNextImage}
+                  className="absolute top-1/2 right-0 -translate-y-1/2 bg-black bg-opacity-40 text-white px-3 py-2 rounded-r hover:bg-opacity-60 transition"
+                >
+                  ›
+                </button>
+              </>
+            )}
+          </div>
+          <p className="text-gray-500 mt-2">
+            {currentImageIndex + 1} / {product.images.length}
+          </p>
+        </div>
+      ) : (
+        <p className="text-gray-400 mb-6">No images available</p>
       )}
 
       <p className="text-gray-700 mb-2">
         <strong>Description:</strong> {product.description}
       </p>
       <p className="text-gray-700 mb-2">
-        <strong>Stock:</strong> {product.stock}
+        <strong>Avaible:</strong> {product.stockForRent}
       </p>
-    <p>
-  <strong>Categories:</strong>{" "}
-  { categoryNames.join(", ") }
-</p>
+      <p>
+        <strong>Categories:</strong>{" "}
+        {categoryNames.join(", ")}
+      </p>
 
 
 

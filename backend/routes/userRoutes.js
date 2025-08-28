@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.get('/', authMiddleware, getUsers);
 router.get('/profile', authMiddleware, getUser);
-router.post('/add', authMiddleware, createUser);
+router.post('/create', authMiddleware, createUser);
 router.put('/profile', authMiddleware, updateUserProfile);
 router.delete('/:userId', authMiddleware, deleteUser);
 

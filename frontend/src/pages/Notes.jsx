@@ -30,7 +30,7 @@ const Notes = () => {
       setNotes((prev) => prev.filter((note) => note._id !== id));
     } catch (error) {
       console.error("Delete note error:", error.response?.data || error.message);
-      alert("Błąd podczas usuwania notatki");
+      alert(`Błąd podczas usuwania notatki: [${err.response.data.message}]`);
     }
   };
 
@@ -38,13 +38,13 @@ const Notes = () => {
     if (!text.trim()) return alert("Tekst notatki nie może być pusty");
     try {
       setLoading(true);
-      const res = await axiosInstance.post("/notes", { text });
+      const res = await axiosInstance.post("/notes/create", { text });
       if (res.data.success) {
         setNotes((prev) => [res.data.data, ...prev]);
         setText("");
       }
     } catch {
-      alert("Błąd podczas dodawania notatki");
+      alert(`Błąd podczas dodawania notatki: [${err.response.data.message}]`);
     } finally {
       setLoading(false);
     }

@@ -1,9 +1,10 @@
 import mongoose from "mongoose";
 
 const categorySchema = new mongoose.Schema({
-  name: { type: String, required: true },
+  name: { type: String, required: true, unique: true },
   description: { type: String, default: "" },
   parent: { type: mongoose.Schema.Types.ObjectId, ref: "Category", default: null },
+  isVisible: { type: Boolean, default: false }
 }, { timestamps: true });
 
 const Category = mongoose.model("Category", categorySchema);

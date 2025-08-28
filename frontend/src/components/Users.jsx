@@ -36,7 +36,7 @@ const Users = () => {
     setSubmitLoading(true);
     try {
       const res = await axios.post(
-        "http://localhost:3500/users/add",
+        "http://localhost:3500/users/create",
         formData,
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("pos-token")}` },

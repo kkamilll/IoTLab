@@ -37,10 +37,13 @@ const excludedIds = useMemo(() => {
 
   const fetchCategories = async () => {
     try {
-      const res = await axios.get("http://localhost:3500/categories");
+      const res = await axios.get("http://localhost:3500/categories/private", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setCategories(res.data.categories || []);
     } catch (err) {
       console.error("Błąd pobierania kategorii:", err);
+      alert(`${err.response.data.message}`);
     }
   };
 
@@ -74,7 +77,7 @@ const excludedIds = useMemo(() => {
 
       const res = editCategory
         ? await axios.patch(`http://localhost:3500/categories/${editCategory}`, categoryData, config)
-        : await axios.post(`http://localhost:3500/categories/add`, categoryData, config);
+        : await axios.post(`http://localhost:3500/categories/create`, categoryData, config);
       if (res.data.success) {
         alert(editCategory ? "Kategoria edytowana" : "Kategoria dodana");
         setCategoryData({ name: "", description: "", parent: null });

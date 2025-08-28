@@ -1,16 +1,18 @@
 
 import React, { useEffect, useMemo, useState } from "react";
-import axios from "axios";
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
-import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
+
 import CategorySelector from "../components/CategorySelector";
-import { buildTree } from "../utils/categoryUtils"; 
+import autoTable from "jspdf-autotable";
+import { jsPDF } from "jspdf";
+import { useAuth } from "../context/AuthContext";
+import { buildTree } from "../utils/categoryUtils";
 
 const Products = () => {
   const { user, token } = useAuth();
   const isAdmin = user?.role === "admin";
+  const navigate = useNavigate();
 
   const [openModal, setOpenModal] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
@@ -20,21 +22,30 @@ const Products = () => {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    stock: "",
+    stockTotal: "",
+    stockForRent: "",
     extraFields: {},
     tag: "",
-    image: null,
-    categories: [] // nowa właściwość dla kategorii
+    images: [],
+    categories: [], // nowa właściwość dla kategorii
+    owner: ""
   });
   const [searchTerm, setSearchTerm] = useState("");
+  const [categories, setCategories] = useState([]);
   const [activeCategory, setActiveCategory] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   // const [newTag, setNewTag] = useState("");
-  const [previewImage, setPreviewImage] = useState(null);
-  const [categories, setCategories] = useState([]);
+  // const [previewImage, setPreviewImage] = useState(null);
 
+  const [cartQuantities, setCartQuantities] = useState({});
+  const [cartQuantitiesInCart, setCartQuantitiesInCart] = useState({});
 
-  const navigate = useNavigate();
+  const allColumns = ["name", "description", "Owned", "tag", ...extraColumns];
+
+  const allCategories = Object.values( // create an array of objects from object of objects
+    products.flatMap(p => p.categories || []) // flatten array products into array of all categories
+      .reduce((acc, cat) => { acc[cat._id] = cat; return acc; }, {}) // create object of objects from array, without duplicates with same field _id 
+  );
 
   // category tree
   const normalizedCategories = useMemo(
@@ -45,12 +56,23 @@ const Products = () => {
     })),
     [categories]
   );
+  const categoryTree = useMemo(() => buildTree(normalizedCategories), [normalizedCategories]);
 
-const categoryTree = useMemo(() => buildTree(normalizedCategories), [normalizedCategories]);
+  useEffect(() => {
+    fetchCategories();
+    fetchProducts();
+  }, []);
+
+  useEffect(() => {
+    // const cart = JSON.parse(localStorage.getItem("cart")) || [];
+    const newQuantities = {};
+    products.forEach(p => newQuantities[p._id] = 1);
+    setCartQuantities(newQuantities);
+  }, [products]);
 
   const fetchCategories = async () => {
     try {
-      const res = await axios.get("http://localhost:3500/categories", {
+      const res = await axios.get("http://localhost:3500/categories/private", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.data.success) {
@@ -63,52 +85,34 @@ const categoryTree = useMemo(() => buildTree(normalizedCategories), [normalizedC
   // Pobieranie produktów
   const fetchProducts = async () => {
     try {
-      const res = await axios.get("http://localhost:3500/products");
+      const res = await axios.get("http://localhost:3500/products/private", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-      if (res.data.success) {
-        const allExtraKeys = new Set(extraColumns);
-        res.data.products.forEach(p => {
-          if (p.extraFields) Object.keys(p.extraFields).forEach(k => allExtraKeys.add(k));
+      if (!res.data.success) return alert(res.data.message || "Error fetching products");
+
+
+      const allExtraKeys = new Set(extraColumns);
+      res.data.products.forEach(p => {
+        if (p.extraFields) Object.keys(p.extraFields).forEach(k => allExtraKeys.add(k));
+      });
+
+      const updatedProducts = res.data.products.map(p => {
+        const newExtraFields = {};
+        [...allExtraKeys].forEach(col => {
+          newExtraFields[col] = p.extraFields?.[col] || "";
         });
+        return { ...p, extraFields: newExtraFields };
+      });
 
-        const updatedProducts = res.data.products.map(p => {
-          const newExtraFields = {};
-          [...allExtraKeys].forEach(col => {
-            newExtraFields[col] = p.extraFields?.[col] || "";
-          });
-          return { ...p, extraFields: newExtraFields };
-        });
-
-        setExtraColumns([...allExtraKeys]);
-        setProducts(updatedProducts);
-        setFilteredProducts(updatedProducts);
-      } else {
-        alert(res.data.message || "Error fetching products");
-      }
+      setExtraColumns([...allExtraKeys]);
+      setProducts(updatedProducts);
+      setFilteredProducts(updatedProducts);
     } catch (err) {
       console.error(err);
-      alert("Server error – check console");
+      alert(`${err.response.data.message}`);
     }
   };
-
-  // CRUD API
-  // const addProduct = async () => {
-  //   const res = await axios.post(
-  //     "http://localhost:3500/products",
-  //     { ...formData, stock: Number(formData.stock) },
-  //     { headers: { Authorization: `Bearer ${token}` } }
-  //   );
-  //   return res.data;
-  // };
-
-  // const updateProduct = async () => {
-  //   const res = await axios.put(
-  //     `http://localhost:3500/products/${editProduct}`,
-  //     { ...formData, stock: Number(formData.stock) },
-  //     { headers: { Authorization: `Bearer ${token}` } }
-  //   );
-  //   return res.data;
-  // };
 
   const deleteProduct = async (id) => {
     const res = await axios.delete(
@@ -118,6 +122,12 @@ const categoryTree = useMemo(() => buildTree(normalizedCategories), [normalizedC
     return res.data;
   };
 
+  const getAvailableStockForProduct = (product) => {
+    const cart = JSON.parse(localStorage.getItem("cart")) || [];
+    const inCart = cart.find(item => item._id === product._id)?.quantity || 0;
+    return Math.max(0, (product.stockForRent || 0) - inCart);
+  };
+
   // Handlery
   const handleEdit = (product) => {
     setOpenModal(true);
@@ -125,24 +135,24 @@ const categoryTree = useMemo(() => buildTree(normalizedCategories), [normalizedC
     setFormData({
       name: product.name || "",
       description: product.description || "",
-      stock: product.stock?.toString() || "",
+      stockTotal: product.stockTotal?.toString() || "",
+      stockForRent: product.stockForRent?.toString() || "",
       extraFields: { ...product.extraFields },
       tag: product.tag || "",
       categories: (product.categories || []).map(cat => cat._id.toString())
     });
-    // console.log(product)
     // setNewTag("");
   };
+
 
   const closeModal = () => {
     setOpenModal(false);
     setEditProduct(null);
-    setFormData({ name: "", description: "", stock: "", extraFields: {}, tag: "", categories: [] });
+    setFormData({ name: "", description: "", stockTotal: "", stockForRent: "", extraFields: {}, tag: "", categories: [] });
     // setNewTag("");
   };
 
   const handleChange = (e) => {
-    // console.log(`change: ${e.target.name}, ${e.target.value}`)
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
@@ -154,16 +164,40 @@ const categoryTree = useMemo(() => buildTree(normalizedCategories), [normalizedC
     }));
   };
 
-  // const handleCategoriesChange = (e) => {
-  //   const { options } = e.target;
-  //   const values = [];
-  //   for (let i = 0; i < options.length; i++) {
-  //     if (options[i].selected) {
-  //       values.push(options[i].value);
-  //     }
-  //   }
-  //   setFormData({ ...formData, categories: values });
-  // };
+  const handleQuantityChange = (productId, value, product) => {
+    const cart = JSON.parse(localStorage.getItem("cart")) || [];
+    const inCart = cart.find(p => p._id === productId)?.quantity || 0;
+    // const availableStock = product.stockForRent;
+    const maxQty = (product.stockForRent || 0) - inCart;
+    
+    let qty = parseInt(value, 10);
+    if (isNaN(qty) || qty < 1) qty = 1;
+    if (qty > maxQty) qty = maxQty;
+    
+    setCartQuantities(prev => ({ ...prev, [productId]: qty }));
+  };
+
+  const handleAddToCart = (product) => {
+    const cart = JSON.parse(localStorage.getItem("cart")) || [];
+    const qtyToAdd = cartQuantities[product._id] || 1;
+    const existingIndex = cart.findIndex(p => p._id === product._id);
+    const availableStock = product.stockForRent;
+
+    if (existingIndex !== -1) {
+      cart[existingIndex].quantity = Math.min(cart[existingIndex].quantity + qtyToAdd, availableStock);
+    } else {
+      cart.push({ ...product, quantity: Math.min(qtyToAdd, availableStock) });
+    }
+
+    localStorage.setItem("cart", JSON.stringify(cart));
+    const quantities = {};
+    cart.forEach(item => quantities[item._id] = item.quantity);
+    setCartQuantitiesInCart(quantities);
+
+    const inCart = quantities[product._id] || 0;
+    const remaining = availableStock - inCart;
+    setCartQuantities(prev => ({ ...prev, [product._id]: remaining > 0 ? 1 : 0 }));
+  };
 
   const addExtraField = () => {
     const key = prompt("Podaj nazwę nowej kolumny:");
@@ -266,11 +300,18 @@ const categoryTree = useMemo(() => buildTree(normalizedCategories), [normalizedC
       const form = new FormData();
       form.append("name", formData.name);
       form.append("description", formData.description);
-      form.append("stock", formData.stock);
+      form.append("stockTotal", formData.stockTotal);
       form.append("extraFields", JSON.stringify(cleanedExtraFields));
       form.append("categories", JSON.stringify(formData.categories)); // dodanie kategorii
       form.append("tag", formData.tag);
-      if (formData.image) form.append("image", formData.image);
+      
+      if (!editProduct) {
+        form.append("owner", user._id);
+      }
+
+      if (formData.images && formData.images.length) {
+        formData.images.forEach(file => form.append("images", file));
+      }
 
       const config = {
         headers: {
@@ -281,7 +322,7 @@ const categoryTree = useMemo(() => buildTree(normalizedCategories), [normalizedC
 
       const res = editProduct
         ? await axios.put(`http://localhost:3500/products/${editProduct}`, form, config)
-        : await axios.post(`http://localhost:3500/products`, form, config);
+        : await axios.post(`http://localhost:3500/products/create`, form, config);
 
       if (res.data.success) {
         fetchProducts();
@@ -310,32 +351,18 @@ const categoryTree = useMemo(() => buildTree(normalizedCategories), [normalizedC
     if (filteredProducts.length === 0) return alert("No products to export.");
     const doc = new jsPDF();
     doc.text("Product List", 14, 22);
-    const headers = ["#", "Name", "Description", "Stock", ...extraColumns];
+    const headers = ["#", "Name", "Description", "Owned", ...extraColumns];
     const rows = filteredProducts.map((p, i) => [
       i + 1,
       p.name,
       p.description || "",
-      p.stock,
+      p.stockTotal,
       ...extraColumns.map(c => p.extraFields?.[c] || "")
     ]);
 
     autoTable(doc, { head: [headers], body: rows, startY: 30 });
     doc.save("products.pdf");
   };
-
-  useEffect(() => {
-    fetchCategories();
-    fetchProducts();
-  }, []);
-
-  const allColumns = ["name", "description", "stock", "tag", ...extraColumns];
-
-  // const allCategories = [...new Set(products.flatMap(p => p.categories || []))]; // old approach doesn't work 
-
-  const allCategories = Object.values( // create an array of objects from object of objects
-    products.flatMap(p => p.categories || []) // flatten array products into array of all categories
-    .reduce((acc, cat) => { acc[cat._id] = cat; return acc; }, {}) // create object of objects from array, without duplicates with same field _id 
-  );
 
   const handleRemoveImage = async () => {
     if (!editProduct) return; // tylko dla istniejącego produktu
@@ -411,7 +438,7 @@ const categoryTree = useMemo(() => buildTree(normalizedCategories), [normalizedC
           onChange={(e) => setActiveCategory(e.target.value)}
           className="border p-2 rounded"
         >
-          
+
           <option value="">All</option>
           {allCategories.map((category, idx) => (
             <option key={idx} value={category._id}>{category.name}</option>
@@ -452,8 +479,8 @@ const categoryTree = useMemo(() => buildTree(normalizedCategories), [normalizedC
               <tr key={p._id}>
                 {allColumns.map((col, idx) => (
                   <td key={idx} className="px-4 py-2 text-sm text-gray-700">
-                    {col === "stock" ? (
-                      <span>{p.stock}</span>
+                    {col === "Owned" ? (
+                      <span>{p.stockTotal}</span>
                     ) : col === "tag" ? (
                       p.tag ?? ""
                     ) : (
@@ -472,6 +499,24 @@ const categoryTree = useMemo(() => buildTree(normalizedCategories), [normalizedC
                       Preview
                     </button>
                     <button onClick={() => handleDelete(p._id)} className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600">Delete</button>
+
+                    <input
+                      type="number"
+                      min="1"
+                      max={getAvailableStockForProduct(p)}
+                      value={cartQuantities[p._id] || 1}
+                      onChange={(e) => handleQuantityChange(p._id, e.target.value, p)}
+                      className="w-16 border rounded p-1 text-center"
+                    />
+                    <button
+                      onClick={() => handleAddToCart(p)}
+                      className="px-2 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 flex items-center gap-2"
+                    >
+                      Dodaj
+                    </button>
+                    <span className="text-gray-700 text-sm font-medium">
+                      W koszyku: {JSON.parse(localStorage.getItem("cart"))?.find(item => item._id === p._id)?.quantity || 0}
+                    </span>
                   </td>
                 )}
 
@@ -488,7 +533,7 @@ const categoryTree = useMemo(() => buildTree(normalizedCategories), [normalizedC
             <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
               <input type="text" name="name" placeholder="Name" value={formData.name} onChange={handleChange} required className="border p-2 rounded" />
               <input type="text" name="description" placeholder="Description" value={formData.description} onChange={handleChange} className="border p-2 rounded" />
-              <input type="number" name="stock" placeholder="Stock" value={formData.stock} onChange={handleChange} required className="border p-2 rounded" />
+              <input type="number" name="stockTotal" placeholder="Owned" value={formData.stockTotal} onChange={handleChange} required className="border p-2 rounded" />
               {extraColumns.map((col, idx) => (
                 <div key={idx} className="flex items-center gap-2">
                   <input
@@ -504,7 +549,7 @@ const categoryTree = useMemo(() => buildTree(normalizedCategories), [normalizedC
               <label htmlFor="categories">Categories</label>
               <CategorySelector
                 categoryTree={categoryTree}   // flat array from backend
-                flatCategories={normalizedCategories} 
+                flatCategories={normalizedCategories}
                 formData={formData}
                 setFormData={setFormData}
               />
@@ -523,7 +568,8 @@ const categoryTree = useMemo(() => buildTree(normalizedCategories), [normalizedC
               <input
                 type="file"
                 accept="image/*"
-                onChange={(e) => setFormData(prev => ({ ...prev, image: e.target.files[0] }))}
+                multiple
+                onChange={(e) => setFormData(prev => ({ ...prev, images: Array.from(e.target.files) }))}
                 className="border p-2 rounded"
               />
 
@@ -539,23 +585,6 @@ const categoryTree = useMemo(() => buildTree(normalizedCategories), [normalizedC
                 <button type="submit" className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Save</button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-      {previewImage && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-4 rounded shadow-lg relative max-w-lg w-full">
-            <button
-              onClick={() => setPreviewImage(null)}
-              className="absolute top-2 right-2 px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-            >
-              X
-            </button>
-            <img
-              src={`http://localhost:3500/uploads/${previewImage}`}
-              alt="Product Preview"
-              className="w-full h-auto object-contain rounded"
-            />
           </div>
         </div>
       )}
