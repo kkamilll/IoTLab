@@ -2,10 +2,108 @@ import Product from "../models/Product.js";
 
 import mongoose from "mongoose";
 import { MongoServerError } from 'mongodb';
-import { ValidationError, BadRequestError, DuplicateKeyError, ResourceNotFoundError, ServerError } from '../errors/CustomErrors.js'
+import { AppError, ValidationError, BadRequestError, DuplicateKeyError, PermissionError, ResourceNotFoundError, ConflictError, ServerError } from '../errors/CustomErrors.js'
 import { validateRequiredFields } from '../utils/validateRequiredFields.js'
 
 import Order from "../models/Order.js";
+
+const mapUploadedFiles = (filesArray = [], additionalData = []) => {
+  const fileNames = filesArray.map(file => file.filename);
+  const fileSizes = filesArray.map(file => file.size || 0);
+
+  if (fileNames.length !== additionalData.length || fileNames.length !== fileSizes.length) return [];
+  return fileNames.map((filename, idx) => ({
+    filename,
+    originalName: additionalData[idx].originalName,
+    uniqueKey: additionalData[idx]?.uniqueKey,
+    isVisible: additionalData[idx]?.isVisible || false,
+    size: fileSizes[idx]
+  }));
+}
+
+const initProduct = (req) => {
+  try{
+  const { name, description, tag } = req.body;
+  const stockTotal = req.body.stockTotal !== undefined ? Number(req.body.stockTotal) : undefined;
+  const stockForRent = req.body.stockForRent !== undefined ? Number(req.body.stockForRent) : undefined;
+  const categories = req.body.categories ? JSON.parse(req.body.categories) : undefined;
+  const extraFields = req.body.extraFields ? JSON.parse(req.body.extraFields) : undefined;
+
+  const newImageFiles = req.files?.images;
+  const newImagesData = req.body.newImagesData ? JSON.parse(req.body.newImagesData) : [];
+  const newImages = mapUploadedFiles(newImageFiles, newImagesData);
+
+  const oldImages = req.body.oldImages ? JSON.parse(req.body.oldImages) : [];
+  const images = [...oldImages, ...newImages];
+
+  const newAttachmentsFiles = req.files?.attachments;
+  const newAttachmentsData = req.body.newAttachmentsData ? JSON.parse(req.body.newAttachmentsData) : [];
+  const newAttachments = mapUploadedFiles(newAttachmentsFiles, newAttachmentsData);
+
+  const oldAttachments = req.body.oldAttachments ? JSON.parse(req.body.oldAttachments) : [];
+  const attachments = [...oldAttachments, ...newAttachments];
+  
+  const labRoom = req.body.labRoom;
+  const owner = req.body.owner;
+  const isSerialized = JSON.parse(req.body.isSerialized);
+  const isRentable = JSON.parse(req.body.isRentable);
+  const isVisible = JSON.parse(req.body.isVisible);
+  const isShared = JSON.parse(req.body.isShared);
+  const version = Number(req.body.version);
+
+  const setData = {};
+  const unsetData = {};
+
+  if (name?.trim()) setData.name = name; else unsetData.name = "";
+  if (description?.trim()) setData.description = description; else unsetData.description = "";
+
+  // Validate stockTotal value
+  if (stockTotal !== undefined) {
+    if (isNaN(stockTotal) || stockTotal < 0) throw new BadRequestError('stockTotal must be a non-negative number');
+    setData.stockTotal = stockTotal;
+  } else unsetData.stockTotal = "";
+
+  // Validate stockForRent value
+  if (stockForRent !== undefined) {
+    if (isNaN(stockForRent) || stockForRent < 0) throw new BadRequestError('stockForRent must be a non-negative number');
+    if (stockForRent > stockTotal) throw new BadRequestError('stockForRent cannot be bigger than stockTotal');
+    setData.stockForRent = stockForRent;
+  } else unsetData.stockForRent = "";
+
+  if (tag) setData.tag = tag; else unsetData.tag = "";
+  if (Array.isArray(categories)) {
+    categories.forEach((category) => {
+      if (!mongoose.Types.ObjectId.isValid(category)) {
+        throw new ValidationError("Invalid category ID");
+      }
+    })
+    setData.categories = categories;
+  } else unsetData.categories = "";
+
+  if (extraFields !== undefined && typeof extraFields === 'object') setData.extraFields = extraFields; else unsetData.extraFields = "";
+  if (images && images.length) setData.images = images; else unsetData.images = "";
+  if (attachments && attachments.length) setData.attachments = attachments; else unsetData.attachments = "";
+  if (labRoom?.trim() && labRoom !== "undefined" && labRoom !== "null") setData.labRoom = labRoom; else unsetData.labRoom = "";
+  if (owner?.trim() && owner !== "undefined" && owner !== "null") {
+    if (!mongoose.Types.ObjectId.isValid(owner)) {
+      throw new ValidationError("Invalid user ID");
+    }
+    setData.owner = owner;
+  } else unsetData.owner = "";
+
+  console.log(isSerialized, typeof isSerialized === 'boolean');
+  if (typeof isSerialized === 'boolean') setData.isSerialized = isSerialized; else unsetData.isSerialized = "";
+  if (typeof isRentable === 'boolean') setData.isRentable = isRentable; else unsetData.isRentable = "";
+  if (typeof isVisible === 'boolean') setData.isVisible = isVisible; else unsetData.isVisible = "";
+  if (typeof isShared === 'boolean') setData.isShared = isShared; else unsetData.isShared = "";
+  if (!isNaN(version)) setData.__v = version; else throw new ValidationError("Missing version number");
+  
+  return { $set: setData, $unset: unsetData };
+  } catch (error) {
+    if (error instanceof AppError) throw error;
+    throw new ServerError(error);
+  }
+}
 
 const getOrderQuantity = async ({ productId, field, end, start, status }) => {
   // Find orders for product, that overlap given date range
@@ -25,21 +123,23 @@ const getOrderQuantity = async ({ productId, field, end, start, status }) => {
   let requestsQuantity = 0;
 
   overlappingOrders.forEach(order => {
-      order.items.forEach(item => {
-        if (item.product.toString() === productId) {
-          orderQuantity += Number(item[field].quantity);
-          requestsQuantity += 1;
-        }
-      });
+    order.items.forEach(item => {
+      if (item.product.toString() === productId) {
+        orderQuantity += Number(item[field].quantity);
+        requestsQuantity += 1;
+      }
     });
+  });
 
   return { orderQuantity, requestsQuantity };
 }
 
 export const getProductsPublic = async (req, res, next) => {
   try {
-    const products = await Product.find({ isRentable: true, isDeleted: false }).select('-__v -isDeleted').sort({ name: 1 }).populate("categories", "name").lean();;
-    res.json({ success: true, products });
+    const products = await Product.find({ isVisible: true, isDeleted: false }).select('-__v -isDeleted').sort({ name: 1 }).populate([{ path: "categories", select: "name" }, { path: "owner", select: "name" }]).lean();
+    const productsImagesFiltered = products?.map(product => ({ ...product, images: product.images?.filter(img => img.isVisible) || [] })) || [];
+
+    res.json({ success: true, products: productsImagesFiltered });
   } catch (err) {
     return next(new ServerError({ message: error.message }));
   }
@@ -47,8 +147,18 @@ export const getProductsPublic = async (req, res, next) => {
 
 export const getProductsPrivate = async (req, res, next) => {
   try {
+    const role = req.user.role;
+    const user = req.user.id;
+    if (!mongoose.Types.ObjectId.isValid(user)) {
+      return next(new ValidationError("Invalid user ID"));
+    }
+
+    let filter = { isDeleted: false }
     // Find all products
-    const products = await Product.find({ isDeleted: false }).select('-__v -isDeleted').sort({ name: 1 }).populate("categories", "name").lean();
+    if (role !== "admin") {
+      filter = { isDeleted: false, $or: [{ owner: user }, { isShared: true }, { isVisible: true }] }
+    }
+    const products = await Product.find(filter).select('-isDeleted').sort({ name: 1 }).populate([{ path: "categories", select: "name" }, { path: "owner", select: "name" }]).lean();
 
     // Send response
     return res.status(200).json({ success: true, products });
@@ -59,12 +169,19 @@ export const getProductsPrivate = async (req, res, next) => {
 
 export const getProductByIdPublic = async (req, res, next) => {
   try {
+    // Extract route params
     const { productId } = req.params;
+    // Validate productId has ObjectId structure
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return next(new ValidationError("Invalid product ID"));
+    }
+
     // Find products for users
-    const products = await Product.findOne({ _id: productId, isRentable: true, isDeleted: false }).select('-__v -isDeleted').sort({ name: 1 }).populate("categories", "name").lean();
+    const product = await Product.findOne({ _id: productId, isVisible: true, isDeleted: false }).select('-__v -isDeleted').sort({ name: 1 }).populate([{ path: "categories", select: "name" }, { path: "owner", select: "name" }]).lean();
+    product.images = product.images?.filter(image => (image.isVisible)) || [];
 
     // Send response
-    return res.status(200).json({ success: true, products });
+    return res.status(200).json({ success: true, product });
   } catch (error) {
     // Handle unexpected server error
     return next(new ServerError({ message: error.message }));
@@ -80,7 +197,19 @@ export const getProductByIdPrivate = async (req, res, next) => {
       return next(new ValidationError("Invalid product ID"));
     }
 
-    const product = await Product.findOne({ _id: productId, isDeleted: false }).populate("categories", "name");
+    const role = req.user.role;
+    const user = req.user.id;
+    if (!mongoose.Types.ObjectId.isValid(user)) {
+      return next(new ValidationError("Invalid user ID"));
+    }
+
+    let filter = { _id: productId, isDeleted: false }
+    // Find all products
+    if (role !== "admin") {
+      filter = { _id: productId, isDeleted: false, $or: [{ owner: user }, { isShared: true }, { isVisible: true }] }
+    }
+
+    const product = await Product.findOne(filter).populate([{ path: "categories", select: "name" }, { path: "owner", select: "name" }]);
     if (!product) {
       return res.status(404).json({ success: false, message: "Product not found" });
     }
@@ -100,32 +229,17 @@ export const createProduct = async (req, res, next) => {
     }
 
     // Extract incoming data
-    const { name, description, tag } = req.body;
-    const stockTotal = Number(req.body.stockTotal);
-    const stockForRent = Number(req.body.stockTotal);
-    const categories = req.body.categories ? JSON.parse(req.body.categories) : [];
-    const extraFields = req.body.extraFields ? JSON.parse(req.body.extraFields) : {};
-    const images = req.files?.map(file => ({ image: file.filename })) || [];
-    const owner = req.user._id;
-    console.log(images);
-    
-    const updateData = { name, description, stockTotal, stockForRent, categories, tag, extraFields, images, owner };
-    
-    // Validate required fields
-    validateRequiredFields(Product, updateData);
+    const updateData = initProduct(req, next);
+    const createData = updateData.$set;
+    // if (!updateData.owner) updateData.owner = req.user._id;
 
-    // Validate stockTotal value
-    if (isNaN(stockTotal) || stockTotal < 0) return next(new BadRequestError('Stock must be a non-negative number'));
-      updateData.stockTotal = stockTotal;
-    
-    // Validate stockForRent value
-    if (isNaN(stockForRent) || stockForRent < 0) return next(new BadRequestError('Stock must be a non-negative number'));
-      updateData.stockTotal = stockTotal;
+    // Validate required fields
+    validateRequiredFields(Product, createData);
 
     // create new product
-    const newProduct = new Product({ ...updateData });
+    const newProduct = new Product(createData);
     await newProduct.save();
-    
+
     // Send response
     return res.status(201).json({ success: true, product: newProduct.toObject() });
   } catch (error) {
@@ -152,40 +266,56 @@ export const updateProduct = async (req, res, next) => {
       return next(new BadRequestError("Request body is missing"));
     }
 
+    const role = req.user.role;
+    const user = req.user.id;
+    if (!mongoose.Types.ObjectId.isValid(user)) {
+      return next(new ValidationError("Invalid user ID"));
+    }
+
     const { productId } = req.params;
     if (!mongoose.Types.ObjectId.isValid(productId)) {
       return next(new ValidationError("Invalid product ID"));
     }
 
-    const { name, description, tag } = req.body;
-    const stockTotal = Number(req.body.stockTotal);
-    const categories = req.body.categories ? JSON.parse(req.body.categories) : [];
-    const extraFields = req.body.extraFields ? JSON.parse(req.body.extraFields) : {};
-    const images = req.files?.map(file => file.filename) || [];
+    const updateData = initProduct(req, next);
+    console.log(updateData);
 
-    const updateData = {};
-    if (name?.trim()) updateData.name = name;
-    if (description?.trim()) updateData.description = description;
-    if (stockTotal !== undefined) {
-      if (isNaN(stockTotal) || stockTotal < 0) return next(new BadRequestError('Stock must be a non-negative number'));
-      updateData.stockTotal = stockTotal;
-    }
-    if (tag) updateData.tag = tag;
-    if (Array.isArray(categories)) updateData.categories = categories;
-    if (extraFields !== undefined && typeof extraFields === 'object') updateData.extraFields = extraFields;
-    if(images) updateData.images = images;
-
-    if (Object.keys(updateData).length === 0) {
+    if (!Object.keys(updateData).length) {
       return next(new BadRequestError('No valid fields to update'));
     }
 
-    const updatedProduct = await Product.findOneAndUpdate({ _id: productId, isDeleted: false }, updateData, { new: true }).select('-__v -isDeleted').populate("categories", "name").lean();
-    if (!updatedProduct) {
-      return next(new ResourceNotFoundError("Product"));
+    let filter = { _id: productId, isDeleted: false };
+    if (role !== "admin") {
+      filter = { _id: productId, isDeleted: false, owner: user }
     }
 
+    // const updatedProduct = await Product.findOneAndUpdate(filter, updateData, { new: true, runValidators: true }).select('-__v -isDeleted').populate("categories", "name").lean();
+    // if (!updatedProduct) {
+    //   return next(new ResourceNotFoundError("Missing permission or Product"));
+    // }
+
+    // return res.status(200).json({ success: true, product: updatedProduct });
+
+    const product = await Product.findOne(filter);
+    if (!product) return next(new ResourceNotFoundError("Missing permission or Product"));
+    console.log("product", product);
+
+    // Apply updates
+    if (updateData.$set) {
+      Object.entries(updateData.$set).forEach(([key, value]) => product.set(key, value));
+    }
+    if (updateData.$unset) {
+      Object.keys(updateData.$unset).forEach(key => product.set(key, undefined));
+    }
+
+    validateRequiredFields(Product, product);
+    const updatedProduct = await product.save(); // optimistic concurrency enforced
     return res.status(200).json({ success: true, product: updatedProduct });
   } catch (error) {
+    if (error.name === "VersionError") {
+      return next(new ConflictError("Product was modified by someone else"));
+    }
+
     return next(new ServerError({ message: error.message }));
   }
 };

@@ -5,7 +5,7 @@ import { sendVerificationCode } from "../utils/sendVerificationCode.js";
 
 import mongoose from "mongoose";
 import { MongoServerError } from 'mongodb';
-import { ValidationError, BadRequestError, ServerError } from '../errors/CustomErrors.js'
+import { AppError, ValidationError, BadRequestError, ServerError } from '../errors/CustomErrors.js'
 import { validateRequiredFields } from '../utils/validateRequiredFields.js'
 
 // Generate a 6-digit OTP code as a string

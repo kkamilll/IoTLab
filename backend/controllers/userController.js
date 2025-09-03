@@ -3,12 +3,12 @@ import bcrypt from 'bcrypt';
 
 import mongoose from "mongoose";
 import { MongoServerError } from 'mongodb';
-import { ValidationError, BadRequestError, DuplicateKeyError, ResourceNotFoundError, ServerError } from '../errors/CustomErrors.js'
+import { AppError, ValidationError, BadRequestError, DuplicateKeyError, ResourceNotFoundError, ServerError } from '../errors/CustomErrors.js'
 import { validateRequiredFields } from '../utils/validateRequiredFields.js'
 
 export const getUsers = async (req, res, next) => {
   try {
-    const users = await User.find().select('_id name email role').sort({ name: 1 }).lean();
+    const users = await User.find().select('_id name email role labRooms').sort({ name: 1 }).lean();
     return res.status(200).json({ success: true, users });
   } catch (error) {
     return next(new ServerError({ message: error.message }));
@@ -22,7 +22,7 @@ export const getUser = async (req, res, next) => {
       return next(new ValidationError("Invalid user ID"));
     }
 
-    const user = await User.findById(userId).select('_id name email role').lean();
+    const user = await User.findById(userId).select('_id name email role labRooms').lean();
     if (!user) {
       return next(new ResourceNotFoundError('User'));
     }
@@ -39,16 +39,14 @@ export const createUser = async (req, res, next) => {
         return next(new BadRequestError("Request body is missing"));
     }
 
-    const { name, email, password, role } = req.body;
-    validateRequiredFields(User, req.body); 
+    const { name, email, password, role, labRooms } = req.body;
+    const newUserData = { name, email, password, role, labRooms };
+    validateRequiredFields(User, newUserData); 
     
     // const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = new User({
-      name,
-      email,
-      password,
-      role,
+      ...newUserData
     });
 
     await newUser.save();

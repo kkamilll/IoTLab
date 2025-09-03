@@ -28,6 +28,7 @@ const ProductPreview = () => {
         const res = await axios.get(`http://localhost:3500/products/privateId/${productId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
+        console.log(res);
         if (res.data.success) {
           setProduct(res.data.product);
         } else {
@@ -110,7 +111,7 @@ const ProductPreview = () => {
         <div className="mb-6 flex flex-col items-center">
           <div className="relative w-full max-w-lg">
             <img
-              src={`http://localhost:3500/uploads/${product.images[currentImageIndex].image}`}
+              src={`http://localhost:3500/uploads/products/${product.images[currentImageIndex].filename}`}
               alt={`${product.name} ${currentImageIndex + 1}`}
               className="w-full max-h-96 object-contain rounded-lg shadow-md"
             />

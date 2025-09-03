@@ -27,7 +27,7 @@ const Login = () => {
 
       if (success) {
         await login(user, token);
-        navigate(user.role === 'admin' ? '/admin-dashboard' : '/customer-dashboard');
+        navigate(user.role === 'admin' ? '/admin-dashboard' : '/admin-dashboard');
       } else {
         setError(message || 'Logowanie nie powiodło się');
       }

@@ -2,11 +2,11 @@ import multer from "multer";
 import path from "path";
 
 const storageProduct = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "uploads/"),
+  destination: (req, file, cb) => cb(null, "uploads/products"),
   filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
 });
 
-export const imageUploadProduct = multer({ storage: storageProduct });
+export const filesUploadProduct = multer({ storage: storageProduct });
 
 const storageMaterial = multer.diskStorage({
   destination: (req, file, cb) => cb(null, "uploads/materials"),
@@ -16,4 +16,4 @@ const storageMaterial = multer.diskStorage({
   },
 });
 
-export const imageUploadMaterial = multer({ storage: storageMaterial });
+export const filesUploadMaterial = multer({ storage: storageMaterial });

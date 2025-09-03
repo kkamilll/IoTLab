@@ -27,7 +27,7 @@ const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    if (user && user.role === "admin") setMenuLinks(menuItems);
+    if (user && user.role === "admin" || user.role === "lecturer") setMenuLinks(menuItems);
   }, [user]);
 
   return (

@@ -10,7 +10,7 @@ const protect = async (req, res, next) => {
     const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const user = await User.findById(decoded.id).select("_id name email role tokenVersion passwordChangedAt");
+    const user = await User.findById(decoded.id).select("_id name email role tokenVersion");
     if (!user) return next(new UnauthorizedError("User not found"))
     
     if (user.passwordChangedAt && decoded.iat * 1000 < user.passwordChangedAt.getTime()) {

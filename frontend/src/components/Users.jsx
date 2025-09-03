@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 
 const Users = () => {
-  const [formData, setFormData] = useState({ name: "", email: "", password: "", role: "" });
+  const [formData, setFormData] = useState({ name: "", email: "", password: "", role: "", labRooms: [] });
+  const [newLabRoom, setNewLabRoom] = useState([]);
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -69,13 +70,23 @@ const Users = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleAddLabRoom = () => {
+    if (newLabRoom && !formData.labRooms.includes(newLabRoom)) {
+      setFormData(prev => ({
+        ...prev,
+        labRooms: [...prev.labRooms, newLabRoom],
+      }));
+      setNewLabRoom(""); // clear input
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       const data = await addUser();
       if (data.success) {
         alert("User added successfully!");
-        setFormData({ name: "", email: "", password: "", role: "" });
+        setFormData({ name: "", email: "", password: "", role: "", labRooms: [] });
         fetchUsers();
       } else {
         alert("Failed to add user. Please try again.");
@@ -155,11 +166,10 @@ const Users = () => {
                     <button
                       onClick={() => handleDelete(user._id)}
                       disabled={deleteLoadingId === user._id}
-                      className={`px-4 py-1 rounded text-white font-semibold transition-colors duration-200 ${
-                        deleteLoadingId === user._id
-                          ? "bg-red-300 cursor-not-allowed"
-                          : "bg-red-600 hover:bg-red-700"
-                      }`}
+                      className={`px-4 py-1 rounded text-white font-semibold transition-colors duration-200 ${deleteLoadingId === user._id
+                        ? "bg-red-300 cursor-not-allowed"
+                        : "bg-red-600 hover:bg-red-700"
+                        }`}
                       title="Delete user"
                     >
                       {deleteLoadingId === user._id ? "Deleting..." : "Delete"}
@@ -201,7 +211,7 @@ const Users = () => {
           required
           className="p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
         />
-       
+
         <select
           name="role"
           value={formData.role}
@@ -214,12 +224,52 @@ const Users = () => {
           <option value="lecturer">Lecturer</option>
         </select>
 
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Add lab room"
+              value={newLabRoom}
+              onChange={e => setNewLabRoom(e.target.value)}
+              className="border p-2 rounded flex-1 min-w-[120px]"
+            />
+            <button
+              type="button"
+              onClick={handleAddLabRoom}
+              className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600"
+            >
+              Add
+            </button>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {formData.labRooms.map((room, idx) => (
+              <span
+                key={idx}
+                className="bg-blue-200 px-2 py-1 rounded flex items-center gap-1 max-w-[150px] truncate"
+                title={room} 
+              >
+                <span className="truncate">{room}</span>
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({
+                    ...prev,
+                    labRooms: prev.labRooms.filter(r => r !== room),
+                  }))}
+                  className="text-red-600 font-bold"
+                >
+                  x
+                </button>
+              </span>
+            ))}
+          </div>
+        </div>
+
         <button
           type="submit"
           disabled={submitLoading}
-          className={`p-3 rounded text-white font-semibold ${
-            submitLoading ? "bg-green-300 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"
-          } transition-colors duration-200`}
+          className={`p-3 rounded text-white font-semibold ${submitLoading ? "bg-green-300 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"
+            } transition-colors duration-200`}
         >
           {submitLoading ? "Adding..." : "Add User"}
         </button>

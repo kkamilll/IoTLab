@@ -2,7 +2,7 @@ import Category from "../models/Category.js";
 
 import mongoose from "mongoose";
 import { MongoServerError } from 'mongodb';
-import { ValidationError, BadRequestError, ServerError } from '../errors/CustomErrors.js'
+import { AppError, ValidationError, BadRequestError, DuplicateKeyError, ServerError } from '../errors/CustomErrors.js'
 import { validateRequiredFields } from '../utils/validateRequiredFields.js'
 
 async function createParentMap() {
@@ -46,10 +46,11 @@ export const createCategory = async (req, res, next) => {
         if (!req.body) {
             return next(new BadRequestError("Request body is missing"));
         }
-
+        console.log("test");
         const { name, description, parent, isVisible } = req.body;
         const updateData = { name, description, parent, isVisible };
         validateRequiredFields(Category, updateData);
+        console.log(updateData);    
 
         if (parent) {
             if (!mongoose.Types.ObjectId.isValid(parent)) {
@@ -85,7 +86,7 @@ export const updateCategory = async (req, res, next) => {
         if (!req.body) {
             return next(new BadRequestError("Request body is missing"));
         }
-        
+        console.log("test2");
         const { categoryId } = req.params;
         if (!mongoose.Types.ObjectId.isValid(categoryId)) {
             return next(new ValidationError("Invalid product ID"));

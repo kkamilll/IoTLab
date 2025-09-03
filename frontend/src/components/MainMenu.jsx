@@ -5,6 +5,9 @@ const MainMenu = ({ categoryTree }) => {
   const navigate = useNavigate();
   const [openIds, setOpenIds] = useState(new Set());
 
+  // check cursor type - cursor input, touch-only
+  const hasMouse = window.matchMedia("(pointer: fine)").matches;
+
   const goToCategory = (id) => navigate(`/guest-products/${id}`);
 
   const toggleOpen = (id) => {
@@ -20,12 +23,15 @@ const MainMenu = ({ categoryTree }) => {
   };
 
   const handleClick = (category) => {
-    // if (category.children && category.children.length > 0) {
-    //   toggleOpen(category._id);
-    // } else {
-    //   goToCategory(category._id);
-    // }
-    goToCategory(category.name);
+    if (hasMouse) {
+      goToCategory(category.name);
+    } else {
+      if (category.children && category.children.length > 0) {
+        toggleOpen(category._id);
+      } else {
+        goToCategory(category._id);
+      }
+    }
   };
 
   const renderCategory = (category, level = 0) => {

@@ -8,7 +8,8 @@ export function buildTree(categories) {
       name: cat.name,
       description: cat.description || "",
       parent: cat.parent ? cat.parent.toString() : null,
-      children: []
+      children: [],
+      isVisible: cat.isVisible || false
     })
   );
 

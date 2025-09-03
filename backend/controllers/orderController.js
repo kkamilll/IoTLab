@@ -3,12 +3,91 @@ import Order from "../models/Order.js";
 
 import mongoose from "mongoose";
 import { MongoServerError } from 'mongodb';
-import { ValidationError, BadRequestError, DuplicateKeyError, ResourceNotFoundError, ServerError } from '../errors/CustomErrors.js'
+import { AppError, ValidationError, BadRequestError, DuplicateKeyError, ResourceNotFoundError, ConflictError, ServerError } from '../errors/CustomErrors.js'
 import { validateRequiredFields } from '../utils/validateRequiredFields.js'
 
+export const productOwnerMap = async (order) => {
+  const productIdSet = new Set();
+  for (const item of order.items) {
+    const productIdStr = item?.product?.toString();
+    if (!productIdStr || productIdStr === "undefined" || productIdStr === "null") throw new ValidationError("Product cannot be empty");
+    if (!mongoose.Types.ObjectId.isValid(item.product)) {
+      throw new ValidationError("Invalid product ID");
+    }
+
+    productIdSet.add(item.product);
+  }
+  if (!productIdSet.size) throw new ValidationError("Order cannot be empty");
+
+  const productIdArray = [...productIdSet];
+  const products = await Product.find({ _id: { $in: productIdArray }, isRentable: true, isDeleted: false }).select("_id owner");
+  const productOwnerMap = {};
+  for (const product of products) {
+    if (!product?.owner?.toString()?.trim()) throw new ConflictError("Order contains products with missing owners");
+    if (!mongoose.Types.ObjectId.isValid(product.owner)) {
+      throw new ValidationError("Invalid owner ID");
+    }
+
+    const ownerId = typeof product.owner === "object" ? product.owner._id.toString() : product.owner.toString();
+    productOwnerMap[product._id.toString()] = ownerId;
+  }
+
+  return productOwnerMap;
+}
+
+const groupOrders = async (order) => {
+  const productOwnerMap = await productOwnerMap(order);
+
+  const groupedOrders = {};
+  for (const item of order.items) {
+    const owner = productOwnerMap[item.product];
+    if (!owner) throw new ConflictError("Order contains products with missing owners");
+
+    if (!groupedOrders[owner]) {
+      groupedOrders[owner] = {
+        customer: order.customer,
+        items: []
+      };
+    }
+
+    groupedOrders[owner].items.push(item);
+  }
+
+  const newGroupedOrders = Object.values(groupedOrders);
+
+  // Validate each item against stock and date range
+  for (const newGroupedOrder of newGroupedOrders) {
+    for (const item of newGroupedOrder.items) {
+      const product = await Product.findById(item.product);
+      if (!product) {
+        // return res.status(404).json({ message: `Produkt ${item.product} nie istnieje` });
+      }
+
+      if (item.requested.quantity < 1) {
+        // return res.status(400).json({ message: `Niepoprawna ilość dla ${product.name}` });
+      }
+
+      if (new Date(item.requested.startDate) > new Date(item.requested.endDate)) {
+        // return res.status(400).json({ message: `Niepoprawne daty dla ${product.name}` });
+      }
+    }
+  }
+
+  // newGroupedOrders.forEach(async (newGroupedOrder) => {
+  //   const order = new Order({
+  //     customer: newGroupedOrder.customer,
+  //     items: newGroupedOrder.items
+  //   });
+  //   await order.save();
+  //   orders.push(order);
+  // })
+
+  return newGroupedOrders;
+}
+
 export const getOrderStatuses = (req, res, next) => {
-  try{
-  res.json({ success: true, statuses: Order.schema.path("status").enumValues });
+  try {
+    res.json({ success: true, statuses: Order.schema.path("status").enumValues });
   } catch {
     return next(new ServerError({ message: `Error fetching orders: ${error.message}` }));
   }
@@ -16,8 +95,21 @@ export const getOrderStatuses = (req, res, next) => {
 
 export const getOrders = async (req, res, next) => {
   try {
-    const orders = await Order.find() // fetch all, frontend will filter returned
-      .populate("items.product"); // populate each product in items
+    const role = req.user.role;
+    const user = req.user.id;
+    if (!mongoose.Types.ObjectId.isValid(user)) {
+      return next(new ValidationError("Invalid user ID"));
+    }
+    let filter = {};
+    if (role !== "admin") {
+      filter = { "ownerStatus.owner": user };
+    }
+
+    const orders = await Order.find(filter) // fetch all, frontend will filter returned
+      .populate({
+        path: 'items.product',
+        select: 'name stockTotal stockForRent stockRentedOut'
+      });
 
     return res.status(200).json({ success: true, orders });
   } catch (error) {
@@ -40,7 +132,7 @@ export const getReturnedOrders = async (req, res, next) => {
     return res.status(200).json({ success: true, orders });
   } catch (error) {
     // console.error("Error fetching returned orders:", error);
-    return next(new ServerError({ message: `Error fetching returned orders: ${error.message }`}));
+    return next(new ServerError({ message: `Error fetching returned orders: ${error.message}` }));
   }
 };
 
@@ -95,13 +187,19 @@ export const getReturnedOrders = async (req, res, next) => {
 //   }
 // };
 
-export const createOrder = async (req, res) => {
+export const createOrder = async (req, res, next) => {
   try {
-    const { customer, items } = req.body;
-
-    if (!customer?.email || !items?.length) {
-      return res.status(400).json({ message: "Dane zamówienia są niekompletne" });
+    // Ensure request body exists
+    if (!req.body) {
+      return next(new BadRequestError("Request body is missing"));
     }
+
+    const { customer, items } = req.body;
+    const newOrder = { customer, items };
+    validateRequiredFields(Order, newOrder);
+    // if (!customer?.email || !items?.length) {
+    //   return res.status(400).json({ message: "Dane zamówienia są niekompletne" });
+    // }
 
     // Validate each item against stock and date range
     for (const item of items) {
@@ -117,16 +215,15 @@ export const createOrder = async (req, res) => {
       if (new Date(item.requested.startDate) > new Date(item.requested.endDate)) {
         return res.status(400).json({ message: `Niepoprawne daty dla ${product.name}` });
       }
-
-      // TODO: add check if product is available in this range
     }
 
     const order = new Order({
-      customer,
-      items,
+      customer: newOrder.customer,
+      items: newOrder.items,
     });
 
     await order.save();
+    // console.log("order: ", order, "orders: ", await groupOrders(order, next));
 
     res.status(201).json({ message: "Zamówienie utworzone", order });
   } catch (err) {
@@ -148,7 +245,7 @@ export const returnOrder = async (req, res, next) => {
     if (!order) return next(new BadRequestError("Order not found or already returned"));
 
     // przywracamy stock produktu
-    const updatedProduct = await Product.findByIdAndUpdate(order.product, {$inc: { stockTotal: order.quantity }}, { runValidators: true });
+    const updatedProduct = await Product.findByIdAndUpdate(order.product, { $inc: { stockTotal: order.quantity } }, { runValidators: true });
     if (!updatedProduct) {
       console.warn(`Product ${order.product} does not exist. Order ${orderId} will still be returned.`);
     }
@@ -172,7 +269,7 @@ export const hardDeleteOrder = async (req, res, next) => {
       return next(new ResourceNotFoundError("Order"));
     }
 
-    const updatedProduct = await Product.findOneAndUpdate({ _id: order.product, isDeleted: false}, { $inc: { stockTotal: order.quantity }}, { new: true, runValidators: true });
+    const updatedProduct = await Product.findOneAndUpdate({ _id: order.product, isDeleted: false }, { $inc: { stockTotal: order.quantity } }, { new: true, runValidators: true });
     if (!updatedProduct) {
       console.warn(`Product ${order.product} does not exist. Order ${orderId} will still be deleted.`);
     }
@@ -213,20 +310,20 @@ export const updateOrderQuantity = async (req, res) => {
     }
 
     const order = await Order.findByIdAndUpdate(orderId, {
-    $set: {
-      "items.$[elem].confirmed.quantity": quantity
-    }
+      $set: {
+        "items.$[elem].confirmed.quantity": quantity
+      }
     },
-    {
-      new: true, // return updated doc
-      arrayFilters: [{ "elem.product": itemId }] // match correct item in array
-    });
-    
+      {
+        new: true, // return updated doc
+        arrayFilters: [{ "elem.product": itemId }] // match correct item in array
+      });
+
     if (!order) {
       return res.status(404).json({ error: "Order not found" });
-    } 
+    }
     const updatedItem = order.items.find(
-    (item) => item.product.toString() === itemId.toString()
+      (item) => item.product.toString() === itemId.toString()
     );
     // const item = order.items.find(i => i.product?._id.toString() === itemId.toString());
     // if (!item) return res.status(404).json({ error: "Produkt nie znaleziony w zamówieniu" });
@@ -264,15 +361,15 @@ export const updateOrderDates = async (req, res) => {
 
     // const order = await Order.findById(orderId);
     const order = await Order.findByIdAndUpdate(orderId, {
-    $set: {
-      "items.$[elem].confirmed.startDate": startDate,
-      "items.$[elem].confirmed.endDate": endDate,
-    }
+      $set: {
+        "items.$[elem].confirmed.startDate": startDate,
+        "items.$[elem].confirmed.endDate": endDate,
+      }
     },
-    {
-      new: true, // return updated doc
-      arrayFilters: [{ "elem.product": itemId }] // match correct item in array
-    });
+      {
+        new: true, // return updated doc
+        arrayFilters: [{ "elem.product": itemId }] // match correct item in array
+      });
     if (!order) return res.status(404).json({ error: "Zamówienie nie znalezione" });
     const updatedItem = order.items.find(
       (item) => item.product.toString() === itemId.toString()

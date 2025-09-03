@@ -1,70 +1,61 @@
 import { LOG_LEVELS } from './errorLevels.js';
 
-export class ValidationError extends Error {
-  constructor({ message, errors } = {}) {
-    super(message || 'Validation failed');
-    this.name = 'ValidationError';
-    this.statusCode = 422;
-    this.logLevel = LOG_LEVELS.WARN;
-    if (errors) {
-      this.errors = errors;
-    }
-  }
-}
-
-export class BadRequestError extends Error {
-  constructor(message = 'Bad Request') {
+export class AppError extends Error {
+  constructor(message, statusCode = 500, logLevel = LOG_LEVELS.ERROR) {
     super(message);
-    this.name = 'BadRequestError';
-    this.statusCode = 400;
-    this.logLevel = LOG_LEVELS.WARN;
+    this.name = this.constructor.name;
+    this.statusCode = statusCode;
+    this.logLevel = logLevel;
   }
 }
 
-export class DuplicateKeyError extends Error {
+export class ValidationError extends AppError {
+  constructor({ message, errors } = {}) {
+    super(message || 'Validation failed', 422, LOG_LEVELS.WARN);
+    if (errors) this.errors = errors;
+  }
+}
+
+export class BadRequestError extends AppError {
+  constructor(message = 'Bad Request') {
+    super(message, 400, LOG_LEVELS.WARN);
+  }
+}
+
+export class DuplicateKeyError extends AppError {
   constructor({ field, value }) {
-    super(`${field} "${value}" already exists`);
-    this.name = 'DuplicateKeyError';
-    this.statusCode = 400;
-    this.logLevel = LOG_LEVELS.WARN;
+    super(`${field} "${value}" already exists`, 400, LOG_LEVELS.WARN);
     this.field = field;
     this.value = value;
   }
 }
-// return res.status(400).json({ success: false, message: 'Duplicate key error', errors: [`Email "${error.keyValue.email}" already exists`] });
 
-export class UnauthorizedError extends Error {
+export class UnauthorizedError extends AppError {
   constructor(message = "You need to be authorized to perform this action") {
-    super(message);
-    this.name = "UnauthorizedError";
-    this.statusCode = 401;
-    this.logLevel = LOG_LEVELS.WARN;
+    super(message, 401, LOG_LEVELS.WARN);
   }
 }
 
-export class PermissionError extends Error {
+export class PermissionError extends AppError {
   constructor(message = "You do not have permission to perform this action") {
-    super(message);
-    this.name = "PermissionError";
-    this.statusCode = 403;
-    this.logLevel = LOG_LEVELS.WARN;
+    super(message, 403, LOG_LEVELS.WARN);
   }
 }
 
-export class ResourceNotFoundError extends Error {
-  constructor(resource = 'Resource') {
-    super(`${resource} not found`);
-    this.name = 'ResourceNotFoundError';
-    this.statusCode = 404;
-    this.logLevel = LOG_LEVELS.WARN;
+export class ResourceNotFoundError extends AppError {
+  constructor(resource = 'Resource', withDefaultEnd = true) {
+    super(`${resource}${withDefaultEnd ? " not found" : ""}`, 404, LOG_LEVELS.WARN);
   }
 }
 
-export class ServerError extends Error {
-  constructor({ message, statusCode = 500, logLevel = LOG_LEVELS.ERROR  }) {
-    super(message || 'Server error');
-    this.name = 'ServerError';
-    this.statusCode = statusCode;
-    this.logLevel = logLevel;
+export class ConflictError extends AppError {
+  constructor(message = "Request could not be completed due to a conflict with existing data") {
+    super(message, 409, LOG_LEVELS.WARN);
+  }
+}
+
+export class ServerError extends AppError {
+  constructor({ message, statusCode = 500, logLevel = LOG_LEVELS.ERROR }) {
+    super(message || 'Server error', statusCode, logLevel);
   }
 }

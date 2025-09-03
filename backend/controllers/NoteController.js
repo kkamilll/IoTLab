@@ -1,7 +1,7 @@
 import Note from "../models/Note.js";
 
 import mongoose from "mongoose";
-import { ValidationError, BadRequestError, PermissionError, ResourceNotFoundError, ServerError } from '../errors/CustomErrors.js'
+import { AppError, ValidationError, BadRequestError, PermissionError, ResourceNotFoundError, ServerError } from '../errors/CustomErrors.js'
 
 // Pobierz wszystkie notatki (z autorem)
 export const getNotes = async (req, res, next) => {
