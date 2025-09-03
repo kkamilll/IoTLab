@@ -3,79 +3,51 @@ import { NavLink } from 'react-router';
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
 import { useNavigate } from 'react-router-dom';
+import { Pagination } from "swiper/modules";
+
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Pagination, Navigation, Autoplay } from "swiper/modules";
-import 'swiper/css';
-import 'swiper/css/pagination';
-import 'swiper/css/navigation';
-import 'swiper/css/autoplay';
+import "swiper/css";
+import "swiper/css/navigation";
+import { Navigation, Autoplay } from "swiper/modules";
 
-import { Link } from "react-router-dom";
-
-import slide_1 from '../assets/slide_1.jpg';
-import slide_2 from '../assets/slide_2.jpg';
-import slide_3 from '../assets/slide_3.jpg';
-import slide_4 from '../assets/slide_4.jpg';
-
-const MainSlider = () => {
-    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-
-    const data_temp = [
-        {
-            name: "TOM_1",
-            text: "asdfghjklaasdfghjklaasdfghjklaasdfghjklaasdfghjkla",
-            link: "https://www.w3schools.com/js/js_date_methods.asp",
-            image: slide_1,
-        },
-        {
-            name: "TOM_2",
-            text: "asdfghjklaasdfghjklaasdfghjklaasdfghjklaasdfghjkla", //50 cahr
-            link: "https://www.w3schools.com/js/js_date_methods.asp",
-            image: slide_2,
-        },
-        {
-            name: "TOM_3",
-            text: "asdfghjklaasdfghjklaasdfghjklaasdfghjklaasdfghjkla", //50 cahr
-            link: "https://www.w3schools.com/js/js_date_methods.asp",
-            image: slide_3,
-        },
-        {
-            name: "TOM_4",
-            text: "asdfghjklaasdfghjklaasdfghjklaasdfghjklaasdfghjkla", //50 cahr
-            link: "https://www.w3schools.com/js/js_date_methods.asp",
-            image: slide_4,
-        }
-    ];
-
+const MainSlider = ({ materials }) => {
     return (
-        <div>
+        <section className="relative flex flex-col justify-center items-center min-h-[60vh] bg-gradient-to-b from-blue-900 to-blue-700 overflow-hidden">
+        <div className="absolute inset-0 w-full h-full">
+          {materials.length > 0 && (
             <Swiper
-                className="bg-transparent"
-                spaceBetween={0}
-                slidesPerView={1}
-                modules={[Pagination, Navigation, Autoplay]}
-                pagination={{ clickable: true }}
-                navigation
-                // loop ={true}
-                autoplay={{ delay: 2000 }}
-
+              modules={[Navigation, Autoplay]}
+              navigation
+              autoplay={{ delay: 3000, disableOnInteraction: false }}
+              loop
+              className="w-full h-full"
             >
-                {data_temp.map((d) => (
-                    <SwiperSlide
-                        className="w-full h-full mx-auto bg-transparent"
-                    >
-                        <div>
-                            <Link to={d.link}>
-                                <img src={d.image}></img>
-                            </Link>
-
-                        </div>
-
-                    </SwiperSlide>
+              {materials
+                .slice()
+                .sort((a, b) => (a.order || 0) - (b.order || 0))
+                .map((mat) => (
+                  <SwiperSlide key={mat._id}>
+                    {mat.link ? (
+                      <a href={mat.link} target="_blank" rel="noopener noreferrer">
+                        <img
+                          src={`http://localhost:3500/${mat.path}`}
+                          alt={mat.filename || "slide"}
+                          className="w-full h-[60vh] object-cover rounded-xl"
+                        />
+                      </a>
+                    ) : (
+                      <img
+                        src={`http://localhost:3500/${mat.path}`}
+                        alt={mat.filename || "slide"}
+                        className="w-full h-[60vh] object-cover rounded-xl"
+                      />
+                    )}
+                  </SwiperSlide>
                 ))}
-
             </Swiper>
+          )}
         </div>
+      </section>
     );
 }
 

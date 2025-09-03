@@ -11,7 +11,6 @@ import { AppError, ValidationError, ConflictError, ServerError } from '../errors
 //   isReturned: { type: Boolean, default: false } // flaga zwrotu
 // });
 
-const STATUS_ORDER = ["pending", "confirmed", "completed", "cancelled"];
 
 // const deepMerge = (target, source) => {
 //   for (const key in source) {
@@ -26,6 +25,7 @@ const STATUS_ORDER = ["pending", "confirmed", "completed", "cancelled"];
 //   }
 //   return target;
 // };
+const STATUS_ORDER = ["pending", "confirmed", "completed", "cancelled"];
 
 const createOwnerStatus = (order, productOwnerMap) => {
   const ownerStatusMap = {}; // ownerId -> { finalStatus, hasChanged }
@@ -69,16 +69,13 @@ const createOwnerStatus = (order, productOwnerMap) => {
 
 const orderItemSchema = new mongoose.Schema({
   product: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
-  // processedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
 
-  // What the customer asked for
   requested: {
     quantity: { type: Number, required: true },
     startDate: { type: Date, required: true },
     endDate: { type: Date, required: true }
   },
 
-  // What the admin approved
   confirmed: {
     quantity: { type: Number, default: null },
     startDate: { type: Date, default: null },
@@ -91,28 +88,47 @@ const orderItemSchema = new mongoose.Schema({
     default: "pending"
   },
 
-  isReturned: { type: Boolean, default: false },
+  responsibleOwner: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
 
-  timestamps: {
-    requestedAt: { type: Date, default: Date.now },
-    approvedAt: { type: Date },
-    pickedUpAt: { type: Date },
-    returnedAt: { type: Date }
-  }
+  isReturned: { type: Boolean, default: false }
 });
 
 const orderSchema = new mongoose.Schema({
   customer: {
     name: { type: String, required: true },
     email: { type: String, required: true },
-    index: { type: String, required: true } // match: "/^\d{6}$/"
+    index: { type: String, required: true }
   },
-  items: { type: [orderItemSchema], required: true }, // array of products with their rental dates
 
-  status: { type: String, enum: ["pending", "confirmed", "completed", "cancelled"], default: "pending", required: true },
+  items: { type: [orderItemSchema], required: true },
+
+  status: {
+    type: String,
+    enum: ["pending", "confirmed", "completed", "cancelled"],
+    default: "pending"
+  },
+
   ownerStatus: [{
     owner: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    status: { type: String, enum: ["pending", "confirmed", "completed", "cancelled", "changed"], default: "pending", required: true }
+    status: {
+      type: String,
+      enum: ["pending", "confirmed", "completed", "cancelled", "changed"],
+      default: "pending"
+    }
+  }],
+
+  statusHistory: [{
+    items: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
+    action: {
+      type: String,
+      enum: ["approved", "declined", "prepared", "handedOver", "returned", "cancelled", "ownershipChanged"],
+      required: true
+    },
+    by: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    role: { type: String, enum: ["owner", "admin", "system"], required: true },
+    at: { type: Date, default: Date.now },
+    oldOwner: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    newOwner: { type: mongoose.Schema.Types.ObjectId, ref: "User" }
   }]
 }, { timestamps: true });
 

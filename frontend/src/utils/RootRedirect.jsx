@@ -13,7 +13,7 @@ const RootRedirect = () => {
           navigate("/admin-dashboard", { replace: true });
           break;
         case "lecturer":
-          navigate("/customer-dashboard", { replace: true });
+          navigate("/admin-dashboard", { replace: true });
           break;
         default:
           navigate("/login", { replace: true });

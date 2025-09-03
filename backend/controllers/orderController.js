@@ -189,41 +189,46 @@ export const getReturnedOrders = async (req, res, next) => {
 
 export const createOrder = async (req, res, next) => {
   try {
-    // Ensure request body exists
-    if (!req.body) {
-      return next(new BadRequestError("Request body is missing"));
-    }
+    if (!req.body) return next(new BadRequestError("Request body is missing"));
 
     const { customer, items } = req.body;
-    const newOrder = { customer, items };
-    validateRequiredFields(Order, newOrder);
-    // if (!customer?.email || !items?.length) {
-    //   return res.status(400).json({ message: "Dane zamówienia są niekompletne" });
-    // }
 
-    // Validate each item against stock and date range
-    for (const item of items) {
-      const product = await Product.findById(item.product);
-      if (!product) {
-        return res.status(404).json({ message: `Produkt ${item.product} nie istnieje` });
-      }
+    // Fetch all products in one query
+    const productIds = items.map(i => i.product);
+    const products = await Product.find({ _id: { $in: productIds } });
+    const productMap = {};
+    products.forEach(p => productMap[p._id.toString()] = p);
 
-      if (item.requested.quantity < 1) {
-        return res.status(400).json({ message: `Niepoprawna ilość dla ${product.name}` });
-      }
+    // Enrich items
+    const enrichedItems = items.map(item => {
+      const product = productMap[item.product];
+      if (!product) throw new Error(`Produkt ${item.product} nie istnieje`);
+      if (item.requested.quantity < 1) throw new Error(`Niepoprawna ilość dla ${product.name}`);
+      if (new Date(item.requested.startDate) > new Date(item.requested.endDate))
+        throw new Error(`Niepoprawne daty dla ${product.name}`);
 
-      if (new Date(item.requested.startDate) > new Date(item.requested.endDate)) {
-        return res.status(400).json({ message: `Niepoprawne daty dla ${product.name}` });
-      }
-    }
-
-    const order = new Order({
-      customer: newOrder.customer,
-      items: newOrder.items,
+      return {
+        ...item,
+        responsibleOwner: product.owner,
+        status: "pending"
+      };
     });
+    
 
-    await order.save();
-    // console.log("order: ", order, "orders: ", await groupOrders(order, next));
+    // Initialize ownerStatus
+    const ownerStatus = enrichedItems.map(i => ({
+      owner: i.responsibleOwner,
+      status: "pending"
+    }));
+    console.log(items);
+    // validateRequiredFields(Order, { customer, items });
+
+    const order = await Order.create({
+      customer,
+      items: enrichedItems,
+      status: "pending",
+      ownerStatus
+    });
 
     res.status(201).json({ message: "Zamówienie utworzone", order });
   } catch (err) {

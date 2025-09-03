@@ -7,7 +7,7 @@ const Sidebar = () => {
     {name:"Home Page", path: "/", isParent:true},
     {name:"Dashboard", path: "/admin-dashboard", isParent:true},
     {name:"Products", path: "/admin-dashboard/products", isParent:false},
-    {name:"Categories", path: "/admin-dashboard/categories", isParent:false},
+    {name:"Categories", path: "/admin-dashboard/categories", isParent:false}, // ❌ lecturer nie zobaczy
     {name:"Orders", path: "/admin-dashboard/orders", isParent:false},
     {name:"ReturnedOrders", path: "/admin-dashboard/ReturnedOrders", isParent:false},
     {name:"Users", path: "/admin-dashboard/users", isParent:false},
@@ -16,18 +16,30 @@ const Sidebar = () => {
     {name:"Materials", path: "/admin-dashboard/materials", isParent:false},
   ];
 
-  const customerItems = [
-     {name:"Home Page", path: "/", isParent:true},
-    {name:"Products", path: "/customer-dashboard", isParent:true},
-    {name:"Orders", path: "/customer-dashboard/orders", isParent:false},
-  ];
+ const lecturerItems = menuItems.filter(
+  item => item.name !== "Categories" && item.name !== "Materials" && item.name !== "Notes" && item.name !== "Users"
+);
+
+const customerItems = [
+  {name:"Home Page", path: "/", isParent:true},
+  {name:"Products", path: "/admin-dashboard", isParent:true},
+  {name:"Orders", path: "/admin-dashboard/orders", isParent:false},
+];
 
   const { user } = useAuth();
   const [menuLinks, setMenuLinks] = useState(customerItems);
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    if (user && user.role === "admin" || user.role === "lecturer") setMenuLinks(menuItems);
+    if (!user) return;
+
+    if (user.role === "admin") {
+      setMenuLinks(menuItems);
+    } else if (user.role === "lecturer") {
+      setMenuLinks(lecturerItems); 
+    } else {
+      setMenuLinks(customerItems);
+    }
   }, [user]);
 
   return (
@@ -110,13 +122,13 @@ const Sidebar = () => {
       </div>
 
       {/* Overlay */}
-      {/* {isOpen && (
+      {isOpen && (
         <div
           className="fixed inset-0 backdrop-blur-md bg-opacity-50 z-30 md:hidden"
           onClick={() => setIsOpen(false)}
           aria-hidden="true"
         />
-      )} */}
+      )}
     </>
   );
 };

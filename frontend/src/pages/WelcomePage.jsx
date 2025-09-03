@@ -10,6 +10,7 @@ const WelcomePage = () => {
   const navigate = useNavigate();
   const { token, user, logout } = useAuth();
   const [categories, setCategories] = useState([]);
+  const [materials, setMaterials] = useState([]);
 
   const [currentTime, setCurrentTime] = useState(new Date());
   const [notes, setNotes] = useState([]);
@@ -26,6 +27,19 @@ const WelcomePage = () => {
       console.error("Błąd pobierania kategorii:", err);
     }
   };
+
+  useEffect(() => {
+    const fetchMaterials = async () => {
+      try {
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const res = await axios.get("http://localhost:3500/materials", { headers });
+        if (res.data.success) setMaterials(res.data.data);
+      } catch (err) {
+        console.error("Błąd pobierania materiałów:", err);
+      }
+    };
+    fetchMaterials();
+  }, [token]);
 
   const normalizedCategories = useMemo(
       () => categories.map(c => ({
@@ -83,7 +97,7 @@ const WelcomePage = () => {
     if (user?.role === 'admin') {
       navigate('/admin-dashboard');
     } else if (user?.role === 'lecturer') {
-      navigate('/customer-dashboard');
+      navigate('/admin-dashboard');
     } else {
       navigate('/');
     }
@@ -173,39 +187,7 @@ const WelcomePage = () => {
         </div>
       </section>
 
-      {/* FEATURES SECTION */}
-      <section className=" bg-transparent text-gray-900 ">
-        <div className="max-w-8xl  bg-red-400 mx-auto"> 
-          {/* //max-w-[1920px] */}
-          <MainSlider categoryTree={categoryTree}/>
-          {/* <h2 className="text-4xl font-extrabold text-center mb-14 tracking-tight text-blue-900">
-            Dlaczego nasz system?
-          </h2>
-          <div className="grid md:grid-cols-3 gap-12">
-            <div className="p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-shadow bg-gradient-to-tr from-blue-50 to-blue-100 cursor-default">
-              <div className="text-5xl mb-5">📦</div>
-              <h3 className="font-semibold text-2xl mb-3 text-blue-800">Pełna kontrola magazynu</h3>
-              <p className="text-gray-700">
-                Śledź ilość, dostępność i lokalizację produktów w czasie rzeczywistym.
-              </p>
-            </div>
-            <div className="p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-shadow bg-gradient-to-tr from-blue-50 to-blue-100 cursor-default">
-              <div className="text-5xl mb-5">📊</div>
-              <h3 className="font-semibold text-2xl mb-3 text-blue-800">Raporty & Statystyki</h3>
-              <p className="text-gray-700">
-                Twórz zaawansowane raporty dotyczące sprzedaży, stanu magazynowego i zamówień.
-              </p>
-            </div>
-            <div className="p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-shadow bg-gradient-to-tr from-blue-50 to-blue-100 cursor-default">
-              <div className="text-5xl mb-5">🔒</div>
-              <h3 className="font-semibold text-2xl mb-3 text-blue-800">Bezpieczny dostęp</h3>
-              <p className="text-gray-700">
-                System z autoryzacją dla administratorów i pracowników z różnymi poziomami uprawnień.
-              </p>
-            </div>
-          </div> */}
-        </div>
-      </section>
+      <MainSlider materials={materials}/>
 
       {/* ANNOUNCEMENTS & NOTES SECTION */}
       <section className="py-20 bg-gradient-to-b from-blue-900 to-blue-950 text-white px-6">
