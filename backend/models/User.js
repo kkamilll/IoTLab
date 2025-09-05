@@ -13,7 +13,7 @@ const userSchema = new mongoose.Schema({
   resetPasswordOtpExpires: Date,
 });
 
-// Możesz dodać middleware hashujący hasło przy zapisie (opcjonalnie)
+// Hash password before save
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   this.password = await bcrypt.hash(this.password, 10);

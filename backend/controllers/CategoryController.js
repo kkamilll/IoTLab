@@ -25,7 +25,7 @@ function isLoop(categoryId, newParentId, parentMap) {
 
 export const getCategoriesPublic = async (req, res, next) => {
     try {
-        const categories = await Category.find().populate("parent", "name").lean();
+        const categories = await Category.find({ isVisible: true }).populate("parent", "name").lean();
         res.status(200).json({ success: true, categories });
     } catch (error) {
         return next(new ServerError({ message: error.message }));

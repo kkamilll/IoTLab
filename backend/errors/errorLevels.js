@@ -3,5 +3,4 @@ export const LOG_LEVELS = {
   WARN: 'warn',
   INFO: 'info',
   SILENT: 'silent'
-  
 };

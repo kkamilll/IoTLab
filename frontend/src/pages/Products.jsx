@@ -734,7 +734,7 @@ const Products = () => {
                     {col === "stockTotal" ? p.stockTotal ?? 0
                       : col === "stockForRent" ? getAvailableStockForProduct(p) ?? 0
                         : col === "categories" ? p.categories?.map(category => category?.name ?? "").join(", ") ?? []
-                          : col === "owner" ? p.owner?.name ?? p.owner
+                          : col === "owner" ? p.owner?.name ?? "Brak ownera"
                             : col === "description" ? (
                               <span className="truncate cursor-pointer" onClick={() => handlePreview(p._id)} title={p.description}>
                                 {p.description?.length > 50 ? p.description.slice(0, 50) + "…" : p.description}
@@ -753,13 +753,13 @@ const Products = () => {
                 <td className="px-4 py-2 flex flex-col sm:flex-row sm:items-center gap-2 whitespace-nowrap">
 
                   <div className="flex flex-wrap gap-2">
-                    <button onClick={() => handleEdit(p)} disabled={(user.id !== p.owner._id && !isAdmin)} className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
+                    <button onClick={() => handleEdit(p)} disabled={(user.id !== p.owner?._id && !isAdmin)} className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
                       Edit
                     </button>
                     <button onClick={() => handlePreview(p._id)} className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition">
                       Preview
                     </button>
-                    <button onClick={() => handleDelete(p._id)} disabled={(user.id !== p.owner._id && !isAdmin)} className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
+                    <button onClick={() => handleDelete(p._id)} disabled={(user.id !== p.owner?._id && !isAdmin)} className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
                       Delete
                     </button>
                   </div>

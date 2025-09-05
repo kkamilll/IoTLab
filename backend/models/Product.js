@@ -11,7 +11,7 @@ const productSchema = new mongoose.Schema({
 
   extraFields: { type: Map, of: String, default: {} }, // of: mongoose.Schema.Types.Mixed
   categories: [{ type: mongoose.Schema.Types.ObjectId, ref: "Category" }], // <-- referencja do kategorii
-  tag: { type: String, unique: true },
+  tag: { type: String, sparse: true, unique: true },
   labRoom: { type: String },
   
   images: [{
