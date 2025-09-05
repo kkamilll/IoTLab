@@ -1,17 +1,19 @@
 import React from "react";
-import Sidebar from '../components/Sidebar';
-import {Outlet} from "react-router-dom";
+import Sidebar from "../components/Sidebar";
+import { Outlet } from "react-router-dom";
 
 const Admin = () => {
-    return (
-        <div>
-            <div className='flex'>
-                <Sidebar/>
-                   <div className='flex-1 ml-16 md:ml-64 bg-gray-100 min-h-screen'>
-                    <Outlet/>
-                   </div>
-            </div>
-        </div>
-    )
-}
+  return (
+    <div className="flex min-h-screen bg-gray-100">
+      {/* Sidebar */}
+      <Sidebar />
+
+      {/* Main content */}
+      <div className="flex-1 w-full md:ml-64">
+        <Outlet />
+      </div>
+    </div>
+  );
+};
+
 export default Admin;

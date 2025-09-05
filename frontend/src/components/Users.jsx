@@ -3,13 +3,16 @@ import axios from "axios";
 
 const Users = () => {
   const [formData, setFormData] = useState({ name: "", email: "", password: "", role: "", labRooms: [] });
-  const [newLabRoom, setNewLabRoom] = useState([]);
+  const [newLabRoom, setNewLabRoom] = useState("");
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [deleteLoadingId, setDeleteLoadingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const USERS_PER_PAGE = 2;
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -26,9 +29,10 @@ const Users = () => {
     setLoading(false);
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     const timer = setTimeout(() => {
       setFilteredUsers(users.filter(u => u.name.toLowerCase().includes(searchTerm.toLowerCase())));
+      setCurrentPage(1);
     }, 300);
     return () => clearTimeout(timer);
   }, [searchTerm, users]);
@@ -72,11 +76,8 @@ const Users = () => {
 
   const handleAddLabRoom = () => {
     if (newLabRoom && !formData.labRooms.includes(newLabRoom)) {
-      setFormData(prev => ({
-        ...prev,
-        labRooms: [...prev.labRooms, newLabRoom],
-      }));
-      setNewLabRoom(""); // clear input
+      setFormData(prev => ({ ...prev, labRooms: [...prev.labRooms, newLabRoom] }));
+      setNewLabRoom("");
     }
   };
 
@@ -88,11 +89,9 @@ const Users = () => {
         alert("User added successfully!");
         setFormData({ name: "", email: "", password: "", role: "", labRooms: [] });
         fetchUsers();
-      } else {
-        alert("Failed to add user. Please try again.");
-      }
+      } else alert("Failed to add user. Please try again.");
     } catch (err) {
-      console.error("Error adding user:", err);
+      console.error(err);
       alert("Server error. See console for details.");
     }
   };
@@ -104,176 +103,124 @@ const Users = () => {
         if (data.success) {
           alert("User deleted successfully!");
           fetchUsers();
-        } else {
-          alert("Failed to delete user. Please try again.");
-        }
+        } else alert("Failed to delete user. Please try again.");
       } catch (err) {
-        console.error("Error deleting user:", err);
+        console.error(err);
         alert("Server error. See console for details.");
       }
     }
   };
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  useEffect(() => { fetchUsers(); }, []);
+
+  const totalPages = Math.ceil(filteredUsers.length / USERS_PER_PAGE);
+  const paginatedUsers = filteredUsers.slice((currentPage - 1) * USERS_PER_PAGE, currentPage * USERS_PER_PAGE);
+  const goPrev = () => { if (currentPage > 1) setCurrentPage(prev => prev - 1); };
+  const goNext = () => { if (currentPage < totalPages) setCurrentPage(prev => prev + 1); };
 
   if (loading) return <div className="p-8 text-center text-gray-600 font-semibold text-lg">Loading users...</div>;
 
-  return (
-    <div className="max-w-3xl mx-auto p-6 space-y-8">
-      <h1 className="text-3xl font-extrabold text-blue-800 text-center">User Management</h1>
+  return ( 
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex justify-center py-10 px-4">
+      <div className="w-full max-w-6xl space-y-8">
 
-      {/* Search input */}
-      <input
-        type="text"
-        placeholder="Search users by name..."
-        value={searchTerm}
-        onChange={e => setSearchTerm(e.target.value)}
-        className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-      />
+        <h1 className="text-4xl font-extrabold text-blue-700 text-center">👥 User Management</h1>
 
-      {/* Table */}
-      <div className="bg-white rounded shadow overflow-x-auto">
-        <table className="min-w-full border-collapse">
-          <thead>
-            <tr className="bg-blue-100 text-blue-800">
-              <th className="border p-3 text-left">#</th>
-              <th className="border p-3 text-left">Name</th>
-              <th className="border p-3 text-left">Email</th>
-              <th className="border p-3 text-left">Role</th>
-              <th className="border p-3 text-center">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredUsers.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="text-center p-6 text-gray-500 italic">
-                  No users found.
-                </td>
-              </tr>
-            ) : (
-              filteredUsers.map((user, idx) => (
-                <tr
-                  key={user._id}
-                  className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
-                >
-                  <td className="border p-3">{idx + 1}</td>
-                  <td className="border p-3">{user.name}</td>
-                  <td className="border p-3">{user.email}</td>
-                  <td className="border p-3 capitalize">{user.role}</td>
-                  <td className="border p-3 text-center">
-                    <button
-                      onClick={() => handleDelete(user._id)}
-                      disabled={deleteLoadingId === user._id}
-                      className={`px-4 py-1 rounded text-white font-semibold transition-colors duration-200 ${deleteLoadingId === user._id
-                        ? "bg-red-300 cursor-not-allowed"
-                        : "bg-red-600 hover:bg-red-700"
-                        }`}
-                      title="Delete user"
-                    >
-                      {deleteLoadingId === user._id ? "Deleting..." : "Delete"}
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Form - one column, inputs full width */}
-      <form onSubmit={handleSubmit} className="flex flex-col space-y-4 bg-white p-6 rounded shadow">
         <input
           type="text"
-          name="name"
-          placeholder="Name"
-          value={formData.name}
-          onChange={handleChange}
-          required
-          className="p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-        />
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          value={formData.email}
-          onChange={handleChange}
-          required
-          className="p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-        />
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          value={formData.password}
-          onChange={handleChange}
-          required
-          className="p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+          placeholder="Search users by name..."
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
         />
 
-        <select
-          name="role"
-          value={formData.role}
-          onChange={handleChange}
-          required
-          className="p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-        >
-          <option value="">Select Role</option>
-          <option value="admin">Admin</option>
-          <option value="lecturer">Lecturer</option>
-        </select>
-
-        <div className="flex flex-col gap-2">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Add lab room"
-              value={newLabRoom}
-              onChange={e => setNewLabRoom(e.target.value)}
-              className="border p-2 rounded flex-1 min-w-[120px]"
-            />
-            <button
-              type="button"
-              onClick={handleAddLabRoom}
-              className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600"
-            >
-              Add
-            </button>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {formData.labRooms.map((room, idx) => (
-              <span
-                key={idx}
-                className="bg-blue-200 px-2 py-1 rounded flex items-center gap-1 max-w-[150px] truncate"
-                title={room} 
+        {/* Users Table */}
+        <div className="overflow-x-auto bg-white rounded-2xl shadow-lg mt-6">
+  <table className="min-w-full text-left">
+    <thead className="bg-blue-50 text-blue-700">
+      <tr>
+        <th className="p-4 rounded-tl-2xl">#</th>
+        <th className="p-4">Name</th>
+        <th className="p-4">Email</th>
+        <th className="p-4">Role</th>
+        <th className="p-4">Lab Rooms</th>
+        <th className="p-4 rounded-tr-2xl text-center">Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {paginatedUsers.length === 0 ? (
+        <tr>
+          <td colSpan={6} className="text-center p-6 text-gray-400 italic">No users found.</td>
+        </tr>
+      ) : (
+        paginatedUsers.map((user, idx) => (
+          <tr key={user._id} className="bg-gray-50 hover:bg-blue-50 transition rounded-xl">
+            <td className="p-4 font-semibold">{(currentPage - 1) * USERS_PER_PAGE + idx + 1}</td>
+            <td className="p-4 font-medium">{user.name}</td>
+            <td className="p-4 text-gray-700">{user.email}</td>
+            <td className="p-4 capitalize text-blue-600">{user.role}</td>
+            <td className="p-4 flex flex-wrap gap-1">
+              {user.labRooms?.map((room, i) => (
+                <span key={i} className="bg-blue-100 px-2 py-1 rounded-xl text-sm">{room}</span>
+              ))}
+            </td>
+            <td className="p-4 text-center">
+              <button
+                onClick={() => handleDelete(user._id)}
+                disabled={deleteLoadingId === user._id}
+                className={`px-4 py-2 rounded-xl text-white font-semibold transition-colors duration-200 ${deleteLoadingId === user._id ? "bg-red-300 cursor-not-allowed" : "bg-red-600 hover:bg-red-700"}`}
               >
-                <span className="truncate">{room}</span>
-                <button
-                  type="button"
-                  onClick={() => setFormData(prev => ({
-                    ...prev,
-                    labRooms: prev.labRooms.filter(r => r !== room),
-                  }))}
-                  className="text-red-600 font-bold"
-                >
-                  x
-                </button>
-              </span>
-            ))}
-          </div>
-        </div>
+                {deleteLoadingId === user._id ? "Deleting..." : "🗑️ Delete"}
+              </button>
+            </td>
+          </tr>
+        ))
+      )}
+    </tbody>
+  </table>
+</div>
 
-        <button
-          type="submit"
-          disabled={submitLoading}
-          className={`p-3 rounded text-white font-semibold ${submitLoading ? "bg-green-300 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"
-            } transition-colors duration-200`}
-        >
-          {submitLoading ? "Adding..." : "Add User"}
-        </button>
-      </form>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex justify-center gap-4 mt-4">
+            <button onClick={goPrev} disabled={currentPage === 1} className="px-4 py-2 bg-gray-300 rounded-xl disabled:opacity-50">Previous</button>
+            <span className="px-4 py-2">{currentPage} / {totalPages}</span>
+            <button onClick={goNext} disabled={currentPage === totalPages} className="px-4 py-2 bg-gray-300 rounded-xl disabled:opacity-50">Next</button>
+          </div>
+        )}
+
+        {/* Add User Form */}
+        <form onSubmit={handleSubmit} className="flex flex-col space-y-4 bg-gray-50 p-6 rounded-2xl shadow-lg">
+          <input type="text" name="name" placeholder="Name" value={formData.name} onChange={handleChange} required className="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400" />
+          <input type="email" name="email" placeholder="Email" value={formData.email} onChange={handleChange} required className="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400" />
+          <input type="password" name="password" placeholder="Password" value={formData.password} onChange={handleChange} required className="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400" />
+          <select name="role" value={formData.role} onChange={handleChange} required className="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <option value="">Select Role</option>
+            <option value="admin">Admin</option>
+            <option value="lecturer">Lecturer</option>
+          </select>
+
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-2">
+              <input type="text" placeholder="Add lab room" value={newLabRoom} onChange={e => setNewLabRoom(e.target.value)} className="border p-2 rounded-xl flex-1 min-w-[120px]" />
+              <button type="button" onClick={handleAddLabRoom} className="px-3 py-1 bg-gray-500 text-white rounded-xl hover:bg-gray-600">Add</button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {formData.labRooms.map((room, idx) => (
+                <span key={idx} className="bg-blue-200 px-2 py-1 rounded-xl flex items-center gap-1 max-w-[150px] truncate" title={room}>
+                  <span className="truncate">{room}</span>
+                  <button type="button" onClick={() => setFormData(prev => ({ ...prev, labRooms: prev.labRooms.filter(r => r !== room) }))} className="text-red-600 font-bold">x</button>
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <button type="submit" disabled={submitLoading} className={`p-3 rounded-xl text-white font-semibold ${submitLoading ? "bg-green-300 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"} transition-colors duration-200`}>
+            {submitLoading ? "Adding..." : "➕ Add User"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 };

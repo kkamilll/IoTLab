@@ -10,7 +10,6 @@ router.get("/", getMaterials);
 router.post("/", authMiddleware, filesUploadMaterial.single("file"), addMaterial);
 router.delete("/:id", authMiddleware, deleteMaterial);
 router.patch("/reorder", authMiddleware, reorderMaterials);
-// PATCH aktualizacja linku
 router.patch("/:id", authMiddleware, updateMaterialLink);
 
 export default router;

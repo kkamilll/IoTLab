@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 
@@ -6,124 +6,255 @@ const Notes = () => {
   const [notes, setNotes] = useState([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editingText, setEditingText] = useState("");
+  const [important, setImportant] = useState(false); // dla dodawania
+  const [editingImportant, setEditingImportant] = useState(false); // dla edycji
   const { token } = useAuth();
+  const MAX_LENGTH = 500;
 
   const axiosInstance = axios.create({
     baseURL: "http://localhost:3500",
     headers: { Authorization: `Bearer ${token}` },
   });
 
+  const addTextareaRef = useRef(null);
+  const editingTextareaRef = useRef(null);
+  const minHeight = 40;
+
+  const adjustAddTextareaHeight = () => {
+    if (!addTextareaRef.current) return;
+    addTextareaRef.current.style.height = `${minHeight}px`;
+    addTextareaRef.current.style.height = `${addTextareaRef.current.scrollHeight}px`;
+  };
+
+  const adjustEditingTextareaHeight = () => {
+    if (!editingTextareaRef.current) return;
+    editingTextareaRef.current.style.height = `${minHeight}px`;
+    editingTextareaRef.current.style.height = `${editingTextareaRef.current.scrollHeight}px`;
+  };
+
   const fetchNotes = async () => {
     try {
       const res = await axiosInstance.get("/notes");
-      if (res.data.success) setNotes(res.data.data);
+      if (res.data.success) {
+        // sortowanie: ważne na górze
+        const sortedNotes = res.data.data.sort((a, b) => b.important - a.important);
+        setNotes(sortedNotes);
+      }
     } catch (error) {
-      console.error("Fetch notes error:", error.response?.data || error.message);
-      alert("Błąd podczas pobierania notatek");
+      console.error(error.response?.data || error.message);
+      alert("Error fetching notes");
     }
   };
 
   const deleteNote = async (id) => {
-    if (!window.confirm("Czy na pewno usunąć tę notatkę?")) return;
+    if (!window.confirm("Are you sure you want to delete this note?")) return;
     try {
       await axiosInstance.delete(`/notes/${id}`);
       setNotes((prev) => prev.filter((note) => note._id !== id));
-    } catch (error) {
-      console.error("Delete note error:", error.response?.data || error.message);
-      alert(`Błąd podczas usuwania notatki: [${err.response.data.message}]`);
+    } catch (err) {
+      console.error(err.response?.data || err.message);
+      alert(`Error deleting note: ${err.response?.data?.message || err.message}`);
     }
   };
 
   const addNote = async () => {
-    if (!text.trim()) return alert("Tekst notatki nie może być pusty");
+    if (!text.trim()) return alert("Note text cannot be empty");
     try {
       setLoading(true);
-      const res = await axiosInstance.post("/notes/create", { text });
+      const res = await axiosInstance.post("/notes/create", { text, important });
       if (res.data.success) {
-        setNotes((prev) => [res.data.data, ...prev]);
+        const newNote = res.data.data;
+
+        setNotes(prev => {
+          const importantNotes = prev.filter(n => n.important);
+          const normalNotes = prev.filter(n => !n.important);
+          if (newNote.important) return [newNote, ...importantNotes, ...normalNotes];
+          else return [...importantNotes, newNote, ...normalNotes];
+        });
+
         setText("");
+        setImportant(false);
       }
-    } catch {
-      alert(`Błąd podczas dodawania notatki: [${err.response.data.message}]`);
+    } catch (err) {
+      console.error(err.response?.data || err.message);
+      alert(`Error adding note: ${err.response?.data?.message || err.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchNotes();
-  }, [token]);
+  const startEditing = (note) => {
+    setEditingId(note._id);
+    setEditingText(note.text);
+    setEditingImportant(note.important || false);
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditingText("");
+    setEditingImportant(false);
+  };
+
+  const saveEdit = async (id) => {
+    if (!editingText.trim()) return alert("Note text cannot be empty");
+    try {
+      const res = await axiosInstance.put(`/notes/${id}`, { 
+        text: editingText,
+        important: editingImportant
+      });
+      if (res.data.success) {
+        const updatedNote = res.data.data;
+        setNotes(prev => {
+          const importantNotes = prev.filter(n => n.important && n._id !== id);
+          const normalNotes = prev.filter(n => !n.important && n._id !== id);
+          if (updatedNote.important) return [updatedNote, ...importantNotes, ...normalNotes];
+          else return [...importantNotes, updatedNote, ...normalNotes];
+        });
+        cancelEditing();
+      }
+    } catch (err) {
+      console.error(err.response?.data || err.message);
+      alert(`Error editing note: ${err.response?.data?.message || err.message}`);
+    }
+  };
+
+  useEffect(() => { fetchNotes(); }, [token]);
+  useEffect(() => { adjustAddTextareaHeight(); }, [text]);
+  useEffect(() => { adjustEditingTextareaHeight(); }, [editingText]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex justify-center py-10 px-4">
-      <div className="w-full max-w-3xl bg-white rounded-2xl shadow-2xl p-8">
+      <div className="w-full max-w-7xl bg-white rounded-2xl shadow-2xl p-8">
         <h2 className="text-4xl font-extrabold text-blue-700 mb-10 text-center">
-          📝 Twoje Notatki
+          📝 Your Notes
         </h2>
 
-        {/* Pole dodawania notatki */}
-        <div className="flex mb-8 gap-4">
-          <input
-            type="text"
-            placeholder="Dodaj nową notatkę..."
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            className="flex-grow border border-gray-300 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition"
-            disabled={loading}
-          />
-          <button
-            onClick={addNote}
-            disabled={loading}
-            className={`bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl shadow-lg transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed`}
-          >
-            {loading ? "Dodaję..." : "Dodaj"}
-          </button>
-        </div>
+        {/* Dodawanie notatki */}
+<div className="flex flex-col mb-4 gap-2">
+  <textarea
+    ref={addTextareaRef}
+    value={text}
+    onChange={(e) => {
+      if (e.target.value.length <= MAX_LENGTH) setText(e.target.value);
+    }}
+    placeholder="Add a new note..."
+    className="w-full border border-gray-300 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 transition resize-none overflow-hidden"
+  />
+  <div className="flex justify-between items-center mt-2">
+    <p className="text-sm text-gray-500">{text.length} / {MAX_LENGTH}</p>
+    <div className="flex items-center gap-2">
+      {/* Important button obok Add */}
+   <button
+  type="button"
+  onClick={() => setImportant(!important)}
+  className={`px-4 py-2 rounded-xl border font-semibold transition flex items-center gap-2 ${
+    important
+      ? "bg-red-500 text-white border-red-400 shadow-md"
+      : "bg-white text-red-600 border-red-400 hover:bg-red-100 hover:text-red-700"
+  }`}
+>Important
+  <span className="text-xl font-bold text-red-600 leading-none">!</span>
+  
+</button>
+
+
+  <button
+    onClick={addNote}
+    disabled={loading || !text.trim()}
+    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl shadow-lg transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+    style={{ height: '42px' }} // wyrównujemy wysokość do pierwszego
+  >
+    {loading ? "Adding..." : "Add"}
+  </button>
+    </div>
+  </div>
+</div>
+
 
         {/* Lista notatek */}
-        <div className="space-y-4">
-          {notes.length === 0 && (
-            <div className="text-center text-gray-400 py-16 select-none italic">
-              Brak notatek — czas coś zapisać!
-            </div>
-          )}
-
+        <div className="space-y-4 mt-6">
           {notes.map((note) => (
             <div
               key={note._id}
-              className="flex justify-between items-start bg-gray-50 border border-gray-200 rounded-xl p-4 hover:shadow-md transition"
+              className={`flex justify-between items-start border rounded-xl p-4 transition ${
+                note.important ? "bg-red-50 border-red-400" : "bg-gray-50 border-gray-200"
+              } hover:shadow-md`}
             >
-              <div className="max-w-[80%]">
-                <p className="font-medium text-gray-800 whitespace-pre-wrap">
-                  {note.text}
-                </p>
-                <p className="mt-1 text-sm text-gray-500">
-                  Dodane przez{" "}
-                  <strong>{note.author?.name || "Anonim"}</strong> •{" "}
+              <div className="max-w-full w-full overflow-x-auto">
+                {editingId === note._id ? (
+                  <>
+                    <textarea
+                      ref={editingTextareaRef}
+                      value={editingText}
+                      onChange={(e) => {
+                        if (e.target.value.length <= MAX_LENGTH)
+                          setEditingText(e.target.value);
+                      }}
+                      className="w-full border border-gray-300 rounded-xl px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400 transition resize-none overflow-auto max-h-60"
+                    />
+                    <div className="flex items-center gap-3 mt-2">
+                      <label className="flex items-center gap-2 text-sm text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={editingImportant}
+                          onChange={(e) => setEditingImportant(e.target.checked)}
+                          className="h-4 w-4 accent-red-500"
+                        />
+                        Important ❗
+                      </label>
+                    </div>
+                  </>
+                ) : (
+                  <p className="font-medium text-gray-800 whitespace-pre-wrap break-words">
+                    {note.important && <span className="text-red-600 font-bold mr-2">❗</span>}
+                    {note.text}
+                  </p>
+                )}
+                <p className="mt-2 text-sm text-gray-500">
+                  Added by <strong>{note.author?.name || "Anonymous"}</strong> •{" "}
                   {new Date(note.createdAt).toLocaleString("pl-PL")}
                 </p>
               </div>
-              <button
-                onClick={() => deleteNote(note._id)}
-                title="Usuń notatkę"
-                className="text-red-500 hover:text-red-700 ml-4 flex items-center justify-center p-2 rounded-full hover:bg-red-100 transition"
-                aria-label="Usuń notatkę"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
+
+              <div className="flex gap-2 ml-4">
+                {editingId === note._id ? (
+                  <>
+                    <button
+                      onClick={() => saveEdit(note._id)}
+                      className="text-green-500 hover:text-green-700 p-2 rounded-full hover:bg-green-100 transition"
+                      title="Save changes"
+                    >
+                      💾
+                    </button>
+                    <button
+                      onClick={cancelEditing}
+                      className="text-gray-500 hover:text-gray-700 p-2 rounded-full hover:bg-gray-100 transition"
+                      title="Cancel editing"
+                    >
+                      ❌
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => startEditing(note)}
+                      className="text-blue-500 hover:text-blue-700 p-2 rounded-full hover:bg-blue-100 transition"
+                      title="Edit note"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      onClick={() => deleteNote(note._id)}
+                      className="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-100 transition"
+                      title="Delete note"
+                    >
+                      🗑️
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           ))}
         </div>

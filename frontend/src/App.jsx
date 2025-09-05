@@ -37,7 +37,7 @@ function App() {
         <Route path="/redirect" element={<RootRedirect />} />
         <Route path="/logout" element={<Logout />} />
         <Route path="/cart" element={<CartPage />} />
-        <Route path="/guest-products" element={<GuestProducts />} />
+        <Route path="/guest-products/:menuCategory" element={<GuestProducts />} />
 
         {/* Admin Dashboard - Protected */}
         <Route

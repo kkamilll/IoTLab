@@ -1,115 +1,94 @@
 import Material from "../models/Material.js";
 import fs from "fs";
+import { AppError, ValidationError, BadRequestError, PermissionError, ResourceNotFoundError, ServerError } from '../errors/CustomErrors.js';
 
-import { AppError, ValidationError, BadRequestError, PermissionError, ResourceNotFoundError, ServerError } from '../errors/CustomErrors.js'
-
-// Pobierz wszystkie materiały z autorem
+// Get all materials with author
 export const getMaterials = async (req, res) => {
   try {
-  const materials = await Material.find()
-  .populate("author", "name email role")
-  .sort({ order: 1 }); // rosnąco wg order
+    const materials = await Material.find()
+      .populate("author", "name email role")
+      .sort({ order: 1 });
 
     res.status(200).json({ success: true, data: materials });
   } catch (error) {
     console.error("❌ getMaterials error:", error);
-    res.status(500).json({ success: false, message: "Błąd serwera" });
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
 export const addMaterial = async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: "Brak pliku" });
-    }
+    if (!req.file) return res.status(400).json({ success: false, message: "No file provided" });
 
- // Przy dodawaniu nowego materiału
-const newMaterial = new Material({
-  filename: req.file.originalname,
-  path: req.file.path,
-  link: req.body.link || null,
-  author: req.user ? req.user._id : null,
-  order: await Material.countDocuments() + 1, // ustawia nowy element na końcu
-});
+    // Przesuń wszystkie istniejące materiały o 1 w dół
+    await Material.updateMany({}, { $inc: { order: 1 } });
 
+    // Dodaj nowy materiał z order = 1
+    const newMaterial = new Material({
+      filename: req.file.originalname,
+      path: req.file.path,
+      link: req.body.link || null,
+      author: req.user ? req.user._id : null,
+      order: 1,
+    });
 
     await newMaterial.save();
-
-    if (newMaterial.author) {
-      await newMaterial.populate("author", "name email");
-    }
+    if (newMaterial.author) await newMaterial.populate("author", "name email");
 
     res.status(201).json({ success: true, data: newMaterial });
   } catch (error) {
     console.error("addMaterial error:", error);
-    res.status(500).json({ success: false, message: "Błąd serwera" });
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
-// ❌ Usuń materiał
 
 export const deleteMaterial = async (req, res) => {
   try {
     const { id } = req.params;
     const material = await Material.findById(id);
+    if (!material) return res.status(404).json({ success: false, message: "Material not found" });
 
-    if (!material) {
-      return res.status(404).json({ success: false, message: "Materiał nie znaleziony" });
-    }
-
-    // Usuwanie pliku fizycznego z serwera, jeśli istnieje
-    if (material.path) {
-      fs.unlink(material.path, (err) => {
-        if (err) console.error("Błąd usuwania pliku:", err);
-      });
-    }
-
+    if (material.path) fs.unlink(material.path, (err) => { if (err) console.error("File deletion error:", err); });
     await Material.findByIdAndDelete(id);
-    res.status(200).json({ success: true, message: "Materiał usunięty" });
+
+    res.status(200).json({ success: true, message: "Material deleted" });
   } catch (error) {
     console.error("❌ deleteMaterial error:", error);
-    res.status(500).json({ success: false, message: "Błąd serwera" });
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
-
-
-
 
 export const updateMaterialLink = async (req, res) => {
   try {
     const { id } = req.params;
     const { link } = req.body;
     const material = await Material.findById(id);
-    if (!material) return res.status(404).json({ success: false, message: "Materiał nie znaleziony" });
+    if (!material) return res.status(404).json({ success: false, message: "Material not found" });
 
     material.link = link;
     await material.save();
+
     res.status(200).json({ success: true, data: material });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ success: false, message: "Błąd serwera" });
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
 export const reorderMaterials = async (req, res) => {
   try {
-    const { materials } = req.body; // tablica { id, order }
-
-    if (!Array.isArray(materials)) {
-      return res.status(400).json({ success: false, message: "Niepoprawne dane" });
-    }
+    const { materials } = req.body;
+    if (!Array.isArray(materials)) return res.status(400).json({ success: false, message: "Invalid data" });
 
     const bulkOps = materials.map((m) => ({
-      updateOne: {
-        filter: { _id: m.id },
-        update: { order: m.order },
-      },
+      updateOne: { filter: { _id: m.id }, update: { order: m.order } }
     }));
 
     await Material.bulkWrite(bulkOps);
-
-    res.status(200).json({ success: true, message: "Kolejność zaktualizowana" });
+    res.status(200).json({ success: true, message: "Order updated" });
   } catch (err) {
     console.error("reorderMaterials error:", err);
-    res.status(500).json({ success: false, message: "Błąd serwera" });
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
