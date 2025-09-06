@@ -11,7 +11,7 @@ import PasswordResetFlow from './pages/PasswordResetFlow';
 
 // Components
 import Users from './components/Users';
-import Orders from './components/Orders';
+import Orders from './pages/Orders';
 import Logout from './components/Logout';
 import ReturnedOrders from './components/ReturnedOrders';
 
@@ -57,6 +57,10 @@ function App() {
           <Route path="preview" element={<ProductPreview />} />
           <Route path="notes" element={<Notes />} />
           <Route path="materials" element={<Materials />} />
+
+
+
+          
            <Route
     path="categories"
     element={

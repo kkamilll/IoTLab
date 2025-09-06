@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import MainMenu from '../components/MainMenu';
 import MainSlider from '../components/MainSlider';
 import { buildTree } from "../utils/categoryUtils";
 
@@ -152,6 +151,37 @@ const WelcomePage = () => {
               </button>
             </div>
           )}
+        </div>
+      </section>
+{/* INFO PANEL */}
+<section className="py-20 bg-white text-gray-900">
+        <div className="max-w-6xl mx-auto px-6">
+          <h2 className="text-4xl font-extrabold text-center mb-14 tracking-tight text-blue-900">
+            Dlaczego nasz system?
+          </h2>
+          <div className="grid md:grid-cols-3 gap-12">
+            <div className="p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-shadow bg-gradient-to-tr from-blue-50 to-blue-100 cursor-default">
+              <div className="text-5xl mb-5">📦</div>
+              <h3 className="font-semibold text-2xl mb-3 text-blue-800">Pełna kontrola magazynu</h3>
+              <p className="text-gray-700">
+                Śledź ilość, dostępność i lokalizację produktów w czasie rzeczywistym.
+              </p>
+            </div>
+            <div className="p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-shadow bg-gradient-to-tr from-blue-50 to-blue-100 cursor-default">
+              <div className="text-5xl mb-5">📊</div>
+              <h3 className="font-semibold text-2xl mb-3 text-blue-800">Raporty & Statystyki</h3>
+              <p className="text-gray-700">
+                Twórz zaawansowane raporty dotyczące sprzedaży, stanu magazynowego i zamówień.
+              </p>
+            </div>
+            <div className="p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-shadow bg-gradient-to-tr from-blue-50 to-blue-100 cursor-default">
+              <div className="text-5xl mb-5">🔒</div>
+              <h3 className="font-semibold text-2xl mb-3 text-blue-800">Bezpieczny dostęp</h3>
+              <p className="text-gray-700">
+                System z autoryzacją dla administratorów i pracowników z różnymi poziomami uprawnień.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
