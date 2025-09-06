@@ -1,30 +1,30 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+
 const GuestProducts = () => {
   const navigate = useNavigate();
+  const { menuCategory } = useParams(); // ID kategorii z URL
 
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [extraColumns, setExtraColumns] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTag, setActiveTag] = useState("");
-  const [activeCategory, setActiveCategory] = useState("");
+  const [activeCategory, setActiveCategory] = useState(menuCategory || "");
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [cartQuantities, setCartQuantities] = useState({});
 
   const allColumns = ["name", "description", "stock", "category", ...extraColumns];
   const allTags = [...new Set(products.flatMap(p => p.tags || []))];
-  const allCategories = [...new Set(products.map(p => p.category?.name))];
 
-  // get category from menu
-  const { menuCategory } = useParams();
-
+  // Pobranie produktów
   const fetchProducts = async () => {
     try {
       const res = await axios.get("http://localhost:3500/products/public");
       const allExtraKeys = new Set(extraColumns);
+
       res.data.products.forEach(p => {
         if (p.extraFields) Object.keys(p.extraFields).forEach(k => allExtraKeys.add(k));
       });
@@ -39,38 +39,46 @@ const GuestProducts = () => {
 
       setExtraColumns([...allExtraKeys]);
       setProducts(updatedProducts);
-      setFilteredProducts(updatedProducts);
     } catch (err) {
       console.error("Error fetching products:", err);
       alert("Błąd podczas pobierania produktów");
     }
   };
 
+  // Pobranie wszystkich widocznych kategorii
+  const fetchCategories = async () => {
+    try {
+      const res = await axios.get("http://localhost:3500/categories/public");
+      setCategories(res.data.categories || []);
+    } catch (err) {
+      console.error("Error fetching categories:", err);
+    }
+  };
+
   useEffect(() => {
     fetchProducts();
-    // set category if was from menu
-    if (menuCategory !== undefined) {
-      console.log("menuCategory: " + menuCategory);
-      setActiveCategory(menuCategory);
-    }
-    else {
-      console.log("menuCategory UNDEF: " + menuCategory);
-    }
+    fetchCategories();
   }, []);
 
+  // Filtrowanie produktów
   useEffect(() => {
     let filtered = products.filter(p => {
       const searchLower = searchTerm.toLowerCase();
-      if (p.name.toLowerCase().includes(searchLower) ||
-        (p.description && p.description.toLowerCase().includes(searchLower))) return true;
+      if (p.name.toLowerCase().includes(searchLower)) return true;
+      if (p.description && p.description.toLowerCase().includes(searchLower)) return true;
       if (p.tags?.some(tag => tag.toLowerCase().includes(searchLower))) return true;
-      if (Object.values(p.extraFields || {}).some(val =>
-        val.toString().toLowerCase().includes(searchLower))) return true;
+      if (Object.values(p.extraFields || {}).some(val => val.toString().toLowerCase().includes(searchLower))) return true;
       return false;
     });
 
     if (activeTag) filtered = filtered.filter(p => p.tags?.includes(activeTag));
-    if (activeCategory) filtered = filtered.filter(p => p.categories && p.categories?.some(cat => cat.name === activeCategory));
+
+    if (activeCategory) {
+      filtered = filtered.filter(p =>
+        p.category?._id === activeCategory ||
+        p.categories?.some(cat => cat._id === activeCategory)
+      );
+    }
 
     if (sortConfig.key && sortConfig.direction) {
       filtered.sort((a, b) => {
@@ -103,7 +111,6 @@ const GuestProducts = () => {
   const handleQuantityChange = (productId, value, product) => {
     const cart = JSON.parse(localStorage.getItem("cart")) || [];
     const inCart = cart.find(p => p._id === productId)?.quantity || 0;
-    // const availableStock = product.stockForRent;
     const maxQty = (product.stockForRent || 0) - inCart;
 
     let qty = parseInt(value, 10);
@@ -128,7 +135,6 @@ const GuestProducts = () => {
 
     localStorage.setItem("cart", JSON.stringify(cart));
 
-    // Update only the input quantity to 1 if there is remaining stock
     const inCart = cart.find(item => item._id === product._id)?.quantity || 0;
     const remaining = availableStock - inCart;
     setCartQuantities(prev => ({ ...prev, [product._id]: remaining > 0 ? 1 : 0 }));
@@ -138,12 +144,12 @@ const GuestProducts = () => {
     <div className="w-full h-full flex flex-col gap-4 p-6 bg-gray-50">
       <h1 className="text-3xl font-extrabold text-gray-700">Products</h1>
 
-      {/* Search, Filters & Cart */}
+      {/* Search & Filters */}
       <div className="flex flex-col sm:flex-row justify-between gap-3 items-center">
         <input
           type="text"
           placeholder="Search"
-          className="border border-gray-300 p-2 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 flex-1"
+          className="border border-gray-300 p-2 rounded shadow-sm flex-1"
           onChange={(e) => setSearchTerm(e.target.value.toLowerCase())}
         />
         <div className="flex gap-4 items-center">
@@ -153,13 +159,12 @@ const GuestProducts = () => {
           </select>
           <select value={activeCategory} onChange={(e) => setActiveCategory(e.target.value)} className="border p-2 rounded">
             <option value="">All Categories</option>
-            {allCategories.map((cat, idx) => <option key={idx} value={cat}>{cat}</option>)}
+            {categories.map((cat) => (
+              <option key={cat._id} value={cat._id}>{cat.name}</option>
+            ))}
           </select>
-          <button
-            onClick={() => navigate("/cart")}
-            className="px-6 py-3 bg-blue-500 text-white font-semibold rounded hover:bg-blue-600 transition"
-          >
-            Przejdź do koszyka
+          <button onClick={() => navigate("/cart")} className="px-6 py-3 bg-blue-500 text-white rounded hover:bg-blue-600">
+            Go to Cart
           </button>
         </div>
       </div>
@@ -170,22 +175,19 @@ const GuestProducts = () => {
           <thead className="bg-gray-100">
             <tr>
               {allColumns.map((col, idx) => (
-                <th key={idx} className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort(col)}>
+                <th key={idx} className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer" onClick={() => handleSort(col)}>
                   {col} {sortConfig.key === col ? (sortConfig.direction === "asc" ? "↑" : "↓") : ""}
                 </th>
               ))}
               <th className="px-4 py-2">Add to Cart</th>
             </tr>
           </thead>
-
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredProducts.map(p => (
               <tr key={p._id}>
                 {allColumns.map((col, idx) => (
                   <td key={idx} className="px-4 py-2 text-sm text-gray-700">
-                    {col === "stock" ? p.stock :
-                      col === "category" ? p.category?.name ?? "" :
-                        p[col] ?? p.extraFields?.[col] ?? ""}
+                    {col === "stock" ? p.stock : col === "category" ? p.category?.name ?? "" : p[col] ?? p.extraFields?.[col] ?? ""}
                   </td>
                 ))}
                 <td className="px-4 py-2 flex items-center gap-2">
@@ -197,14 +199,11 @@ const GuestProducts = () => {
                     onChange={(e) => handleQuantityChange(p._id, e.target.value, p)}
                     className="w-16 border rounded p-1 text-center"
                   />
-                  <button
-                    onClick={() => handleAddToCart(p)}
-                    className="px-2 py-1 bg-purple-500 text-white rounded hover:bg-purple-600"
-                  >
-                    Dodaj
+                  <button onClick={() => handleAddToCart(p)} className="px-2 py-1 bg-purple-500 text-white rounded hover:bg-purple-600">
+                    Add
                   </button>
                   <span className="text-gray-700 text-sm font-medium">
-                    W koszyku: {JSON.parse(localStorage.getItem("cart"))?.find(item => item._id === p._id)?.quantity || 0}
+                    In Cart: {JSON.parse(localStorage.getItem("cart"))?.find(item => item._id === p._id)?.quantity || 0}
                   </span>
                 </td>
               </tr>

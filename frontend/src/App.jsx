@@ -25,6 +25,7 @@ import CartPage from "./pages/CartPage";
 import Categories from "./pages/Categories";
 import GuestProducts from "./pages/GuestProducts";
 import Materials from "./pages/Materials";
+import MainGuest from './pages/MainGuest';
 function App() {
   return (
     <Router>
@@ -38,7 +39,7 @@ function App() {
         <Route path="/logout" element={<Logout />} />
         <Route path="/cart" element={<CartPage />} />
         <Route path="/guest-products/:menuCategory" element={<GuestProducts />} />
-
+        <Route path="/mainguest" element={<MainGuest />} />
         {/* Admin Dashboard - Protected */}
         <Route
           path="/admin-dashboard"

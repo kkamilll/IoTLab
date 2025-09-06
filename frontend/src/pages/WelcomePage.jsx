@@ -17,7 +17,7 @@ const WelcomePage = () => {
   const [notesError, setNotesError] = useState(null);
   const [notesPage, setNotesPage] = useState(1);
 
-  const NOTES_PER_PAGE = 5;
+  const NOTES_PER_PAGE = 4;
 
   useEffect(() => { fetchCategories(); }, []);
   const fetchCategories = async () => {
@@ -125,12 +125,7 @@ const WelcomePage = () => {
         )}
       </div>
 
-      {/* HERO SECTION */}
-      <section className="relative flex flex-col justify-center items-center min-h-[50vh] bg-gradient-to-b from-blue-900 to-blue-700 py-10">
-        <div className="relative z-20 px-8 max-w-4xl text-center">
-          <MainMenu categoryTree={categoryTree} />
-        </div>
-      </section>
+   
 
       {/* WELCOME SECTION */}
       <section className="relative flex flex-col justify-center items-center min-h-[40vh] bg-blue-800/20 rounded-3xl py-10 px-6">
@@ -150,7 +145,7 @@ const WelcomePage = () => {
                 Login
               </button>
               <button
-                onClick={() => navigate('/guest-products')}
+                onClick={() => navigate('/mainguest')}
                 className="bg-green-600 hover:bg-green-700 text-white font-semibold px-10 py-3 rounded-full shadow-lg transition duration-300"
               >
                 Order as Guest

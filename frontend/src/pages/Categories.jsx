@@ -126,7 +126,7 @@ const Categories = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center p-6">
-      <div className="w-full max-w-4xl bg-white rounded shadow-md p-8 flex flex-col gap-8">
+      <div className="w-full max-w-6xl bg-white rounded shadow-md p-8 flex flex-col gap-8">
         <h1 className="text-3xl font-extrabold text-gray-800 text-center">
           Zarządzanie kategoriami
         </h1>
@@ -175,6 +175,7 @@ const Categories = () => {
                   type="text"
                   value={categoryData.name}
                   onChange={(e) => setCategoryData((prev) => ({ ...prev, name: e.target.value }))}
+                  maxLength={15}
                   className="w-full border rounded p-2"
                   placeholder="np. Elektronika"
                 />

@@ -8,12 +8,10 @@ import { MongoServerError } from 'mongodb';
 import { AppError, ValidationError, BadRequestError, ServerError } from '../errors/CustomErrors.js'
 import { validateRequiredFields } from '../utils/validateRequiredFields.js'
 
-// Generate a 6-digit OTP code as a string
 function generateOtp() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// Login user
 export const login = async (req, res, next) => {
   try {
     if (!req.body) {
@@ -26,12 +24,20 @@ export const login = async (req, res, next) => {
       return res.status(401).json({ success: false, message: "User not found" });
     }
 
+    if (!user.isActive) {
+      return res.status(403).json({ success: false, message: "Konto jest zablokowane" });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ success: false, message: "Invalid credentials" });
     }
 
-    const token = jwt.sign({ id: user._id, role: user.role, tokenVersion: user.tokenVersion }, process.env.JWT_SECRET, { expiresIn: "2d" });
+    const token = jwt.sign(
+      { id: user._id, role: user.role, tokenVersion: user.tokenVersion },
+      process.env.JWT_SECRET,
+      { expiresIn: "2d" }
+    );
 
     return res.status(200).json({
       success: true,
@@ -45,7 +51,6 @@ export const login = async (req, res, next) => {
   }
 };
 
-// Forgot password - send OTP to email
 export const forgotPassword = async (req, res, next) => {
   try {
     if (!req.body) {
@@ -60,7 +65,7 @@ export const forgotPassword = async (req, res, next) => {
 
     const otpCode = generateOtp();
     user.resetPasswordOtp = otpCode;
-    user.resetPasswordOtpExpires = Date.now() + 15 * 60 * 1000; // 15 minutes validity
+    user.resetPasswordOtpExpires = Date.now() + 15 * 60 * 1000;
     await user.save();
 
     await sendVerificationCode(otpCode, user.email, res);
@@ -71,7 +76,6 @@ export const forgotPassword = async (req, res, next) => {
   }
 };
 
-// Reset password using OTP
 export const resetPassword = async (req, res, next) => {
   try {
     if (!req.body) {
@@ -94,7 +98,6 @@ export const resetPassword = async (req, res, next) => {
     }
 
     user.password = newPassword;
-
     user.resetPasswordOtp = null;
     user.resetPasswordOtpExpires = null;
     await user.save();
