@@ -2,15 +2,15 @@ import { createContext, useState, useContext } from "react";
 
 const AuthContext = createContext();
 
-// --- Helper: check if JWT is expired ---
-const isTokenExpired = (token) => {
+// --- Helper: check if JWT is expired or malformed ---
+const isTokenValid = (token) => {
+  if (!token) return false;
   try {
     const payload = JSON.parse(atob(token.split(".")[1]));
-    if (!payload.exp) return false; // if token has no exp, assume valid
     const now = Date.now() / 1000;
-    return payload.exp < now;
-  } catch (err) {
-    return true; // if invalid token, treat as expired
+    return !payload.exp || payload.exp > now;
+  } catch {
+    return false; // malformed token
   }
 };
 
@@ -19,19 +19,19 @@ const AuthProvider = ({ children }) => {
     const storedUser = localStorage.getItem("pos-user");
     return storedUser ? JSON.parse(storedUser) : null;
   });
-  
+
   const [token, setToken] = useState(() => {
     const storedToken = localStorage.getItem("pos-token");
-    if (storedToken && isTokenExpired(storedToken)) {
-      // clear expired token
+    if (!isTokenValid(storedToken)) {
       localStorage.removeItem("pos-token");
       localStorage.removeItem("pos-user");
       return null;
     }
-    return storedToken || null;
+    return storedToken;
   });
 
   const login = (userData, jwtToken) => {
+    if (!isTokenValid(jwtToken)) return;
     setUser(userData);
     setToken(jwtToken);
     localStorage.setItem("pos-user", JSON.stringify(userData));

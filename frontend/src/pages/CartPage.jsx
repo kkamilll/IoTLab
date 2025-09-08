@@ -6,31 +6,24 @@ import { useAuth } from "../context/AuthContext";
 const CartPage = () => {
   const [cart, setCart] = useState([]);
   const [availability, setAvailability] = useState({});
-  const [inDemand, setInDemand] = useState({});
-  const navigate = useNavigate();
-  const { token } = useAuth();
-
-  const today = new Date().toISOString().split("T")[0];
-
-  // const [formData, setFormData] = useState({
-  //     customer: {
-  //   name: "",
-  //   email: "",
-  //   index: ""
-  // },
-  // items: []
-  // });
-
+  //const [inDemand, setInDemand] = useState({});
   const [orderCustomer, setOrderCustomer] = useState({
     name: "",
     email: "",
     index: "",
   });
 
+  // CAPTCHA states
+  const [captchaText, setCaptchaText] = useState("");
+  const [captchaInput, setCaptchaInput] = useState("");
+
+  const navigate = useNavigate();
+  const { token } = useAuth();
+  const today = new Date().toISOString().split("T")[0];
+
   // Load cart from localStorage
   useEffect(() => {
     const storedCart = JSON.parse(localStorage.getItem("cart")) || [];
-    // ensure each cart item has rental dates
     const enriched = storedCart.map((item) => ({
       ...item,
       startDate: item.startDate || "",
@@ -45,7 +38,7 @@ const CartPage = () => {
     localStorage.setItem("cart", JSON.stringify(newCart));
   };
 
-  // Change quantity
+  // Quantity change
   const handleQuantityChange = (productId, delta) => {
     const newCart = cart.map((item) => {
       if (item._id === productId) {
@@ -58,43 +51,29 @@ const CartPage = () => {
       return item;
     });
     updateCart(newCart);
-
-    // setFormData(prev => ({
-    //   ...prev, 
-    //   items: prev.items.map(item => {
-    //       if (item.product === productId) {
-    //         const maxAvailable = availability[item.product] ?? Infinity;
-    //         const newQuantity = Math.max(1, Math.min((item.requested.quantity || 0) + delta, maxAvailable));
-    //         return {...item, requested: { ...item.requested, quantity: newQuantity }}; 
-    //       } 
-    //       return item;
-    //     }) 
-    //   }));
   };
 
-  // Change dates per item
+  // Date change
   const handleDateChange = (productId, field, value) => {
     const newCart = cart.map((item) =>
       item._id === productId ? { ...item, [field]: value } : item
     );
     updateCart(newCart);
-
   };
 
-  // Remove product from cart
+  // Remove item
   const handleRemove = (productId) => {
     const newCart = cart.filter((item) => item._id !== productId);
     updateCart(newCart);
   };
 
-  // Change customer data
+  // Customer change
   const handleCustomerChange = (e) => {
     const { name, value } = e.target;
     setOrderCustomer((prev) => ({ ...prev, [name]: value }));
-    // setFormData(prev => ({ ...prev, customer: { [name]: value } }));
   };
 
-  // Check availability for all items
+  // Availability & In-demand
   const updateAvailability = async () => {
     const newAvailability = {};
     await Promise.all(
@@ -121,43 +100,85 @@ const CartPage = () => {
     setAvailability(newAvailability);
   };
 
-  const updateInDemand = async () => {
-    const newInDemand = {};
-    await Promise.all(
-      cart.map(async (item) => {
-        if (!item.startDate || !item.endDate) {
-          newInDemand[item._id] = undefined;
-          return;
-        }
-        try {
-          const res = await axios.post(
-            "http://localhost:3500/products/inDemand",
-            {
-              productId: item._id,
-              startDate: item.startDate,
-              endDate: item.endDate,
-            },
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-          newInDemand[item._id] = res.data.inDemand;
-        } catch {
-          newInDemand[item._id] = 0;
-        }
-      })
-    );
-    setInDemand(newInDemand);
-  };
+  // const updateInDemand = async () => {
+  //   const newInDemand = {};
+  //   await Promise.all(
+  //     cart.map(async (item) => {
+  //       if (!item.startDate || !item.endDate) {
+  //         newInDemand[item._id] = undefined;
+  //         return;
+  //       }
+  //       try {
+  //         const res = await axios.post(
+  //           "http://localhost:3500/products/inDemand",
+  //           {
+  //             productId: item._id,
+  //             startDate: item.startDate,
+  //             endDate: item.endDate,
+  //           },
+  //           { headers: { Authorization: `Bearer ${token}` } }
+  //         );
+  //         newInDemand[item._id] = res.data.inDemand;
+  //       } catch {
+  //         newInDemand[item._id] = 0;
+  //       }
+  //     })
+  //   );
+  //   setInDemand(newInDemand);
+  // };
 
   useEffect(() => {
     updateAvailability();
-    updateInDemand();
+   // updateInDemand();
   }, [cart]);
+
+  // Generate simple CAPTCHA
+  const generateCaptcha = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let text = "";
+    for (let i = 0; i < 5; i++) {
+      text += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setCaptchaText(text);
+  };
+
+  const drawCaptcha = () => {
+    const canvas = document.getElementById("captchaCanvas");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#f2f2f2";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.font = "30px Arial";
+    ctx.fillStyle = "#000";
+    ctx.fillText(captchaText, 10, 35);
+
+    // random lines
+    for (let i = 0; i < 5; i++) {
+      ctx.strokeStyle = `rgb(${Math.random()*255},${Math.random()*255},${Math.random()*255})`;
+      ctx.beginPath();
+      ctx.moveTo(Math.random()*150, Math.random()*50);
+      ctx.lineTo(Math.random()*150, Math.random()*50);
+      ctx.stroke();
+    }
+  };
+
+  useEffect(() => {
+    generateCaptcha();
+  }, []);
+
+  useEffect(() => {
+    drawCaptcha();
+  }, [captchaText]);
 
   // Checkout
   const handleCheckout = async () => {
     if (!cart.length) return alert("Koszyk jest pusty!");
     if (!orderCustomer.email || !orderCustomer.name || !orderCustomer.index)
       return alert("Podaj dane kontaktowe!");
+
+    if (captchaInput.toUpperCase() !== captchaText)
+      return alert("Niepoprawna CAPTCHA!");
 
     const items = cart.map((item) => {
       if (!item.startDate || !item.endDate)
@@ -178,7 +199,7 @@ const CartPage = () => {
       const res = await axios.post(
         "http://localhost:3500/orders/create",
         { customer: orderCustomer, items },
-        { headers: { Authorization: `Bearer ${token}` } }
+       // { headers: { Authorization: `Bearer ${token}` } }
       );
 
       const order = res.data.order;
@@ -186,19 +207,20 @@ const CartPage = () => {
       await axios.post(
         "http://localhost:3500/orders/send-order-email",
         { orderId },
-        { headers: { Authorization: `Bearer ${token}` } }
+      //  { headers: { Authorization: `Bearer ${token}` } }
       );
 
       alert("Zamówienie złożone i wysłane na maila!");
       setCart([]);
       localStorage.removeItem("cart");
+      setCaptchaInput("");
+      generateCaptcha();
     } catch (err) {
       console.error(err);
       alert(err.response?.data?.message || "Błąd zamówienia");
     }
   };
 
-  // UI
   if (!cart.length) {
     return (
       <div className="p-6 text-center">
@@ -213,7 +235,7 @@ const CartPage = () => {
     );
   }
 
-  // Grupowanie produktów względem właściciela
+  // Group products by owner
   const groupByOwner = (cartItems) => {
     return cartItems.reduce((acc, item) => {
       const ownerName = item.owner?.name ?? "Brak właściciela";
@@ -226,7 +248,7 @@ const CartPage = () => {
   const groupedCart = groupByOwner(cart);
 
   const isQuantityDisabled = (item) => {
-    const cartItem = cart.find(c => c._id === item._id);
+    const cartItem = cart.find((c) => c._id === item._id);
     return !(cartItem?.startDate && cartItem?.endDate);
   };
 
@@ -242,9 +264,7 @@ const CartPage = () => {
       </div>
       <h2 className="text-3xl font-bold mb-6">Twój koszyk</h2>
 
-      {/* Products list */}
       {Object.entries(groupedCart).map(([owner, products]) => (
-
         <div key={owner} className="mb-6">
           <h3 className="text-2xl font-semibold mb-2">Właściciel: {owner}</h3>
           <div className="space-y-4">
@@ -271,22 +291,21 @@ const CartPage = () => {
                       {availability[item._id] === undefined
                         ? "Wybierz daty"
                         : availability[item._id] === 0
-                          ? "Produkt niedostępny w wybranym okresie"
-                          : `Available: ${availability[item._id]}`}
+                        ? "Produkt niedostępny w wybranym okresie"
+                        : `Available: ${availability[item._id]}`}
                     </p>
                     <p className="text-sm text-red-600">
-                      {inDemand[item._id] === undefined
+                      {/* {inDemand[item._id] === undefined
                         ? "Wybierz daty"
                         : inDemand[item._id] === 0
-                          ? ""
-                          : `Demanded: ${inDemand[item._id]}`}
+                        ? ""
+                        : `Demanded: ${inDemand[item._id]}`} */}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2">
-
                     <button
                       onClick={() => handleQuantityChange(item._id, -1)}
                       className="px-2 py-1 bg-gray-300 rounded hover:bg-gray-400 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
@@ -299,8 +318,9 @@ const CartPage = () => {
                       onClick={() => handleQuantityChange(item._id, 1)}
                       className="px-2 py-1 bg-gray-300 rounded hover:bg-gray-400 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
                       disabled={
-                        isQuantityDisabled(item) || // disable if dates not selected
-                        (availability[item._id] !== undefined && item.quantity >= availability[item._id])
+                        isQuantityDisabled(item) ||
+                        (availability[item._id] !== undefined &&
+                          item.quantity >= availability[item._id])
                       }
                     >
                       +
@@ -313,8 +333,6 @@ const CartPage = () => {
                     </button>
                   </div>
 
-
-                  {/* Rental dates per item */}
                   <div className="flex flex-col md:flex-row gap-2">
                     <input
                       type="datetime-local"
@@ -370,9 +388,36 @@ const CartPage = () => {
             onChange={handleCustomerChange}
             className="border p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
+
+          {/* CAPTCHA */}
+          <div className="mt-4 p-2 border rounded bg-gray-100">
+            <h3 className="text-lg font-semibold mb-2">Potwierdź CAPTCHA</h3>
+            <canvas
+              id="captchaCanvas"
+              width="150"
+              height="50"
+              className="border mb-2"
+            />
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Wpisz CAPTCHA"
+                value={captchaInput}
+                onChange={(e) => setCaptchaInput(e.target.value)}
+                className="border p-2 rounded flex-1"
+              />
+              <button
+                onClick={generateCaptcha}
+                className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                Odśwież
+              </button>
+            </div>
+          </div>
+
           <button
             onClick={handleCheckout}
-            className="px-6 py-3 bg-green-500 text-white font-semibold rounded hover:bg-green-600"
+            className="px-6 py-3 bg-green-500 text-white font-semibold rounded hover:bg-green-600 mt-4"
           >
             Złóż zamówienie
           </button>

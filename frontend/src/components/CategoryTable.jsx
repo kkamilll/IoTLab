@@ -1,127 +1,157 @@
-import React from "react";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import React, { useState } from "react";
+import {
+  FaEye,
+  FaEyeSlash,
+  FaPlus,
+  FaEdit,
+  FaTrash,
+  FaFolder,
+  FaInfoCircle,
+} from "react-icons/fa";
 
-export default function CategoryTable({ categoryTree, handleEdit, handleDelete, handleAdd }) {
-  const renderRows = (category, depth = 0, isLast = true, prefix = "") => {
+export default function CategoryCards({
+  categoryTree,
+  handleEdit,
+  handleDelete,
+  handleAdd,
+}) {
+  const [expandedIds, setExpandedIds] = useState(new Set());
+  const [showDescriptionIds, setShowDescriptionIds] = useState(new Set());
+
+  const toggleExpand = (id) => {
+    setExpandedIds((prev) => {
+      const copy = new Set(prev);
+      copy.has(id) ? copy.delete(id) : copy.add(id);
+      return copy;
+    });
+  };
+
+  const toggleDescription = (id) => {
+    setShowDescriptionIds((prev) => {
+      const copy = new Set(prev);
+      copy.has(id) ? copy.delete(id) : copy.add(id);
+      return copy;
+    });
+  };
+
+  const renderCard = (category, level = 0) => {
     const hasChildren = category.children && category.children.length > 0;
-    const newPrefix = prefix + (isLast ? "    " : "│   ");
+    const isExpanded = expandedIds.has(category._id);
+    const showDescription = showDescriptionIds.has(category._id);
 
-    return [
-      <tr key={category._id} className="hover:bg-gray-50">
-        {/* Name */}
-        <td
-          className="p-2 font-mono whitespace-pre max-w-[150px] md:max-w-xs truncate"
-          title={category.name}
-        >
-          {prefix}{isLast ? "└─ " : "├─ "}{category.name}
-        </td>
-
-        {/* Visibility */}
-        <td className="p-2 text-center">
-          <span
-            title={category.isVisible ? "Widoczna dla użytkowników" : "Ukryta"}
-            className="inline-flex items-center justify-center"
-          >
-            {category.isVisible ? (
-              <FaEye className="text-indigo-500 text-lg" aria-label="Widoczna" />
-            ) : (
-              <FaEyeSlash className="text-gray-400 text-lg" aria-label="Ukryta" />
-            )}
-          </span>
-        </td>
-
-        {/* Actions */}
-        <td className="p-2 flex gap-2 justify-center flex-wrap">
-          <button
-            onClick={() => handleAdd(category)}
-            className="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
-          >
-            Add
-          </button>
-          <button
-            onClick={() => handleEdit(category)}
-            className="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
-          >
-            Edit
-          </button>
-          <button
-            onClick={() => handleDelete(category._id)}
-            className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
-          >
-            Usuń
-          </button>
-        </td>
-      </tr>,
-      ...(hasChildren
-        ? category.children.flatMap((child, idx) =>
-            renderRows(child, depth + 1, idx === category.children.length - 1, newPrefix)
-          )
-        : [])
+    const gradients = [
+      "from-blue-100 via-blue-200 to-blue-300",
+      "from-blue-200 via-blue-300 to-blue-400",
+      "from-blue-300 via-blue-400 to-blue-500",
+      "from-blue-400 via-blue-500 to-blue-600",
     ];
-  };
+    const gradient = gradients[level % gradients.length];
 
-  // Funkcja do renderowania płaskiej tabeli opisów kategorii
-  const renderFlatDescriptions = (categories) => {
-    return categories.map((category) => (
-      <tr key={category._id} className="hover:bg-gray-50">
-        <td className="p-2 font-mono truncate">{category.name}</td>
-        <td className="p-2 text-gray-700 truncate">{category.description || "-"}</td>
-      </tr>
-    ));
-  };
+    return (
+      <div key={category._id} className="mb-4 w-full">
+        <div
+          className={`p-4 rounded-xl shadow-md flex flex-col transition-transform transform hover:scale-105 hover:shadow-lg bg-gradient-to-br ${gradient}`}
+          style={{ paddingLeft: 16 + level * 16, paddingRight: 16 }}
+        >
+          {/* Nagłówek */}
+          <div className="flex justify-between items-center w-full">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <FaFolder size={18} className="text-blue-700 flex-shrink-0" />
+              <span className="font-medium text-base sm:text-lg truncate">
+                {category.name}
+              </span>
+            </div>
 
-  // Spłaszczanie drzewa kategorii
-  const flattenCategories = (categories) => {
-    return categories.reduce((acc, cat) => {
-      acc.push(cat);
-      if (cat.children && cat.children.length > 0) {
-        acc.push(...flattenCategories(cat.children));
-      }
-      return acc;
-    }, []);
+            {hasChildren && (
+              <button
+                className="ml-2 px-4 py-1 rounded-full bg-white text-blue-700 hover:bg-blue-100 transition-colors font-bold flex-shrink-0"
+                onClick={() => toggleExpand(category._id)}
+              >
+                {isExpanded ? "−" : "+"}
+              </button>
+            )}
+          </div>
+
+          {/* Akcje i widoczność */}
+          <div className="flex gap-2 flex-wrap mt-2 items-center">
+            {/* Widoczność jako kolorowa ikona */}
+            {category.isVisible ? (
+              <FaEye className="text-green-600" title="Widoczna" />
+            ) : (
+              <FaEyeSlash className="text-gray-400" title="Ukryta" />
+            )}
+
+            <ActionButton
+              icon={<FaPlus className="text-xs" />}
+              label="Dodaj"
+              color="green"
+              onClick={() => handleAdd(category)}
+            />
+            <ActionButton
+              icon={<FaEdit className="text-xs" />}
+              label="Edytuj"
+              color="blue"
+              onClick={() => handleEdit(category)}
+            />
+            <ActionButton
+              icon={<FaTrash className="text-xs" />}
+              label="Usuń"
+              color="red"
+              onClick={() => handleDelete(category._id)}
+            />
+            {category.description && (
+              <button
+                className="flex items-center gap-1 px-2 py-1 text-white bg-gray-600 hover:bg-gray-700 rounded-lg text-sm"
+                onClick={() => toggleDescription(category._id)}
+              >
+                <FaInfoCircle /> Opis
+              </button>
+            )}
+          </div>
+
+          {/* Opis kategorii */}
+          {showDescription && category.description && (
+            <div className="mt-2 p-2 bg-white rounded-md shadow-inner text-gray-700">
+              {category.description}
+            </div>
+          )}
+
+          {/* Dzieci */}
+          {hasChildren && isExpanded && (
+            <div className="mt-2 border-l-2 border-blue-300 w-full">
+              {category.children.map((child) => renderCard(child, level + 1))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
 
   if (!categoryTree || categoryTree.length === 0) {
-    return <div className="text-gray-500 text-center p-6">Brak kategorii</div>;
+    return (
+      <div className="text-gray-500 text-center p-6 italic">Brak kategorii</div>
+    );
   }
 
-  const flatCategories = flattenCategories(categoryTree);
-
   return (
-    <div className="w-full max-w-6xl mx-auto px-2 flex flex-col gap-8">
-      {/* Główna tabela z akcjami i widocznością */}
-      <div className="overflow-x-auto shadow rounded-lg">
-        <table className="w-full border border-gray-300 border-collapse table-auto md:table-fixed">
-          <thead className="bg-blue-50 text-sm font-semibold text-gray-700 uppercase tracking-wider">
-            <tr>
-              <th className="border border-gray-300 p-3 text-left w-[150px] md:w-auto">Nazwa</th>
-              <th className="border border-gray-300 p-3 text-center w-[80px] md:w-auto">Widoczność</th>
-              <th className="border border-gray-300 p-3 text-center w-[120px] md:w-auto">Akcje</th>
-            </tr>
-          </thead>
-          <tbody className="text-sm text-gray-800">
-            {categoryTree.flatMap((root, idx) =>
-              renderRows(root, 0, idx === categoryTree.length - 1)
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Płaska tabela opisów kategorii */}
-      <div className="overflow-x-auto shadow-lg rounded-lg bg-white p-4">
-        <h2 className="text-lg font-semibold mb-4">Lista kategorii</h2>
-        <table className="w-full table-auto border-collapse border border-gray-200">
-          <thead className="bg-gray-100 text-gray-700 text-left text-sm font-medium uppercase tracking-wide">
-            <tr>
-              <th className="border-b border-gray-200 p-3">Nazwa</th>
-              <th className="border-b border-gray-200 p-3">Opis</th>
-            </tr>
-          </thead>
-          <tbody className="text-gray-800 text-sm">
-            {renderFlatDescriptions(flatCategories)}
-          </tbody>
-        </table>
-      </div>
+    <div className="w-full max-w-6xl mx-auto px-2 flex flex-col gap-4">
+      {categoryTree.map((root) => renderCard(root))}
     </div>
   );
 }
+
+const ActionButton = ({ icon, label, color, onClick }) => {
+  const colors = {
+    green: "bg-green-500 hover:bg-green-600",
+    blue: "bg-blue-500 hover:bg-blue-600",
+    red: "bg-red-600 hover:bg-red-700",
+  };
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-1 px-3 py-1 text-white rounded-lg text-sm transition ${colors[color]}`}
+    >
+      {icon} {label}
+    </button>
+  );
+};

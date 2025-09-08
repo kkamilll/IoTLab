@@ -690,113 +690,110 @@ const Products = () => {
 
 
 
-
-
-
-
-
-
       {/* Tabela */}
 
-      <div className="overflow-x-auto w-full shadow rounded border border-gray-200">
-        <table className="table-auto w-full min-w-max divide-y divide-gray-200">
-          <thead className="bg-gray-100">
-            <tr>
-              {allColumns.filter(col => !hiddenColumns.includes(col)).map((col, idx) => (
-                <th
-                  key={idx}
-                  className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer whitespace-nowrap"
-                >
-                  <div className="flex items-center justify-between">
-                    <span onClick={() => handleSort(col)} className="truncate">
-                      {col} {sortConfig.key === col ? (sortConfig.direction === "asc" ? "↑" : "↓") : ""}
+     <div className="w-full">
+  {/* Widok TABELI - tylko desktop */}
+  <div className="hidden md:block overflow-x-auto shadow rounded border border-gray-200">
+    <table className="table-auto w-full min-w-max divide-y divide-gray-200">
+      <thead className="bg-gray-100">
+        <tr>
+          {allColumns.filter(col => !hiddenColumns.includes(col)).map((col, idx) => (
+            <th
+              key={idx}
+              className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer whitespace-nowrap"
+            >
+              <div className="flex items-center justify-between">
+                <span onClick={() => handleSort(col)} className="truncate">
+                  {col} {sortConfig.key === col ? (sortConfig.direction === "asc" ? "↑" : "↓") : ""}
+                </span>
+                {isAdmin && extraColumns.includes(col) && (
+                  <button
+                    onClick={() => removeExtraField(col)}
+                    className="ml-2 px-1 py-0.5 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
+                  >
+                    X
+                  </button>
+                )}
+              </div>
+            </th>
+          ))}
+          {isAdmin && <th className="px-4 py-2 whitespace-nowrap">Actions</th>}
+        </tr>
+      </thead>
+      <tbody className="bg-white divide-y divide-gray-200">
+        {paginatedProducts.map(p => (
+          <tr key={p._id}>
+            {allColumns.filter(col => !hiddenColumns.includes(col)).map((col, idx) => (
+              <td key={idx} className="px-4 py-2 text-sm text-gray-700 whitespace-nowrap">
+                {col === "stockTotal" ? p.stockTotal ?? 0
+                  : col === "stockForRent" ? getAvailableStockForProduct(p) ?? 0
+                  : col === "categories" ? p.categories?.map(category => category?.name ?? "").join(", ") ?? []
+                  : col === "owner" ? p.owner?.name ?? "Brak ownera"
+                  : col === "description" ? (
+                    <span className="truncate cursor-pointer" onClick={() => handlePreview(p._id)} title={p.description}>
+                      {p.description?.length > 50 ? p.description.slice(0, 50) + "…" : p.description}
                     </span>
-                    {isAdmin && extraColumns.includes(col) && (
-                      <button
-                        onClick={() => removeExtraField(col)}
-                        className="ml-2 px-1 py-0.5 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
-                      >
-                        X
-                      </button>
-                    )}
-                  </div>
-                </th>
-              ))}
-              {isAdmin && <th className="px-4 py-2 whitespace-nowrap">Actions</th>}
-            </tr>
-          </thead>
-
-          <tbody className="bg-white divide-y divide-gray-200">
-            {paginatedProducts.map(p => (
-              <tr key={p._id}>
-                {allColumns.filter(col => !hiddenColumns.includes(col)).map((col, idx) => (
-                  <td key={idx} className="px-4 py-2 text-sm text-gray-700 whitespace-nowrap">
-                    {col === "stockTotal" ? p.stockTotal ?? 0
-                      : col === "stockForRent" ? getAvailableStockForProduct(p) ?? 0
-                        : col === "categories" ? p.categories?.map(category => category?.name ?? "").join(", ") ?? []
-                          : col === "owner" ? p.owner?.name ?? "Brak ownera"
-                            : col === "description" ? (
-                              <span className="truncate cursor-pointer" onClick={() => handlePreview(p._id)} title={p.description}>
-                                {p.description?.length > 50 ? p.description.slice(0, 50) + "…" : p.description}
-                              </span>
-                            )
-                              : col === "name" ? (
-                                <span className="truncate cursor-pointer" onClick={() => handlePreview(p._id)} title={p.name}>
-                                  {p.name}
-                                </span>
-                              )
-                                : p[col] ?? p.extraFields?.[col] ?? ""}
-                  </td>
-                ))}
-
-
-                <td className="px-4 py-2 flex flex-col sm:flex-row sm:items-center gap-2 whitespace-nowrap">
-
-                  <div className="flex flex-wrap gap-2">
-                    <button onClick={() => handleEdit(p)} disabled={(user.id !== p.owner?._id && !isAdmin)} className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
-                      Edit
-                    </button>
-                    <button onClick={() => handlePreview(p._id)} className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition">
-                      Preview
-                    </button>
-                    <button onClick={() => handleDelete(p._id)} disabled={(user.id !== p.owner?._id && !isAdmin)} className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
-                      Delete
-                    </button>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2">
-                    <div className="flex items-center border rounded overflow-hidden h-10">
-                      <button
-                        onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) - 1, p)}
-                        className="px-3 bg-gray-200 hover:bg-gray-300 h-full"
-                        disabled={(cartQuantities[p._id] || 0) <= 0}
-                      >-</button>
-                      <input
-                        type="number"
-                        min="0"
-                        max={getAvailableStockForProduct(p)}
-                        value={cartQuantities[p._id] || 0}
-                        onChange={(e) => handleQuantityChange(p._id, e.target.value, p)}
-                        className="w-16 text-center outline-none"
-                      />
-                      <button
-                        onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) + 1, p)}
-                        className="px-3 bg-gray-200 hover:bg-gray-300 h-full"
-                        disabled={(cartQuantities[p._id] || 0) >= getAvailableStockForProduct(p)}
-                      >+</button>
-                    </div>
-
-                    <span className="inline-block bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full sm:mt-0 mt-1">
-                      W koszyku: {cartQuantities[p._id] || 0}
+                  )
+                  : col === "name" ? (
+                    <span className="truncate cursor-pointer" onClick={() => handlePreview(p._id)} title={p.name}>
+                      {p.name}
                     </span>
-                  </div>
-                </td>
-
-              </tr>
+                  )
+                  : p[col] ?? p.extraFields?.[col] ?? ""}
+              </td>
             ))}
-          </tbody>
-        </table>
+
+            {/* Actions */}
+            <td className="px-4 py-2 flex flex-col sm:flex-row sm:items-center gap-2 whitespace-nowrap">
+              <div className="flex flex-wrap gap-2">
+                <button onClick={() => handleEdit(p)} disabled={(user.id !== p.owner?._id && !isAdmin)} className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
+                  Edit
+                </button>
+                <button onClick={() => handlePreview(p._id)} className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition">
+                  Preview
+                </button>
+                <button onClick={() => handleDelete(p._id)} disabled={(user.id !== p.owner?._id && !isAdmin)} className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
+                  Delete
+                </button>
+              </div>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  {/* Widok KART - tylko mobile */}
+  <div className="block md:hidden space-y-4">
+    {paginatedProducts.map(p => (
+      <div key={p._id} className="border rounded-lg shadow p-4 bg-white">
+        <h3 className="text-lg font-semibold mb-2">{p.name}</h3>
+        <p className="text-sm text-gray-600 mb-2">{p.description?.slice(0, 80)}{p.description?.length > 80 ? "…" : ""}</p>
+
+        <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+          <span><strong>Kategorie:</strong> {p.categories?.map(c => c?.name).join(", ")}</span>
+          <span><strong>Owner:</strong> {p.owner?.name ?? "Brak ownera"}</span>
+          <span><strong>Stock:</strong> {p.stockTotal ?? 0}</span>
+          <span><strong>Dostępne:</strong> {getAvailableStockForProduct(p) ?? 0}</span>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <button onClick={() => handleEdit(p)} disabled={(user.id !== p.owner?._id && !isAdmin)} className="flex-1 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-100 disabled:text-gray-400">
+            Edit
+          </button>
+          <button onClick={() => handlePreview(p._id)} className="flex-1 px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600">
+            Preview
+          </button>
+          <button onClick={() => handleDelete(p._id)} disabled={(user.id !== p.owner?._id && !isAdmin)} className="flex-1 px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 disabled:bg-gray-100 disabled:text-gray-400">
+            Delete
+          </button>
+        </div>
       </div>
+    ))}
+  </div>
+</div>
+
 
 
       {/* Paginate */}
