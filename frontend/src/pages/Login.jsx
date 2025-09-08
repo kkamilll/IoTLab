@@ -16,9 +16,8 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-
     try {
-      const response = await axios.post('http://localhost:3500/auth/login', {
+      const response = await axios.post(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/auth/login`, {
         email,
         password,
       });
@@ -27,7 +26,7 @@ const Login = () => {
 
       if (success) {
         await login(user, token);
-        navigate(user.role === 'admin' ? '/admin-dashboard' : '/user-dashboard');
+        navigate(user.role === 'admin' ? '/admin-dashboard' : '/admin-dashboard');
       } else {
         setError(message || 'Login failed');
       }

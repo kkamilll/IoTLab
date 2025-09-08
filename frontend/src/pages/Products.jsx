@@ -153,7 +153,7 @@ const Products = () => {
 
   const fetchCategories = async () => {
     try {
-      const res = await axios.get("http://localhost:3500/categories/private", {
+      const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/categories/private`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.data.success) {
@@ -166,7 +166,7 @@ const Products = () => {
   // Pobieranie produktów
   const fetchProducts = async () => {
     try {
-      const res = await axios.get("http://localhost:3500/products/private", {
+      const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/products/private`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -197,7 +197,7 @@ const Products = () => {
 
   const fetchUsers = async () => {
     try {
-      const res = await axios.get("http://localhost:3500/users", {
+      const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/users`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.data.success) return alert(res.data.message || "Error fetching products");
@@ -212,7 +212,7 @@ const Products = () => {
 
   const deleteProduct = async (id) => {
     const res = await axios.delete(
-      `http://localhost:3500/products/${id}`,
+      `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/products/${id}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     return res.data;
@@ -418,7 +418,7 @@ const Products = () => {
     if (!window.confirm(`Delete column "${key}" from all products?`)) return;
 
     try {
-      const res = await axios.delete(`http://localhost:3500/products/extraField/${key}`, {
+      const res = await axios.delete(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/products/extraField/${key}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -521,8 +521,9 @@ const Products = () => {
       };
 
       const res = editProduct
-        ? await axios.put(`http://localhost:3500/products/${editProduct}`, form, config)
-        : await axios.post(`http://localhost:3500/products/create`, form, config);
+  ? await axios.put(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/products/${editProduct}`, form, config)
+  : await axios.post(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/products/create`, form, config);
+
 
       if (res.data.success) {
         fetchProducts();

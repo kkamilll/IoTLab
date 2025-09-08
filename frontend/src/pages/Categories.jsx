@@ -40,7 +40,7 @@ const Categories = () => {
 
   const fetchCategories = async () => {
     try {
-      const res = await axios.get("http://localhost:3500/categories/private", {
+      const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/categories/private`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setCategories(res.data.categories || []);
@@ -88,9 +88,17 @@ const Categories = () => {
       }
 
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      const res = editCategory
-        ? await axios.patch(`http://localhost:3500/categories/${editCategory}`, categoryData, config)
-        : await axios.post(`http://localhost:3500/categories/create`, categoryData, config);
+     const res = editCategory
+  ? await axios.patch(
+      `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/categories/${editCategory}`,
+      categoryData,
+      config
+    )
+  : await axios.post(
+      `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/categories/create`,
+      categoryData,
+      config
+    );
 
       if (res.data.success) {
         alert(editCategory ? "Category updated" : "Category added");
@@ -107,7 +115,7 @@ const Categories = () => {
     if (!window.confirm("Are you sure you want to delete this category?")) return;
     try {
       const res = await axios.delete(
-        `http://localhost:3500/categories/${id}`,
+        `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/categories/${id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (res.data.success) {

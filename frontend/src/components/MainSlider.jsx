@@ -24,14 +24,14 @@ const MainSlider = ({ materials }) => {
                 {mat.link ? (
                   <a href={mat.link} target="_blank" rel="noopener noreferrer">
                     <img
-                      src={`http://localhost:3500/${mat.path}`}
+                      src={`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/${mat.path}`}
                       alt={mat.filename || "slide"}
                       className="w-full h-[25vh] sm:h-[35vh] md:h-[50vh] lg:h-[60vh] object-cover"
                     />
                   </a>
                 ) : (
                   <img
-                    src={`http://localhost:3500/${mat.path}`}
+                    src={`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/${mat.path}`}
                     alt={mat.filename || "slide"}
                     className="w-full h-[25vh] sm:h-[35vh] md:h-[50vh] lg:h-[60vh] object-cover"
                   />

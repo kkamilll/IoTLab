@@ -12,7 +12,7 @@ const MainGuest = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await axios.get("http://localhost:3500/categories/public");
+        const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/categories/public`);
         setCategories(res.data.categories || []);
       } catch (err) {
         console.error("Error fetching categories:", err);

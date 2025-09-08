@@ -58,7 +58,7 @@ export default function CategorySelector({ categoryTree, flatCategories, formDat
     <div>
       <div className="p-4 border rounded max-w-md max-h-96 overflow-y-auto">
         <CategoryTree
-          categoryTree={categoryTree}        // renamed to categoryTree
+          categoryTree={categoryTree}
           selectedIds={formData.categories}
           expandedIds={expandedIds}
           onSelect={handleSelect}

@@ -21,7 +21,7 @@ const Orders = () => {
 
   const fetchStatuses = async () => {
     try {
-      const res = await axios.get("http://localhost:3500/orders/statuses", {
+      const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/orders/statuses`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.data.success) setStatuses(res.data.statuses);
@@ -33,7 +33,7 @@ const Orders = () => {
   // Fetch orders from backend
   const fetchOrders = async () => {
     try {
-      const res = await axios.get("http://localhost:3500/orders", {
+      const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/orders`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.data.success) setOrders(res.data.orders);
@@ -79,7 +79,7 @@ const Orders = () => {
   const handleDeleteOrder = async (order) => {
     if (!window.confirm("Czy na pewno chcesz usunąć to zamówienie?")) return;
     try {
-      await axios.delete(`http://localhost:3500/orders/${order._id}`, {
+      await axios.delete(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/orders/${order._id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       fetchOrders();
@@ -93,7 +93,7 @@ const Orders = () => {
     if (!window.confirm("Czy na pewno chcesz zwrócić to zamówienie?")) return;
     try {
       await axios.post(
-        "http://localhost:3500/orders/returned",
+        `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/orders/returned`,
         { orderId: order._id },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -124,7 +124,7 @@ const Orders = () => {
 
     try {
       await axios.post(
-        "http://localhost:3500/orders/update-status",
+        `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/orders/update-status`,
         { orderId: order._id, status: statusToSend },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -138,7 +138,7 @@ const Orders = () => {
   const handleMarkAsReceived = async (order) => {
     try {
       await axios.post(
-        "http://localhost:3500/orders/update-status",
+        `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/orders/update-status`,
         { orderId: order._id, status: "OK", markAsReceived: true },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -170,7 +170,7 @@ const Orders = () => {
     }
     try {
       await axios.post(
-        "http://localhost:3500/orders/update-quantity",
+        `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/orders/update-quantity`,
         {
           orderId: editingItem.orderId,
           itemId: editingItem.itemId,
@@ -205,7 +205,7 @@ const Orders = () => {
 
     try {
       await axios.post(
-        "http://localhost:3500/orders/update-dates",
+        `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/orders/update-dates`,
         {
           orderId: editingDates.orderId,
           itemId: editingDates.itemId,

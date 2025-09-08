@@ -27,7 +27,7 @@ const WelcomePage = () => {
     (async () => {
       try {
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const res = await axios.get("http://localhost:3500/materials", { headers });
+        const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/materials`, { headers });
         if (res.data.success) setMaterials(res.data.data);
       } catch (err) {
         console.error("Error fetching materials:", err);
@@ -42,7 +42,7 @@ const WelcomePage = () => {
       setNotesError(null);
       try {
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const res = await axios.get('http://localhost:3500/notes', { headers });
+        const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/notes`, { headers });
         if (res.data.success && Array.isArray(res.data.data)) setNotes(res.data.data);
         else setNotesError('Invalid server response');
       } catch (err) {
@@ -184,7 +184,7 @@ const WelcomePage = () => {
               <ul className="grid gap-6 sm:grid-cols-2">
                 {paginatedNotes.map(note => (
                   <li key={note._id} className="bg-blue-800 rounded-xl p-6 shadow-md hover:shadow-lg transition-transform duration-300 hover:scale-[1.02] flex flex-col">
-                    <p className="text-white text-lg leading-relaxed font-medium whitespace-pre-wrap break-words">
+                    <p className="text-white text-lg leading-relaxed font-medium whitespace-pre-wrap break-words break-all">
                       {note.text}
                     </p>
                     <div className="mt-3 text-blue-200 text-sm font-light italic">

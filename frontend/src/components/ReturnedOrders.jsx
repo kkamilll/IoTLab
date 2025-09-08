@@ -11,7 +11,7 @@ const ReturnedOrders = () => {
   const fetchReturnedOrders = async () => {
     setLoading(true);
     try {
-      const res = await axios.get("http://localhost:3500/orders/returned", {
+      const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/orders/returned`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.data.success) {
@@ -33,7 +33,7 @@ const ReturnedOrders = () => {
   const handleReturnOrder = async (orderId) => {
     try {
       const res = await axios.post(
-        "http://localhost:3500/orders/returned",
+        `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/orders/returned`,
         { orderId },
         { headers: { Authorization: `Bearer ${token}` } }
       );

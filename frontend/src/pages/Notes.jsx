@@ -17,7 +17,7 @@ const Notes = () => {
   const NOTES_PER_PAGE = 6;
 
   const axiosInstance = axios.create({
-    baseURL: "http://localhost:3500",
+    baseURL: `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}`,
     headers: { Authorization: `Bearer ${token}` },
   });
 
