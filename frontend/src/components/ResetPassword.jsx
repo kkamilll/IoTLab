@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom'; // dodajemy do przekierowania
+import { useNavigate } from 'react-router-dom';
 
 const ResetPassword = ({ email }) => {
   const [otp, setOtp] = useState('');
@@ -10,7 +10,7 @@ const ResetPassword = ({ email }) => {
   const [successMessage, setSuccessMessage] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const navigate = useNavigate(); // hook do przekierowania
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -18,7 +18,7 @@ const ResetPassword = ({ email }) => {
     setSuccessMessage(null);
 
     if (newPassword !== confirmPassword) {
-      setError('Hasła nie są takie same');
+      setError('Passwords do not match');
       return;
     }
 
@@ -27,21 +27,20 @@ const ResetPassword = ({ email }) => {
     try {
       const response = await axios.post('http://localhost:3500/auth/reset-password', {
         email,
-        otpCode: otp, // upewniamy się, że wysyłamy otpCode, nie otp
+        otpCode: otp,
         newPassword,
       });
 
       if (response.data.success) {
-        setSuccessMessage('Hasło zostało zresetowane pomyślnie. Przekierowuję do logowania...');
-        // przekierowanie po 2 sekundach
+        setSuccessMessage('Password reset successfully. Redirecting to login...');
         setTimeout(() => {
           navigate('/login');
         }, 2000);
       } else {
-        setError(response.data.message || 'Coś poszło nie tak.');
+        setError(response.data.message || 'Something went wrong.');
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Błąd serwera');
+      setError(err.response?.data?.message || 'Server error');
     } finally {
       setLoading(false);
     }
@@ -49,7 +48,7 @@ const ResetPassword = ({ email }) => {
 
   return (
     <div className="max-w-md mx-auto mt-10 p-8 bg-white rounded-xl shadow-lg">
-      <h2 className="text-2xl font-semibold mb-6 text-center text-blue-900">Resetowanie hasła</h2>
+      <h2 className="text-2xl font-semibold mb-6 text-center text-blue-900">Reset Password</h2>
 
       {error && <div className="mb-4 text-red-600 font-medium text-center">{error}</div>}
       {successMessage && <div className="mb-4 text-green-600 font-medium text-center">{successMessage}</div>}
@@ -59,7 +58,7 @@ const ResetPassword = ({ email }) => {
           type="text"
           value={otp}
           onChange={(e) => setOtp(e.target.value)}
-          placeholder="Kod weryfikacyjny"
+          placeholder="Verification Code"
           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
           required
         />
@@ -68,7 +67,7 @@ const ResetPassword = ({ email }) => {
           type="password"
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
-          placeholder="Nowe hasło"
+          placeholder="New Password"
           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
           required
           minLength={6}
@@ -78,7 +77,7 @@ const ResetPassword = ({ email }) => {
           type="password"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
-          placeholder="Potwierdź nowe hasło"
+          placeholder="Confirm New Password"
           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
           required
           minLength={6}
@@ -89,7 +88,7 @@ const ResetPassword = ({ email }) => {
           disabled={loading}
           className="w-full bg-blue-700 hover:bg-blue-800 text-white py-3 rounded-full font-semibold shadow-lg transition duration-300 disabled:opacity-50"
         >
-          {loading ? 'Przetwarzanie...' : 'Resetuj hasło'}
+          {loading ? 'Processing...' : 'Reset Password'}
         </button>
       </form>
     </div>

@@ -2,8 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import CategoryTable from "../components/CategoryTable";
-import { buildTree } from "../utils/categoryUtils";
-import { findDescendants } from "../utils/categoryUtils";
+import { buildTree, findDescendants } from "../utils/categoryUtils";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 const Categories = () => {
@@ -14,7 +13,7 @@ const Categories = () => {
   const [categoryData, setCategoryData] = useState({
     name: "",
     description: "",
-    parent: null, // nowa właściwość dla kategorii
+    parent: null,
     isVisible: false
   });
 
@@ -32,6 +31,7 @@ const Categories = () => {
     })),
     [categories]
   );
+
   const categoryTree = useMemo(() => buildTree(normalizedCategories), [normalizedCategories]);
 
   const excludedIds = useMemo(() => {
@@ -45,8 +45,8 @@ const Categories = () => {
       });
       setCategories(res.data.categories || []);
     } catch (err) {
-      console.error("Błąd pobierania kategorii:", err);
-      alert(`${err.response.data.message}`);
+      console.error("Error fetching categories:", err);
+      alert(err.response?.data?.message || "Failed to fetch categories");
     }
   };
 
@@ -59,7 +59,7 @@ const Categories = () => {
     });
     setEditCategory(null);
     setModalOpen(true);
-  }
+  };
 
   const handleEdit = (selectedCategory) => {
     setCategoryData({
@@ -70,7 +70,7 @@ const Categories = () => {
     });
     setEditCategory(selectedCategory._id);
     setModalOpen(true);
-  }
+  };
 
   const closeModal = () => {
     setModalOpen(false);
@@ -80,47 +80,43 @@ const Categories = () => {
 
   const handleSubmitCategory = async (e) => {
     try {
-      e.preventDefault()
+      e.preventDefault();
 
       if (!categoryData.name.trim()) {
-        alert("Nazwa kategorii jest wymagana");
+        alert("Category name is required");
         return;
       }
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
-      };
-      console.log(editCategory, categoryData)
 
+      const config = { headers: { Authorization: `Bearer ${token}` } };
       const res = editCategory
         ? await axios.patch(`http://localhost:3500/categories/${editCategory}`, categoryData, config)
         : await axios.post(`http://localhost:3500/categories/create`, categoryData, config);
+
       if (res.data.success) {
-        alert(editCategory ? "Kategoria edytowana" : "Kategoria dodana");
+        alert(editCategory ? "Category updated" : "Category added");
         closeModal();
         fetchCategories();
       }
     } catch (err) {
-      console.error("Błąd dodawania kategorii:", err);
-      alert(err.response?.data?.error || "Nie udało się dodać kategorii");
+      console.error("Error saving category:", err);
+      alert(err.response?.data?.error || "Failed to save category");
     }
   };
 
   const handleDeleteCategory = async (id) => {
-    if (!window.confirm("Na pewno usunąć tę kategorię?")) return;
+    if (!window.confirm("Are you sure you want to delete this category?")) return;
     try {
       const res = await axios.delete(
         `http://localhost:3500/categories/${id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (res.data.success) {
-        alert("Kategoria usunięta");
+        alert("Category deleted");
         fetchCategories();
       }
     } catch (err) {
-      console.error("Błąd usuwania kategorii:", err);
-      alert("Nie udało się usunąć kategorii");
+      console.error("Error deleting category:", err);
+      alert("Failed to delete category");
     }
   };
 
@@ -128,17 +124,17 @@ const Categories = () => {
     <div className="min-h-screen bg-gray-50 flex flex-col items-center p-6">
       <div className="w-full max-w-6xl bg-white rounded shadow-md p-8 flex flex-col gap-8">
         <h1 className="text-3xl font-extrabold text-gray-800 text-center">
-          Zarządzanie kategoriami
+          Category Management
         </h1>
 
         <button
           onClick={() => { setEditCategory(null); setModalOpen(true); }}
           className="self-start bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded shadow"
         >
-          Dodaj kategorię
+          Add Category
         </button>
 
-        {/* Category table with ASCII tree */}
+        {/* Category table */}
         <CategoryTable
           categoryTree={categoryTree}
           handleEdit={handleEdit}
@@ -147,20 +143,20 @@ const Categories = () => {
         />
       </div>
 
-      {/* Modal dodawania kategorii */}
+      {/* Category Modal */}
       {modalOpen && (
         <div className="fixed inset-0 flex justify-center items-center z-50 bg-black bg-opacity-50">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 relative">
             <form onSubmit={handleSubmitCategory}>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-bold">
-                  {editCategory ? "Edit category" : "Add category"}
-                  </h2>
+                  {editCategory ? "Edit Category" : "Add Category"}
+                </h2>
                 <button
                   type="button"
                   onClick={() => setCategoryData(prev => ({ ...prev, isVisible: !prev.isVisible }))}
                   className="p-2 rounded-full hover:bg-gray-200 text-3xl"
-                  title="Visible (allow category to be vissible for everyone)"
+                  title="Visible (allow category to be visible to everyone)"
                 >
                   {categoryData.isVisible ? (
                     <FaEye className="text-indigo-500" />
@@ -169,15 +165,16 @@ const Categories = () => {
                   )}
                 </button>
               </div>
+
               <div className="mb-4">
                 <label className="block mb-1 font-semibold">Name:</label>
                 <input
                   type="text"
                   value={categoryData.name}
-                  onChange={(e) => setCategoryData((prev) => ({ ...prev, name: e.target.value }))}
+                  onChange={(e) => setCategoryData(prev => ({ ...prev, name: e.target.value }))}
                   maxLength={15}
                   className="w-full border rounded p-2"
-                  placeholder="np. Elektronika"
+                  placeholder="e.g., Electronics"
                 />
               </div>
 
@@ -185,44 +182,25 @@ const Categories = () => {
                 <label className="block mb-1 font-semibold">Description:</label>
                 <textarea
                   value={categoryData.description}
-                  onChange={(e) => setCategoryData((prev) => ({ ...prev, description: e.target.value }))}
+                  onChange={(e) => setCategoryData(prev => ({ ...prev, description: e.target.value }))}
                   className="w-full border rounded p-2"
-                  placeholder="np. Telefony, laptopy..."
+                  placeholder="e.g., Phones, Laptops..."
                 />
               </div>
-
-              {/* <div className="mb-4">
-                <label className="block mb-1 font-semibold">Parent:</label>
-                <select
-                  value={categoryData.parent || ""}
-                  onChange={(e) =>
-                    setCategoryData(prev => ({ ...prev, parent: e.target.value || null }))
-                  }
-                  className="w-full border rounded p-2"
-                >
-                  <option value="">(None)</option>
-                  {categories
-
-                    .map(cat => (
-                      <option key={cat._id} value={cat._id}>
-                        {cat.name}
-                      </option>
-                    ))}
-                </select>
-              </div> */}
 
               <div className="flex justify-end gap-4">
                 <button
                   onClick={closeModal}
                   className="px-4 py-2 rounded border border-gray-300 hover:bg-gray-100"
+                  type="button"
                 >
-                  Anuluj
+                  Cancel
                 </button>
                 <button
                   type="submit"
                   className="px-6 py-2 rounded text-white bg-blue-600 hover:bg-blue-700"
                 >
-                  Dodaj
+                  {editCategory ? "Save" : "Add"}
                 </button>
               </div>
             </form>
@@ -230,7 +208,6 @@ const Categories = () => {
         </div>
       )}
     </div>
-
   );
 };
 

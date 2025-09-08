@@ -1,14 +1,13 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import MainSlider from '../components/MainSlider';
-import { buildTree } from "../utils/categoryUtils";
 
 const WelcomePage = () => {
   const navigate = useNavigate();
   const { token, user, logout } = useAuth();
-  const [categories, setCategories] = useState([]);
+
   const [materials, setMaterials] = useState([]);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [notes, setNotes] = useState([]);
@@ -17,19 +16,15 @@ const WelcomePage = () => {
   const [notesPage, setNotesPage] = useState(1);
 
   const NOTES_PER_PAGE = 4;
+  const totalPages = Math.ceil(notes.length / NOTES_PER_PAGE);
+  const paginatedNotes = notes.slice(
+    (notesPage - 1) * NOTES_PER_PAGE,
+    notesPage * NOTES_PER_PAGE
+  );
 
-  useEffect(() => { fetchCategories(); }, []);
-  const fetchCategories = async () => {
-    try {
-      const res = await axios.get("http://localhost:3500/categories/public");
-      setCategories(res.data.categories || []);
-    } catch (err) {
-      console.error("Error fetching categories:", err);
-    }
-  };
-
+  // Fetch materials
   useEffect(() => {
-    const fetchMaterials = async () => {
+    (async () => {
       try {
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
         const res = await axios.get("http://localhost:3500/materials", { headers });
@@ -37,29 +32,12 @@ const WelcomePage = () => {
       } catch (err) {
         console.error("Error fetching materials:", err);
       }
-    };
-    fetchMaterials();
+    })();
   }, [token]);
 
-  const normalizedCategories = useMemo(
-    () => categories.map(c => ({
-      _id: c._id.toString(),
-      name: c.name,
-      description: c.description,
-      parent: c.parent?._id?.toString() || null
-    })),
-    [categories]
-  );
-
-  const categoryTree = useMemo(() => buildTree(normalizedCategories), [normalizedCategories]);
-
+  // Fetch notes
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    const fetchNotes = async () => {
+    (async () => {
       setNotesLoading(true);
       setNotesError(null);
       try {
@@ -70,23 +48,25 @@ const WelcomePage = () => {
       } catch (err) {
         console.error('Fetch notes error:', err.response ? err.response.data : err.message);
         setNotesError('Error fetching notes');
-      } finally { setNotesLoading(false); }
-    };
-    fetchNotes();
+      } finally {
+        setNotesLoading(false);
+      }
+    })();
   }, [token]);
 
+  // Timer for current time
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Handlers
   const handleLoginClick = () => navigate('/login');
   const handleLogout = () => { logout(); navigate('/'); };
   const handleBackToSidebar = () => {
-    if (['admin','lecturer'].includes(user?.role)) navigate('/admin-dashboard');
+    if (['admin', 'lecturer'].includes(user?.role)) navigate('/admin-dashboard');
     else navigate('/');
   };
-
-  const totalPages = Math.ceil(notes.length / NOTES_PER_PAGE);
-  const paginatedNotes = notes.slice(
-    (notesPage - 1) * NOTES_PER_PAGE,
-    notesPage * NOTES_PER_PAGE
-  );
 
   return (
     <div className="w-full min-h-screen font-sans bg-gradient-to-b from-blue-900 to-blue-700 text-gray-900">
@@ -124,8 +104,6 @@ const WelcomePage = () => {
         )}
       </div>
 
-   
-
       {/* WELCOME SECTION */}
       <section className="relative flex flex-col justify-center items-center min-h-[40vh] bg-blue-800/20 rounded-3xl py-10 px-6">
         <div className="max-w-3xl text-center">
@@ -153,34 +131,36 @@ const WelcomePage = () => {
           )}
         </div>
       </section>
-{/* INFO PANEL */}
-<section className="py-20 bg-white text-gray-900">
+
+      {/* INFO PANEL */}
+      <section className="py-20 bg-white text-gray-900">
         <div className="max-w-6xl mx-auto px-6">
           <h2 className="text-4xl font-extrabold text-center mb-14 tracking-tight text-blue-900">
-            Dlaczego nasz system?
+            Why Choose Our Inventory System?
           </h2>
           <div className="grid md:grid-cols-3 gap-12">
+
+            {/* Full Warehouse Control */}
             <div className="p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-shadow bg-gradient-to-tr from-blue-50 to-blue-100 cursor-default">
               <div className="text-5xl mb-5">📦</div>
-              <h3 className="font-semibold text-2xl mb-3 text-blue-800">Pełna kontrola magazynu</h3>
-              <p className="text-gray-700">
-                Śledź ilość, dostępność i lokalizację produktów w czasie rzeczywistym.
-              </p>
+              <h3 className="font-semibold text-2xl mb-3 text-blue-800">Full Warehouse Control</h3>
+              <p className="text-gray-700">Track quantities, availability, and product locations in real-time.</p>
             </div>
+
+            {/* Reports & Analytics */}
             <div className="p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-shadow bg-gradient-to-tr from-blue-50 to-blue-100 cursor-default">
               <div className="text-5xl mb-5">📊</div>
-              <h3 className="font-semibold text-2xl mb-3 text-blue-800">Raporty & Statystyki</h3>
-              <p className="text-gray-700">
-                Twórz zaawansowane raporty dotyczące sprzedaży, stanu magazynowego i zamówień.
-              </p>
+              <h3 className="font-semibold text-2xl mb-3 text-blue-800">Reports & Analytics</h3>
+              <p className="text-gray-700">Generate advanced reports, inventory levels and orders.</p>
             </div>
+
+            {/* Secure Access */}
             <div className="p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-shadow bg-gradient-to-tr from-blue-50 to-blue-100 cursor-default">
               <div className="text-5xl mb-5">🔒</div>
-              <h3 className="font-semibold text-2xl mb-3 text-blue-800">Bezpieczny dostęp</h3>
-              <p className="text-gray-700">
-                System z autoryzacją dla administratorów i pracowników z różnymi poziomami uprawnień.
-              </p>
+              <h3 className="font-semibold text-2xl mb-3 text-blue-800">Secure Access</h3>
+              <p className="text-gray-700">Role-based authorization ensures secure access for administrators and staff.</p>
             </div>
+
           </div>
         </div>
       </section>
@@ -202,11 +182,8 @@ const WelcomePage = () => {
           {!notesLoading && !notesError && notes.length > 0 && (
             <>
               <ul className="grid gap-6 sm:grid-cols-2">
-                {paginatedNotes.map((note) => (
-                  <li
-                    key={note._id}
-                    className="bg-blue-800 rounded-xl p-6 shadow-md hover:shadow-lg transition-transform duration-300 hover:scale-[1.02] flex flex-col"
-                  >
+                {paginatedNotes.map(note => (
+                  <li key={note._id} className="bg-blue-800 rounded-xl p-6 shadow-md hover:shadow-lg transition-transform duration-300 hover:scale-[1.02] flex flex-col">
                     <p className="text-white text-lg leading-relaxed font-medium whitespace-pre-wrap break-words">
                       {note.text}
                     </p>
@@ -219,29 +196,25 @@ const WelcomePage = () => {
               </ul>
 
               {/* Pagination Buttons */}
-              {/* Pagination Buttons */}
-<div className="flex justify-center gap-4 mt-6">
-  <button
-    onClick={() => setNotesPage((prev) => Math.max(prev - 1, 1))}
-    disabled={notesPage === 1}
-    className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-full shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
-  >
-    Previous
-  </button>
-
-  <span className="px-4 py-2 bg-blue-800 text-white font-semibold rounded-full shadow-inner">
-    {notesPage} / {totalPages}
-  </span>
-
-  <button
-    onClick={() => setNotesPage((prev) => Math.min(prev + 1, totalPages))}
-    disabled={notesPage === totalPages}
-    className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-full shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
-  >
-    Next
-  </button>
-</div>
-
+              <div className="flex justify-center gap-4 mt-6">
+                <button
+                  onClick={() => setNotesPage(prev => Math.max(prev - 1, 1))}
+                  disabled={notesPage === 1}
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-full shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
+                >
+                  Previous
+                </button>
+                <span className="px-4 py-2 bg-blue-800 text-white font-semibold rounded-full shadow-inner">
+                  {notesPage} / {totalPages}
+                </span>
+                <button
+                  onClick={() => setNotesPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={notesPage === totalPages}
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-full shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
+                >
+                  Next
+                </button>
+              </div>
             </>
           )}
         </div>

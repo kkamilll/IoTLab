@@ -4,9 +4,9 @@ import authMiddleware from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.get("/", getNotes); // publiczne
+router.get("/", getNotes);
 router.post("/create", authMiddleware, createNote);
-router.put("/:noteId", authMiddleware, updateNote); // nowy endpoint
+router.put("/:noteId", authMiddleware, updateNote);
 router.delete("/:noteId", authMiddleware, hardDeleteNote);
 
 export default router;

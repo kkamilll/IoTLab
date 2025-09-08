@@ -7,7 +7,7 @@ const ReturnedOrders = () => {
   const [returnedOrders, setReturnedOrders] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Pobranie zwróconych zamówień
+  // Fetch returned orders
   const fetchReturnedOrders = async () => {
     setLoading(true);
     try {
@@ -19,7 +19,7 @@ const ReturnedOrders = () => {
       }
     } catch (err) {
       console.error("Error fetching returned orders:", err);
-      alert(err.response?.data?.message || "Błąd pobierania zwróconych zamówień");
+      alert(err.response?.data?.message || "Error fetching returned orders");
     } finally {
       setLoading(false);
     }
@@ -29,7 +29,7 @@ const ReturnedOrders = () => {
     fetchReturnedOrders();
   }, []);
 
-  // Obsługa zwrotu zamówienia
+  // Handle returning an order
   const handleReturnOrder = async (orderId) => {
     try {
       const res = await axios.post(
@@ -39,12 +39,11 @@ const ReturnedOrders = () => {
       );
 
       if (res.data.success) {
-        // Dodaj zwrócone zamówienie do tabeli od razu
         setReturnedOrders((prev) => [...prev, res.data.order]);
       }
     } catch (err) {
       console.error("Error returning order:", err);
-      alert(err.response?.data?.message || "Błąd zwrotu zamówienia");
+      alert(err.response?.data?.message || "Error returning order");
     }
   };
 
@@ -52,46 +51,46 @@ const ReturnedOrders = () => {
     <div className="min-h-screen bg-gray-50 flex flex-col items-center p-6">
       <div className="w-full max-w-6xl bg-white rounded shadow-md p-8 flex flex-col gap-8">
         <h1 className="text-3xl font-extrabold text-gray-800 mb-4 text-center">
-          Zwrócone Zamówienia
+          Returned Orders
         </h1>
 
         <div className="overflow-x-auto">
           <table className="w-full border-collapse border border-gray-300">
             <thead className="bg-blue-50">
               <tr>
-                <th className="border border-gray-300 p-3 text-left">Produkt</th>
-                <th className="border border-gray-300 p-3 text-right">Ilość</th>
-                <th className="border border-gray-300 p-3 text-left">Opis</th>
+                <th className="border border-gray-300 p-3 text-left">Product</th>
+                <th className="border border-gray-300 p-3 text-right">Quantity</th>
+                <th className="border border-gray-300 p-3 text-left">Description</th>
                 <th className="border border-gray-300 p-3 text-center">Status</th>
-                <th className="border border-gray-300 p-3 text-center">Data zwrotu</th>
+                <th className="border border-gray-300 p-3 text-center">Return Date</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
                   <td colSpan="5" className="text-center p-6 text-gray-500">
-                    Ładowanie...
+                    Loading...
                   </td>
                 </tr>
               ) : returnedOrders.length === 0 ? (
                 <tr>
                   <td colSpan="5" className="text-center p-6 text-gray-500">
-                    Brak zwróconych zamówień
+                    No returned orders
                   </td>
                 </tr>
               ) : (
                 returnedOrders.map((order) => (
                   <tr key={order._id} className="hover:bg-gray-100">
-                    <td className="border border-gray-300 p-3">{order.product?.name || "Usunięty produkt"}</td>
+                    <td className="border border-gray-300 p-3">{order.product?.name || "Deleted product"}</td>
                     <td className="border border-gray-300 p-3 text-right">{order.quantity}</td>
-                    <td className="border border-gray-300 p-3">{order.product?.description || "Brak opisu"}</td>
+                    <td className="border border-gray-300 p-3">{order.product?.description || "No description"}</td>
                     <td className="border border-gray-300 p-3 text-center text-green-600 font-semibold">
-                      {order.isReturned ? "Zwrócone" : (
+                      {order.isReturned ? "Returned" : (
                         <button
                           onClick={() => handleReturnOrder(order._id)}
                           className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
                         >
-                          Zwróć
+                          Return
                         </button>
                       )}
                     </td>

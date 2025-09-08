@@ -4,20 +4,23 @@ import { useAuth } from "../context/AuthContext";
 
 const Profile = () => {
   const { token } = useAuth();
+
+  // --- State ---
   const [user, setUser] = useState({ name: "", email: "", password: "", labRooms: [] });
   const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [newLabRoom, setNewLabRoom] = useState("");
   const [open, setOpen] = useState(false);
-const [showPassword, setShowPassword] = useState(false);
 
   const ref = useRef(null);
 
+  // --- Axios instance ---
   const axiosInstance = axios.create({
     baseURL: "http://localhost:3500",
     headers: { Authorization: `Bearer ${token}` },
   });
 
+  // --- Fetch user profile on mount ---
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -38,6 +41,7 @@ const [showPassword, setShowPassword] = useState(false);
     fetchUser();
   }, [token]);
 
+  // --- Handle click outside dropdown ---
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (ref.current && !ref.current.contains(event.target)) {
@@ -48,6 +52,7 @@ const [showPassword, setShowPassword] = useState(false);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // --- Handlers ---
   const handleSave = async () => {
     if (!user.name.trim() || !user.email.trim()) return alert("Name and email cannot be empty");
     try {
@@ -66,9 +71,7 @@ const [showPassword, setShowPassword] = useState(false);
     }
   };
 
-  const cancelEdit = () => {
-    setEditMode(false);
-  };
+  const cancelEdit = () => setEditMode(false);
 
   const handleAddLabRoom = () => {
     if (newLabRoom && !user.labRooms.includes(newLabRoom)) {
@@ -82,10 +85,13 @@ const [showPassword, setShowPassword] = useState(false);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex justify-center items-start p-10">
-      <div className="w-full max-w-lg bg-white rounded-3xl shadow-xl p-10 text-base">
-        <h2 className="text-4xl font-bold text-gray-800 mb-8 text-center">👤 Profile</h2>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex justify-center items-start px-4 sm:px-6 lg:px-10 py-10">
+      <div className="w-full max-w-lg sm:max-w-md bg-white rounded-3xl shadow-xl p-6 sm:p-10 text-base">
 
+        {/* --- Header --- */}
+        <h2 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-8 text-center">👤 Profile</h2>
+
+        {/* --- User Info Inputs --- */}
         <input
           type="text"
           value={user.name}
@@ -94,7 +100,6 @@ const [showPassword, setShowPassword] = useState(false);
           className="w-full mb-5 px-5 py-4 border border-gray-300 rounded-2xl text-lg focus:ring-2 focus:ring-gray-400 disabled:bg-gray-100"
           placeholder="Name"
         />
-
         <input
           type="email"
           value={user.email}
@@ -103,40 +108,42 @@ const [showPassword, setShowPassword] = useState(false);
           className="w-full mb-5 px-5 py-4 border border-gray-300 rounded-2xl text-lg focus:ring-2 focus:ring-gray-400 disabled:bg-gray-100"
           placeholder="Email"
         />
-        
-{editMode && (
-  <div className="mb-5">
-  <input
-    type="password"
-    value={user.password}
-    onChange={(e) => setUser({ ...user, password: e.target.value })}
-    className="w-full px-5 py-4 border border-gray-300 rounded-2xl text-lg focus:ring-2 focus:ring-gray-400"
-    placeholder="Password"
-  />
-</div>
-)}
-
 
         {editMode && (
+          <div className="mb-5">
+            <input
+              type="password"
+              value={user.password}
+              onChange={(e) => setUser({ ...user, password: e.target.value })}
+              className="w-full px-5 py-4 border border-gray-300 rounded-2xl text-lg focus:ring-2 focus:ring-gray-400"
+              placeholder="Password"
+            />
+          </div>
+        )}
+
+        {/* --- Lab Rooms --- */}
+        {editMode && (
           <div className="mb-6">
-            <div className="flex gap-3 mb-3">
+
+            {/* Add new lab room */}
+            <div className="flex flex-col sm:flex-row gap-3 mb-3 w-full">
               <input
                 type="text"
                 placeholder="Add lab room"
                 value={newLabRoom}
                 onChange={(e) => setNewLabRoom(e.target.value)}
-                className="border p-3 rounded-2xl flex-1 text-lg"
+                className="border p-3 rounded-2xl flex-1 text-lg w-full"
               />
               <button
                 type="button"
                 onClick={handleAddLabRoom}
-                className="px-5 py-3 bg-gray-500 text-white rounded-2xl hover:bg-gray-600 text-lg"
+                className="px-4 sm:px-5 py-3 bg-gray-500 text-white rounded-2xl hover:bg-gray-600 w-full sm:w-auto text-lg"
               >
                 Add
               </button>
             </div>
 
-            {/* Dropdown ALL LABS */}
+            {/* Dropdown for all labs */}
             <div className="relative" ref={ref}>
               <button
                 onClick={() => setOpen((prev) => !prev)}
@@ -146,7 +153,7 @@ const [showPassword, setShowPassword] = useState(false);
               </button>
 
               {open && (
-                <div className="absolute top-full left-0 mt-2 bg-white border border-gray-300 rounded-2xl shadow-lg p-4 flex flex-col gap-3 z-50 w-full max-h-80 overflow-y-auto">
+                <div className="absolute top-full left-0 mt-2 bg-white border border-gray-300 rounded-2xl shadow-lg p-4 flex flex-col gap-3 z-50 w-full max-h-64 overflow-y-auto">
                   {user.labRooms.length === 0 && (
                     <span className="text-gray-500 text-sm italic">No labs</span>
                   )}
@@ -170,6 +177,7 @@ const [showPassword, setShowPassword] = useState(false);
           </div>
         )}
 
+        {/* --- Action Buttons --- */}
         {!editMode ? (
           <button
             onClick={() => setEditMode(true)}
@@ -178,7 +186,7 @@ const [showPassword, setShowPassword] = useState(false);
             Edit
           </button>
         ) : (
-          <div className="flex gap-4 mt-3">
+          <div className="flex flex-col sm:flex-row gap-3 mt-3">
             <button
               onClick={handleSave}
               className="flex-1 bg-green-500 text-white py-4 rounded-2xl text-lg hover:bg-green-600"
@@ -194,6 +202,7 @@ const [showPassword, setShowPassword] = useState(false);
             </button>
           </div>
         )}
+
       </div>
     </div>
   );

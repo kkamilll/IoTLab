@@ -7,7 +7,7 @@ const Sidebar = () => {
     {name:"Home Page", path: "/", isParent:true},
     {name:"Dashboard", path: "/admin-dashboard", isParent:true},
     {name:"Products", path: "/admin-dashboard/products", isParent:false},
-    {name:"Categories", path: "/admin-dashboard/categories", isParent:false}, // ❌ lecturer nie zobaczy
+    {name:"Categories", path: "/admin-dashboard/categories", isParent:false},
     {name:"Orders", path: "/admin-dashboard/orders", isParent:false},
     {name:"Orders History", path: "/admin-dashboard/ReturnedOrders", isParent:false},
     {name:"Users", path: "/admin-dashboard/users", isParent:false},
@@ -116,7 +116,7 @@ const customerItems = [
               <p className="text-blue-300 capitalize">{user.role}</p>
             </>
           ) : (
-            <p>Nie zalogowano</p>
+            <p>Not logged in</p>
           )}
         </div>
       </div>

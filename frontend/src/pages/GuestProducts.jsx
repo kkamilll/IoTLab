@@ -45,7 +45,7 @@ const GuestProducts = () => {
       setProducts(updatedProducts);
     } catch (err) {
       console.error("Error fetching products:", err);
-      alert("Błąd podczas pobierania produktów");
+      alert("Error fetching products");
     }
   };
 
@@ -132,16 +132,16 @@ const GuestProducts = () => {
   );
 
   return (
-   <div className="w-full h-full flex flex-col gap-4 p-4 md:p-6 bg-gray-50">
-  <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4">
-    <h1 className="text-3xl font-extrabold text-gray-700">Products</h1>
-    <button
-      onClick={() => navigate("/mainguest")}
-      className="px-4 py-2 bg-gray-500 text-white rounded shadow hover:bg-gray-600 transition"
-    >
-      Powrót
-    </button>
-  </div>
+    <div className="w-full h-full flex flex-col gap-4 p-4 md:p-6 bg-gray-50">
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4">
+        <h1 className="text-3xl font-extrabold text-gray-700">Products</h1>
+        <button
+          onClick={() => navigate("/mainguest")}
+          className="px-4 py-2 bg-gray-500 text-white rounded shadow hover:bg-gray-600 transition"
+        >
+          Back
+        </button>
+      </div>
 
       {/* Search & Category Filter */}
       <div className="flex flex-col sm:flex-row justify-between gap-3 items-center mb-4">
@@ -171,7 +171,7 @@ const GuestProducts = () => {
         </div>
       </div>
 
-      {/* Responsive Table / Cards */}
+      {/* Table for desktop */}
       <div className="overflow-x-auto">
         <div className="hidden md:block overflow-x-auto shadow-lg rounded-lg border border-gray-200">
           <table className="min-w-full divide-y divide-gray-200">
@@ -224,7 +224,7 @@ const GuestProducts = () => {
                         >+</button>
                       </div>
                       <span className="inline-block bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full">
-                        W koszyku: {cart.find(item => item._id === p._id)?.quantity || 0}
+                        In Cart: {cart.find(item => item._id === p._id)?.quantity || 0}
                       </span>
                     </div>
                   </td>
@@ -235,61 +235,58 @@ const GuestProducts = () => {
         </div>
 
         {/* Mobile Cards */}
-       <div className="md:hidden flex flex-col gap-4">
-  {paginatedProducts.map(p => (
-    <div
-      key={p._id}
-      className="bg-white shadow-md rounded-xl p-4 flex flex-col gap-3 border border-gray-200 hover:shadow-lg transition-shadow"
-    >
-      {allColumns.map((col, idx) => (
-        <div key={idx} className="flex justify-between text-sm text-gray-700">
-          <span className="font-semibold">{col}:</span>
-          <span className="text-gray-900 break-words">
-            {col === "categories"
-              ? p.categories?.map(c => c.name).join(", ")
-              : p[col] ?? p.extraFields?.[col] ?? ""}
-          </span>
+        <div className="md:hidden flex flex-col gap-4">
+          {paginatedProducts.map(p => (
+            <div
+              key={p._id}
+              className="bg-white shadow-md rounded-xl p-4 flex flex-col gap-3 border border-gray-200 hover:shadow-lg transition-shadow"
+            >
+              {allColumns.map((col, idx) => (
+                <div key={idx} className="flex justify-between text-sm text-gray-700">
+                  <span className="font-semibold">{col}:</span>
+                  <span className="text-gray-900 break-words">
+                    {col === "categories"
+                      ? p.categories?.map(c => c.name).join(", ")
+                      : p[col] ?? p.extraFields?.[col] ?? ""}
+                  </span>
+                </div>
+              ))}
+
+              {/* Quantity control */}
+              <div className="flex items-center gap-2 mt-2 justify-center">
+                <button
+                  onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) - 1, p)}
+                  className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-bold rounded-l-lg transition-colors"
+                  disabled={(cartQuantities[p._id] || 0) <= 0}
+                >
+                  −
+                </button>
+                <input
+                  type="number"
+                  min="0"
+                  max={p.stockForRent || 0}
+                  value={cartQuantities[p._id] || 0}
+                  onChange={(e) => handleQuantityChange(p._id, e.target.value, p)}
+                  className="w-16 text-center text-lg border-t border-b border-gray-300 outline-none"
+                />
+                <button
+                  onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) + 1, p)}
+                  className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-bold rounded-r-lg transition-colors"
+                  disabled={(cartQuantities[p._id] || 0) >= (p.stockForRent || 0)}
+                >
+                  +
+                </button>
+              </div>
+
+              {/* Current in-cart quantity */}
+              <div className="text-center mt-1">
+                <span className="inline-block bg-green-100 text-green-800 text-sm font-semibold px-3 py-1 rounded-full">
+                  In Cart: {cart.find(item => item._id === p._id)?.quantity || 0}
+                </span>
+              </div>
+            </div>
+          ))}
         </div>
-      ))}
-
-      {/* Quantity control */}
-      <div className="flex items-center gap-2 mt-2 justify-center">
-        <button
-          onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) - 1, p)}
-          className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-bold rounded-l-lg transition-colors"
-          disabled={(cartQuantities[p._id] || 0) <= 0}
-        >
-          −
-        </button>
-        <input
-          type="number"
-          min="0"
-          max={p.stockForRent || 0}
-          value={cartQuantities[p._id] || 0}
-          onChange={(e) => handleQuantityChange(p._id, e.target.value, p)}
-          className="w-16 text-center text-lg border-t border-b border-gray-300 outline-none"
-        />
-        <button
-          onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) + 1, p)}
-          className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-bold rounded-r-lg transition-colors"
-          disabled={(cartQuantities[p._id] || 0) >= (p.stockForRent || 0)}
-        >
-          +
-        </button>
-      </div>
-
-      {/* Current in-cart quantity */}
-      <div className="text-center mt-1">
-        <span className="inline-block bg-green-100 text-green-800 text-sm font-semibold px-3 py-1 rounded-full">
-          W koszyku: {cart.find(item => item._id === p._id)?.quantity || 0}
-        </span>
-      </div>
-    </div>
-  ))}
-</div>
-
-
-        
       </div>
 
       {/* Pagination */}
