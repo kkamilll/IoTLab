@@ -4,24 +4,36 @@ import { useAuth } from "../context/AuthContext";
 
 const Orders = () => {
   const { user, token } = useAuth();
-  const isAdmin = user?.role === "admin";
+  // const isAdmin = user?.role === "admin";
 
   const [orders, setOrders] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [stockStatus, setStockStatus] = useState(null);
+
   const [statuses, setStatuses] = useState([]);
   const [statusFilter, setStatusFilter] = useState("");
   const [emailFilter, setEmailFilter] = useState("");
-  const [editingItem, setEditingItem] = useState(null);
-  const [newQuantity, setNewQuantity] = useState(1);
+  // const [editingItem, setEditingItem] = useState(null);
+  // const [newQuantity, setNewQuantity] = useState(1);
+  // const [editingDates, setEditingDates] = useState(null);
+
   // const [editingDates, setEditingDates] = useState(null);
   // const [newStartDate, setNewStartDate] = useState("");
   // const [newEndDate, setNewEndDate] = useState("");
-  const [editingDates, setEditingDates] = useState(null);
-  const cardsPerPage = 4;
+  // const cardsPerPage = 4;
+
+  const [expanded, setExpanded] = useState({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const [editGroup, setEditGroup] = useState(null); // currently editing order
+  const [itemUpdatesData, setItemUpdatesData] = useState({});    // edited items keyed by item._id
+  const [openModal, setOpenModal] = useState(false);
+  const [currentItemId, setCurrentItemId] = useState(null);
+
 
   const fetchStatuses = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/orders/statuses`, {
+      const res = await axios.get("http://localhost:3500/orders/statuses", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.data.success) setStatuses(res.data.statuses);
@@ -31,210 +43,680 @@ const Orders = () => {
   };
 
   // Fetch orders from backend
-  const fetchOrders = async () => {
+  const fetchOrders = async (page = 1, limit = 20, emailFilter = "", statusFilter = "") => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/orders`, {
+      const queryParams = new URLSearchParams({
+        page,
+        limit,
+        email: emailFilter,
+        status: statusFilter,
+      });
+
+      const res = await axios.get(`http://localhost:3500/orders?${queryParams.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.data.success) setOrders(res.data.orders);
+      if (res.data.success) {
+        setOrders(res.data.orders);
+        setTotalPages(res.data.totalPages);
+        setCurrentPage(res.data.page);
+      }
     } catch (err) {
       console.error("Error fetching orders:", err);
     }
   };
 
+  const fetchProductStockStatus = async (productId, startDate, endDate) => {
+    try {
+      if (!productId || !startDate || !endDate) return null;
+
+      const res = await axios.post("http://localhost:3500/products/stockStatus",
+        { productId, startDate, endDate },
+        { headers: { Authorization: `Bearer ${token}` } });
+
+      if (res.data.success) {
+        return {
+          available: res.data.available ?? 0,
+          inDemand: res.data.inDemand ?? 0,
+          requestsQuantity: res.data.requestsQuantity ?? 0,
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error(error)
+      alert(error?.response?.data?.message || error.message || "Unknown error");
+    }
+  }
+
   useEffect(() => {
-    fetchOrders();
+    fetchOrders(1);
     fetchStatuses();
   }, []);
 
   // Reset page when filters change
-  useEffect(() => setCurrentPage(1), [statusFilter, emailFilter]);
+  useEffect(() => { fetchOrders(1, 20, emailFilter, statusFilter); }, [statusFilter, emailFilter]);
   // Filtered & paginated orders
-  const filteredOrders = useMemo(() => {
-    return orders.filter((order) => {
-      const statusMatch =
-        statusFilter === ""
-          ? order.status !== "NIE_OK" && !order.isReturned
-          : statusFilter === "ZWROCONO"
-            ? order.isReturned
-            : order.status === statusFilter;
+  // const filteredOrders = useMemo(() => {
+  //   return orders.filter((order) => {
+  //     const statusMatch =
+  //       statusFilter === ""
+  //         ? order.status !== "NIE_OK" && !order.isReturned
+  //         : statusFilter === "ZWROCONO"
+  //           ? order.isReturned
+  //           : order.status === statusFilter;
 
-      const emailMatch = order.customer?.email
-        ?.toLowerCase()
-        .includes(emailFilter.toLowerCase());
-      return statusMatch && emailMatch;
+  //     const emailMatch = order.customer?.email
+  //       ?.toLowerCase()
+  //       .includes(emailFilter.toLowerCase());
+  //     return statusMatch && emailMatch;
+  //   });
+  // }, [orders, statusFilter, emailFilter]);
+
+  useEffect(() => {
+    if (!editGroup || !itemUpdatesData) return;
+
+    // When editOrder changes, refresh stock for all editable items
+    const editableItems = editGroup.items.filter(item =>
+      processableStatuses.includes(item.status)
+    );
+
+    editableItems.forEach(item => {
+      const currentItem = itemUpdatesData[item._id];
+      if (!currentItem) return;
+
+      const { startDate, endDate } = currentItem.assigned || {};
+      if (startDate && endDate) {
+        fetchProductStockStatus(currentItem.product._id, startDate, endDate)
+          .then(data => {
+            setStockStatus(prev => ({
+              ...prev,
+              [currentItem.itemId]: data
+            }));
+          });
+      }
     });
-  }, [orders, statusFilter, emailFilter]);
+  }, [editGroup]); // runs only when editOrder changes
 
-  const indexOfLastCard = currentPage * cardsPerPage;
-  const indexOfFirstCard = indexOfLastCard - cardsPerPage;
-  const currentOrders = filteredOrders.slice(indexOfFirstCard, indexOfLastCard);
-  const totalPages = Math.ceil(filteredOrders.length / cardsPerPage);
+  useEffect(() => {
+    if (!currentItemId || !itemUpdatesData[currentItemId]) return;
 
-  const nextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
-  const prevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
+    const currentItem = itemUpdatesData[currentItemId];
+    const { startDate, endDate } = currentItem.assigned || {};
+    if (startDate && endDate) {
+      fetchProductStockStatus(currentItem.product._id, startDate, endDate)
+        .then(data => {
+          setStockStatus(prev => ({
+            ...prev,
+            [currentItem.itemId]: data
+          }));
+        });
+    }
+  }, [currentItemId, itemUpdatesData[currentItemId]?.assigned?.startDate, itemUpdatesData[currentItemId]?.assigned?.endDate]);
+
+
+  // const indexOfLastCard = currentPage * cardsPerPage;
+  // const indexOfFirstCard = indexOfLastCard - cardsPerPage;
+  // const currentOrders = filteredOrders.slice(indexOfFirstCard, indexOfLastCard);
+  // const currentOrders = filteredOrders;
+
+  // const totalPages = Math.ceil(filteredOrders.length / cardsPerPage);
+
+  const prevPage = () => {
+    if (currentPage > 1) fetchOrders(currentPage - 1);
+  };
+  const nextPage = () => {
+    if (currentPage < totalPages) fetchOrders(currentPage + 1);
+  };
 
   // --- Admin actions ---
 
-  const handleDeleteOrder = async (order) => {
-    if (!window.confirm("Czy na pewno chcesz usunąć to zamówienie?")) return;
-    try {
-      await axios.delete(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/orders/${order._id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      fetchOrders();
-    } catch (err) {
-      console.error(err);
-      alert("Błąd usuwania zamówienia");
-    }
-  };
+  // const handleDeleteOrder = async (order) => {
+  //   if (!window.confirm("Czy na pewno chcesz usunąć to zamówienie?")) return;
+  //   try {
+  //     await axios.delete(`http://localhost:3500/orders/${order._id}`, {
+  //       headers: { Authorization: `Bearer ${token}` },
+  //     });
+  //     fetchOrders(currentPage);
+  //   } catch (err) {
+  //     console.error(err);
+  //     alert("Błąd usuwania zamówienia");
+  //   }
+  // };
 
-  const handleReturnOrder = async (order) => {
-    if (!window.confirm("Czy na pewno chcesz zwrócić to zamówienie?")) return;
-    try {
-      await axios.post(
-        `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/orders/returned`,
-        { orderId: order._id },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      fetchOrders();
-    } catch (err) {
-      console.error(err);
-      alert("Błąd zwrotu zamówienia");
-    }
-  };
+  // const handleReturnOrder = async (order) => {
+  //   if (!window.confirm("Czy na pewno chcesz zwrócić to zamówienie?")) return;
+  //   try {
+  //     await axios.post(
+  //       "http://localhost:3500/orders/returned",
+  //       { orderId: order._id },
+  //       { headers: { Authorization: `Bearer ${token}` } }
+  //     );
+  //     fetchOrders();
+  //   } catch (err) {
+  //     console.error(err);
+  //     alert("Błąd zwrotu zamówienia");
+  //   }
+  // };
 
-  const handleUpdateStatus = async (order, newStatus) => {
-    let statusToSend = newStatus;
+  // const handleUpdateStatus = async (order, newStatus) => {
+  //   let statusToSend = newStatus;
 
-    if (newStatus === "OK") {
-      const today = new Date().setHours(0, 0, 0, 0);
-      const startDate = new Date(order.startDate).setHours(0, 0, 0, 0);
+  //   if (newStatus === "OK") {
+  //     const today = new Date().setHours(0, 0, 0, 0);
+  //     const startDate = new Date(order.startDate).setHours(0, 0, 0, 0);
 
-      if (today < startDate) {
-        return alert(
-          `Nie możesz ustawić statusu OK – wypożyczenie zaczyna się dopiero ${new Date(
-            order.startDate
-          ).toLocaleDateString("pl-PL")}`
-        );
-      } else {
-        statusToSend = "DO_ODBIORU";
-      }
-    }
+  //     if (today < startDate) {
+  //       return alert(
+  //         `Nie możesz ustawić statusu OK – wypożyczenie zaczyna się dopiero ${new Date(
+  //           order.startDate
+  //         ).toLocaleDateString("pl-PL")}`
+  //       );
+  //     } else {
+  //       statusToSend = "DO_ODBIORU";
+  //     }
+  //   }
 
-    try {
-      await axios.post(
-        `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/orders/update-status`,
-        { orderId: order._id, status: statusToSend },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      fetchOrders();
-    } catch (err) {
-      console.error(err);
-      alert(err.response?.data?.error || "Błąd aktualizacji statusu");
-    }
-  };
+  //   try {
+  //     await axios.post(
+  //       "http://localhost:3500/orders/update-status",
+  //       { orderId: order._id, status: statusToSend },
+  //       { headers: { Authorization: `Bearer ${token}` } }
+  //     );
+  //     fetchOrders();
+  //   } catch (err) {
+  //     console.error(err);
+  //     alert(err.response?.data?.error || "Błąd aktualizacji statusu");
+  //   }
+  // };
 
-  const handleMarkAsReceived = async (order) => {
-    try {
-      await axios.post(
-        `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/orders/update-status`,
-        { orderId: order._id, status: "OK", markAsReceived: true },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      fetchOrders();
-    } catch (err) {
-      console.error(err);
-      alert(err.response?.data?.error || "Błąd aktualizacji statusu");
-    }
-  };
+  // const handleMarkAsReceived = async (order) => {
+  //   try {
+  //     await axios.post(
+  //       "http://localhost:3500/orders/update-status",
+  //       { orderId: order._id, status: "OK", markAsReceived: true },
+  //       { headers: { Authorization: `Bearer ${token}` } }
+  //     );
+  //     fetchOrders();
+  //   } catch (err) {
+  //     console.error(err);
+  //     alert(err.response?.data?.error || "Błąd aktualizacji statusu");
+  //   }
+  // };
 
   // --- Quantity editing ---
 
-  const handleEditQuantity = (orderId, item) => {
-    const maxQty =
-      (item.product?.stockForRent || item.available || 1) -
-      (item.bookedQuantity || 0);
+  // const handleEditQuantity = (orderId, item) => {
+  //   const maxQty =
+  //     (item.product?.stockForRent || item.available || 1) -
+  //     (item.bookedQuantity || 0);
 
-    setEditingItem({
-      orderId,
-      itemId: item.product?._id || item._id,
-      maxQuantity: Math.max(maxQty, 1),
-    });
-    setNewQuantity(item.quantity);
+  //   setEditingItem({
+  //     orderId,
+  //     itemId: item.product?._id || item._id,
+  //     maxQuantity: Math.max(maxQty, 1),
+  //   });
+  //   setNewQuantity(item.quantity);
+  // };
+
+  // const handleSaveQuantity = async () => {
+  //   if (newQuantity < 1 || newQuantity > editingItem.maxQuantity) {
+  //     return alert(`Ilość musi być między 1 a ${editingItem.maxQuantity}`);
+  //   }
+  //   try {
+  //     await axios.post(
+  //       "http://localhost:3500/orders/update-quantity",
+  //       {
+  //         orderId: editingItem.orderId,
+  //         itemId: editingItem.itemId,
+  //         quantity: newQuantity,
+  //       },
+  //       { headers: { Authorization: `Bearer ${token}` } }
+  //     );
+  //     fetchOrders();
+  //     setEditingItem(null);
+  //   } catch (err) {
+  //     console.error(err);
+  //     alert(err.response?.data?.error || "Błąd aktualizacji ilości");
+  //   }
+  // };
+
+  // // --- Date editing ---
+
+  // const handleEditDates = (order, item) => {
+  //   setEditingDates({
+  //     orderId: order._id,
+  //     itemId: item.product?._id || item._id,
+  //     startDate: item.requested?.startDate || "",
+  //     endDate: item.requested?.endDate || ""
+  //   });
+  // };
+
+  // const handleSaveDates = async () => {
+  //   if (!editingDates.startDate || !editingDates.endDate)
+  //     return alert("Podaj obie daty!");
+  //   if (editingDates.startDate > editingDates.endDate)
+  //     return alert("Data rozpoczęcia nie może być późniejsza niż zakończenia!");
+
+  //   try {
+  //     await axios.post(
+  //       "http://localhost:3500/orders/update-dates",
+  //       {
+  //         orderId: editingDates.orderId,
+  //         itemId: editingDates.itemId,
+  //         startDate: editingDates.startDate,
+  //         endDate: editingDates.endDate,
+  //       },
+  //       { headers: { Authorization: `Bearer ${token}` } }
+  //     );
+  //     fetchOrders();
+  //     setEditingDates(null);
+  //   } catch (err) {
+  //     console.error(err);
+  //     alert(err.response?.data?.error || "Błąd aktualizacji dat");
+  //   }
+  // };
+
+  // // --- Helpers for button visibility ---
+
+  // const canEditQuantity = (order, item) =>
+  //   isAdmin && !order.isReturned && order.status !== "OK" && !item.quantityEdited;
+
+  // const canEditDates = (order) =>
+  //   isAdmin && !order.isReturned && order.status !== "OK" && order.status !== "DO_ODBIORU";
+
+  // const hasPendingOrder = editGroup?.items.some(item => item.status === "pending");
+  const processableStatuses = ["pending", "approved", "prepared"];
+  const rejectableStatuses = ["pending", "approved", "prepared"];
+  const nonRejectableStatuses = ["rented", "late", "returned"];
+  const returnableStatuses = ["rented", "late"];
+
+  const hasStatus = (items, statuses) => items.some(item => statuses.includes(item.status));
+
+  const canProcessOrder = (order) => hasStatus(order.items, processableStatuses); // window
+  const canRejectOrder = (order) => hasStatus(order.items, rejectableStatuses) && !hasStatus(order.items, nonRejectableStatuses); // automatic
+  const canPrepareOrder = (order) => hasStatus(order.items, ["approved"]) && !hasStatus(order.items, ["pending"]);
+  const canRentOrder = (order) => hasStatus(order.items, ["prepared"]) && !hasStatus(order.items, ["pending"]); // automatic + pdf
+  const canReturnOrder = (order) => hasStatus(order.items, returnableStatuses) && !hasStatus(order.items, ["pending"]); // window
+
+  const getStatusColor = (groupStatus) => {
+    switch (groupStatus) {
+      case "changed":
+        return "text-red-800"; // really noticeable
+      case "pending":
+      case "approved":
+      case "prepared":
+        return "text-yellow-600";
+      case "rented":
+        return "text-green-600";
+      case "returned":
+        return "text-blue-600";
+      case "rejected":
+        return "text-gray-500";
+      default:
+        return "text-red-700"; // fallback for unexpected statuses
+    }
   };
 
-  const handleSaveQuantity = async () => {
-    if (newQuantity < 1 || newQuantity > editingItem.maxQuantity) {
-      return alert(`Ilość musi być między 1 a ${editingItem.maxQuantity}`);
-    }
+  const getAllowedStatuses = (status) => {
+    if (status === "pending") return ["approved", "rejected"];
+    if (status === "approved") return ["prepared", "rejected"];
+    if (status === "prepared") return ["rented", "rejected"];
+    return []; // rented, returned, rejected -> no changes
+  };
+
+  // function lowestProcessableStatus(group) {
+  //   const processableItems = group.items.filter(item =>
+  //     processableOrder.includes(item.status)
+  //   );
+
+  //   if (processableItems.length === 0) return null;
+
+  //   const statusIndexes = processableItems.map(item =>
+  //     processableOrder.indexOf(item.status)
+  //   );
+
+  //   const minIndex = Math.min(...statusIndexes);
+  //   return processableOrder[minIndex];
+  // }
+
+  const highestPriorityGroupStatus = useMemo(() => {
+    if (!editGroup) return null;
+
+    const processableItems = editGroup.items.filter(item =>
+      processableStatuses.includes(item.status)
+    );
+
+    if (processableItems.length === 0) return null;
+
+    const statusIndexes = processableItems.map(item =>
+      processableStatuses.indexOf(item.status)
+    );
+
+    const minIndex = Math.min(...statusIndexes);
+    return processableStatuses[minIndex];
+  }, [editGroup]);
+
+  // const editablePath = "assigned";
+  const today = new Date().toISOString().split("T")[0];
+
+  const formatDateTimeLocal = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    return `${year}-${month}-${day}T${hours}:${minutes}`;;
+  };
+
+  // const canSetStatus = (order) => !order.isReturned && order.status === "DO_REALIZACJI";
+
+  // const canMarkReceived = (order) => !order.isReturned && order.status === "DO_ODBIORU";
+
+  const handleRejectOrder = async (group) => {
     try {
-      await axios.post(
-        `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/orders/update-quantity`,
-        {
-          orderId: editingItem.orderId,
-          itemId: editingItem.itemId,
-          quantity: newQuantity,
+      const orderId = group?.orderId;
+      if (!orderId) {
+        console.error("Missing orderId for group:", group);
+        alert("Missing Order ID.");
+        return;
+      }
+
+      const itemsToReject = group.items
+        .filter(item => rejectableStatuses.includes(item.status))
+        .map(item => ({
+          itemId: item._id,
+          newStatus: "rejected"
+        }));
+
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      fetchOrders();
-      setEditingItem(null);
-    } catch (err) {
-      console.error(err);
-      alert(err.response?.data?.error || "Błąd aktualizacji ilości");
+      };
+      const res = await axios.put(`http://localhost:3500/orders/updateOrder/${orderId}`, itemsToReject, config);
+
+      if (res.data.success) {
+        fetchOrders(1);
+      } else {
+        alert(res.data.message || "Operation failed");
+      }
+    } catch (error) {
+      console.error(error)
+      alert(error?.response?.data?.message || error.message || "Unknown error");
     }
-  };
+  }
 
-  // --- Date editing ---
-
-  const handleEditDates = (order, item) => {
-    setEditingDates({
-      orderId: order._id,
-      itemId: item.product?._id || item._id,
-      startDate: item.requested?.startDate || "",
-      endDate: item.requested?.endDate || ""
-    });
-  };
-
-  const handleSaveDates = async () => {
-    if (!editingDates.startDate || !editingDates.endDate)
-      return alert("Podaj obie daty!");
-    if (editingDates.startDate > editingDates.endDate)
-      return alert("Data rozpoczęcia nie może być późniejsza niż zakończenia!");
-
+  const handlePrepareOrder = async (group) => {
     try {
-      await axios.post(
-        `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/orders/update-dates`,
-        {
-          orderId: editingDates.orderId,
-          itemId: editingDates.itemId,
-          startDate: editingDates.startDate,
-          endDate: editingDates.endDate,
+      const orderId = group?.orderId;
+      if (!orderId) {
+        console.error("Missing orderId for group:", group);
+        alert("Missing Order ID.");
+        return;
+      }
+
+      const itemsToPrepare = group.items
+        .filter(item => item.status === "approved")
+        .map(item => ({
+          itemId: item._id,
+          newStatus: "prepared"
+        }));
+
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      fetchOrders();
-      setEditingDates(null);
-    } catch (err) {
-      console.error(err);
-      alert(err.response?.data?.error || "Błąd aktualizacji dat");
+      };
+      const res = await axios.put(`http://localhost:3500/orders/updateOrder/${orderId}`, itemsToPrepare, config);
+
+      if (res.data.success) {
+        fetchOrders(1);
+      } else {
+        alert(res.data.message || "Operation failed");
+      }
+    } catch (error) {
+      console.error(error)
+      alert(error?.response?.data?.message || error.message || "Unknown error");
     }
+  }
+
+  const handleRentOrder = async (group) => {
+    try {
+      const orderId = group?.orderId;
+      if (!orderId) {
+        console.error("Missing orderId for group:", group);
+        alert("Missing Order ID.");
+        return;
+      }
+
+      const itemsToRent = group.items
+        .filter(item => item.status === "prepared")
+        .map(item => ({
+          itemId: item._id,
+          newStatus: "rented"
+        }));
+
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+      const res = await axios.put(`http://localhost:3500/orders/updateOrder/${orderId}`, itemsToRent, config);
+
+      if (res.data.success) {
+        fetchOrders(1);
+      } else {
+        alert(res.data.message || "Operation failed");
+      }
+    } catch (error) {
+      console.error(error)
+      alert(error?.response?.data?.message || error.message || "Unknown error");
+    }
+  }
+
+  const handleReturnOrder = async (group) => {
+    try {
+      const orderId = group?.orderId;
+      if (!orderId) {
+        console.error("Missing orderId for group:", group);
+        alert("Missing Order ID.");
+        return;
+      }
+
+      const itemsToReturn = group.items
+        .filter(item => returnableStatuses.includes(item.status))
+        .map(item => ({
+          itemId: item._id,
+          newStatus: "returned"
+        }));
+
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+      const res = await axios.put(`http://localhost:3500/orders/updateOrder/${orderId}`, itemsToReturn, config);
+
+      if (res.data.success) {
+        fetchOrders(1);
+      } else {
+        alert(res.data.message || "Operation failed");
+      }
+    } catch (error) {
+      console.error(error)
+      alert(error?.response?.data?.message || error.message || "Unknown error");
+    }
+  }
+
+  const handleOpenModal = (group) => {
+    setEditGroup(group); // store the owner group being edited
+
+    // Initialize formData for this owner's items
+    setItemUpdatesData(
+      group.items.reduce((acc, item) => {
+        acc[item._id] = {
+          itemId: item._id,
+          product: item.product,
+          requested: {
+            quantity: item?.requested?.quantity,
+            startDate: item?.requested?.startDate,
+            endDate: item?.requested?.endDate,
+          },
+          assigned: {
+            quantity: item?.assigned?.quantity ?? item?.requested?.quantity,
+            startDate: item?.assigned?.startDate ?? item?.requested?.startDate,
+            endDate: item?.assigned?.endDate ?? item?.requested?.endDate,
+          },
+          prevStatus: item.status,
+          newStatus: item.status
+        };
+        return acc;
+      }, {})
+    );
+
+    if (group.items.length > 0) setCurrentItemId(group.items[0]._id);
+
+    setOpenModal(true);
   };
 
-  // --- Helpers for button visibility ---
+  const handleCloseModal = () => {
+    setOpenModal(false);
+    setEditGroup(null);
+    setItemUpdatesData({});
+  }
 
-  const canEditQuantity = (order, item) =>
-    isAdmin && !order.isReturned && order.status !== "OK" && !item.quantityEdited;
 
-  const canEditDates = (order) =>
-    isAdmin && !order.isReturned && order.status !== "OK" && order.status !== "DO_ODBIORU";
+  const handleEditChange = (itemId, e) => {
+    const { name, value } = e.target;
 
-  const canReturn = (order) => isAdmin && !order.isReturned && order.status === "OK";
+    setItemUpdatesData(prev => ({
+      ...prev,
+      [itemId]: {
+        ...prev[itemId],
+        assigned: {
+          ...prev[itemId]?.assigned,
+          [name]: value
+        }
+      }
+    }));
+  };
 
-  const canSetStatus = (order) => isAdmin && !order.isReturned && order.status === "DO_REALIZACJI";
+  const handleEditChangeDate = (itemId, e) => {
+    const { name, value } = e.target;
+    const date = new Date(value);
+    const isoString = date.toISOString();
 
-  const canMarkReceived = (order) => isAdmin && !order.isReturned && order.status === "DO_ODBIORU";
+    setItemUpdatesData(prev => ({
+      ...prev,
+      [itemId]: {
+        ...prev[itemId],
+        assigned: {
+          ...prev[itemId]?.assigned,
+          [name]: isoString
+        }
+      }
+    }));
+  };
+
+  const handleStatusChange = (itemId, e) => {
+    const { name, value } = e.target;
+
+    setItemUpdatesData(prev => ({
+      ...prev,
+      [itemId]: {
+        ...prev[itemId],
+        [name]: value
+      }
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const orderId = editGroup?.orderId?.toString();
+      console.log("orderId: ", orderId);
+      if (!orderId) {
+        console.error("Missing orderId for group:", editGroup);
+        alert("Missing Order ID.");
+        return;
+      }
+
+      // validation
+      for (const item of Object.values(itemUpdatesData)) {
+        const quantity = item?.assigned?.quantity;
+        const startDate = item?.assigned?.startDate;
+        const endDate = item?.assigned?.endDate;
+
+        const prevStatus = item?.prevStatus;
+        const newStatus = item?.newStatus;
+
+        const productName = item?.product?.name || "Unknown product";
+        const productTag = item?.product?.tag || "Unknown tag";
+
+        const isProcessable = processableStatuses.includes(item.newStatus) ? true : false;
+
+        if (isProcessable) {
+          if (!quantity || quantity < 1) {
+            alert(`${productName} (${productTag}): Item quantity must be >= 1`);
+            return;
+          }
+
+          if(quantity > stockStatus[currentItemId].available) {
+            alert(`${productName} (${productTag}): Item quantity must be within available range`);
+            return;
+          }
+
+          if (!startDate || !endDate) {
+            alert(`${productName} (${productTag}): both start and end dates are required`);
+            return;
+          }
+
+          if (new Date(startDate) > new Date(endDate)) {
+            alert(`${productName} (${productTag}): Start date cannot be after end date`);
+            return;
+          }
+
+          if (prevStatus !== newStatus) {
+            continue;
+          }
+
+          if (highestPriorityGroupStatus) {
+            if (newStatus === highestPriorityGroupStatus) {
+              alert(`${productName} (${productTag}): Status has to be changed.`);
+              return;
+            }
+          }
+        }
+      }
+
+      const itemUpdates = Object.values(itemUpdatesData).map(item => ({
+        itemId: item.itemId,
+        assigned: item.assigned,
+        newStatus: item.newStatus,
+      }));
+
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
+      const res = await axios.put(`http://localhost:3500/orders/updateOrder/${orderId}`, itemUpdates, config);
+
+      if (res.data.success) {
+        fetchOrders(1);
+        handleCloseModal();
+
+      } else {
+        alert(res.data.message || "Operation failed");
+      }
+    } catch (error) {
+      console.error(error);
+      alert(error.response?.data?.message);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center p-6">
@@ -264,166 +746,204 @@ const Orders = () => {
           </select>
         </div>
 
-        {filteredOrders.length === 0 ? (
+        {orders.length === 0 ? (
           <div className="text-center p-6 text-gray-500">Brak wypożyczeń</div>
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {currentOrders
+              {orders
                 .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-                .map((order) => (
-                  <div key={order._id} className="bg-white rounded-xl shadow p-4 flex flex-col gap-3 hover:shadow-md transition relative">
-                    {order.isReturned && (
-                      <span className="absolute top-2 right-2 bg-yellow-400 text-white px-2 py-1 rounded text-xs font-bold">ZWROCONO</span>
-                    )}
+                .map((order) => {
+                  const itemsByOwner = order.items.reduce((acc, item) => {
+                    const ownerId = item?.responsibleOwner?._id || "unknown";
 
-                    <h2 className="text-lg font-semibold text-gray-700">{order?.customer?.email || "Brak maila"}</h2>
+                    if (!acc[ownerId]) {
+                      acc[ownerId] = {
+                        orderId: order._id,
+                        owner: item?.responsibleOwner || { name: "Nieznany właściciel" },
+                        status: order.ownerStatuses.find(ownerStatus => ownerStatus.owner === ownerId)?.status,
+                        items: []
+                      };
+                    }
 
-                    <p className="text-sm text-gray-500">
-                      Status:{" "}
-                      <span className={`font-medium ${order.isReturned
-                        ? "text-yellow-600"
-                        : order.status === "OK"
-                          ? "text-green-600"
-                          : order.status === "NIE_OK"
-                            ? "text-red-600"
-                            : order.status === "DO_ODBIORU"
-                              ? "text-blue-600"
-                              : "text-gray-700"
-                        }`}>
-                        {order.isReturned ? "ZWROCONO" : order.status}
-                      </span>
-                    </p>
+                    acc[ownerId].items.push(item);
+                    return acc;
+                  }, {});
 
-                    {/* Items */}
-                    <div className="border-t border-gray-200 pt-2">
-                      <h3 className="text-gray-600 font-medium mb-1">Produkty:</h3>
-                      <ul className="list-disc list-inside space-y-2">
-                        {order.items.map((item, idx) => (
-                          <li key={idx} className="text-gray-700 flex flex-col gap-1">
-                            {/* Product row */}
-                            <div className="flex items-center gap-2">
-                              {item?.product?.name || "Produkt usunięty"} x {item?.requested?.quantity}
-                              {editingItem?.orderId === order._id &&
-                                editingItem?.itemId === (item.product?._id || item._id) ? (
-                                <>
-                                  <input
-                                    type="number"
-                                    value={newQuantity || 0}
-                                    min={1}
-                                    max={editingItem.maxQuantity}
-                                    onChange={(e) => setNewQuantity(Number(e.target.value))}
-                                    className="border p-1 w-16 rounded"
-                                  />
-                                  <button onClick={handleSaveQuantity} className="bg-blue-500 text-white px-2 py-1 rounded">Zapisz</button>
-                                  <button onClick={() => setEditingItem(null)} className="bg-gray-400 text-white px-2 py-1 rounded">Anuluj</button>
-                                </>
-                              ) : (
-                                <>
-                                  <span>{item.quantity}</span>
-                                  {item.quantityEdited && <span className="text-green-600 font-semibold ml-2">Edytowano</span>}
-                                  {canEditQuantity(order, item) && (
-                                    <button
-                                      onClick={() => handleEditQuantity(order._id, item)}
-                                      className="bg-yellow-500 text-white px-2 py-1 rounded"
-                                    >
-                                      Edytuj ilość
-                                    </button>
-                                  )}
-                                </>
-                              )}
-                              {item?.confirmed?.quantity && (
-                                <p className="ml-2">approved quantity: {item?.confirmed?.quantity}</p>
-                              )}
-                            </div>
-
-                            {/* Dates row */}
-                            <div className="text-sm text-gray-600">
-                              Okres wypożyczenia:{" "}
-                              {editingDates?.orderId === order._id &&
-                                editingDates?.itemId === (item.product?._id || item._id) ? (
-                                <>
-                                  <input
-                                    type="date"
-                                    value={editingDates.startDate}
-                                    onChange={(e) =>
-                                      setEditingDates({ ...editingDates, startDate: e.target.value })
-                                    }
-                                    className="border p-1 rounded mr-1"
-                                  />
-                                  do
-                                  <input
-                                    type="date"
-                                    value={editingDates.endDate}
-                                    onChange={(e) =>
-                                      setEditingDates({ ...editingDates, endDate: e.target.value })
-                                    }
-                                    className="border p-1 rounded ml-1"
-                                  />
-                                  <button
-                                    onClick={handleSaveDates}
-                                    className="bg-blue-500 text-white px-2 py-1 rounded ml-2"
-                                  >
-                                    Zapisz
-                                  </button>
-                                  <button
-                                    onClick={() => setEditingDates(null)}
-                                    className="bg-gray-400 text-white px-2 py-1 rounded ml-1"
-                                  >
-                                    Anuluj
-                                  </button>
-                                </>
-                              ) : (
-                                <>
-                                  <span>
-                                    {item.requested?.startDate
-                                      ? new Date(item.requested.startDate).toLocaleDateString("pl-PL")
-                                      : "nie podano"}{" "}
-                                    do{" "}
-                                    {item.requested?.endDate
-                                      ? new Date(item.requested.endDate).toLocaleDateString("pl-PL")
-                                      : "nie podano"}
-                                  </span>
-                                  {canEditDates(order) && (
-                                    <button
-                                      onClick={() => handleEditDates(order, item)}
-                                      className="bg-yellow-500 text-white px-2 py-1 rounded ml-2"
-                                    >
-                                      Edytuj daty
-                                    </button>
-                                  )}
-                                </>
-                              )}
-                              {item?.confirmed?.startDate && item?.confirmed?.endDate && (
-                                <div className="ml-2 text-sm text-gray-600">
-                                  <p className="font-medium text-gray-700">Approved dates:</p>
-                                  <p>📅 Start: {new Date(item.confirmed.startDate).toLocaleDateString("pl-PL")}</p>
-                                  <p>📅 End: {new Date(item.confirmed.endDate).toLocaleDateString("pl-PL")}</p>
-                                </div>
-                              )}
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-
-                    </div>
-
-
-
-                    {/* Admin actions */}
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {canReturn(order) && <button onClick={() => handleReturnOrder(order)} className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-lg">Zwróć</button>}
-                      {canDeleteOrder(order) && <button onClick={() => handleDeleteOrder(order)} className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg">Usuń</button>}
-                      {canSetStatus(order) && (
-                        <>
-                          <button onClick={() => handleUpdateStatus(order, "DO_ODBIORU")} className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg">OK</button>
-                          <button onClick={() => handleUpdateStatus(order, "NIE_OK")} className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded-lg">NIE_OK</button>
-                        </>
+                  return (
+                    <div key={order._id} className="bg-white rounded-xl shadow p-4 flex flex-col gap-3 hover:shadow-md transition relative">
+                      {order.isReturned && (
+                        <span className="absolute top-2 right-2 bg-yellow-400 text-white px-2 py-1 rounded text-xs font-bold">ZWROCONO</span>
                       )}
-                      {canMarkReceived(order) && <button onClick={() => handleMarkAsReceived(order)} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg">ODEBRANO</button>}
+
+                      <h2 className="text-lg font-semibold text-gray-700">{order?.customer?.email || "Brak maila"}</h2>
+
+                      {/* <p className="text-sm text-gray-500">
+                        Status:{" "}
+                        <span className={`font-medium ${order.isReturned
+                          ? "text-yellow-600"
+                          : order.status === "OK"
+                            ? "text-green-600"
+                            : order.status === "NIE_OK"
+                              ? "text-red-600"
+                              : order.status === "DO_ODBIORU"
+                                ? "text-blue-600"
+                                : "text-gray-700"
+                          }`}>
+                          {order.isReturned ? "ZWROCONO" : order.status}
+                        </span>
+                      </p> */}
+
+                      {/* Items */}
+
+                      <div className="border-t border-gray-200 pt-2">
+                        {/* <h3 className="text-gray-600 font-medium mb-1">Produkty:</h3> */}
+
+                        {Object.values(itemsByOwner).map((group, idx) => {
+
+
+                          return (
+                            <div key={idx} className="mb-8 last:mb-2 border border-gray-200 rounded-lg p-4 bg-gray-50">
+                              <div className="flex flex-col gap-1 mb-5">
+                                <h4 className="font-semibold text-gray-700">
+                                  Owner: {group.owner?.name || "Nieznany"}
+                                </h4>
+
+                                <p className="text-sm text-gray-500">
+                                  Status: <span className={`font-medium ${getStatusColor(group.status)}`}>
+                                    {group.status}
+                                  </span>
+                                </p>
+                              </div>
+
+                              <ul className="list-disc list-inside space-y-2">
+                                {group.items.map((item, i) => {
+                                  const toggleKey = `${order._id}-${item._id}`;
+
+                                  return (
+                                    <li key={i} className="text-gray-700 flex flex-col gap-1">
+                                      <div className={`flex items-center gap-2 ${getStatusColor(item.status)}`}>
+                                        {`${item?.product?.name || "Produkt usunięty"} (${item?.product?.tag})`}
+                                      </div>
+
+
+                                      <button
+                                        onClick={() =>
+                                          setExpanded((prev) => ({ ...prev, [toggleKey]: !prev[toggleKey] }))
+                                        }
+                                        className="text-blue-600 hover:underline text-sm self-start"
+                                      >
+                                        {expanded[toggleKey] ? "Hide details" : "Show details"}
+                                      </button>
+
+                                      {/* Collapsible details */}
+                                      {expanded[toggleKey] && (
+                                        <div className="mt-2 space-y-2 p-2 border rounded-lg border-gray-300 bg-gray-50">
+
+                                          {/* Quantity */}
+                                          <div>
+                                            <p>
+                                              Requested: {item?.requested?.quantity ?? "-"}
+                                            </p>
+                                            {item?.assigned?.quantity && item.status !== "pending" && (
+                                              <p>
+                                                Assigned: {item?.assigned?.quantity}
+                                              </p>
+                                            )}
+                                          </div>
+
+                                          {/* Dates */}
+                                          <div>
+                                            <p className="font-medium text-gray-700">Period:</p>
+                                            <p>
+                                              Requested: 📅 Start: {new Date(item.requested?.startDate).toLocaleDateString("pl-PL")} - End: {new Date(item?.requested?.endDate).toLocaleDateString("pl-PL")}
+                                            </p>
+                                            {item?.assigned?.startDate && item?.assigned?.endDate && item.status !== "pending" && (
+                                              <p>
+                                                Assigned: 📅 Start: {new Date(item?.assigned?.startDate).toLocaleDateString("pl-PL")} - End: {new Date(item?.assigned?.endDate).toLocaleDateString("pl-PL")}
+                                              </p>
+                                            )}
+                                          </div>
+
+                                          {/* Status */}
+                                          <div>
+                                            <p className="font-medium text-gray-700">
+                                              Status: {item?.status || "unknown"}
+                                            </p>
+                                          </div>
+
+                                        </div>
+                                      )}
+
+                                    </li>
+                                  )
+                                })}
+                                <div className="flex flex-wrap gap-2 mb-4">
+                                  {canProcessOrder(group) && (
+                                    <button
+                                      onClick={() => handleOpenModal(group)}
+                                      className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg shadow-md transition-colors duration-200"
+                                    >
+                                      Process
+                                    </button>
+                                  )}
+                                  {canRejectOrder(group) && (
+                                    <button
+                                      onClick={() => handleRejectOrder(group)}
+                                      className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow-md transition-colors duration-200"
+                                    >
+                                      Reject
+                                    </button>
+                                  )}
+                                  {canPrepareOrder(group) && (
+                                    <button
+                                      onClick={() => handlePrepareOrder(group)}
+                                      className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-md transition-colors duration-200"
+                                    >
+                                      Prepare
+                                    </button>
+                                  )}
+                                  {canRentOrder(group) && (
+                                    <button
+                                      onClick={() => handleRentOrder(group)}
+                                      className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg shadow-md transition-colors duration-200"
+                                    >
+                                      Rent
+                                    </button>
+                                  )}
+                                  {canReturnOrder(group) && (
+                                    <button
+                                      onClick={() => handleReturnOrder(group)}
+                                      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md transition-colors duration-200"
+                                    >
+                                      Return
+                                    </button>
+                                  )}
+                                </div>
+
+                              </ul>
+                            </div>
+                          )
+                        })}
+                      </div>
+
+
+
+                      {/* Admin actions */}
+                      {/* <div className="flex flex-wrap gap-2 mt-2">
+                        {canReturn(order) && <button onClick={() => handleReturnOrder(order)} className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-lg">Zwróć</button>}
+                        {canDeleteOrder(order) && <button onClick={() => handleDeleteOrder(order)} className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg">Usuń</button>}
+                        {canSetStatus(order) && (
+                          <>
+                            <button onClick={() => handleUpdateStatus(order, "DO_ODBIORU")} className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg">OK</button>
+                            <button onClick={() => handleUpdateStatus(order, "NIE_OK")} className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded-lg">NIE_OK</button>
+                          </>
+                        )}
+                        {canMarkReceived(order) && <button onClick={() => handleMarkAsReceived(order)} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg">ODEBRANO</button>}
+                      </div> */}
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
             </div>
 
             {/* Pagination */}
@@ -435,6 +955,122 @@ const Orders = () => {
           </>
         )}
       </div>
+
+      {openModal && editGroup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded shadow-lg w-full max-w-lg relative">
+            <h2 className="text-2xl font-bold mb-4">Edit Items - {editGroup.owner?.name}</h2>
+
+            {/* Item selector */}
+            <div className="flex gap-2 mb-4 overflow-x-auto">
+              {editGroup.items.map((item) => (
+                <button
+                  key={item._id}
+                  onClick={() => setCurrentItemId(item._id)}
+                  className={`px-3 py-1 rounded border ${currentItemId === item._id ? "border-blue-500 bg-blue-50" : "border-gray-300"
+                    }`}
+                >
+                  {item.product?.name || "Produkt usunięty"}
+                </button>
+              ))}
+            </div>
+
+            {/* Current item form */}
+            {currentItemId && itemUpdatesData[currentItemId] && (
+              <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
+                {(() => {
+                  const itemData = itemUpdatesData[currentItemId];
+                  const requested = itemData?.requested;
+                  const assigned = itemData?.assigned;
+
+                  return (
+                    <>
+                      <h2>{itemData.product?.tag}</h2>
+                      <div className="p-2 bg-gray-100 rounded mb-2">
+                        <p className="font-medium text-gray-700">Requested Info</p>
+                        <p>Quantity: {requested.quantity}</p>
+                        <p>Start: {new Date(requested.startDate).toLocaleString("pl-PL")}</p>
+                        <p>End: {new Date(requested.endDate).toLocaleString("pl-PL")}</p>
+                      </div>
+                      {/* Quantity */}
+                      <div>
+                        <label className="font-medium text-gray-700">Quantity</label>
+                        <input
+                          type="number" name="quantity"
+                          value={assigned?.quantity || 0}
+                          min={1}
+                          onChange={(e) => handleEditChange(currentItemId, e)}
+                          className="border p-2 rounded w-full disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                          disabled={!processableStatuses.includes(itemData.prevStatus) || (itemData.prevStatus !== highestPriorityGroupStatus) || itemData.newStatus === "rejected"}
+                        />
+                      </div>
+
+                      {/* Dates */}
+                      <div>
+                        <label className="font-medium text-gray-700">Start Date</label>
+                        <input
+                          type="datetime-local" name="startDate"
+                          value={formatDateTimeLocal(assigned?.startDate)}
+                          min={today}
+                          onChange={(e) => handleEditChangeDate(currentItemId, e)}
+                          className="border p-2 rounded w-full disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                          disabled={!processableStatuses.includes(itemData.prevStatus) || (itemData.prevStatus !== highestPriorityGroupStatus) || itemData.newStatus === "rejected"}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="font-medium text-gray-700">End Date</label>
+                        <input
+                          type="datetime-local" name="endDate"
+                          value={formatDateTimeLocal(assigned?.endDate)}
+                          min={assigned?.startDate || today}
+                          onChange={(e) => handleEditChangeDate(currentItemId, e)}
+                          className="border p-2 rounded w-full disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                          disabled={!processableStatuses.includes(itemData.prevStatus) || (itemData.prevStatus !== highestPriorityGroupStatus) || itemData.newStatus === "rejected"}
+                        />
+                      </div>
+
+                      {stockStatus && processableStatuses.includes(itemData.prevStatus) && stockStatus[currentItemId] && (
+                        <div className="p-2 bg-gray-100 rounded mb-3">
+                          <p>Available: {stockStatus[currentItemId].available}</p>
+                          <p>Total requested: {stockStatus[currentItemId].inDemand}</p>
+                          <p>Number of requesters: {stockStatus[currentItemId].requestsQuantity}</p>
+                        </div>
+                      )}
+
+                      {/* Status */}
+                      <div>
+                        <label className="font-medium text-gray-700">Status</label>
+                        <select
+                          name="newStatus"
+                          value={itemData.newStatus}
+                          onChange={(e) => handleStatusChange(currentItemId, e)}
+                          className="border p-2 rounded w-full disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                          disabled={!processableStatuses.includes(itemData.prevStatus) || (itemData.prevStatus !== highestPriorityGroupStatus)}
+                        >
+                          <option key={itemData.prevStatus} disabled={true}>{itemData.prevStatus}</option>
+                          {getAllowedStatuses(itemData.prevStatus).map((status) => (
+                            <option key={status} value={status}>
+                              {status}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </>
+                  );
+                })()}
+
+                <div className="flex justify-end gap-2 mt-3">
+                  <button type="button" onClick={handleCloseModal} className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">Cancel</button>
+                  <button type="submit" className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Save</button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+
     </div>
   );
 };

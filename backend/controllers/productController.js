@@ -114,7 +114,6 @@ const getOrderQuantity = async ({ productId, field, end, start, status }) => {
         [`${field}.startDate`]: { $lte: end },
         [`${field}.endDate`]: { $gte: start },
         status,
-        isReturned: false
       }
     }
   });
@@ -123,7 +122,7 @@ const getOrderQuantity = async ({ productId, field, end, start, status }) => {
   let requestsQuantity = 0;
 
   overlappingOrders.forEach(order => {
-    order.items.forEach(item => {
+    order.items?.forEach(item => {
       if (item.product.toString() === productId) {
         orderQuantity += Number(item[field].quantity);
         requestsQuantity += 1;
@@ -278,7 +277,7 @@ export const updateProduct = async (req, res, next) => {
     }
 
     const updateData = initProduct(req, next);
-    console.log(updateData);
+    // console.log(updateData);
 
     if (!Object.keys(updateData).length) {
       return next(new BadRequestError('No valid fields to update'));
@@ -298,7 +297,6 @@ export const updateProduct = async (req, res, next) => {
 
     const product = await Product.findOne(filter);
     if (!product) return next(new ResourceNotFoundError("Missing permission or Product"));
-    console.log("product", product);
 
     // Apply updates
     if (updateData.$set) {
@@ -316,7 +314,7 @@ export const updateProduct = async (req, res, next) => {
       return next(new ConflictError("Product was modified by someone else"));
     }
 
-    return next(new ServerError({ message: error.message }));
+    return next(new ServerError({ success: false, message: error.message }));
   }
 };
 
@@ -381,7 +379,7 @@ export const deleteExtraField = async (req, res, next) => {
   }
 };
 
-export const checkAvailable = async (req, res, next) => {
+export const getProductAvailability = async (req, res, next) => {
   try {
     const { productId, startDate, endDate } = req.body;
 
@@ -397,7 +395,7 @@ export const checkAvailable = async (req, res, next) => {
     const start = new Date(startDate);
     const end = new Date(endDate);
 
-    const { orderQuantity } = await getOrderQuantity({ productId, field: "confirmed", end, start, status: "approved" });
+    const { orderQuantity } = await getOrderQuantity({ productId, field: "assigned", end, start, status: "approved" });
     // let reservedQuantity = await getOrderQuantity({ productId, field: "requested", end, start, status: "pending" });
 
     // Available stock is stockForRent minus reservedQuantity
@@ -410,7 +408,7 @@ export const checkAvailable = async (req, res, next) => {
   }
 };
 
-export const checkInDemand = async (req, res, next) => {
+export const getProductStockStatus = async (req, res, next) => {
   try {
     const { productId, startDate, endDate } = req.body;
     if (!productId || !startDate || !endDate) {
@@ -426,8 +424,11 @@ export const checkInDemand = async (req, res, next) => {
     const end = new Date(endDate);
 
     const { orderQuantity, requestsQuantity } = await getOrderQuantity({ productId, field: "requested", start, end, status: "pending" });
+    const { orderQuantity: confirmedQuantity } = await getOrderQuantity({ productId, field: "assigned", start, end, status: "approved" });
 
-    return res.json({ success: true, inDemand: orderQuantity, requestsQuantity });
+    const available = Math.max(0, Number(product.stockForRent) - (Number(product.stockRentedOut) || 0) - confirmedQuantity);
+
+    return res.json({ success: true, inDemand: orderQuantity, requestsQuantity, available });
   } catch (err) {
     console.error("Błąd w /products/requested:", err);
     return res.status(500).json({ success: false, message: "Błąd serwera" });

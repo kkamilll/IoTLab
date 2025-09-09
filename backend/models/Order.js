@@ -25,46 +25,51 @@ import { AppError, ValidationError, ConflictError, ServerError } from '../errors
 //   }
 //   return target;
 // };
-const STATUS_ORDER = ["pending", "confirmed", "completed", "cancelled"];
+const OWNER_STATUS_ORDER = ["pending", "approved", "prepared", "rented", "returned", "rejected"];
 
-const createOwnerStatus = (order, productOwnerMap) => {
-  const ownerStatusMap = {}; // ownerId -> { finalStatus, hasChanged }
+const createOwnerStatuses = (order, productOwnerMap) => {
+  const ownerStatusesMap = {}; // ownerId -> { finalStatus, hasChanged }
 
   for (const item of order.items) {
-    const ownerId = productOwnerMap[item.product.toString()];
-    if (!ownerId) throw new ConflictError("Order contains products with missing owners");
+    const productId = item.product._id ? item.product._id.toString() : item.product.toString();
+    const ownerId = productOwnerMap[productId];
 
-    const itemStatusIndex = STATUS_ORDER.indexOf(item.status);
+    if (!ownerId) {
+      console.warn(`Skipping item ${item._id} because its product ${productId} has no owner`);
+      continue;
+    }
+    // if (!ownerId) throw new ConflictError("Order contains products with missing owners");
 
-    if (!ownerStatusMap[ownerId]) {
-      ownerStatusMap[ownerId] = {
+    const itemStatusIndex = OWNER_STATUS_ORDER.indexOf(item.status);
+
+    if (!ownerStatusesMap[ownerId]) {
+      ownerStatusesMap[ownerId] = {
         finalStatus: item.status,
-        hasChanged: false
+        prevStatus: order.ownerStatuses.find(ownerStatus => ownerStatus.owner === ownerId)?.status || "pending",
+        // hasChanged: false
       };
       continue;
     }
 
-    const ownerData = ownerStatusMap[ownerId];
+    const ownerData = ownerStatusesMap[ownerId];
 
     // update finalStatus to smallest status
-
-
     // mark as changed if current item status differs from finalStatus
     if (item.status !== ownerData.finalStatus) {
-      ownerData.hasChanged = true;
-      if (itemStatusIndex < STATUS_ORDER.indexOf(ownerData.finalStatus)) {
+      // ownerData.hasChanged = true;
+      if (itemStatusIndex < OWNER_STATUS_ORDER.indexOf(ownerData.finalStatus)) {
         ownerData.finalStatus = item.status;
       }
     }
   }
 
   // build final ownerStatus array
-  const ownerStatus = Object.entries(ownerStatusMap).map(([owner, data]) => {
-    if (data.hasChanged) return { owner, status: 'changed' };
+  const ownerStatuses = Object.entries(ownerStatusesMap).map(([owner, data]) => {
+    if (OWNER_STATUS_ORDER.indexOf(data.finalStatus) < OWNER_STATUS_ORDER.indexOf(data.prevStatus)) return { owner, status: 'changed' };
     return { owner, status: data.finalStatus };
   });
 
-  return ownerStatus;
+  return ownerStatuses;
 }
 
 const orderItemSchema = new mongoose.Schema({
@@ -76,7 +81,7 @@ const orderItemSchema = new mongoose.Schema({
     endDate: { type: Date, required: true }
   },
 
-  confirmed: {
+  assigned: {
     quantity: { type: Number, default: null },
     startDate: { type: Date, default: null },
     endDate: { type: Date, default: null }
@@ -84,13 +89,13 @@ const orderItemSchema = new mongoose.Schema({
 
   status: {
     type: String,
-    enum: ["pending", "approved", "prepared", "rented", "returned", "rejected", "late"],
+    enum: ["pending", "approved", "prepared", "rented", "late", "returned", "rejected"],
     default: "pending"
   },
 
   responsibleOwner: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
 
-  isReturned: { type: Boolean, default: false }
+  // isReturned: { type: Boolean, default: false }
 });
 
 const orderSchema = new mongoose.Schema({
@@ -102,17 +107,17 @@ const orderSchema = new mongoose.Schema({
 
   items: { type: [orderItemSchema], required: true },
 
-  status: {
-    type: String,
-    enum: ["pending", "confirmed", "completed", "cancelled"],
-    default: "pending"
-  },
+  // status: {
+  //   type: String,
+  //   enum: ["pending", "confirmed", "inProgress", "completed", "cancelled", "rejected"],
+  //   default: "pending"
+  // },
 
-  ownerStatus: [{
+  ownerStatuses: [{
     owner: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     status: {
       type: String,
-      enum: ["pending", "confirmed", "completed", "cancelled", "changed"],
+      enum: ["changed", "pending", "approved", "prepared", "rented", "returned", "rejected"],
       default: "pending"
     }
   }],
@@ -121,7 +126,7 @@ const orderSchema = new mongoose.Schema({
     items: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
     action: {
       type: String,
-      enum: ["approved", "declined", "prepared", "handedOver", "returned", "cancelled", "ownershipChanged"],
+      enum: ["approved", "prepared", "rented", "returned", "cancelled", "rejected", "ownershipChanged"],
       required: true
     },
     by: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
@@ -132,12 +137,12 @@ const orderSchema = new mongoose.Schema({
   }]
 }, { timestamps: true });
 
-// Możesz dodać middleware hashujący hasło przy zapisie (opcjonalnie)
 orderSchema.pre('save', async function () {
   try {
     const order = this;
-    const ownersArr = Object.values(await productOwnerMap(order));
-    order.ownerStatus = ownersArr.map(owner => ({ owner, status: "pending" }));
+    const ownersMap = await productOwnerMap(order);
+
+    order.ownerStatuses = createOwnerStatuses(order, ownersMap);
   } catch (error) {
     // Handle validation error
     if (error instanceof AppError) throw error;
@@ -166,7 +171,7 @@ orderSchema.pre('save', async function () {
 // orderSchema.pre('findOneAndUpdate', ...)
 // orderSchema.pre('updateMany', ...)
 
-orderSchema.index({ "ownerStatus.owner": 1 });
+orderSchema.index({ "ownerStatuses.owner": 1 });
 
 orderSchema.set("optimisticConcurrency", true);
 const Order = mongoose.model("Order", orderSchema);

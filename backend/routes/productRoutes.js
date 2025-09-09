@@ -1,12 +1,12 @@
 import express from "express";
 import authMiddleware from "../middleware/authMiddleware.js";
-import { getProductsPublic, getProductsPrivate, getProductByIdPublic, getProductByIdPrivate, createProduct, updateProduct, hardDeleteProduct, deleteExtraField, checkAvailable, checkInDemand } from "../controllers/productController.js";
+import { getProductsPublic, getProductsPrivate, getProductByIdPublic, getProductByIdPrivate, createProduct, updateProduct, hardDeleteProduct, deleteExtraField, getProductAvailability, getProductStockStatus } from "../controllers/productController.js";
 import { filesUploadProduct } from "../middleware/fileUpload.js";
 
 const router = express.Router();
 
-router.post("/available", checkAvailable);
-router.post("/inDemand", authMiddleware, checkInDemand);
+router.post("/available", getProductAvailability);
+router.post("/stockStatus", authMiddleware, getProductStockStatus);
 
 router.get("/public", getProductsPublic);
 router.get("/private", authMiddleware, getProductsPrivate);
