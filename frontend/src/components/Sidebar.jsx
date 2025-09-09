@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"; 
+import React, { useEffect, useState } from "react";
 import { NavLink } from 'react-router-dom';
 import { useAuth } from "../context/AuthContext";
 
@@ -9,22 +9,21 @@ const Sidebar = () => {
     {name:"Products", path: "/admin-dashboard/products", isParent:false},
     {name:"Categories", path: "/admin-dashboard/categories", isParent:false},
     {name:"Orders", path: "/admin-dashboard/orders", isParent:false},
-    {name:"Orders History", path: "/admin-dashboard/ReturnedOrders", isParent:false},
     {name:"Users", path: "/admin-dashboard/users", isParent:false},
     {name:"Profile", path: "/admin-dashboard/profile", isParent:false},
     {name:"Notes", path: "/admin-dashboard/notes", isParent:false},
     {name:"Slider", path: "/admin-dashboard/materials", isParent:false},
   ];
 
- const lecturerItems = menuItems.filter(
-  item => item.name !== "Categories" && item.name !== "Slider" && item.name !== "Notes" && item.name !== "Users"
-);
+  const lecturerItems = menuItems.filter(
+    item => item.name !== "Categories" && item.name !== "Slider" && item.name !== "Notes" && item.name !== "Users"
+  );
 
-const customerItems = [
-  {name:"Home Page", path: "/", isParent:true},
-  {name:"Products", path: "/admin-dashboard", isParent:true},
-  {name:"Orders", path: "/admin-dashboard/orders", isParent:false},
-];
+  const customerItems = [
+    {name:"Home Page", path: "/", isParent:true},
+    {name:"Products", path: "/admin-dashboard", isParent:true},
+    {name:"Orders", path: "/admin-dashboard/orders", isParent:false},
+  ];
 
   const { user } = useAuth();
   const [menuLinks, setMenuLinks] = useState(customerItems);
@@ -32,14 +31,9 @@ const customerItems = [
 
   useEffect(() => {
     if (!user) return;
-
-    if (user.role === "admin") {
-      setMenuLinks(menuItems);
-    } else if (user.role === "lecturer") {
-      setMenuLinks(lecturerItems); 
-    } else {
-      setMenuLinks(customerItems);
-    }
+    if (user.role === "admin") setMenuLinks(menuItems);
+    else if (user.role === "lecturer") setMenuLinks(lecturerItems);
+    else setMenuLinks(customerItems);
   }, [user]);
 
   return (
@@ -50,26 +44,14 @@ const customerItems = [
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Toggle sidebar"
       >
-        <span
-          className={`block h-0.5 w-6 bg-white transform transition duration-300 ${
-            isOpen ? "rotate-45 translate-y-2" : ""
-          }`}
-        />
-        <span
-          className={`block h-0.5 w-6 bg-white transition duration-300 ${
-            isOpen ? "opacity-0" : ""
-          }`}
-        />
-        <span
-          className={`block h-0.5 w-6 bg-white transform transition duration-300 ${
-            isOpen ? "-rotate-45 -translate-y-2" : ""
-          }`}
-        />
+        <span className={`block h-0.5 w-6 bg-white transform transition duration-150 ${isOpen ? "rotate-45 translate-y-2" : ""}`} />
+        <span className={`block h-0.5 w-6 bg-white transition duration-150 ${isOpen ? "opacity-0" : ""}`} />
+        <span className={`block h-0.5 w-6 bg-white transform transition duration-150 ${isOpen ? "-rotate-45 -translate-y-2" : ""}`} />
       </button>
 
       {/* Sidebar */}
       <div
-        className={`fixed top-0 left-0 h-full w-64 md:w-64 bg-gradient-to-b from-blue-900 via-blue-800 to-blue-950 text-white shadow-lg z-40 flex flex-col transform transition-transform duration-300 ease-in-out
+        className={`fixed top-0 left-0 h-full w-64 md:w-64 bg-gradient-to-b from-blue-900 via-blue-800 to-blue-950 text-white shadow-lg z-40 flex flex-col transform transition-transform duration-150 ease-in-out
         ${isOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}
       >
         <div className="h-16 flex items-center justify-center border-b border-blue-700">
@@ -86,11 +68,11 @@ const customerItems = [
                   end={item.isParent}
                   to={item.path}
                   className={({ isActive }) =>
-                    `flex items-center p-3 rounded-lg transition-colors duration-200 ${
+                    `flex items-center p-3 rounded-lg transition-colors duration-150 ${
                       isActive ? "bg-blue-700 font-semibold shadow-md" : "hover:bg-blue-700/70"
                     }`
                   }
-                  onClick={() => setIsOpen(false)}
+                  onClick={() => setIsOpen(false)} // natychmiast zamyka sidebar
                 >
                   <span className="ml-2 text-lg">{item.name}</span>
                 </NavLink>
@@ -102,7 +84,7 @@ const customerItems = [
         <div className="mt-auto p-4">
           <NavLink
             to="/logout"
-            className="flex items-center justify-center p-3 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold transition"
+            className="flex items-center justify-center p-3 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold transition duration-150"
             onClick={() => setIsOpen(false)}
           >
             Logout
@@ -125,7 +107,7 @@ const customerItems = [
       {isOpen && (
         <div
           className="fixed inset-0 backdrop-blur-md bg-opacity-50 z-30 md:hidden"
-          onClick={() => setIsOpen(false)}
+          onClick={() => setIsOpen(false)} // natychmiast zamyka sidebar
           aria-hidden="true"
         />
       )}

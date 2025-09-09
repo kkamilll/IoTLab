@@ -210,9 +210,15 @@ const Users = () => {
 
     return (
       <>
-        <button ref={buttonRef} onClick={toggleDropdown} className="bg-blue-200 px-2 py-1 rounded-xl text-sm hover:bg-blue-300">
-          ALL LABS
-        </button>
+        <button
+  ref={buttonRef}
+  onClick={toggleDropdown}
+  className="bg-blue-200 px-2 py-1 rounded-xl text-sm hover:bg-blue-300 flex justify-between items-center w-full"
+>
+  ALL LABS
+  <span className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`}>⬇️</span>
+</button>
+
         {open && ReactDOM.createPortal(
           <div
             className="absolute bg-white border border-blue-300 rounded-xl shadow-lg p-2 flex flex-col gap-1 z-[9999]"
@@ -289,6 +295,21 @@ const Users = () => {
       </div>
     );
   };
+const resetForm = () => {
+  setFormData({ name: "", email: "", password: "", role: "", labRooms: [], isActive: true });
+  setNewLabRoom("");
+  setEditingUserId(null);
+};
+
+const handleCancel = () => {
+  resetForm();
+  setShowForm(false);
+};
+
+const handleAddClick = () => {
+  resetForm(); // upewniamy się, że pola są puste
+  setShowForm(true);
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex justify-center py-10 px-4">
@@ -304,11 +325,13 @@ const Users = () => {
           </select>
         </div>
 
-        <div className="flex justify-end mb-4">
-          <button onClick={() => setShowForm(prev => !prev)} className="px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700">
-            {showForm ? "❌ Cancel" : "➕ Add User"}
-          </button>
-        </div>
+       <div className="flex justify-end mb-4">
+  {showForm ? (
+    <button onClick={handleCancel} className="px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600">❌ Cancel</button>
+  ) : (
+    <button onClick={handleAddClick} className="px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700">➕ Add User</button>
+  )}
+</div>
 
         {showForm && (
           <form onSubmit={handleSubmit} className="flex flex-col space-y-4 bg-gray-50 p-6 rounded-2xl shadow-lg">
@@ -349,9 +372,15 @@ const Users = () => {
               </div>
 
               <div className="relative" ref={labDropdownRef}>
-                <button type="button" onClick={() => setLabDropdownOpen(prev => !prev)} className="bg-blue-200 px-4 py-2 rounded-2xl text-base font-medium w-full text-left hover:bg-blue-300 transition">
-                  ALL LABS
-                </button>
+                <button
+  type="button"
+  onClick={() => setLabDropdownOpen(prev => !prev)}
+  className="bg-blue-200 px-4 py-2 rounded-2xl text-base font-medium w-full text-left hover:bg-blue-300 transition flex justify-between items-center"
+>
+  ALL LABS
+  <span className={`transition-transform duration-200 ${labDropdownOpen ? "rotate-180" : ""}`}>⬇️</span>
+</button>
+
 
                 {formData.labRooms.length > 0 && labDropdownOpen && (
                   <div className="absolute top-full left-0 mt-2 bg-white border border-gray-300 rounded-2xl shadow-lg p-4 flex flex-col gap-3 z-50 w-full max-h-80 overflow-y-auto">

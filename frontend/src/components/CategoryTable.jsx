@@ -39,24 +39,26 @@ export default function CategoryCards({
     const isExpanded = expandedIds.has(category._id);
     const showDescription = showDescriptionIds.has(category._id);
 
-    const gradients = [
-      "from-blue-100 via-blue-200 to-blue-300",
-      "from-blue-200 via-blue-300 to-blue-400",
-      "from-blue-300 via-blue-400 to-blue-500",
-      "from-blue-400 via-blue-500 to-blue-600",
+    // Odcienie niebieskiego w zależności od poziomu
+    const blueShades = [
+      "bg-blue-800", // główna kategoria – ciemny
+      "bg-blue-700",
+      "bg-blue-600",
+      "bg-blue-500",
+      "bg-blue-400",
+      "bg-blue-300", // najjaśniejsze podkategorie
     ];
-    const gradient = gradients[level % gradients.length];
+    const bgColor = blueShades[level % blueShades.length];
 
     return (
-      <div key={category._id} className="mb-4 w-full">
+      <div key={category._id} className="w-full flex flex-col gap-3">
+        {/* Karta kategorii */}
         <div
-          className={`p-4 rounded-xl shadow-md flex flex-col transition-transform transform hover:scale-105 hover:shadow-lg bg-gradient-to-br ${gradient}`}
-          style={{ paddingLeft: 16 + level * 16, paddingRight: 16 }}
+          className={`p-4 rounded-xl shadow-md flex flex-col transition-transform transform hover:scale-105 hover:shadow-lg w-full break-words ${bgColor} text-white`}
         >
-          {/* Nagłówek */}
-          <div className="flex justify-between items-center w-full">
+          <div className="flex justify-between items-center w-full flex-wrap gap-2">
             <div className="flex items-center gap-3 flex-1 min-w-0">
-              <FaFolder size={18} className="text-blue-700 flex-shrink-0" />
+              <FaFolder size={18} className="text-white flex-shrink-0" />
               <span className="font-medium text-base sm:text-lg truncate">
                 {category.name}
               </span>
@@ -64,7 +66,7 @@ export default function CategoryCards({
 
             {hasChildren && (
               <button
-                className="ml-2 px-4 py-1 rounded-full bg-white text-blue-700 hover:bg-blue-100 transition-colors font-bold flex-shrink-0"
+                className="ml-2 px-4 py-1 rounded-full bg-white text-blue-800 hover:bg-gray-200 transition-colors font-bold flex-shrink-0"
                 onClick={() => toggleExpand(category._id)}
               >
                 {isExpanded ? "−" : "+"}
@@ -72,13 +74,11 @@ export default function CategoryCards({
             )}
           </div>
 
-          {/* Akcje i widoczność */}
           <div className="flex gap-2 flex-wrap mt-2 items-center">
-            {/* Widoczność jako kolorowa ikona */}
             {category.isVisible ? (
-              <FaEye className="text-green-600" title="Widoczna" />
+              <FaEye className="text-green-400" title="Widoczna" />
             ) : (
-              <FaEyeSlash className="text-gray-400" title="Ukryta" />
+              <FaEyeSlash className="text-gray-200" title="Ukryta" />
             )}
 
             <ActionButton
@@ -99,6 +99,7 @@ export default function CategoryCards({
               color="red"
               onClick={() => handleDelete(category._id)}
             />
+
             {category.description && (
               <button
                 className="flex items-center gap-1 px-2 py-1 text-white bg-gray-600 hover:bg-gray-700 rounded-lg text-sm"
@@ -109,20 +110,18 @@ export default function CategoryCards({
             )}
           </div>
 
-          {/* Opis kategorii */}
           {showDescription && category.description && (
-            <div className="mt-2 p-2 bg-white rounded-md shadow-inner text-gray-700">
+            <div className="mt-2 p-2 bg-white rounded-md shadow-inner text-gray-800 break-words">
               {category.description}
             </div>
           )}
-
-          {/* Dzieci */}
-          {hasChildren && isExpanded && (
-            <div className="mt-2 border-l-2 border-blue-300 w-full">
-              {category.children.map((child) => renderCard(child, level + 1))}
-            </div>
-          )}
         </div>
+
+        {hasChildren && isExpanded && (
+          <div className="mt-2 flex flex-col gap-3">
+            {category.children.map((child) => renderCard(child, level + 1))}
+          </div>
+        )}
       </div>
     );
   };

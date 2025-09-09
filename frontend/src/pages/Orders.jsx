@@ -51,8 +51,7 @@ const Orders = () => {
         email: emailFilter,
         status: statusFilter,
       });
-
-      const res = await axios.get(`http://localhost:3500/orders?${queryParams.toString()}`, {
+      const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/orders?${queryParams.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.data.success) {
@@ -69,7 +68,7 @@ const Orders = () => {
     try {
       if (!productId || !startDate || !endDate) return null;
 
-      const res = await axios.post("http://localhost:3500/products/stockStatus",
+      const res = await axios.post(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/products/stockStatus`,
         { productId, startDate, endDate },
         { headers: { Authorization: `Bearer ${token}` } });
 

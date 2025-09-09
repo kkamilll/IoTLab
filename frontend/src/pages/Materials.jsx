@@ -22,7 +22,14 @@ const SortableItem = ({ mat, index, materials, setMaterials, axiosInstance, dele
 
   return (
     <div ref={setNodeRef} style={style} className="relative group overflow-hidden rounded-none shadow-lg p-2 flex flex-col">
-      <div {...listeners} {...attributes} className="absolute top-2 left-2 bg-gray-300 w-6 h-6 rounded-full cursor-grab flex items-center justify-center z-10 hover:bg-gray-400 transition">☰</div>
+<div
+  {...listeners}
+  {...attributes}
+  className="absolute top-2 left-2 bg-gray-300 w-10 h-10 rounded-full cursor-grab flex items-center justify-center z-10 hover:bg-gray-400 transition"
+>
+  ☰
+</div>
+
       <button onClick={() => deleteMaterial(mat._id)} className="absolute top-2 right-2 bg-red-600 text-white w-6 h-6 rounded-full flex items-center justify-center z-10 opacity-0 group-hover:opacity-100 hover:bg-red-700 transition">✕</button>
       <div className="absolute top-2 left-10 bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold z-10">{index + 1}</div>
 
@@ -192,7 +199,7 @@ const Materials = () => {
         }
 
         {/* Preview Modal */}
-        {previewImage && <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50" onClick={() => setPreviewImage(null)}>
+        {previewImage && <div className="fixed inset-0 backdrop-blur-md bg-opacity-70 flex items-center justify-center z-50" onClick={() => setPreviewImage(null)}>
           <img src={previewImage} alt="Preview" className="max-h-[90vh] max-w-[90vw] object-contain rounded-none shadow-lg" />
         </div>}
       </div>

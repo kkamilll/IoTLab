@@ -35,7 +35,7 @@ const Products = () => {
     stockTotal: "",
     stockForRent: "0",
     extraFields: {},
-    categories: [], // nowa właściwość dla kategorii
+    categories: [],
     tag: "",
     labRoom: "",
     images: [],
@@ -737,25 +737,22 @@ const Products = () => {
                 {col === "stockTotal" ? p.stockTotal ?? 0
                   : col === "stockForRent" ? getAvailableStockForProduct(p) ?? 0
            : col === "categories" ? (
-  <div className="inline-block relative">
-<select
-  className="border rounded px-2 py-1 text-sm"
-  value=""
-  onChange={(e) => e.preventDefault()}
-  style={{ width: '8rem' }} // stała szerokość dla wszystkich opcji
->
-  <option value="">
-    {"Categories".slice(0, 15)}
-  </option>
+  <div className="inline-block relative w-32"> {/* stała szerokość */}
+  <select
+    className="appearance-none border rounded px-2 py-1 text-sm w-full pr-6 bg-white cursor-pointer"
+    value=""
+    onChange={(e) => e.preventDefault()} // tymczasowo blokujemy zmianę
+  >
+    {p.categories?.map((c, i) => (
+      <option key={i} value={c?.name ?? ""}>
+        {(c?.name ?? "").slice(0, 15)}
+      </option>
+    ))}
+  </select>
+  {/* Strzałka w dół */}
+  <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 text-sm">⬇️</span>
+</div>
 
-  {p.categories?.map((c, i) => (
-    <option key={i} value={c?.name ?? ""}>
-      {(c?.name ?? "").slice(0, 15)}
-    </option>
-  ))}
-</select>
-
-  </div>
 )
 
 
