@@ -31,7 +31,7 @@ const Users = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/users`, {
+      const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/users`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("pos-token")}` },
       });
       setUsers(res.data.users || []);
@@ -90,7 +90,7 @@ const Users = () => {
         }
 
         const res = await axios.post(
-  `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/users/create`,
+  `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/users/create`,
   formData,
   {
     headers: {
@@ -122,7 +122,7 @@ const Users = () => {
         if (dataToSend.email === "admin@gmail.com") dataToSend.isActive = true;
 
         const res = await axios.put(
-  `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/users/${editingUserId}`,
+  `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/users/${editingUserId}`,
   dataToSend, {
           headers: { Authorization: `Bearer ${localStorage.getItem("pos-token")}` }
         });
@@ -151,7 +151,7 @@ const Users = () => {
     setDeleteLoadingId(id);
 
     try {
-      const res = await axios.delete(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/users/${id}`, {
+      const res = await axios.delete(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/users/${id}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("pos-token")}` },
       });
 

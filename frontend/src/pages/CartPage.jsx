@@ -77,7 +77,7 @@ const CartPage = () => {
         }
         try {
           const res = await axios.post(
-            `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/products/available`,
+            `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/products/available`,
             {
               productId: item._id,
               startDate: item.startDate,
@@ -154,13 +154,13 @@ const CartPage = () => {
 
     try {
       const res = await axios.post(
-        `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/orders/create`,
+        `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/orders/create`,
         { customer: orderCustomer, items }
       );
 
       const orderId = res.data.order._id;
       await axios.post(
-        `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/orders/send-order-email`,
+        `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/orders/send-order-email`,
         { orderId }
       );
 
@@ -229,7 +229,7 @@ const CartPage = () => {
                 <div className="flex items-center gap-4">
                   {item.images?.length ? (
                     <img
-                      src={`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/uploads/products/${item.images[0].filename}`}
+                      src={`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/uploads/products/${item.images[0].filename}`}
                       alt={item.name}
                       className="w-20 h-20 object-contain rounded"
                     />

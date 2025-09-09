@@ -28,12 +28,12 @@ const SortableItem = ({ mat, index, materials, setMaterials, axiosInstance, dele
 
       {mat.path ? (
        <img
-  src={`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/${mat.path}`}
+  src={`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/${mat.path}`}
 
   alt={mat.filename || "material"}
   className="w-full h-48 object-contain cursor-pointer select-none mt-4"
   style={{ borderRadius: 0 }}
-  onClick={() => setPreviewImage(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/${mat.path}`)}
+  onClick={() => setPreviewImage(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/${mat.path}`)}
   onError={handleImageError}
   loading="lazy"
   draggable={false}
@@ -78,7 +78,7 @@ const Materials = () => {
   const { token } = useAuth();
 
   const axiosInstance = axios.create({
-    baseURL: `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}`,
+    baseURL: `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api`,
     headers: { Authorization: `Bearer ${token}` },
   });
 

@@ -14,7 +14,7 @@ const ForgotPassword = ({ onOtpSent }) => {
     setMessage(null);
 
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/auth/forgot-password`, { email });
+      const response = await axios.post(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/auth/forgot-password`, { email });
       setMessage('A verification code has been sent to your email.');
       onOtpSent(email);  // pass email to PasswordResetFlow
     } catch (err) {

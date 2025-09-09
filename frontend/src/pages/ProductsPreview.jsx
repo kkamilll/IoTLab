@@ -24,7 +24,7 @@ const ProductPreview = () => {
 
     const fetchProduct = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/products/privateId/${productId}`, {
+        const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/products/privateId/${productId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.data.success) setProduct(res.data.product);
@@ -96,7 +96,7 @@ const ProductPreview = () => {
         <div className="relative flex flex-col items-center">
           <div className="relative w-full max-w-lg">
             <img
-              src={`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/uploads/products/${product.images[currentImageIndex].filename}`}
+              src={`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/uploads/products/${product.images[currentImageIndex].filename}`}
               alt={`${product.name} ${currentImageIndex + 1}`}
               className="w-full max-h-96 object-contain rounded-lg shadow-lg"
             />

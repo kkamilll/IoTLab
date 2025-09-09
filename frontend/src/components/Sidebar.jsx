@@ -9,7 +9,7 @@ const Sidebar = () => {
     {name:"Products", path: "/admin-dashboard/products", isParent:false},
     {name:"Categories", path: "/admin-dashboard/categories", isParent:false},
     {name:"Orders", path: "/admin-dashboard/orders", isParent:false},
-    {name:"Orders History", path: "/admin-dashboard/ReturnedOrders", isParent:false},
+    // {name:"Orders History", path: "/admin-dashboard/ReturnedOrders", isParent:false},
     {name:"Users", path: "/admin-dashboard/users", isParent:false},
     {name:"Profile", path: "/admin-dashboard/profile", isParent:false},
     {name:"Notes", path: "/admin-dashboard/notes", isParent:false},

@@ -15,7 +15,7 @@ const Dashboard = () => {
     const fetchOrders = async () => {
       setLoading(true);
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/orders`, {
+        const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/orders`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.data.success) setOrders(res.data.orders);

@@ -33,7 +33,7 @@ const Orders = () => {
 
   const fetchStatuses = async () => {
     try {
-      const res = await axios.get("http://localhost:3500/orders/statuses", {
+      const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/orders/statuses`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.data.success) setStatuses(res.data.statuses);
@@ -52,7 +52,7 @@ const Orders = () => {
         status: statusFilter,
       });
 
-      const res = await axios.get(`http://localhost:3500/orders?${queryParams.toString()}`, {
+      const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/orders?${queryParams.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.data.success) {
@@ -69,7 +69,7 @@ const Orders = () => {
     try {
       if (!productId || !startDate || !endDate) return null;
 
-      const res = await axios.post("http://localhost:3500/products/stockStatus",
+      const res = await axios.post(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/products/stockStatus`,
         { productId, startDate, endDate },
         { headers: { Authorization: `Bearer ${token}` } });
 
@@ -435,7 +435,7 @@ const Orders = () => {
           Authorization: `Bearer ${token}`,
         },
       };
-      const res = await axios.put(`http://localhost:3500/orders/updateOrder/${orderId}`, itemsToReject, config);
+      const res = await axios.put(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/orders/updateOrder/${orderId}`, itemsToReject, config);
 
       if (res.data.success) {
         fetchOrders(1);
@@ -469,7 +469,7 @@ const Orders = () => {
           Authorization: `Bearer ${token}`,
         },
       };
-      const res = await axios.put(`http://localhost:3500/orders/updateOrder/${orderId}`, itemsToPrepare, config);
+      const res = await axios.put(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/orders/updateOrder/${orderId}`, itemsToPrepare, config);
 
       if (res.data.success) {
         fetchOrders(1);
@@ -503,7 +503,7 @@ const Orders = () => {
           Authorization: `Bearer ${token}`,
         },
       };
-      const res = await axios.put(`http://localhost:3500/orders/updateOrder/${orderId}`, itemsToRent, config);
+      const res = await axios.put(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/orders/updateOrder/${orderId}`, itemsToRent, config);
 
       if (res.data.success) {
         fetchOrders(1);
@@ -537,7 +537,7 @@ const Orders = () => {
           Authorization: `Bearer ${token}`,
         },
       };
-      const res = await axios.put(`http://localhost:3500/orders/updateOrder/${orderId}`, itemsToReturn, config);
+      const res = await axios.put(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/orders/updateOrder/${orderId}`, itemsToReturn, config);
 
       if (res.data.success) {
         fetchOrders(1);
@@ -703,7 +703,7 @@ const Orders = () => {
         },
       };
 
-      const res = await axios.put(`http://localhost:3500/orders/updateOrder/${orderId}`, itemUpdates, config);
+      const res = await axios.put(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/orders/updateOrder/${orderId}`, itemUpdates, config);
 
       if (res.data.success) {
         fetchOrders(1);

@@ -40,7 +40,7 @@ const Categories = () => {
 
   const fetchCategories = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/categories/private`, {
+      const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/categories/private`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setCategories(res.data.categories || []);
@@ -90,12 +90,12 @@ const Categories = () => {
       const config = { headers: { Authorization: `Bearer ${token}` } };
      const res = editCategory
   ? await axios.patch(
-      `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/categories/${editCategory}`,
+      `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/categories/${editCategory}`,
       categoryData,
       config
     )
   : await axios.post(
-      `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/categories/create`,
+      `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/categories/create`,
       categoryData,
       config
     );
@@ -115,7 +115,7 @@ const Categories = () => {
     if (!window.confirm("Are you sure you want to delete this category?")) return;
     try {
       const res = await axios.delete(
-        `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/categories/${id}`,
+        `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/categories/${id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (res.data.success) {

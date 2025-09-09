@@ -21,7 +21,7 @@ import Orders from './pages/Orders';
 // Components
 import Users from './components/Users';
 import Logout from './components/Logout';
-import ReturnedOrders from './components/ReturnedOrders';
+// import ReturnedOrders from './components/ReturnedOrders';
 
 // Utils
 import ProtectedRoutes from './utils/ProtectedRoutes';
@@ -68,7 +68,7 @@ function App() {
               </ProtectedRoutes>
             }
           />
-          <Route path="ReturnedOrders" element={<ReturnedOrders />} />
+          {/* <Route path="ReturnedOrders" element={<ReturnedOrders />} /> */}
         </Route>
       </Routes>
     </Router>

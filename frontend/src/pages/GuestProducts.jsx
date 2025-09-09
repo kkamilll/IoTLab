@@ -26,7 +26,7 @@ const GuestProducts = () => {
 
   const fetchProducts = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/products/public`);
+      const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/products/public`);
       const allExtraKeys = new Set(extraColumns);
 
       res.data.products.forEach(p => {
@@ -51,7 +51,7 @@ const GuestProducts = () => {
 
   const fetchCategories = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/categories/public`);
+      const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/categories/public`);
       setCategories(res.data.categories || []);
     } catch (err) {
       console.error("Error fetching categories:", err);

@@ -10,7 +10,7 @@ const ProductView = () => {
 
     const fetchCategories = async () => {
         try {
-            const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/categories/private`, {
+            const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/categories/private`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             if (res.data.success) {
