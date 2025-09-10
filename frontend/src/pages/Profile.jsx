@@ -16,7 +16,7 @@ const Profile = () => {
 
   // --- Axios instance ---
   const axiosInstance = axios.create({
-    baseURL: `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api`,
+    baseURL: `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}`,
     headers: { Authorization: `Bearer ${token}` },
   });
 

@@ -91,7 +91,6 @@ const initProduct = (req) => {
     setData.owner = owner;
   } else unsetData.owner = "";
 
-  console.log(isSerialized, typeof isSerialized === 'boolean');
   if (typeof isSerialized === 'boolean') setData.isSerialized = isSerialized; else unsetData.isSerialized = "";
   if (typeof isRentable === 'boolean') setData.isRentable = isRentable; else unsetData.isRentable = "";
   if (typeof isVisible === 'boolean') setData.isVisible = isVisible; else unsetData.isVisible = "";
@@ -277,7 +276,6 @@ export const updateProduct = async (req, res, next) => {
     }
 
     const updateData = initProduct(req, next);
-    // console.log(updateData);
 
     if (!Object.keys(updateData).length) {
       return next(new BadRequestError('No valid fields to update'));

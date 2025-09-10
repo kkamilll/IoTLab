@@ -25,7 +25,7 @@ const ResetPassword = ({ email }) => {
     setLoading(true);
 
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/auth/reset-password`, {
+      const response = await axios.post(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/auth/reset-password`, {
         email,
         otpCode: otp,
         newPassword,

@@ -33,7 +33,7 @@ const Orders = () => {
 
   const fetchStatuses = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/orders/statuses`, {
+      const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders/statuses`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.data.success) setStatuses(res.data.statuses);
@@ -52,7 +52,7 @@ const Orders = () => {
         status: statusFilter,
       });
 
-      const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/orders?${queryParams.toString()}`, {
+      const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders?${queryParams.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.data.success) {
@@ -69,7 +69,7 @@ const Orders = () => {
     try {
       if (!productId || !startDate || !endDate) return null;
 
-      const res = await axios.post(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/products/stockStatus`,
+      const res = await axios.post(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/products/stockStatus`,
         { productId, startDate, endDate },
         { headers: { Authorization: `Bearer ${token}` } });
 
@@ -92,24 +92,7 @@ const Orders = () => {
     fetchStatuses();
   }, []);
 
-  // Reset page when filters change
   useEffect(() => { fetchOrders(1, 20, emailFilter, statusFilter); }, [statusFilter, emailFilter]);
-  // Filtered & paginated orders
-  // const filteredOrders = useMemo(() => {
-  //   return orders.filter((order) => {
-  //     const statusMatch =
-  //       statusFilter === ""
-  //         ? order.status !== "NIE_OK" && !order.isReturned
-  //         : statusFilter === "ZWROCONO"
-  //           ? order.isReturned
-  //           : order.status === statusFilter;
-
-  //     const emailMatch = order.customer?.email
-  //       ?.toLowerCase()
-  //       .includes(emailFilter.toLowerCase());
-  //     return statusMatch && emailMatch;
-  //   });
-  // }, [orders, statusFilter, emailFilter]);
 
   useEffect(() => {
     if (!editGroup || !itemUpdatesData) return;
@@ -152,14 +135,6 @@ const Orders = () => {
     }
   }, [currentItemId, itemUpdatesData[currentItemId]?.assigned?.startDate, itemUpdatesData[currentItemId]?.assigned?.endDate]);
 
-
-  // const indexOfLastCard = currentPage * cardsPerPage;
-  // const indexOfFirstCard = indexOfLastCard - cardsPerPage;
-  // const currentOrders = filteredOrders.slice(indexOfFirstCard, indexOfLastCard);
-  // const currentOrders = filteredOrders;
-
-  // const totalPages = Math.ceil(filteredOrders.length / cardsPerPage);
-
   const prevPage = () => {
     if (currentPage > 1) fetchOrders(currentPage - 1);
   };
@@ -167,163 +142,6 @@ const Orders = () => {
     if (currentPage < totalPages) fetchOrders(currentPage + 1);
   };
 
-  // --- Admin actions ---
-
-  // const handleDeleteOrder = async (order) => {
-  //   if (!window.confirm("Czy na pewno chcesz usunąć to zamówienie?")) return;
-  //   try {
-  //     await axios.delete(`http://localhost:3500/orders/${order._id}`, {
-  //       headers: { Authorization: `Bearer ${token}` },
-  //     });
-  //     fetchOrders(currentPage);
-  //   } catch (err) {
-  //     console.error(err);
-  //     alert("Błąd usuwania zamówienia");
-  //   }
-  // };
-
-  // const handleReturnOrder = async (order) => {
-  //   if (!window.confirm("Czy na pewno chcesz zwrócić to zamówienie?")) return;
-  //   try {
-  //     await axios.post(
-  //       "http://localhost:3500/orders/returned",
-  //       { orderId: order._id },
-  //       { headers: { Authorization: `Bearer ${token}` } }
-  //     );
-  //     fetchOrders();
-  //   } catch (err) {
-  //     console.error(err);
-  //     alert("Błąd zwrotu zamówienia");
-  //   }
-  // };
-
-  // const handleUpdateStatus = async (order, newStatus) => {
-  //   let statusToSend = newStatus;
-
-  //   if (newStatus === "OK") {
-  //     const today = new Date().setHours(0, 0, 0, 0);
-  //     const startDate = new Date(order.startDate).setHours(0, 0, 0, 0);
-
-  //     if (today < startDate) {
-  //       return alert(
-  //         `Nie możesz ustawić statusu OK – wypożyczenie zaczyna się dopiero ${new Date(
-  //           order.startDate
-  //         ).toLocaleDateString("pl-PL")}`
-  //       );
-  //     } else {
-  //       statusToSend = "DO_ODBIORU";
-  //     }
-  //   }
-
-  //   try {
-  //     await axios.post(
-  //       "http://localhost:3500/orders/update-status",
-  //       { orderId: order._id, status: statusToSend },
-  //       { headers: { Authorization: `Bearer ${token}` } }
-  //     );
-  //     fetchOrders();
-  //   } catch (err) {
-  //     console.error(err);
-  //     alert(err.response?.data?.error || "Błąd aktualizacji statusu");
-  //   }
-  // };
-
-  // const handleMarkAsReceived = async (order) => {
-  //   try {
-  //     await axios.post(
-  //       "http://localhost:3500/orders/update-status",
-  //       { orderId: order._id, status: "OK", markAsReceived: true },
-  //       { headers: { Authorization: `Bearer ${token}` } }
-  //     );
-  //     fetchOrders();
-  //   } catch (err) {
-  //     console.error(err);
-  //     alert(err.response?.data?.error || "Błąd aktualizacji statusu");
-  //   }
-  // };
-
-  // --- Quantity editing ---
-
-  // const handleEditQuantity = (orderId, item) => {
-  //   const maxQty =
-  //     (item.product?.stockForRent || item.available || 1) -
-  //     (item.bookedQuantity || 0);
-
-  //   setEditingItem({
-  //     orderId,
-  //     itemId: item.product?._id || item._id,
-  //     maxQuantity: Math.max(maxQty, 1),
-  //   });
-  //   setNewQuantity(item.quantity);
-  // };
-
-  // const handleSaveQuantity = async () => {
-  //   if (newQuantity < 1 || newQuantity > editingItem.maxQuantity) {
-  //     return alert(`Ilość musi być między 1 a ${editingItem.maxQuantity}`);
-  //   }
-  //   try {
-  //     await axios.post(
-  //       "http://localhost:3500/orders/update-quantity",
-  //       {
-  //         orderId: editingItem.orderId,
-  //         itemId: editingItem.itemId,
-  //         quantity: newQuantity,
-  //       },
-  //       { headers: { Authorization: `Bearer ${token}` } }
-  //     );
-  //     fetchOrders();
-  //     setEditingItem(null);
-  //   } catch (err) {
-  //     console.error(err);
-  //     alert(err.response?.data?.error || "Błąd aktualizacji ilości");
-  //   }
-  // };
-
-  // // --- Date editing ---
-
-  // const handleEditDates = (order, item) => {
-  //   setEditingDates({
-  //     orderId: order._id,
-  //     itemId: item.product?._id || item._id,
-  //     startDate: item.requested?.startDate || "",
-  //     endDate: item.requested?.endDate || ""
-  //   });
-  // };
-
-  // const handleSaveDates = async () => {
-  //   if (!editingDates.startDate || !editingDates.endDate)
-  //     return alert("Podaj obie daty!");
-  //   if (editingDates.startDate > editingDates.endDate)
-  //     return alert("Data rozpoczęcia nie może być późniejsza niż zakończenia!");
-
-  //   try {
-  //     await axios.post(
-  //       "http://localhost:3500/orders/update-dates",
-  //       {
-  //         orderId: editingDates.orderId,
-  //         itemId: editingDates.itemId,
-  //         startDate: editingDates.startDate,
-  //         endDate: editingDates.endDate,
-  //       },
-  //       { headers: { Authorization: `Bearer ${token}` } }
-  //     );
-  //     fetchOrders();
-  //     setEditingDates(null);
-  //   } catch (err) {
-  //     console.error(err);
-  //     alert(err.response?.data?.error || "Błąd aktualizacji dat");
-  //   }
-  // };
-
-  // // --- Helpers for button visibility ---
-
-  // const canEditQuantity = (order, item) =>
-  //   isAdmin && !order.isReturned && order.status !== "OK" && !item.quantityEdited;
-
-  // const canEditDates = (order) =>
-  //   isAdmin && !order.isReturned && order.status !== "OK" && order.status !== "DO_ODBIORU";
-
-  // const hasPendingOrder = editGroup?.items.some(item => item.status === "pending");
   const processableStatuses = ["pending", "approved", "prepared"];
   const rejectableStatuses = ["pending", "approved", "prepared"];
   const nonRejectableStatuses = ["rented", "late", "returned"];
@@ -362,21 +180,6 @@ const Orders = () => {
     if (status === "prepared") return ["rented", "rejected"];
     return []; // rented, returned, rejected -> no changes
   };
-
-  // function lowestProcessableStatus(group) {
-  //   const processableItems = group.items.filter(item =>
-  //     processableOrder.includes(item.status)
-  //   );
-
-  //   if (processableItems.length === 0) return null;
-
-  //   const statusIndexes = processableItems.map(item =>
-  //     processableOrder.indexOf(item.status)
-  //   );
-
-  //   const minIndex = Math.min(...statusIndexes);
-  //   return processableOrder[minIndex];
-  // }
 
   const highestPriorityGroupStatus = useMemo(() => {
     if (!editGroup) return null;
@@ -435,7 +238,7 @@ const Orders = () => {
           Authorization: `Bearer ${token}`,
         },
       };
-      const res = await axios.put(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/orders/updateOrder/${orderId}`, itemsToReject, config);
+      const res = await axios.put(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders/updateOrder/${orderId}`, itemsToReject, config);
 
       if (res.data.success) {
         fetchOrders(1);
@@ -469,7 +272,7 @@ const Orders = () => {
           Authorization: `Bearer ${token}`,
         },
       };
-      const res = await axios.put(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/orders/updateOrder/${orderId}`, itemsToPrepare, config);
+      const res = await axios.put(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders/updateOrder/${orderId}`, itemsToPrepare, config);
 
       if (res.data.success) {
         fetchOrders(1);
@@ -503,7 +306,7 @@ const Orders = () => {
           Authorization: `Bearer ${token}`,
         },
       };
-      const res = await axios.put(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/orders/updateOrder/${orderId}`, itemsToRent, config);
+      const res = await axios.put(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders/updateOrder/${orderId}`, itemsToRent, config);
 
       if (res.data.success) {
         fetchOrders(1);
@@ -537,7 +340,7 @@ const Orders = () => {
           Authorization: `Bearer ${token}`,
         },
       };
-      const res = await axios.put(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/orders/updateOrder/${orderId}`, itemsToReturn, config);
+      const res = await axios.put(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders/updateOrder/${orderId}`, itemsToReturn, config);
 
       if (res.data.success) {
         fetchOrders(1);
@@ -636,7 +439,6 @@ const Orders = () => {
     e.preventDefault();
     try {
       const orderId = editGroup?.orderId?.toString();
-      console.log("orderId: ", orderId);
       if (!orderId) {
         console.error("Missing orderId for group:", editGroup);
         alert("Missing Order ID.");
@@ -703,7 +505,7 @@ const Orders = () => {
         },
       };
 
-      const res = await axios.put(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/orders/updateOrder/${orderId}`, itemUpdates, config);
+      const res = await axios.put(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders/updateOrder/${orderId}`, itemUpdates, config);
 
       if (res.data.success) {
         fetchOrders(1);
@@ -778,30 +580,9 @@ const Orders = () => {
 
                       <h2 className="text-lg font-semibold text-gray-700">{order?.customer?.email || "Brak maila"}</h2>
 
-                      {/* <p className="text-sm text-gray-500">
-                        Status:{" "}
-                        <span className={`font-medium ${order.isReturned
-                          ? "text-yellow-600"
-                          : order.status === "OK"
-                            ? "text-green-600"
-                            : order.status === "NIE_OK"
-                              ? "text-red-600"
-                              : order.status === "DO_ODBIORU"
-                                ? "text-blue-600"
-                                : "text-gray-700"
-                          }`}>
-                          {order.isReturned ? "ZWROCONO" : order.status}
-                        </span>
-                      </p> */}
-
-                      {/* Items */}
-
                       <div className="border-t border-gray-200 pt-2">
-                        {/* <h3 className="text-gray-600 font-medium mb-1">Produkty:</h3> */}
 
                         {Object.values(itemsByOwner).map((group, idx) => {
-
-
                           return (
                             <div key={idx} className="mb-8 last:mb-2 border border-gray-200 rounded-lg p-4 bg-gray-50">
                               <div className="flex flex-col gap-1 mb-5">
@@ -926,21 +707,6 @@ const Orders = () => {
                           )
                         })}
                       </div>
-
-
-
-                      {/* Admin actions */}
-                      {/* <div className="flex flex-wrap gap-2 mt-2">
-                        {canReturn(order) && <button onClick={() => handleReturnOrder(order)} className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-lg">Zwróć</button>}
-                        {canDeleteOrder(order) && <button onClick={() => handleDeleteOrder(order)} className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg">Usuń</button>}
-                        {canSetStatus(order) && (
-                          <>
-                            <button onClick={() => handleUpdateStatus(order, "DO_ODBIORU")} className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg">OK</button>
-                            <button onClick={() => handleUpdateStatus(order, "NIE_OK")} className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded-lg">NIE_OK</button>
-                          </>
-                        )}
-                        {canMarkReceived(order) && <button onClick={() => handleMarkAsReceived(order)} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg">ODEBRANO</button>}
-                      </div> */}
                     </div>
                   )
                 })}
@@ -1076,6 +842,3 @@ const Orders = () => {
 };
 
 export default Orders;
-
-// Helper to check delete permission
-const canDeleteOrder = (order) => order.status === "OK" || order.status === "NIE_OK";

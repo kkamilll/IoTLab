@@ -22,22 +22,28 @@ const SortableItem = ({ mat, index, materials, setMaterials, axiosInstance, dele
 
   return (
     <div ref={setNodeRef} style={style} className="relative group overflow-hidden rounded-none shadow-lg p-2 flex flex-col">
-      <div {...listeners} {...attributes} className="absolute top-2 left-2 bg-gray-300 w-6 h-6 rounded-full cursor-grab flex items-center justify-center z-10 hover:bg-gray-400 transition">☰</div>
+      <div
+        {...listeners}
+        {...attributes}
+        className="absolute top-2 left-2 bg-gray-300 w-10 h-10 rounded-full cursor-grab flex items-center justify-center z-10 hover:bg-gray-400 transition"
+      >
+        ☰
+      </div>
       <button onClick={() => deleteMaterial(mat._id)} className="absolute top-2 right-2 bg-red-600 text-white w-6 h-6 rounded-full flex items-center justify-center z-10 opacity-0 group-hover:opacity-100 hover:bg-red-700 transition">✕</button>
       <div className="absolute top-2 left-10 bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold z-10">{index + 1}</div>
 
       {mat.path ? (
-       <img
-  src={`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/${mat.path}`}
+        <img
+          src={`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/${mat.path}`}
 
-  alt={mat.filename || "material"}
-  className="w-full h-48 object-contain cursor-pointer select-none mt-4"
-  style={{ borderRadius: 0 }}
-  onClick={() => setPreviewImage(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/${mat.path}`)}
-  onError={handleImageError}
-  loading="lazy"
-  draggable={false}
-/>
+          alt={mat.filename || "material"}
+          className="w-full h-48 object-contain cursor-pointer select-none mt-4"
+          style={{ borderRadius: 0 }}
+          onClick={() => setPreviewImage(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/${mat.path}`)}
+          onError={handleImageError}
+          loading="lazy"
+          draggable={false}
+        />
 
       ) : (
         <div className="w-full h-48 flex items-center justify-center bg-gray-200 text-red-600 font-bold rounded-none mt-4">NO IMAGE</div>
@@ -78,7 +84,7 @@ const Materials = () => {
   const { token } = useAuth();
 
   const axiosInstance = axios.create({
-    baseURL: `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api`,
+    baseURL: `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}`,
     headers: { Authorization: `Bearer ${token}` },
   });
 
@@ -95,30 +101,30 @@ const Materials = () => {
   useEffect(() => { fetchMaterials(); }, [token]);
 
   const addMaterial = async () => {
-  if (!file) return alert("Select a file to add");
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("link", link);
+    if (!file) return alert("Select a file to add");
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("link", link);
 
-  try {
-    setLoading(true);
-    const res = await axiosInstance.post("/materials", formData, { headers: { "Content-Type": "multipart/form-data" } });
-    if (res.data.success) {
-      setMaterials(prev => [{ ...res.data.data }, ...prev]);
-      setFile(null);
-      setLink("");
+    try {
+      setLoading(true);
+      const res = await axiosInstance.post("/materials", formData, { headers: { "Content-Type": "multipart/form-data" } });
+      if (res.data.success) {
+        setMaterials(prev => [{ ...res.data.data }, ...prev]);
+        setFile(null);
+        setLink("");
 
-      // Reset file input to allow same file selection again
-      const fileInput = document.querySelector('input[type="file"]');
-      if (fileInput) fileInput.value = "";
+        // Reset file input to allow same file selection again
+        const fileInput = document.querySelector('input[type="file"]');
+        if (fileInput) fileInput.value = "";
+      }
+    } catch (error) {
+      console.error("Add material error:", error.response?.data || error.message);
+      alert("Error adding material");
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error("Add material error:", error.response?.data || error.message);
-    alert("Error adding material");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
 
   const deleteMaterial = async (id) => {
@@ -192,7 +198,7 @@ const Materials = () => {
         }
 
         {/* Preview Modal */}
-        {previewImage && <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50" onClick={() => setPreviewImage(null)}>
+        {previewImage && <div className="fixed inset-0 backdrop-blur-md bg-opacity-70 flex items-center justify-center z-50" onClick={() => setPreviewImage(null)}>
           <img src={previewImage} alt="Preview" className="max-h-[90vh] max-w-[90vw] object-contain rounded-none shadow-lg" />
         </div>}
       </div>

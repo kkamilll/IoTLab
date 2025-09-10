@@ -35,7 +35,7 @@ const Products = () => {
     stockTotal: "",
     stockForRent: "0",
     extraFields: {},
-    categories: [], // nowa właściwość dla kategorii
+    categories: [],
     tag: "",
     labRoom: "",
     images: [],
@@ -153,7 +153,7 @@ const Products = () => {
 
   const fetchCategories = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/categories/private`, {
+      const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/categories/private`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.data.success) {
@@ -166,7 +166,7 @@ const Products = () => {
   // Pobieranie produktów
   const fetchProducts = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/products/private`, {
+      const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/products/private`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -197,7 +197,7 @@ const Products = () => {
 
   const fetchUsers = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/users`, {
+      const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/users`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.data.success) return alert(res.data.message || "Error fetching products");
@@ -212,7 +212,7 @@ const Products = () => {
 
   const deleteProduct = async (id) => {
     const res = await axios.delete(
-      `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/products/${id}`,
+      `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/products/${id}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     return res.data;
@@ -291,8 +291,6 @@ const Products = () => {
       isShared: product?.isShared || false,
       version: product.__v?.toString() || ""
     });
-    // setNewTag("");
-    console.log(formData);
   };
 
 
@@ -418,7 +416,7 @@ const Products = () => {
     if (!window.confirm(`Delete column "${key}" from all products?`)) return;
 
     try {
-      const res = await axios.delete(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/products/extraField/${key}`, {
+      const res = await axios.delete(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/products/extraField/${key}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -480,7 +478,7 @@ const Products = () => {
       form.append("isVisible", JSON.stringify(formData.isVisible));
       form.append("isShared", JSON.stringify(formData.isShared));
       form.append("version", formData.version);
-      console.log(formData);
+
       const clientImages = formData.images && formData.images.length ? formData.images.filter(img => img.source === "client") : [];
       const serverImages = formData.images && formData.images.length ? formData.images.filter(img => img.source === "server") : [];
 
@@ -521,8 +519,8 @@ const Products = () => {
       };
 
       const res = editProduct
-  ? await axios.put(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/products/${editProduct}`, form, config)
-  : await axios.post(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/products/create`, form, config);
+        ? await axios.put(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/products/${editProduct}`, form, config)
+        : await axios.post(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/products/create`, form, config);
 
 
       if (res.data.success) {
@@ -699,226 +697,216 @@ const Products = () => {
 
       {/* Tabela */}
 
-     <div className="w-full">
-  {/* Desktop Table */}
-  <div className="hidden md:block overflow-x-auto w-full shadow rounded border border-gray-200">
-    <table className="table-auto w-full min-w-max divide-y divide-gray-200">
-      <thead className="bg-gray-100">
-        <tr>
-          {allColumns.filter(col => !hiddenColumns.includes(col)).map((col, idx) => (
-            <th
-              key={idx}
-              className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer whitespace-nowrap"
-            >
-              <div className="flex items-center justify-between">
-                <span onClick={() => handleSort(col)} className="truncate">
-                  {col} {sortConfig.key === col ? (sortConfig.direction === "asc" ? "↑" : "↓") : ""}
-                </span>
-                {isAdmin && extraColumns.includes(col) && (
-                  <button
-                    onClick={() => removeExtraField(col)}
-                    className="ml-2 px-1 py-0.5 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
+      <div className="w-full">
+        {/* Desktop Table */}
+        <div className="hidden md:block overflow-x-auto w-full shadow rounded border border-gray-200">
+          <table className="table-auto w-full min-w-max divide-y divide-gray-200">
+            <thead className="bg-gray-100">
+              <tr>
+                {allColumns.filter(col => !hiddenColumns.includes(col)).map((col, idx) => (
+                  <th
+                    key={idx}
+                    className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer whitespace-nowrap"
                   >
-                    X
-                  </button>
-                )}
-              </div>
-            </th>
-          ))}
-          {isAdmin && <th className="px-4 py-2 whitespace-nowrap">Actions</th>}
-        </tr>
-      </thead>
+                    <div className="flex items-center justify-between">
+                      <span onClick={() => handleSort(col)} className="truncate">
+                        {col} {sortConfig.key === col ? (sortConfig.direction === "asc" ? "↑" : "↓") : ""}
+                      </span>
+                      {isAdmin && extraColumns.includes(col) && (
+                        <button
+                          onClick={() => removeExtraField(col)}
+                          className="ml-2 px-1 py-0.5 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
+                        >
+                          X
+                        </button>
+                      )}
+                    </div>
+                  </th>
+                ))}
+                {isAdmin && <th className="px-4 py-2 whitespace-nowrap">Actions</th>}
+              </tr>
+            </thead>
 
-      <tbody className="bg-white divide-y divide-gray-200">
-        {paginatedProducts.map(p => (
-          <tr key={p._id}>
-            {allColumns.filter(col => !hiddenColumns.includes(col)).map((col, idx) => (
-              <td key={idx} className="px-4 py-2 text-sm text-gray-700 whitespace-nowrap">
-                {col === "stockTotal" ? p.stockTotal ?? 0
-                  : col === "stockForRent" ? getAvailableStockForProduct(p) ?? 0
-           : col === "categories" ? (
-  <div className="inline-block relative">
-<select
-  className="border rounded px-2 py-1 text-sm"
-  value=""
-  onChange={(e) => e.preventDefault()}
-  style={{ width: '8rem' }} // stała szerokość dla wszystkich opcji
->
-  <option value="">
-    {"Categories".slice(0, 15)}
-  </option>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {paginatedProducts.map(p => (
+                <tr key={p._id}>
+                  {allColumns.filter(col => !hiddenColumns.includes(col)).map((col, idx) => (
+                    <td key={idx} className="px-4 py-2 text-sm text-gray-700 whitespace-nowrap">
+                      {col === "stockTotal" ? p.stockTotal ?? 0
+                        : col === "stockForRent" ? getAvailableStockForProduct(p) ?? 0
+                          : col === "categories" ? (
+                            <div className="inline-block relative w-32"> {/* stała szerokość */}
+                              <select
+                                className="appearance-none border rounded px-2 py-1 text-sm w-full pr-6 bg-white cursor-pointer"
+                                value=""
+                                onChange={(e) => e.preventDefault()} // tymczasowo blokujemy zmianę
+                              >
+                                {p.categories?.map((c, i) => (
+                                  <option key={i} value={c?.name ?? ""}>
+                                    {(c?.name ?? "").slice(0, 15)}
+                                  </option>
+                                ))}
+                              </select>
+                              {/* Strzałka w dół */}
+                              <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 text-sm">⬇️</span>
+                            </div>
+                          ) : col === "owner" ? p.owner?.name ?? p.owner
+                            : col === "description" ? (
+                              <span className="truncate cursor-pointer" onClick={() => handlePreview(p._id)} title={p.description}>
+                                {p.description?.length > 50 ? p.description.slice(0, 50) + "…" : p.description}
+                              </span>
+                            )
+                              : col === "name" ? (
+                                <span className="truncate cursor-pointer" onClick={() => handlePreview(p._id)} title={p.name}>
+                                  {p.name}
+                                </span>
+                              )
+                                : p[col] ?? p.extraFields?.[col] ?? ""}
+                    </td>
+                  ))}
+                  <td className="px-4 py-2 flex flex-col sm:flex-row sm:items-center gap-2 whitespace-nowrap">
+                    {/* Action buttons + quantity */}
+                    <div className="flex flex-wrap gap-2">
+                      <button onClick={() => handleEdit(p)} disabled={(user.id !== p.owner._id && !isAdmin)} className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
+                        Edit
+                      </button>
+                      <button onClick={() => handlePreview(p._id)} className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition">
+                        Preview
+                      </button>
+                      <button onClick={() => handleDelete(p._id)} disabled={(user.id !== p.owner._id && !isAdmin)} className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
+                        Delete
+                      </button>
+                    </div>
 
-  {p.categories?.map((c, i) => (
-    <option key={i} value={c?.name ?? ""}>
-      {(c?.name ?? "").slice(0, 15)}
-    </option>
-  ))}
-</select>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2">
+                      <div className="flex items-center border rounded overflow-hidden h-10">
+                        <button
+                          onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) - 1, p)}
+                          className="px-3 bg-gray-200 hover:bg-gray-300 h-full"
+                          disabled={(cartQuantities[p._id] || 0) <= 0}
+                        >-</button>
+                        <input
+                          type="number"
+                          min="0"
+                          max={getAvailableStockForProduct(p)}
+                          value={cartQuantities[p._id] || 0}
+                          onChange={(e) => handleQuantityChange(p._id, e.target.value, p)}
+                          className="w-16 text-center outline-none"
+                        />
+                        <button
+                          onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) + 1, p)}
+                          className="px-3 bg-gray-200 hover:bg-gray-300 h-full"
+                          disabled={(cartQuantities[p._id] || 0) >= getAvailableStockForProduct(p)}
+                        >+</button>
+                      </div>
 
-  </div>
-)
+                      <span className="inline-block bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full sm:mt-0 mt-1">
+                        W koszyku: {cartQuantities[p._id] || 0}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
+        {/* Mobile Cards */}
+        <div className="md:hidden flex flex-col gap-4">
+          {paginatedProducts.map(p => (
+            <div key={p._id} className="border rounded shadow p-4 bg-white">
+              {allColumns.filter(col => !hiddenColumns.includes(col)).map((col, idx) => (
+                <div key={idx} className="flex justify-between py-1">
+                  <span className="font-semibold text-gray-500">{col}:</span>
+                  <span className="text-gray-700 truncate">
+                    {col === "stockTotal" ? p.stockTotal ?? 0
+                      : col === "stockForRent" ? getAvailableStockForProduct(p) ?? 0
+                        : col === "categories" ? (
+                          <div className="inline-block relative">
+                            <select
+                              className="border rounded px-2 py-1 text-sm"
+                              value=""
+                              onChange={(e) => e.preventDefault()}
+                              style={{ width: '8rem' }} // stała szerokość dla wszystkich opcji
+                            >
+                              <option value="">
+                                {"Categories".slice(0, 15)}
+                              </option>
 
+                              {p.categories?.map((c, i) => (
+                                <option key={i} value={c?.name ?? ""}>
+                                  {(c?.name ?? "").slice(0, 15)}
+                                </option>
+                              ))}
+                            </select>
 
-
-
-                      : col === "owner" ? p.owner?.name ?? p.owner
-                        : col === "description" ? (
-                          <span className="truncate cursor-pointer" onClick={() => handlePreview(p._id)} title={p.description}>
-                            {p.description?.length > 50 ? p.description.slice(0, 50) + "…" : p.description}
-                          </span>
+                          </div>
                         )
-                          : col === "name" ? (
-                            <span className="truncate cursor-pointer" onClick={() => handlePreview(p._id)} title={p.name}>
-                              {p.name}
-                            </span>
-                          )
-                            : p[col] ?? p.extraFields?.[col] ?? ""}
-              </td>
-            ))}
-            <td className="px-4 py-2 flex flex-col sm:flex-row sm:items-center gap-2 whitespace-nowrap">
-              {/* Action buttons + quantity */}
-              <div className="flex flex-wrap gap-2">
-                <button onClick={() => handleEdit(p)} disabled={(user.id !== p.owner._id && !isAdmin)} className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
-                  Edit
-                </button>
-                <button onClick={() => handlePreview(p._id)} className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition">
-                  Preview
-                </button>
-                <button onClick={() => handleDelete(p._id)} disabled={(user.id !== p.owner._id && !isAdmin)} className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
-                  Delete
-                </button>
-              </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2">
-                <div className="flex items-center border rounded overflow-hidden h-10">
+                          : col === "owner" ? p.owner?.name ?? p.owner
+                            : col === "description" ? (
+                              <span className="truncate cursor-pointer" onClick={() => handlePreview(p._id)} title={p.description}>
+                                {p.description?.length > 50 ? p.description.slice(0, 50) + "…" : p.description}
+                              </span>
+                            )
+                              : col === "name" ? (
+                                <span className="truncate cursor-pointer" onClick={() => handlePreview(p._id)} title={p.name}>
+                                  {p.name}
+                                </span>
+                              )
+                                : p[col] ?? p.extraFields?.[col] ?? ""}
+                  </span>
+                </div>
+              ))}
+
+              <div className="flex flex-col gap-2 mt-2">
+                <div className="flex flex-wrap gap-2">
+                  <button onClick={() => handleEdit(p)} disabled={(user.id !== p.owner._id && !isAdmin)} className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
+                    Edit
+                  </button>
+                  <button onClick={() => handlePreview(p._id)} className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition">
+                    Preview
+                  </button>
+                  <button onClick={() => handleDelete(p._id)} disabled={(user.id !== p.owner._id && !isAdmin)} className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
+                    Delete
+                  </button>
+                </div>
+
+                <div className="flex justify-center items-center border rounded-lg overflow-hidden h-10 mt-2 shadow-sm">
                   <button
                     onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) - 1, p)}
-                    className="px-3 bg-gray-200 hover:bg-gray-300 h-full"
+                    className="px-4 bg-gray-100 hover:bg-gray-200 transition text-gray-700 font-bold"
                     disabled={(cartQuantities[p._id] || 0) <= 0}
-                  >-</button>
+                  >
+                    -
+                  </button>
+
                   <input
                     type="number"
                     min="0"
                     max={getAvailableStockForProduct(p)}
                     value={cartQuantities[p._id] || 0}
                     onChange={(e) => handleQuantityChange(p._id, e.target.value, p)}
-                    className="w-16 text-center outline-none"
+                    className="w-16 text-center outline-none border-x border-gray-200 focus:ring-1 focus:ring-blue-400 focus:border-blue-400 transition"
                   />
+
                   <button
                     onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) + 1, p)}
-                    className="px-3 bg-gray-200 hover:bg-gray-300 h-full"
+                    className="px-4 bg-gray-100 hover:bg-gray-200 transition text-gray-700 font-bold"
                     disabled={(cartQuantities[p._id] || 0) >= getAvailableStockForProduct(p)}
-                  >+</button>
+                  >
+                    +
+                  </button>
                 </div>
 
-                <span className="inline-block bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full sm:mt-0 mt-1">
+                <span className="inline-block bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full mt-1">
                   W koszyku: {cartQuantities[p._id] || 0}
                 </span>
               </div>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
-
-  {/* Mobile Cards */}
-  <div className="md:hidden flex flex-col gap-4">
-    {paginatedProducts.map(p => (
-      <div key={p._id} className="border rounded shadow p-4 bg-white">
-        {allColumns.filter(col => !hiddenColumns.includes(col)).map((col, idx) => (
-          <div key={idx} className="flex justify-between py-1">
-            <span className="font-semibold text-gray-500">{col}:</span>
-            <span className="text-gray-700 truncate">
-              {col === "stockTotal" ? p.stockTotal ?? 0
-                : col === "stockForRent" ? getAvailableStockForProduct(p) ?? 0
-                     : col === "categories" ? (
-  <div className="inline-block relative">
-<select
-  className="border rounded px-2 py-1 text-sm"
-  value=""
-  onChange={(e) => e.preventDefault()}
-  style={{ width: '8rem' }} // stała szerokość dla wszystkich opcji
->
-  <option value="">
-    {"Categories".slice(0, 15)}
-  </option>
-
-  {p.categories?.map((c, i) => (
-    <option key={i} value={c?.name ?? ""}>
-      {(c?.name ?? "").slice(0, 15)}
-    </option>
-  ))}
-</select>
-
-  </div>
-)
-
-                    : col === "owner" ? p.owner?.name ?? p.owner
-                      : col === "description" ? (
-                        <span className="truncate cursor-pointer" onClick={() => handlePreview(p._id)} title={p.description}>
-                          {p.description?.length > 50 ? p.description.slice(0, 50) + "…" : p.description}
-                        </span>
-                      )
-                        : col === "name" ? (
-                          <span className="truncate cursor-pointer" onClick={() => handlePreview(p._id)} title={p.name}>
-                            {p.name}
-                          </span>
-                        )
-                          : p[col] ?? p.extraFields?.[col] ?? ""}
-            </span>
-          </div>
-        ))}
-
-        <div className="flex flex-col gap-2 mt-2">
-          <div className="flex flex-wrap gap-2">
-            <button onClick={() => handleEdit(p)} disabled={(user.id !== p.owner._id && !isAdmin)} className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
-              Edit
-            </button>
-            <button onClick={() => handlePreview(p._id)} className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition">
-              Preview
-            </button>
-            <button onClick={() => handleDelete(p._id)} disabled={(user.id !== p.owner._id && !isAdmin)} className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
-              Delete
-            </button>
-          </div>
-
-         <div className="flex justify-center items-center border rounded-lg overflow-hidden h-10 mt-2 shadow-sm">
-  <button
-    onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) - 1, p)}
-    className="px-4 bg-gray-100 hover:bg-gray-200 transition text-gray-700 font-bold"
-    disabled={(cartQuantities[p._id] || 0) <= 0}
-  >
-    -
-  </button>
-  
-  <input
-    type="number"
-    min="0"
-    max={getAvailableStockForProduct(p)}
-    value={cartQuantities[p._id] || 0}
-    onChange={(e) => handleQuantityChange(p._id, e.target.value, p)}
-    className="w-16 text-center outline-none border-x border-gray-200 focus:ring-1 focus:ring-blue-400 focus:border-blue-400 transition"
-  />
-  
-  <button
-    onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) + 1, p)}
-    className="px-4 bg-gray-100 hover:bg-gray-200 transition text-gray-700 font-bold"
-    disabled={(cartQuantities[p._id] || 0) >= getAvailableStockForProduct(p)}
-  >
-    +
-  </button>
-</div>
-
-          <span className="inline-block bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full mt-1">
-            W koszyku: {cartQuantities[p._id] || 0}
-          </span>
+            </div>
+          ))}
         </div>
       </div>
-    ))}
-  </div>
-</div>
 
 
 

@@ -263,20 +263,10 @@ export const createOrder = async (req, res, next) => {
       };
     });
 
-
-    // Initialize ownerStatus
-    // const ownerStatus = enrichedItems.map(i => ({
-    //   owner: i.responsibleOwner,
-    //   status: "pending"
-    // }));
-    // console.log(items);
-    // validateRequiredFields(Order, { customer, items });
-
     const order = await Order.create({
       customer,
       items: enrichedItems,
       status: "pending",
-      // ownerStatus
     });
 
     res.status(201).json({ success: true, message: "Zamówienie utworzone", order });

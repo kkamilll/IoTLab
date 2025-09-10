@@ -30,7 +30,20 @@ morgan.token('remote-user', (req) => (req.user ? req.user._id : '-')); // user i
 morgan.token('date', () => new Date().toLocaleString('en-GB')); // local time zone
 app.use(morgan('combined', { stream: accessLogStream }));
 
-app.use(cors());
+
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://150.254.30.162',
+  'http://iotlab.cs.put.poznan.pl'
+];
+
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  credentials: true
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -45,15 +58,15 @@ app.use((err, req, res, next) => {
   next();
 });
 
-app.use('/api/uploads', express.static('uploads'));
+app.use('/uploads', express.static('uploads'));
 
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/categories', categoryRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/notes', noteRoutes);
-app.use('/api/materials', materialRoutes);
+app.use('/auth', authRoutes);
+app.use('/users', userRoutes);
+app.use('/categories', categoryRoutes);
+app.use('/products', productRoutes);
+app.use('/orders', orderRoutes);
+app.use('/notes', noteRoutes);
+app.use('/materials', materialRoutes);
 
 
 app.use(errorHandler);

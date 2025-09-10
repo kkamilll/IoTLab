@@ -40,7 +40,7 @@ const Categories = () => {
 
   const fetchCategories = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/categories/private`, {
+      const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/categories/private`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setCategories(res.data.categories || []);
@@ -65,7 +65,7 @@ const Categories = () => {
     setCategoryData({
       name: selectedCategory.name || "",
       description: selectedCategory.description || "",
-      parent: selectedCategory?.parent?.toString() || null,
+      parent: selectedCategory?.parent?._id?.toString() || null,
       isVisible: selectedCategory?.isVisible || false
     });
     setEditCategory(selectedCategory._id);
@@ -90,12 +90,12 @@ const Categories = () => {
       const config = { headers: { Authorization: `Bearer ${token}` } };
      const res = editCategory
   ? await axios.patch(
-      `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/categories/${editCategory}`,
+      `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/categories/${editCategory}`,
       categoryData,
       config
     )
   : await axios.post(
-      `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/categories/create`,
+      `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/categories/create`,
       categoryData,
       config
     );
@@ -115,7 +115,7 @@ const Categories = () => {
     if (!window.confirm("Are you sure you want to delete this category?")) return;
     try {
       const res = await axios.delete(
-        `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/api/categories/${id}`,
+        `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/categories/${id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (res.data.success) {
