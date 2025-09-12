@@ -10,14 +10,14 @@ const ProductView = () => {
 
     const fetchCategories = async () => {
         try {
-            const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/categories/private`, {
+            const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/categories/private`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             if (res.data.success) {
                 setCategories(res.data.categories);
             }
         } catch (err) {
-            console.error("Błąd pobierania kategorii:", err);
+            console.error("Error fetching categories:", err);
         }
     };
 

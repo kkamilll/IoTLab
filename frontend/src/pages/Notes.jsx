@@ -17,7 +17,7 @@ const Notes = () => {
   const NOTES_PER_PAGE = 6;
 
   const axiosInstance = axios.create({
-    baseURL: `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}`,
+    baseURL: `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}`,
     headers: { Authorization: `Bearer ${token}` },
   });
 
@@ -106,7 +106,7 @@ const Notes = () => {
   const saveEdit = async (id) => {
     if (!editingText.trim()) return alert("Note text cannot be empty");
     try {
-      const res = await axiosInstance.put(`/notes/${id}`, { 
+      const res = await axiosInstance.put(`/notes/${id}`, {
         text: editingText,
         important: editingImportant
       });
@@ -142,6 +142,7 @@ const Notes = () => {
     ? notes.filter(note => (note.author?.name || "Anonymous") === authorFilter)
     : notes;
 
+  // Paginacja
   const totalPages = Math.ceil(filteredNotes.length / NOTES_PER_PAGE);
   const paginatedNotes = filteredNotes.slice(
     (currentPage - 1) * NOTES_PER_PAGE,
@@ -188,11 +189,10 @@ const Notes = () => {
             <button
               type="button"
               onClick={() => setImportant(!important)}
-              className={`px-4 py-2 rounded-xl border font-semibold transition flex items-center justify-center gap-2 ${
-                important
+              className={`px-4 py-2 rounded-xl border font-semibold transition flex items-center justify-center gap-2 ${important
                   ? "bg-red-500 text-white border-red-400 shadow-md"
                   : "bg-white text-red-600 border-red-400 hover:bg-red-100 hover:text-red-700"
-              }`}
+                }`}
             >
               Important
             </button>
@@ -217,6 +217,7 @@ const Notes = () => {
               key={note._id}
               className={`flex flex-col border rounded-xl p-4 transition ${note.important ? "bg-red-50 border-red-400" : "bg-gray-50 border-gray-200"} hover:shadow-md`}
             >
+
               {/* Treść notatki */}
               <div className="flex-1 overflow-x-auto mb-4">
                 {editingId === note._id ? (

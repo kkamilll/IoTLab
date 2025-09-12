@@ -27,7 +27,7 @@ const WelcomePage = () => {
     (async () => {
       try {
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/materials`, { headers });
+        const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/materials`, { headers });
         if (res.data.success) setMaterials(res.data.data);
       } catch (err) {
         console.error("Error fetching materials:", err);
@@ -42,7 +42,7 @@ const WelcomePage = () => {
       setNotesError(null);
       try {
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/notes`, { headers });
+        const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/notes`, { headers });
         if (res.data.success && Array.isArray(res.data.data)) setNotes(res.data.data);
         else setNotesError('Invalid server response');
       } catch (err) {
@@ -104,33 +104,50 @@ const WelcomePage = () => {
         )}
       </div>
 
-      {/* WELCOME SECTION */}
-      <section className="relative flex flex-col justify-center items-center min-h-[40vh] bg-blue-800/20 rounded-3xl py-10 px-6">
-        <div className="max-w-3xl text-center">
-          <h1 className="text-4xl md:text-5xl font-extrabold mb-3 leading-tight text-white drop-shadow-lg">
-            Inventory System
-          </h1>
-          <p className="text-base md:text-lg mb-6 font-light text-blue-200 drop-shadow-md">
-            Efficient resource management
-          </p>
-          {!user && (
-            <div className="flex flex-col sm:flex-row justify-center gap-4 mt-6">
-              <button
-                onClick={handleLoginClick}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-10 py-3 rounded-full shadow-lg transition duration-300"
-              >
-                Login
-              </button>
-              <button
-                onClick={() => navigate('/mainguest')}
-                className="bg-green-600 hover:bg-green-700 text-white font-semibold px-10 py-3 rounded-full shadow-lg transition duration-300"
-              >
-                Order as Guest
-              </button>
-            </div>
-          )}
-        </div>
-      </section>
+  {/* WELCOME SECTION */}
+<section className="relative py-20 flex justify-center items-center overflow-hidden shadow-1xl">
+  {/* Tło z obrazem */}
+  <div
+    className="absolute inset-0 bg-[url('/uploadsWelcome/aa.jpg')] bg-cover bg-center bg-no-repeat"
+    style={{ filter: 'brightness(0.8)' }}
+  ></div>
+
+  {/* Gradient nakładki dla lepszej czytelności */}
+  <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/50"></div>
+
+  {/* Treść */}
+  <div className="relative z-10 max-w-3xl text-center px-6">
+    <h1 className="text-5xl md:text-6xl font-extrabold mb-4 leading-tight text-white drop-shadow-xl">
+      IoTLab
+    </h1>
+    <p className="text-lg md:text-2xl mb-8 font-light text-blue-200 drop-shadow-md">
+      Laboratory Room Management System
+    </p>
+
+    {!user && (
+      <div className="flex flex-col sm:flex-row justify-center gap-6 mt-6">
+        <button
+          onClick={handleLoginClick}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-10 py-3 rounded-full shadow-lg transition duration-300 transform hover:-translate-y-1"
+        >
+          Login
+        </button>
+        <button
+          onClick={() => navigate('/mainguest')}
+          className="bg-green-600 hover:bg-green-700 text-white font-semibold px-10 py-3 rounded-full shadow-lg transition duration-300 transform hover:-translate-y-1"
+        >
+          Order as Guest
+        </button>
+      </div>
+    )}
+  </div>
+</section>
+
+
+
+
+
+
 
       {/* INFO PANEL */}
       <section className="py-20 bg-white text-gray-900">
@@ -222,7 +239,7 @@ const WelcomePage = () => {
 
       {/* FOOTER */}
       <footer className="bg-blue-900/70 text-center py-6 text-sm text-blue-200 font-light tracking-wide">
-        © {new Date().getFullYear()} Inventory System. All rights reserved.
+        © {new Date().getFullYear()} Laboratory Room Management System. All rights reserved.
       </footer>
     </div>
   );

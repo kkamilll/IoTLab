@@ -12,7 +12,7 @@ const MainGuest = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/categories/public`);
+        const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/categories/public`);
         setCategories(res.data.categories || []);
       } catch (err) {
         console.error("Error fetching categories:", err);
@@ -95,17 +95,17 @@ const MainGuest = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex justify-center py-10 px-4">
       <div className="w-full max-w-4xl">
-        {/* Przycisk powrotu */}
+        {/* Back button */}
         <div className="mb-6 text-left">
           <button
             onClick={() => navigate("/")}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
-            Powrót
+            Back
           </button>
         </div>
 
-        <h1 className="text-3xl font-extrabold mb-8 text-blue-900 text-center">Kategorie</h1>
+        <h1 className="text-3xl font-extrabold mb-8 text-blue-900 text-center">Categories</h1>
         {categoryTree.length > 0 ? (
           <div className="flex flex-col gap-3 w-full">
             {Object.values(categoryTree).flat().map((category) => renderCategory(category))}

@@ -91,7 +91,6 @@ const initProduct = (req) => {
     setData.owner = owner;
   } else unsetData.owner = "";
 
-  console.log(isSerialized, typeof isSerialized === 'boolean');
   if (typeof isSerialized === 'boolean') setData.isSerialized = isSerialized; else unsetData.isSerialized = "";
   if (typeof isRentable === 'boolean') setData.isRentable = isRentable; else unsetData.isRentable = "";
   if (typeof isVisible === 'boolean') setData.isVisible = isVisible; else unsetData.isVisible = "";
@@ -178,7 +177,8 @@ export const getProductByIdPublic = async (req, res, next) => {
     // Find products for users
     const product = await Product.findOne({ _id: productId, isVisible: true, isDeleted: false }).select('-__v -isDeleted').sort({ name: 1 }).populate([{ path: "categories", select: "name" }, { path: "owner", select: "name" }]).lean();
     product.images = product.images?.filter(image => (image.isVisible)) || [];
-
+    product.attachments = product.attachments?.filter(attachment => (attachment.isVisible)) || [];
+    
     // Send response
     return res.status(200).json({ success: true, product });
   } catch (error) {
@@ -277,7 +277,6 @@ export const updateProduct = async (req, res, next) => {
     }
 
     const updateData = initProduct(req, next);
-    // console.log(updateData);
 
     if (!Object.keys(updateData).length) {
       return next(new BadRequestError('No valid fields to update'));

@@ -30,7 +30,20 @@ morgan.token('remote-user', (req) => (req.user ? req.user._id : '-')); // user i
 morgan.token('date', () => new Date().toLocaleString('en-GB')); // local time zone
 app.use(morgan('combined', { stream: accessLogStream }));
 
-app.use(cors());
+
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://150.254.30.162',
+  'http://iotlab.cs.put.poznan.pl'
+];
+
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  credentials: true
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -49,11 +62,12 @@ app.use('/uploads', express.static('uploads'));
 
 app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
-app.use("/categories", categoryRoutes);
+app.use('/categories', categoryRoutes);
 app.use('/products', productRoutes);
 app.use('/orders', orderRoutes);
 app.use('/notes', noteRoutes);
-app.use("/materials", materialRoutes);
+app.use('/materials', materialRoutes);
+
 
 app.use(errorHandler);
 
@@ -63,7 +77,7 @@ app.use((req, res) => {
 });
 
 const PORT = process.env.PORT || 3500;
-app.listen(PORT, async () => {
+app.listen(PORT, '0.0.0.0', async () => {
   await connectDB();
   console.log(`Server running on port ${PORT}`);
 });

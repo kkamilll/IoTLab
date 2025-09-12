@@ -115,20 +115,20 @@ export const deleteUser = async (req, res, next) => {
   try {
     const { userId } = req.params;
     if (!mongoose.Types.ObjectId.isValid(userId)) 
-      return res.status(400).json({ message: "Invalid user ID" });
+      return next(new ValidationError("Invalid user ID"));
 
     if (req.user._id.toString() === userId) 
-      return res.status(400).json({ message: "Deleting your own user account is forbidden" });
+      return next(new BadRequestError("Deleting your own user account is forbidden"));
 
     // Sprawdź, czy użytkownik posiada jakieś produkty
     const products = await Product.find({ owner: userId });
     if (products.length > 0) {
-      return res.status(400).json({ message: "Cannot delete user: they have associated products" });
+      return next(new BadRequestError("Cannot delete user: they have associated products"));
     }
 
     const deletedUser = await User.findByIdAndDelete(userId);
     if (!deletedUser) 
-      return res.status(404).json({ message: "User not found" });
+      return next(new ResourceNotFoundError('User'));
 
     return res.status(200).json({ success: true, message: `User ${deletedUser._id} deleted successfully` });
 

@@ -24,9 +24,14 @@ const GuestProducts = () => {
     localStorage.setItem("cart", JSON.stringify(cart));
   }, [cart]);
 
+  const handlePreview = (productId) => {
+    if (!productId) return alert("No product to preview");
+    navigate("/preview", { state: { productId } });
+  };
+
   const fetchProducts = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/products/public`);
+      const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/products/public`);
       const allExtraKeys = new Set(extraColumns);
 
       res.data.products.forEach(p => {
@@ -51,7 +56,7 @@ const GuestProducts = () => {
 
   const fetchCategories = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/categories/public`);
+      const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/categories/public`);
       setCategories(res.data.categories || []);
     } catch (err) {
       console.error("Error fetching categories:", err);
@@ -194,38 +199,40 @@ const GuestProducts = () => {
                 <tr key={p._id} className="hover:bg-gray-50 transition">
                   {allColumns.map((col, idx) => (
                     <td key={idx} className="px-4 py-2 text-sm text-gray-700">
-                      {col === "stockForRent"
-                        ? p.stockForRent
-                        : col === "categories"
-                        ? p.categories?.map(c => c.name).join(", ")
-                        : p[col] ?? p.extraFields?.[col] ?? ""}
+                      {col === "name" ? (
+                        <span
+                          className="text-blue-600 hover:underline cursor-pointer"
+                          onClick={() => handlePreview(p._id)}
+                        >
+                          {p.name}
+                        </span>
+                      ) : col === "stockForRent"
+                      ? p.stockForRent
+                      : col === "categories"
+                      ? p.categories?.map(c => c.name).join(", ")
+                      : p[col] ?? p.extraFields?.[col] ?? ""}
                     </td>
                   ))}
                   <td className="px-4 py-2">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2">
-                      <div className="flex items-center border rounded overflow-hidden h-10">
-                        <button
-                          onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) - 1, p)}
-                          className="px-3 bg-gray-200 hover:bg-gray-300 h-full transition"
-                          disabled={(cartQuantities[p._id] || 0) <= 0}
-                        >-</button>
-                        <input
-                          type="number"
-                          min="0"
-                          max={p.stockForRent || 0}
-                          value={cartQuantities[p._id] || 0}
-                          onChange={(e) => handleQuantityChange(p._id, e.target.value, p)}
-                          className="w-16 text-center outline-none"
-                        />
-                        <button
-                          onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) + 1, p)}
-                          className="px-3 bg-gray-200 hover:bg-gray-300 h-full transition"
-                          disabled={(cartQuantities[p._id] || 0) >= (p.stockForRent || 0)}
-                        >+</button>
-                      </div>
-                      <span className="inline-block bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full">
-                        In Cart: {cart.find(item => item._id === p._id)?.quantity || 0}
-                      </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) - 1, p)}
+                        disabled={(cartQuantities[p._id] || 0) <= 0}
+                        className="px-3 bg-gray-200 hover:bg-gray-300"
+                      >-</button>
+                      <input
+                        type="number"
+                        min="0"
+                        max={p.stockForRent || 0}
+                        value={cartQuantities[p._id] || 0}
+                        onChange={(e) => handleQuantityChange(p._id, e.target.value, p)}
+                        className="w-16 text-center outline-none"
+                      />
+                      <button
+                        onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) + 1, p)}
+                        disabled={(cartQuantities[p._id] || 0) >= (p.stockForRent || 0)}
+                        className="px-3 bg-gray-200 hover:bg-gray-300"
+                      >+</button>
                     </div>
                   </td>
                 </tr>
@@ -233,84 +240,7 @@ const GuestProducts = () => {
             </tbody>
           </table>
         </div>
-
-        {/* Mobile Cards */}
-        <div className="md:hidden flex flex-col gap-4">
-          {paginatedProducts.map(p => (
-            <div
-              key={p._id}
-              className="bg-white shadow-md rounded-xl p-4 flex flex-col gap-3 border border-gray-200 hover:shadow-lg transition-shadow"
-            >
-              {allColumns.map((col, idx) => (
-                <div key={idx} className="flex justify-between text-sm text-gray-700">
-                  <span className="font-semibold">{col}:</span>
-                  <span className="text-gray-900 break-words">
-                    {col === "categories"
-                      ? p.categories?.map(c => c.name).join(", ")
-                      : p[col] ?? p.extraFields?.[col] ?? ""}
-                  </span>
-                </div>
-              ))}
-
-              {/* Quantity control */}
-              <div className="flex items-center gap-2 mt-2 justify-center">
-                <button
-                  onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) - 1, p)}
-                  className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-bold rounded-l-lg transition-colors"
-                  disabled={(cartQuantities[p._id] || 0) <= 0}
-                >
-                  −
-                </button>
-                <input
-                  type="number"
-                  min="0"
-                  max={p.stockForRent || 0}
-                  value={cartQuantities[p._id] || 0}
-                  onChange={(e) => handleQuantityChange(p._id, e.target.value, p)}
-                  className="w-16 text-center text-lg border-t border-b border-gray-300 outline-none"
-                />
-                <button
-                  onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) + 1, p)}
-                  className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-bold rounded-r-lg transition-colors"
-                  disabled={(cartQuantities[p._id] || 0) >= (p.stockForRent || 0)}
-                >
-                  +
-                </button>
-              </div>
-
-              {/* Current in-cart quantity */}
-              <div className="text-center mt-1">
-                <span className="inline-block bg-green-100 text-green-800 text-sm font-semibold px-3 py-1 rounded-full">
-                  In Cart: {cart.find(item => item._id === p._id)?.quantity || 0}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
       </div>
-
-      {/* Pagination */}
-      {filteredProducts.length > itemsPerPage && (
-        <div className="flex justify-between mt-4 items-center">
-          <button
-            className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition disabled:opacity-50"
-            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
-          >
-            Prev
-          </button>
-          <span className="text-sm text-gray-700">
-            Page {currentPage} of {Math.ceil(filteredProducts.length / itemsPerPage)}
-          </span>
-          <button
-            className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition disabled:opacity-50"
-            onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredProducts.length / itemsPerPage)))}
-            disabled={currentPage === Math.ceil(filteredProducts.length / itemsPerPage)}
-          >
-            Next
-          </button>
-        </div>
-      )}
     </div>
   );
 };

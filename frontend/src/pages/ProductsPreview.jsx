@@ -15,7 +15,7 @@ const ProductPreview = () => {
 
   useEffect(() => setCurrentImageIndex(0), [productId]);
 
-  // Fetch product
+  // Fetch product (dla zalogowanego lub niezalogowanego użytkownika)
   useEffect(() => {
     if (!productId) {
       setError("No product ID provided");
@@ -24,9 +24,14 @@ const ProductPreview = () => {
 
     const fetchProduct = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/products/privateId/${productId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const API_URL = `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}`;
+        const url = token
+          ? `${API_URL}/products/privateId/${productId}`
+          : `${API_URL}/products/publicId/${productId}`;
+
+        const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+        const res = await axios.get(url, config);
+
         if (res.data.success) setProduct(res.data.product);
         else setError("Product not found");
       } catch (err) {
@@ -80,6 +85,8 @@ const ProductPreview = () => {
 
   if (!product) return <div className="p-6 text-center">Loading product...</div>;
 
+  const API_URL = `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}`;
+
   return (
     <div className="max-w-4xl mx-auto p-6 flex flex-col gap-6 bg-white rounded-xl shadow-md">
       <button
@@ -96,7 +103,7 @@ const ProductPreview = () => {
         <div className="relative flex flex-col items-center">
           <div className="relative w-full max-w-lg">
             <img
-              src={`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/uploads/products/${product.images[currentImageIndex].filename}`}
+              src={`${API_URL}/uploads/products/${product.images[currentImageIndex].filename}`}
               alt={`${product.name} ${currentImageIndex + 1}`}
               className="w-full max-h-96 object-contain rounded-lg shadow-lg"
             />
@@ -117,14 +124,37 @@ const ProductPreview = () => {
               </>
             )}
           </div>
-          <p className="text-gray-500 mt-2">{currentImageIndex + 1} / {product.images.length}</p>
+          <p className="text-gray-500 mt-2">
+            {currentImageIndex + 1} / {product.images.length}
+          </p>
         </div>
       ) : (
         <p className="text-gray-400">No images</p>
       )}
 
+      {/* Attachments */}
+      {product.attachments?.length > 0 && (
+        <div>
+          <h3 className="font-semibold text-gray-700 mt-4 mb-2">Attachments:</h3>
+          <ul className="list-disc list-inside text-gray-600">
+            {product.attachments.map(att => (
+              <li key={att.uniqueKey}>
+                <a
+                  href={`${API_URL}/uploads/products/${att.filename}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 hover:underline"
+                >
+                  {att.originalName}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Product details */}
-      <div className="space-y-2 text-gray-700">
+      <div className="space-y-2 text-gray-700 mt-4">
         <p><strong>Description:</strong> {product.description}</p>
         <p><strong>Available:</strong> {product.stockForRent}</p>
         <p><strong>Categories:</strong> {categoryNames.join(", ") || "No categories"}</p>
@@ -143,7 +173,6 @@ const ProductPreview = () => {
           </div>
         )}
       </div>
-
 
       {/* Action buttons */}
       <div className="flex flex-col sm:flex-row sm:gap-4 mt-4">

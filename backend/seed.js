@@ -15,7 +15,7 @@ const register = async () => {
         console.log("Admin user created succesfully");
     }
     catch(error){
-        console.log(error);
+        console.warn(error);
     }
 }
 register();

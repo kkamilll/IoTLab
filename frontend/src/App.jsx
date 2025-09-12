@@ -21,6 +21,7 @@ import Orders from './pages/Orders';
 // Components
 import Users from './components/Users';
 import Logout from './components/Logout';
+// import ReturnedOrders from './components/ReturnedOrders';
 
 // Utils
 import ProtectedRoutes from './utils/ProtectedRoutes';
@@ -40,7 +41,7 @@ function App() {
         <Route path="/cart" element={<CartPage />} />
         <Route path="/guest-products/:menuCategory" element={<GuestProducts />} />
         <Route path="/mainguest" element={<MainGuest />} />
-
+        <Route path="/preview" element={<ProductPreview />} />
         {/* Admin Dashboard - Protected Routes */}
         <Route
           path="/admin-dashboard"
@@ -67,6 +68,7 @@ function App() {
               </ProtectedRoutes>
             }
           />
+          {/* <Route path="ReturnedOrders" element={<ReturnedOrders />} /> */}
         </Route>
       </Routes>
     </Router>

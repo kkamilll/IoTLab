@@ -17,7 +17,7 @@ const Login = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/auth/login`, {
+      const response = await axios.post(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/auth/login`, {
         email,
         password,
       });
@@ -45,7 +45,7 @@ const Login = () => {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-blue-900 to-blue-700 px-4">
       <h2 className="text-4xl font-extrabold mb-8 text-white drop-shadow-lg">
-        Inventory System
+        IoTLab
       </h2>
 
       <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-2xl">

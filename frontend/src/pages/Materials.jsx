@@ -22,29 +22,28 @@ const SortableItem = ({ mat, index, materials, setMaterials, axiosInstance, dele
 
   return (
     <div ref={setNodeRef} style={style} className="relative group overflow-hidden rounded-none shadow-lg p-2 flex flex-col">
-<div
-  {...listeners}
-  {...attributes}
-  className="absolute top-2 left-2 bg-gray-300 w-10 h-10 rounded-full cursor-grab flex items-center justify-center z-10 hover:bg-gray-400 transition"
->
-  ☰
-</div>
-
+      <div
+        {...listeners}
+        {...attributes}
+        className="absolute top-2 left-2 bg-gray-300 w-10 h-10 rounded-full cursor-grab flex items-center justify-center z-10 hover:bg-gray-400 transition"
+      >
+        ☰
+      </div>
       <button onClick={() => deleteMaterial(mat._id)} className="absolute top-2 right-2 bg-red-600 text-white w-6 h-6 rounded-full flex items-center justify-center z-10 opacity-0 group-hover:opacity-100 hover:bg-red-700 transition">✕</button>
       <div className="absolute top-2 left-10 bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold z-10">{index + 1}</div>
 
       {mat.path ? (
-       <img
-  src={`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/${mat.path}`}
+        <img
+          src={`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/${mat.path}`}
 
-  alt={mat.filename || "material"}
-  className="w-full h-48 object-contain cursor-pointer select-none mt-4"
-  style={{ borderRadius: 0 }}
-  onClick={() => setPreviewImage(`${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}/${mat.path}`)}
-  onError={handleImageError}
-  loading="lazy"
-  draggable={false}
-/>
+          alt={mat.filename || "material"}
+          className="w-full h-48 object-contain cursor-pointer select-none mt-4"
+          style={{ borderRadius: 0 }}
+          onClick={() => setPreviewImage(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/${mat.path}`)}
+          onError={handleImageError}
+          loading="lazy"
+          draggable={false}
+        />
 
       ) : (
         <div className="w-full h-48 flex items-center justify-center bg-gray-200 text-red-600 font-bold rounded-none mt-4">NO IMAGE</div>
@@ -85,7 +84,7 @@ const Materials = () => {
   const { token } = useAuth();
 
   const axiosInstance = axios.create({
-    baseURL: `${import.meta.env.VITE_API_IP}:${import.meta.env.VITE_API_PORT}`,
+    baseURL: `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}`,
     headers: { Authorization: `Bearer ${token}` },
   });
 
@@ -102,30 +101,30 @@ const Materials = () => {
   useEffect(() => { fetchMaterials(); }, [token]);
 
   const addMaterial = async () => {
-  if (!file) return alert("Select a file to add");
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("link", link);
+    if (!file) return alert("Select a file to add");
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("link", link);
 
-  try {
-    setLoading(true);
-    const res = await axiosInstance.post("/materials", formData, { headers: { "Content-Type": "multipart/form-data" } });
-    if (res.data.success) {
-      setMaterials(prev => [{ ...res.data.data }, ...prev]);
-      setFile(null);
-      setLink("");
+    try {
+      setLoading(true);
+      const res = await axiosInstance.post("/materials", formData, { headers: { "Content-Type": "multipart/form-data" } });
+      if (res.data.success) {
+        setMaterials(prev => [{ ...res.data.data }, ...prev]);
+        setFile(null);
+        setLink("");
 
-      // Reset file input to allow same file selection again
-      const fileInput = document.querySelector('input[type="file"]');
-      if (fileInput) fileInput.value = "";
+        // Reset file input to allow same file selection again
+        const fileInput = document.querySelector('input[type="file"]');
+        if (fileInput) fileInput.value = "";
+      }
+    } catch (error) {
+      console.error("Add material error:", error.response?.data || error.message);
+      alert("Error adding material");
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error("Add material error:", error.response?.data || error.message);
-    alert("Error adding material");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
 
   const deleteMaterial = async (id) => {
@@ -157,35 +156,65 @@ const Materials = () => {
         <h2 className="text-4xl font-extrabold text-blue-700 mb-10 text-center">📸 Your Materials</h2>
 
         {/* Upload */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-8">
-          <input
-            type="file" accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files[0]; if (!file) return;
-              const img = new Image(); img.src = URL.createObjectURL(file);
-              img.onload = () => {
-                const minWidth = 800, minHeight = 600;
-                if (img.width < minWidth || img.height < minHeight) { alert(`Image too small! Minimum: ${minWidth}x${minHeight}px`); setFile(null); }
-                else setFile(file);
-                URL.revokeObjectURL(img.src);
-              };
-            }}
-            className="flex-grow border border-gray-300 rounded-none px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-            disabled={loading}
-          />
+       <div className="flex flex-col sm:flex-row gap-4 mb-8">
+  {/* File Input */}
+  <div className="flex flex-col w-full sm:w-1/3">
+    <label htmlFor="image-upload" className="text-sm font-medium text-gray-700 mb-1">
+      Upload Image
+    </label>
+    <input
+      id="image-upload"
+      type="file"
+      accept="image/*"
+      onChange={(e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const img = new Image();
+        img.src = URL.createObjectURL(file);
+        img.onload = () => {
+          const minWidth = 800, minHeight = 600;
+          if (img.width < minWidth || img.height < minHeight) {
+            alert(`Image too small! Minimum: ${minWidth}x${minHeight}px`);
+            setFile(null);
+          } else {
+            setFile(file);
+          }
+          URL.revokeObjectURL(img.src);
+        };
+      }}
+      className="border border-gray-300 rounded-md px-4 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition disabled:opacity-50"
+      disabled={loading}
+    />
+  </div>
 
-          <input
-            type="url" placeholder="Enter link (e.g., https://example.com)" value={link}
-            onChange={(e) => setLink(e.target.value)}
-            className="flex-grow border border-gray-300 rounded-none px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-400 transition"
-            disabled={loading}
-          />
+  {/* Link Input */}
+  <div className="flex flex-col w-full sm:w-1/3">
+    <label htmlFor="material-link" className="text-sm font-medium text-gray-700 mb-1">
+      Material Link
+    </label>
+    <input
+      id="material-link"
+      type="url"
+      placeholder="e.g. https://example.com"
+      value={link}
+      onChange={(e) => setLink(e.target.value)}
+      className="border border-gray-300 rounded-md px-4 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 transition disabled:opacity-50"
+      disabled={loading}
+    />
+  </div>
 
-          <button onClick={addMaterial} disabled={loading}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-none shadow-lg transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
-            {loading ? "Adding..." : "Add Image"}
-          </button>
-        </div>
+  {/* Add Button */}
+  <div className="flex items-end w-full sm:w-auto">
+    <button
+      onClick={addMaterial}
+      disabled={loading}
+      className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md shadow-md transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      {loading ? "Adding..." : "Add Image"}
+    </button>
+  </div>
+</div>
+
 
         {/* Gallery */}
         {materials.length === 0 ? <div className="text-center text-gray-400 py-16 select-none italic">No materials — add images!</div> :
