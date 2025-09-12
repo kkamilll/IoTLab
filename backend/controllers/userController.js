@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 import { MongoServerError } from 'mongodb';
 import Product from '../models/Product.js';
 import { AppError, ValidationError, BadRequestError, DuplicateKeyError, ResourceNotFoundError, ServerError } from '../errors/CustomErrors.js';
-import { validateRequiredFields } from '../utils/validateRequiredFields.js';
+// import { validateRequiredFields } from '../utils/validateRequiredFields.js'
 
 // Get all users
 export const getUsers = async (req, res, next) => {
@@ -37,7 +37,7 @@ export const createUser = async (req, res, next) => {
     if (!req.body) return next(new BadRequestError("Request body is missing"));
     const { name, email, password, role, labRooms, isActive } = req.body;
     const newUserData = { name, email, password, role, labRooms, isActive };
-    validateRequiredFields(User, newUserData);
+    // validateRequiredFields(User, newUserData);
 
     const newUser = new User({ ...newUserData });
     await newUser.save();
@@ -48,6 +48,7 @@ export const createUser = async (req, res, next) => {
       const [field, value] = Object.entries(error.keyValue)[0];
       return next(new DuplicateKeyError({ field, value }));
     }
+    
     if (error.name === 'ValidationError') return next(error);
     return next(new ServerError({ message: error.message }));
   }

@@ -6,7 +6,7 @@ import { sendVerificationCode } from "../utils/sendVerificationCode.js";
 import mongoose from "mongoose";
 import { MongoServerError } from 'mongodb';
 import { AppError, ValidationError, BadRequestError, ServerError } from '../errors/CustomErrors.js'
-import { validateRequiredFields } from '../utils/validateRequiredFields.js'
+// import { validateRequiredFields } from '../utils/validateRequiredFields.js'
 
 function generateOtp() {
   return Math.floor(100000 + Math.random() * 900000).toString();

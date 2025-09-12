@@ -7,28 +7,23 @@ const Orders = () => {
   // const isAdmin = user?.role === "admin";
 
   const [orders, setOrders] = useState([]);
-  const [stockStatus, setStockStatus] = useState(null);
 
-  const [statuses, setStatuses] = useState([]);
+  const [orderStatuses, setOrderStatuses] = useState([]);
   const [statusFilter, setStatusFilter] = useState("");
   const [emailFilter, setEmailFilter] = useState("");
-  // const [editingItem, setEditingItem] = useState(null);
-  // const [newQuantity, setNewQuantity] = useState(1);
-  // const [editingDates, setEditingDates] = useState(null);
-
-  // const [editingDates, setEditingDates] = useState(null);
-  // const [newStartDate, setNewStartDate] = useState("");
-  // const [newEndDate, setNewEndDate] = useState("");
-  // const cardsPerPage = 4;
 
   const [expanded, setExpanded] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  const [editGroup, setEditGroup] = useState(null); // currently editing order
-  const [itemUpdatesData, setItemUpdatesData] = useState({});    // edited items keyed by item._id
-  const [openModal, setOpenModal] = useState(false);
+  const [editGroup, setEditGroup] = useState(null); // currently editing order's owner part
   const [currentItemId, setCurrentItemId] = useState(null);
+  const [itemsUpdateData, setItemsUpdateData] = useState({}); // edited items keyed by item._id
+  const [datesUpdateData, setDatesUpdateData] = useState({}); // edited dates
+
+  const [stockStatus, setStockStatus] = useState(null); // inDemand, requestsQuantity, available
+
+  const [openModal, setOpenModal] = useState(false);
 
 
   const fetchStatuses = async () => {
@@ -36,7 +31,7 @@ const Orders = () => {
       const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders/statuses`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.data.success) setStatuses(res.data.statuses);
+      if (res.data.success) setOrderStatuses(res.data.statuses);
     } catch (err) {
       console.error(err);
     }
@@ -95,52 +90,34 @@ const Orders = () => {
   useEffect(() => { fetchOrders(1, 20, emailFilter, statusFilter); }, [statusFilter, emailFilter]);
 
   useEffect(() => {
-    if (!editGroup || !itemUpdatesData) return;
+    if (!editGroup || !itemsUpdateData || Object.keys(itemsUpdateData).length === 0) return;
 
-    // When editOrder changes, refresh stock for all editable items
-    const editableItems = editGroup.items.filter(item =>
-      processableStatuses.includes(item.status)
-    );
-
-    editableItems.forEach(item => {
-      const currentItem = itemUpdatesData[item._id];
+    const fetchStockForItem = (item) => {
+      const currentItem = itemsUpdateData[item._id];
       if (!currentItem) return;
 
-      const { startDate, endDate } = currentItem.assigned || {};
-      if (startDate && endDate) {
-        fetchProductStockStatus(currentItem.product._id, startDate, endDate)
-          .then(data => {
-            setStockStatus(prev => ({
-              ...prev,
-              [currentItem.itemId]: data
-            }));
-          });
-      }
-    });
-  }, [editGroup]); // runs only when editOrder changes
+      const { assignedStartDate, assignedEndDate } = datesUpdateData || {};
+      if (!assignedStartDate || !assignedEndDate) return;
 
-  useEffect(() => {
-    if (!currentItemId || !itemUpdatesData[currentItemId]) return;
-
-    const currentItem = itemUpdatesData[currentItemId];
-    const { startDate, endDate } = currentItem.assigned || {};
-    if (startDate && endDate) {
-      fetchProductStockStatus(currentItem.product._id, startDate, endDate)
+      fetchProductStockStatus(currentItem.product._id, assignedStartDate, assignedEndDate)
         .then(data => {
           setStockStatus(prev => ({
             ...prev,
             [currentItem.itemId]: data
           }));
         });
-    }
-  }, [currentItemId, itemUpdatesData[currentItemId]?.assigned?.startDate, itemUpdatesData[currentItemId]?.assigned?.endDate]);
+    };
 
-  const prevPage = () => {
-    if (currentPage > 1) fetchOrders(currentPage - 1);
-  };
-  const nextPage = () => {
-    if (currentPage < totalPages) fetchOrders(currentPage + 1);
-  };
+    if (currentItemId && itemsUpdateData[currentItemId] && processableStatuses.includes(itemsUpdateData[currentItemId].status)) {
+      fetchStockForItem({ _id: currentItemId });
+      return;
+    }
+
+    editGroup.items
+      .filter(item => processableStatuses.includes(item.status))
+      .forEach(fetchStockForItem);
+
+  }, [editGroup, currentItemId, datesUpdateData?.assignedStartDate, datesUpdateData?.assignedEndDate]);
 
   const processableStatuses = ["pending", "approved", "prepared"];
   const rejectableStatuses = ["pending", "approved", "prepared"];
@@ -154,6 +131,13 @@ const Orders = () => {
   const canPrepareOrder = (order) => hasStatus(order.items, ["approved"]) && !hasStatus(order.items, ["pending"]);
   const canRentOrder = (order) => hasStatus(order.items, ["prepared"]) && !hasStatus(order.items, ["pending"]); // automatic + pdf
   const canReturnOrder = (order) => hasStatus(order.items, returnableStatuses) && !hasStatus(order.items, ["pending"]); // window
+
+  const prevPage = () => {
+    if (currentPage > 1) fetchOrders(currentPage - 1);
+  };
+  const nextPage = () => {
+    if (currentPage < totalPages) fetchOrders(currentPage + 1);
+  };
 
   const getStatusColor = (groupStatus) => {
     switch (groupStatus) {
@@ -174,11 +158,11 @@ const Orders = () => {
     }
   };
 
-  const getAllowedStatuses = (status) => {
+  const getAllowedStatusChanges = (status) => {
     if (status === "pending") return ["approved", "rejected"];
     if (status === "approved") return ["prepared", "rejected"];
     if (status === "prepared") return ["rented", "rejected"];
-    return []; // rented, returned, rejected -> no changes
+    return [];
   };
 
   const highestPriorityGroupStatus = useMemo(() => {
@@ -198,26 +182,24 @@ const Orders = () => {
     return processableStatuses[minIndex];
   }, [editGroup]);
 
-  // const editablePath = "assigned";
   const today = new Date().toISOString().split("T")[0];
 
-  const formatDateTimeLocal = (dateString) => {
-    if (!dateString) return "";
-    const date = new Date(dateString);
+  const formatDateTimeLocal = (dateInput) => {
+    if (!dateInput) return "";
+
+    const date = new Date(dateInput);
+    if (isNaN(date.getTime())) return "";
 
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
     const hours = String(date.getHours()).padStart(2, "0");
     const minutes = String(date.getMinutes()).padStart(2, "0");
-    return `${year}-${month}-${day}T${hours}:${minutes}`;;
+
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
-  // const canSetStatus = (order) => !order.isReturned && order.status === "DO_REALIZACJI";
-
-  // const canMarkReceived = (order) => !order.isReturned && order.status === "DO_ODBIORU";
-
-  const handleRejectOrder = async (group) => {
+  const handleUpdateOrderItems = async (group, statusFilter, newStatus) => {
     try {
       const orderId = group?.orderId;
       if (!orderId) {
@@ -226,152 +208,49 @@ const Orders = () => {
         return;
       }
 
-      const itemsToReject = group.items
-        .filter(item => rejectableStatuses.includes(item.status))
+      const itemsToUpdate = group.items
+        .filter(statusFilter)
         .map(item => ({
           itemId: item._id,
-          newStatus: "rejected"
+          newStatus
         }));
 
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      };
-      const res = await axios.put(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders/updateOrder/${orderId}`, itemsToReject, config);
+      if (!itemsToUpdate.length) return; // nothing to update
 
-      if (res.data.success) {
-        fetchOrders(1);
-      } else {
-        alert(res.data.message || "Operation failed");
-      }
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      const res = await axios.put(
+        `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders/updateOrder/${orderId}`,
+        itemsToUpdate,
+        config
+      );
+
+      if (res.data.success) fetchOrders(1);
+      else alert(res.data.message || "Operation failed");
+
     } catch (error) {
-      console.error(error)
+      console.error(error);
       alert(error?.response?.data?.message || error.message || "Unknown error");
     }
-  }
+  };
 
-  const handlePrepareOrder = async (group) => {
-    try {
-      const orderId = group?.orderId;
-      if (!orderId) {
-        console.error("Missing orderId for group:", group);
-        alert("Missing Order ID.");
-        return;
-      }
-
-      const itemsToPrepare = group.items
-        .filter(item => item.status === "approved")
-        .map(item => ({
-          itemId: item._id,
-          newStatus: "prepared"
-        }));
-
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      };
-      const res = await axios.put(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders/updateOrder/${orderId}`, itemsToPrepare, config);
-
-      if (res.data.success) {
-        fetchOrders(1);
-      } else {
-        alert(res.data.message || "Operation failed");
-      }
-    } catch (error) {
-      console.error(error)
-      alert(error?.response?.data?.message || error.message || "Unknown error");
-    }
-  }
-
-  const handleRentOrder = async (group) => {
-    try {
-      const orderId = group?.orderId;
-      if (!orderId) {
-        console.error("Missing orderId for group:", group);
-        alert("Missing Order ID.");
-        return;
-      }
-
-      const itemsToRent = group.items
-        .filter(item => item.status === "prepared")
-        .map(item => ({
-          itemId: item._id,
-          newStatus: "rented"
-        }));
-
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      };
-      const res = await axios.put(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders/updateOrder/${orderId}`, itemsToRent, config);
-
-      if (res.data.success) {
-        fetchOrders(1);
-      } else {
-        alert(res.data.message || "Operation failed");
-      }
-    } catch (error) {
-      console.error(error)
-      alert(error?.response?.data?.message || error.message || "Unknown error");
-    }
-  }
-
-  const handleReturnOrder = async (group) => {
-    try {
-      const orderId = group?.orderId;
-      if (!orderId) {
-        console.error("Missing orderId for group:", group);
-        alert("Missing Order ID.");
-        return;
-      }
-
-      const itemsToReturn = group.items
-        .filter(item => returnableStatuses.includes(item.status))
-        .map(item => ({
-          itemId: item._id,
-          newStatus: "returned"
-        }));
-
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      };
-      const res = await axios.put(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders/updateOrder/${orderId}`, itemsToReturn, config);
-
-      if (res.data.success) {
-        fetchOrders(1);
-      } else {
-        alert(res.data.message || "Operation failed");
-      }
-    } catch (error) {
-      console.error(error)
-      alert(error?.response?.data?.message || error.message || "Unknown error");
-    }
-  }
+  const handleRejectOrder = (group) => handleUpdateOrderItems(group, item => rejectableStatuses.includes(item.status), "rejected");
+  const handlePrepareOrder = (group) => handleUpdateOrderItems(group, item => item.status === "approved", "prepared");
+  const handleRentOrder = (group) => handleUpdateOrderItems(group, item => item.status === "prepared", "rented");
+  const handleReturnOrder = (group) => handleUpdateOrderItems(group, item => returnableStatuses.includes(item.status), "returned");
 
   const handleOpenModal = (group) => {
     setEditGroup(group); // store the owner group being edited
 
     // Initialize formData for this owner's items
-    setItemUpdatesData(
+    setItemsUpdateData(
       group.items.reduce((acc, item) => {
         acc[item._id] = {
           itemId: item._id,
           product: item.product,
-          requested: {
-            quantity: item?.requested?.quantity,
-            startDate: item?.requested?.startDate,
-            endDate: item?.requested?.endDate,
-          },
-          assigned: {
-            quantity: item?.assigned?.quantity ?? item?.requested?.quantity,
-            startDate: item?.assigned?.startDate ?? item?.requested?.startDate,
-            endDate: item?.assigned?.endDate ?? item?.requested?.endDate,
-          },
+
+          requestedQuantity: item?.requestedQuantity,
+          assignedQuantity: item?.assignedQuantity ?? item?.requestedQuantity,
+
           prevStatus: item.status,
           newStatus: item.status
         };
@@ -379,6 +258,13 @@ const Orders = () => {
       }, {})
     );
 
+    setDatesUpdateData({
+      requestedStartDate: group.dates.requestedStartDate,
+      requestedEndDate: group.dates.requestedEndDate,
+
+      assignedStartDate: group.dates.assignedStartDate || group.dates.requestedStartDate,
+      assignedEndDate: group.dates.assignedEndDate || group.dates.requestedEndDate,
+    });
     if (group.items.length > 0) setCurrentItemId(group.items[0]._id);
 
     setOpenModal(true);
@@ -387,46 +273,39 @@ const Orders = () => {
   const handleCloseModal = () => {
     setOpenModal(false);
     setEditGroup(null);
-    setItemUpdatesData({});
+    setItemsUpdateData({});
+    setDatesUpdateData({});
   }
 
 
   const handleEditChange = (itemId, e) => {
     const { name, value } = e.target;
 
-    setItemUpdatesData(prev => ({
+    setItemsUpdateData(prev => ({
       ...prev,
       [itemId]: {
         ...prev[itemId],
-        assigned: {
-          ...prev[itemId]?.assigned,
-          [name]: value
-        }
+        [name]: value
       }
     }));
   };
 
-  const handleEditChangeDate = (itemId, e) => {
+  const handleEditChangeDate = (e) => {
     const { name, value } = e.target;
     const date = new Date(value);
     const isoString = date.toISOString();
+    console.log(`Date change ${name}: field value ${value}, save as ${isoString}`)
 
-    setItemUpdatesData(prev => ({
+    setDatesUpdateData(prev => ({
       ...prev,
-      [itemId]: {
-        ...prev[itemId],
-        assigned: {
-          ...prev[itemId]?.assigned,
-          [name]: isoString
-        }
-      }
+      [name]: isoString
     }));
   };
 
   const handleStatusChange = (itemId, e) => {
     const { name, value } = e.target;
 
-    setItemUpdatesData(prev => ({
+    setItemsUpdateData(prev => ({
       ...prev,
       [itemId]: {
         ...prev[itemId],
@@ -446,10 +325,8 @@ const Orders = () => {
       }
 
       // validation
-      for (const item of Object.values(itemUpdatesData)) {
-        const quantity = item?.assigned?.quantity;
-        const startDate = item?.assigned?.startDate;
-        const endDate = item?.assigned?.endDate;
+      for (const item of Object.values(itemsUpdateData)) {
+        const quantity = item?.assignedQuantity;
 
         const prevStatus = item?.prevStatus;
         const newStatus = item?.newStatus;
@@ -457,7 +334,7 @@ const Orders = () => {
         const productName = item?.product?.name || "Unknown product";
         const productTag = item?.product?.tag || "Unknown tag";
 
-        const isProcessable = processableStatuses.includes(item.newStatus) ? true : false;
+        const isProcessable = processableStatuses.includes(item.newStatus);
 
         if (isProcessable) {
           if (!quantity || quantity < 1) {
@@ -465,18 +342,8 @@ const Orders = () => {
             return;
           }
 
-          if(quantity > stockStatus[currentItemId].available) {
+          if (quantity > stockStatus[item.itemId].available) {
             alert(`${productName} (${productTag}): Item quantity must be within available range`);
-            return;
-          }
-
-          if (!startDate || !endDate) {
-            alert(`${productName} (${productTag}): both start and end dates are required`);
-            return;
-          }
-
-          if (new Date(startDate) > new Date(endDate)) {
-            alert(`${productName} (${productTag}): Start date cannot be after end date`);
             return;
           }
 
@@ -484,7 +351,7 @@ const Orders = () => {
             continue;
           }
 
-          if (highestPriorityGroupStatus) {
+          if (highestPriorityGroupStatus === "pending") {
             if (newStatus === highestPriorityGroupStatus) {
               alert(`${productName} (${productTag}): Status has to be changed.`);
               return;
@@ -493,11 +360,30 @@ const Orders = () => {
         }
       }
 
-      const itemUpdates = Object.values(itemUpdatesData).map(item => ({
+      const startDate = datesUpdateData?.assignedStartDate;
+      const endDate = datesUpdateData?.assignedEndDate;
+
+      if (!startDate || !endDate) {
+        alert(`Order ${orderId} require: Both start and end dates are required`);
+        return;
+      }
+
+      if (new Date(startDate) > new Date(endDate)) {
+        alert(`Order ${orderId} require: Start date cannot be after end date`);
+        return;
+      }
+
+      const itemUpdates = Object.values(itemsUpdateData).map(item => ({
         itemId: item.itemId,
-        assigned: item.assigned,
+        assignedQuantity: item.assignedQuantity,
         newStatus: item.newStatus,
       }));
+
+      const dateUpdates = Object.fromEntries(Object.entries(datesUpdateData || {}).filter(([key]) => key === "assignedStartDate" || key === "assignedEndDate").map(([key, value]) => [key, new Date(value)]));
+
+
+      const payload = { itemUpdates, ...dateUpdates };
+      console.log(payload, itemUpdates, dateUpdates);
 
       const config = {
         headers: {
@@ -505,7 +391,7 @@ const Orders = () => {
         },
       };
 
-      const res = await axios.put(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders/updateOrder/${orderId}`, itemUpdates, config);
+      const res = await axios.put(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders/updateOrder/${orderId}`, payload, config);
 
       if (res.data.success) {
         fetchOrders(1);
@@ -540,7 +426,7 @@ const Orders = () => {
             className="border border-gray-300 rounded px-3 py-2 w-full md:w-1/4"
           >
             <option value="">Wszystkie statusy</option>
-            {statuses.map((status, idx) => (
+            {orderStatuses.map((status, idx) => (
               <option key={idx} value={status}>
                 {status}
               </option>
@@ -557,14 +443,25 @@ const Orders = () => {
                 .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
                 .map((order) => {
                   const itemsByOwner = order.items.reduce((acc, item) => {
-                    const ownerId = item?.responsibleOwner?._id || "unknown";
+                    const ownerId = item?.responsibleOwner?._id?.toString() || "unknown";
+                    const ownerData = order.ownersData.find(ownerData => ownerData.owner?.toString() === ownerId);
 
                     if (!acc[ownerId]) {
                       acc[ownerId] = {
                         orderId: order._id,
+                        items: [],
+
                         owner: item?.responsibleOwner || { name: "Nieznany właściciel" },
-                        status: order.ownerStatuses.find(ownerStatus => ownerStatus.owner === ownerId)?.status,
-                        items: []
+                        ownerData: ownerData,
+                        status: ownerData?.status,
+
+                        dates: {
+                          requestedStartDate: order.requestedStartDate,
+                          requestedEndDate: order.requestedEndDate,
+
+                          assignedStartDate: ownerData?.assignedStartDate,
+                          assignedEndDate: ownerData?.assignedEndDate,
+                        },
                       };
                     }
 
@@ -624,17 +521,17 @@ const Orders = () => {
                                           {/* Quantity */}
                                           <div>
                                             <p>
-                                              Requested: {item?.requested?.quantity ?? "-"}
+                                              Requested: {item?.requestedQuantity ?? "-"}
                                             </p>
-                                            {item?.assigned?.quantity && item.status !== "pending" && (
+                                            {item?.assignedQuantity && item.status !== "pending" && (
                                               <p>
-                                                Assigned: {item?.assigned?.quantity}
+                                                Assigned: {item?.assignedQuantity}
                                               </p>
                                             )}
                                           </div>
 
                                           {/* Dates */}
-                                          <div>
+                                          {/* <div>
                                             <p className="font-medium text-gray-700">Period:</p>
                                             <p>
                                               Requested: 📅 Start: {new Date(item.requested?.startDate).toLocaleDateString("pl-PL")} - End: {new Date(item?.requested?.endDate).toLocaleDateString("pl-PL")}
@@ -644,7 +541,7 @@ const Orders = () => {
                                                 Assigned: 📅 Start: {new Date(item?.assigned?.startDate).toLocaleDateString("pl-PL")} - End: {new Date(item?.assigned?.endDate).toLocaleDateString("pl-PL")}
                                               </p>
                                             )}
-                                          </div>
+                                          </div> */}
 
                                           {/* Status */}
                                           <div>
@@ -742,28 +639,28 @@ const Orders = () => {
             </div>
 
             {/* Current item form */}
-            {currentItemId && itemUpdatesData[currentItemId] && (
+            {currentItemId && itemsUpdateData[currentItemId] && (
               <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
                 {(() => {
-                  const itemData = itemUpdatesData[currentItemId];
-                  const requested = itemData?.requested;
-                  const assigned = itemData?.assigned;
+                  const itemData = itemsUpdateData[currentItemId];
+                  // const requested = itemData?.requested;
+                  // const assigned = itemData?.assigned;
 
                   return (
                     <>
                       <h2>{itemData.product?.tag}</h2>
                       <div className="p-2 bg-gray-100 rounded mb-2">
                         <p className="font-medium text-gray-700">Requested Info</p>
-                        <p>Quantity: {requested.quantity}</p>
-                        <p>Start: {new Date(requested.startDate).toLocaleString("pl-PL")}</p>
-                        <p>End: {new Date(requested.endDate).toLocaleString("pl-PL")}</p>
+                        <p>Quantity: {itemData.requestedQuantity}</p>
+                        <p>Start: {new Date(datesUpdateData.requestedStartDate).toLocaleString("pl-PL")}</p>
+                        <p>End: {new Date(datesUpdateData.requestedEndDate).toLocaleString("pl-PL")}</p>
                       </div>
                       {/* Quantity */}
                       <div>
                         <label className="font-medium text-gray-700">Quantity</label>
                         <input
-                          type="number" name="quantity"
-                          value={assigned?.quantity || 0}
+                          type="number" name="assignedQuantity"
+                          value={itemData.assignedQuantity || 0}
                           min={1}
                           onChange={(e) => handleEditChange(currentItemId, e)}
                           className="border p-2 rounded w-full disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
@@ -775,10 +672,10 @@ const Orders = () => {
                       <div>
                         <label className="font-medium text-gray-700">Start Date</label>
                         <input
-                          type="datetime-local" name="startDate"
-                          value={formatDateTimeLocal(assigned?.startDate)}
+                          type="datetime-local" name="assignedStartDate"
+                          value={formatDateTimeLocal(datesUpdateData.assignedStartDate)}
                           min={today}
-                          onChange={(e) => handleEditChangeDate(currentItemId, e)}
+                          onChange={(e) => handleEditChangeDate(e)}
                           className="border p-2 rounded w-full disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
                           disabled={!processableStatuses.includes(itemData.prevStatus) || (itemData.prevStatus !== highestPriorityGroupStatus) || itemData.newStatus === "rejected"}
                         />
@@ -787,10 +684,10 @@ const Orders = () => {
                       <div>
                         <label className="font-medium text-gray-700">End Date</label>
                         <input
-                          type="datetime-local" name="endDate"
-                          value={formatDateTimeLocal(assigned?.endDate)}
-                          min={assigned?.startDate || today}
-                          onChange={(e) => handleEditChangeDate(currentItemId, e)}
+                          type="datetime-local" name="assignedEndDate"
+                          value={formatDateTimeLocal(datesUpdateData.assignedEndDate)}
+                          min={datesUpdateData.assignedStartDate || today}
+                          onChange={(e) => handleEditChangeDate(e)}
                           className="border p-2 rounded w-full disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
                           disabled={!processableStatuses.includes(itemData.prevStatus) || (itemData.prevStatus !== highestPriorityGroupStatus) || itemData.newStatus === "rejected"}
                         />
@@ -815,7 +712,7 @@ const Orders = () => {
                           disabled={!processableStatuses.includes(itemData.prevStatus) || (itemData.prevStatus !== highestPriorityGroupStatus)}
                         >
                           <option key={itemData.prevStatus} disabled={true}>{itemData.prevStatus}</option>
-                          {getAllowedStatuses(itemData.prevStatus).map((status) => (
+                          {getAllowedStatusChanges(itemData.prevStatus).map((status) => (
                             <option key={status} value={status}>
                               {status}
                             </option>

@@ -3,7 +3,7 @@ import Category from "../models/Category.js";
 import mongoose from "mongoose";
 import { MongoServerError } from 'mongodb';
 import { AppError, ValidationError, BadRequestError, DuplicateKeyError, ServerError } from '../errors/CustomErrors.js'
-import { validateRequiredFields } from '../utils/validateRequiredFields.js'
+// import { validateRequiredFields } from '../utils/validateRequiredFields.js'
 
 async function createParentMap() {
     const categories = await Category.find().select("_id parent");
@@ -48,7 +48,7 @@ export const createCategory = async (req, res, next) => {
         }
         const { name, description, parent, isVisible } = req.body;
         const updateData = { name, description, parent, isVisible };
-        validateRequiredFields(Category, updateData);
+        // validateRequiredFields(Category, updateData);
 
         if (parent) {
             if (!mongoose.Types.ObjectId.isValid(parent)) {

@@ -529,9 +529,9 @@ const Products = () => {
       } else {
         alert(res.data.message || "Operation failed");
       }
-    } catch (err) {
-      console.error(err);
-      alert("Server error");
+    } catch (error) {
+      console.error(error)
+      alert(`${error.response.data.message}`);
     }
   };
 
@@ -934,7 +934,7 @@ const Products = () => {
       </div>
       {openModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded shadow-lg w-full max-w-lg relative">
+          <div className="bg-white p-6 rounded shadow-lg w-full max-w-lg relative max-h-[80vh] overflow-y-auto">
             {/* <h2 className="text-2xl font-bold mb-4">{editProduct ? "Edit Product" : "Add Product"}</h2> */}
             <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
               <div className="flex items-center justify-between mb-4">

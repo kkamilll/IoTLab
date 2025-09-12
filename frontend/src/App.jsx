@@ -17,9 +17,9 @@ import GuestProducts from './pages/GuestProducts';
 import Materials from './pages/Materials';
 import MainGuest from './pages/MainGuest';
 import Orders from './pages/Orders';
+import Users from './pages/Users';
 
 // Components
-import Users from './components/Users';
 import Logout from './components/Logout';
 // import ReturnedOrders from './components/ReturnedOrders';
 

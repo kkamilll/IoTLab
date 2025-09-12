@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
+
+import ReCAPTCHA from "react-google-recaptcha";
 
 const CartPage = () => {
   const [cart, setCart] = useState([]);
@@ -11,14 +13,22 @@ const CartPage = () => {
     email: "",
     index: "",
   });
+  const [orderDates, setOrderDates] = useState({
+    startDate: "",
+    endDate: ""
+  });
+
 
   // CAPTCHA states
-  const [captchaText, setCaptchaText] = useState("");
-  const [captchaInput, setCaptchaInput] = useState("");
+  // const [captchaText, setCaptchaText] = useState("");
+  // const [captchaInput, setCaptchaInput] = useState("");
 
   const navigate = useNavigate();
   const { token } = useAuth();
   const today = new Date().toISOString().split("T")[0];
+
+  const [loading, setLoading] = useState(false);
+  const recaptchaRef = useRef(null);
 
   // Load cart from localStorage
   useEffect(() => {
@@ -29,6 +39,7 @@ const CartPage = () => {
       endDate: item.endDate || "",
     }));
     setCart(enriched);
+    if(recaptchaRef.current) recaptchaRef.current.reset();
   }, []);
 
   const updateCart = (newCart) => {
@@ -68,20 +79,18 @@ const CartPage = () => {
   };
 
   const updateAvailability = async () => {
+    if (!orderDates.startDate || !orderDates.endDate) return;
+
     const newAvailability = {};
     await Promise.all(
       cart.map(async (item) => {
-        if (!item.startDate || !item.endDate) {
-          newAvailability[item._id] = undefined;
-          return;
-        }
         try {
           const res = await axios.post(
             `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/products/available`,
             {
               productId: item._id,
-              startDate: item.startDate,
-              endDate: item.endDate,
+              startDate: orderDates.startDate,
+              endDate: orderDates.endDate,
             }
           );
           newAvailability[item._id] = res.data.available;
@@ -95,68 +104,77 @@ const CartPage = () => {
 
   useEffect(() => {
     updateAvailability();
-  }, [cart]);
+    if(recaptchaRef.current) recaptchaRef.current.reset();
+  }, [cart, orderDates]);
 
   // CAPTCHA
-  const generateCaptcha = () => {
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    let text = "";
-    for (let i = 0; i < 5; i++) {
-      text += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    setCaptchaText(text);
-  };
+  // const generateCaptcha = () => {
+  //   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789"; // ABCDEFGHJKLMNPQRSTUVWXYZ23456789
+  //   let text = "";
+  //   for (let i = 0; i < 5; i++) {
+  //     text += chars.charAt(Math.floor(Math.random() * chars.length));
+  //   }
+  //   setCaptchaText(text);
+  // };
 
-  const drawCaptcha = () => {
-    const canvas = document.getElementById("captchaCanvas");
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#f2f2f2";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.font = "30px Arial";
-    ctx.fillStyle = "#000";
-    ctx.fillText(captchaText, 10, 35);
+  // const drawCaptcha = () => {
+  //   const canvas = document.getElementById("captchaCanvas");
+  //   if (!canvas) return;
+  //   const ctx = canvas.getContext("2d");
+  //   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  //   ctx.fillStyle = "#f2f2f2";
+  //   ctx.fillRect(0, 0, canvas.width, canvas.height);
+  //   ctx.font = "30px Arial";
+  //   ctx.fillStyle = "#000";
+  //   ctx.fillText(captchaText, 10, 35);
 
-    for (let i = 0; i < 5; i++) {
-      ctx.strokeStyle = `rgb(${Math.random()*255},${Math.random()*255},${Math.random()*255})`;
-      ctx.beginPath();
-      ctx.moveTo(Math.random()*150, Math.random()*50);
-      ctx.lineTo(Math.random()*150, Math.random()*50);
-      ctx.stroke();
-    }
-  };
+  //   for (let i = 0; i < 5; i++) {
+  //     ctx.strokeStyle = `rgb(${Math.random()*255},${Math.random()*255},${Math.random()*255})`;
+  //     ctx.beginPath();
+  //     ctx.moveTo(Math.random()*150, Math.random()*50);
+  //     ctx.lineTo(Math.random()*150, Math.random()*50);
+  //     ctx.stroke();
+  //   }
+  // };
 
-  useEffect(() => generateCaptcha(), []);
-  useEffect(() => drawCaptcha(), [captchaText]);
+  // useEffect(() => generateCaptcha(), []);
+  // useEffect(() => drawCaptcha(), [captchaText]);
 
   const handleCheckout = async () => {
-    if (!cart.length) return alert("Your cart is empty!");
-    if (!orderCustomer.email || !orderCustomer.name || !orderCustomer.index)
-      return alert("Please fill in your contact information!");
-    if (captchaInput.toUpperCase() !== captchaText)
-      return alert("Invalid CAPTCHA!");
-
-    const items = cart.map((item) => {
-      if (!item.startDate || !item.endDate)
-        throw new Error(`Missing dates for product: ${item.name}`);
-      if (item.startDate > item.endDate)
-        throw new Error(`Invalid date range for product: ${item.name}`);
-      return {
-        product: item._id,
-        requested: {
-          quantity: item.quantity,
-          startDate: item.startDate,
-          endDate: item.endDate,
-        },
-      };
-    });
+    setLoading(true);
+    console.log("token: ", recaptchaRef.current.getValue(), typeof recaptchaRef.current.getValue());
 
     try {
+      if (!cart.length) return alert("Your cart is empty!");
+      if (!orderCustomer.email || !orderCustomer.name || !orderCustomer.index)
+        return alert("Please fill in your contact information!");
+      // if (captchaInput.toUpperCase() !== captchaText)
+      //   return alert("Invalid CAPTCHA!");
+
+      const token = recaptchaRef.current.getValue();
+
+      if (!token) {
+        alert("Please verify that you are human!");
+        return;
+      }
+
+      if (!orderDates.startDate || !orderDates.endDate)
+        return alert("Please select start and end dates for the order!");
+      if (orderDates.startDate > orderDates.endDate)
+        return alert("Start date cannot be after end date!");
+
+      const items = cart.map((item) => ({
+        product: item._id,
+        requestedQuantity: item.quantity,
+      }));
+
+
       const res = await axios.post(
         `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders/create`,
-        { customer: orderCustomer, items }
+        { token, customer: orderCustomer, items, requestedStartDate: orderDates.startDate, requestedEndDate: orderDates.endDate }
       );
+
+      recaptchaRef.current.reset();
 
       const orderId = res.data.order._id;
       await axios.post(
@@ -167,11 +185,13 @@ const CartPage = () => {
       alert("Order submitted and emailed!");
       setCart([]);
       localStorage.removeItem("cart");
-      setCaptchaInput("");
-      generateCaptcha();
-    } catch (err) {
-      console.error(err);
-      alert(err.response?.data?.message || "Order error");
+      // setCaptchaInput("");
+      // generateCaptcha();
+    } catch (error) {
+      console.error(error);
+      alert(error.response?.data?.message || error.message || "Order error");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -200,8 +220,8 @@ const CartPage = () => {
   const groupedCart = groupByOwner(cart);
 
   const isQuantityDisabled = (item) => {
-    const cartItem = cart.find((c) => c._id === item._id);
-    return !(cartItem?.startDate && cartItem?.endDate);
+    // const cartItem = cart.find((c) => c._id === item._id);
+    return !(orderDates?.startDate && orderDates?.endDate);
   };
 
   return (
@@ -244,8 +264,8 @@ const CartPage = () => {
                       {availability[item._id] === undefined
                         ? "Select dates"
                         : availability[item._id] === 0
-                        ? "Product unavailable"
-                        : `Available: ${availability[item._id]}`}
+                          ? "Product unavailable"
+                          : `Available: ${availability[item._id]}`}
                     </p>
                   </div>
                 </div>
@@ -279,7 +299,7 @@ const CartPage = () => {
                     </button>
                   </div>
 
-                  <div className="flex flex-col md:flex-row gap-2">
+                  {/* <div className="flex flex-col md:flex-row gap-2">
                     <input
                       type="datetime-local"
                       value={item.startDate}
@@ -298,7 +318,7 @@ const CartPage = () => {
                       min={item.startDate || today}
                       className="border p-2 rounded"
                     />
-                  </div>
+                  </div> */}
                 </div>
               </div>
             ))}
@@ -310,56 +330,67 @@ const CartPage = () => {
       <div className="mt-6 p-4 border rounded bg-gray-50">
         <h3 className="text-2xl font-semibold mb-4">Customer Information</h3>
         <div className="flex flex-col gap-4">
-          <input
-            type="text"
-            name="name"
-            placeholder="Full Name"
-            value={orderCustomer.name}
-            onChange={handleCustomerChange}
-            className="border p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-          />
-          <input
-            type="email"
-            name="email"
-            placeholder="Your Email"
-            value={orderCustomer.email}
-            onChange={handleCustomerChange}
-            className="border p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-          />
-          <input
-            type="tel"
-            name="index"
-            placeholder="Index"
-            value={orderCustomer.index}
-            onChange={handleCustomerChange}
-            className="border p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-          />
-
-          {/* CAPTCHA */}
-          <div className="mt-4 p-2 border rounded bg-gray-100">
-            <h3 className="text-lg font-semibold mb-2">Verify CAPTCHA</h3>
-            <canvas
-              id="captchaCanvas"
-              width="150"
-              height="50"
-              className="border mb-2"
+          <div className="flex flex-col md:flex-row gap-4">
+            <input
+              type="text"
+              name="name"
+              placeholder="Full Name"
+              value={orderCustomer.name}
+              onChange={handleCustomerChange}
+              className="flex-1 border p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
-            <div className="flex gap-2">
+            <input
+              type="email"
+              name="email"
+              placeholder="Your Email"
+              value={orderCustomer.email}
+              onChange={handleCustomerChange}
+              className="flex-1 border p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+          </div>
+
+          <div className="flex flex-col md:flex-row gap-4">
+            <input
+              type="tel"
+              name="index"
+              placeholder="Index"
+              value={orderCustomer.index}
+              onChange={handleCustomerChange}
+              className="flex-1 border p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+          </div>
+
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1 flex flex-col">
+              <label htmlFor="startDate" className="mb-1 font-medium">Start Date</label>
               <input
-                type="text"
-                placeholder="Enter CAPTCHA"
-                value={captchaInput}
-                onChange={(e) => setCaptchaInput(e.target.value)}
-                className="border p-2 rounded flex-1"
+                id="startDate"
+                type="datetime-local"
+                value={orderDates.startDate}
+                onChange={(e) => setOrderDates((prev) => ({ ...prev, startDate: e.target.value }))}
+                min={today}
+                className="border p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
               />
-              <button
-                onClick={generateCaptcha}
-                className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-              >
-                Refresh
-              </button>
+            </div>
+
+            <div className="flex-1 flex flex-col">
+              <label htmlFor="endDate" className="mb-1 font-medium">End Date</label>
+              <input
+                id="endDate"
+                type="datetime-local"
+                value={orderDates.endDate}
+                onChange={(e) => setOrderDates((prev) => ({ ...prev, endDate: e.target.value }))}
+                min={orderDates.startDate || today}
+                className="border p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
             </div>
           </div>
+
+          {/* CAPTCHA */}
+          <ReCAPTCHA
+            ref={recaptchaRef}
+            sitekey={import.meta.env.VITE_RECAPTCHA_PUBLIC_KEY}
+          />
 
           <button
             onClick={handleCheckout}

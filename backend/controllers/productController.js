@@ -3,7 +3,7 @@ import Product from "../models/Product.js";
 import mongoose from "mongoose";
 import { MongoServerError } from 'mongodb';
 import { AppError, ValidationError, BadRequestError, DuplicateKeyError, PermissionError, ResourceNotFoundError, ConflictError, ServerError } from '../errors/CustomErrors.js'
-import { validateRequiredFields } from '../utils/validateRequiredFields.js'
+// import { validateRequiredFields } from '../utils/validateRequiredFields.js'
 
 import Order from "../models/Order.js";
 
@@ -22,100 +22,115 @@ const mapUploadedFiles = (filesArray = [], additionalData = []) => {
 }
 
 const initProduct = (req) => {
-  try{
-  const { name, description, tag } = req.body;
-  const stockTotal = req.body.stockTotal !== undefined ? Number(req.body.stockTotal) : undefined;
-  const stockForRent = req.body.stockForRent !== undefined ? Number(req.body.stockForRent) : undefined;
-  const categories = req.body.categories ? JSON.parse(req.body.categories) : undefined;
-  const extraFields = req.body.extraFields ? JSON.parse(req.body.extraFields) : undefined;
+  try {
+    const { name, description, tag } = req.body;
+    const stockTotal = req.body.stockTotal !== undefined ? Number(req.body.stockTotal) : undefined;
+    const stockForRent = req.body.stockForRent !== undefined ? Number(req.body.stockForRent) : undefined;
+    const categories = req.body.categories ? JSON.parse(req.body.categories) : undefined;
+    const extraFields = req.body.extraFields ? JSON.parse(req.body.extraFields) : undefined;
 
-  const newImageFiles = req.files?.images;
-  const newImagesData = req.body.newImagesData ? JSON.parse(req.body.newImagesData) : [];
-  const newImages = mapUploadedFiles(newImageFiles, newImagesData);
+    const newImageFiles = req.files?.images;
+    const newImagesData = req.body.newImagesData ? JSON.parse(req.body.newImagesData) : [];
+    const newImages = mapUploadedFiles(newImageFiles, newImagesData);
 
-  const oldImages = req.body.oldImages ? JSON.parse(req.body.oldImages) : [];
-  const images = [...oldImages, ...newImages];
+    const oldImages = req.body.oldImages ? JSON.parse(req.body.oldImages) : [];
+    const images = [...oldImages, ...newImages];
 
-  const newAttachmentsFiles = req.files?.attachments;
-  const newAttachmentsData = req.body.newAttachmentsData ? JSON.parse(req.body.newAttachmentsData) : [];
-  const newAttachments = mapUploadedFiles(newAttachmentsFiles, newAttachmentsData);
+    const newAttachmentsFiles = req.files?.attachments;
+    const newAttachmentsData = req.body.newAttachmentsData ? JSON.parse(req.body.newAttachmentsData) : [];
+    const newAttachments = mapUploadedFiles(newAttachmentsFiles, newAttachmentsData);
 
-  const oldAttachments = req.body.oldAttachments ? JSON.parse(req.body.oldAttachments) : [];
-  const attachments = [...oldAttachments, ...newAttachments];
-  
-  const labRoom = req.body.labRoom;
-  const owner = req.body.owner;
-  const isSerialized = JSON.parse(req.body.isSerialized);
-  const isRentable = JSON.parse(req.body.isRentable);
-  const isVisible = JSON.parse(req.body.isVisible);
-  const isShared = JSON.parse(req.body.isShared);
-  const version = Number(req.body.version);
+    const oldAttachments = req.body.oldAttachments ? JSON.parse(req.body.oldAttachments) : [];
+    const attachments = [...oldAttachments, ...newAttachments];
 
-  const setData = {};
-  const unsetData = {};
+    const labRoom = req.body.labRoom;
+    const owner = req.body.owner;
+    const isSerialized = JSON.parse(req.body.isSerialized);
+    const isRentable = JSON.parse(req.body.isRentable);
+    const isVisible = JSON.parse(req.body.isVisible);
+    const isShared = JSON.parse(req.body.isShared);
+    const version = Number(req.body.version);
 
-  if (name?.trim()) setData.name = name; else unsetData.name = "";
-  if (description?.trim()) setData.description = description; else unsetData.description = "";
+    const setData = {};
+    const unsetData = {};
 
-  // Validate stockTotal value
-  if (stockTotal !== undefined) {
-    if (isNaN(stockTotal) || stockTotal < 0) throw new BadRequestError('stockTotal must be a non-negative number');
-    setData.stockTotal = stockTotal;
-  } else unsetData.stockTotal = "";
+    if (name?.trim()) setData.name = name; else unsetData.name = "";
+    if (description?.trim()) setData.description = description; else unsetData.description = "";
 
-  // Validate stockForRent value
-  if (stockForRent !== undefined) {
-    if (isNaN(stockForRent) || stockForRent < 0) throw new BadRequestError('stockForRent must be a non-negative number');
-    if (stockForRent > stockTotal) throw new BadRequestError('stockForRent cannot be bigger than stockTotal');
-    setData.stockForRent = stockForRent;
-  } else unsetData.stockForRent = "";
+    // Validate stockTotal value
+    if (stockTotal !== undefined) {
+      if (isNaN(stockTotal) || stockTotal < 0) throw new BadRequestError('stockTotal must be a non-negative number');
+      setData.stockTotal = stockTotal;
+    } else unsetData.stockTotal = "";
 
-  if (tag) setData.tag = tag; else unsetData.tag = "";
-  if (Array.isArray(categories)) {
-    categories.forEach((category) => {
-      if (!mongoose.Types.ObjectId.isValid(category)) {
-        throw new ValidationError("Invalid category ID");
+    // Validate stockForRent value
+    if (stockForRent !== undefined) {
+      if (isNaN(stockForRent) || stockForRent < 0) throw new BadRequestError('stockForRent must be a non-negative number');
+      if (stockForRent > stockTotal) throw new BadRequestError('stockForRent cannot be bigger than stockTotal');
+      setData.stockForRent = stockForRent;
+    } else unsetData.stockForRent = "";
+
+    if (tag) setData.tag = tag; else unsetData.tag = "";
+    if (Array.isArray(categories)) {
+      categories.forEach((category) => {
+        if (!mongoose.Types.ObjectId.isValid(category)) {
+          throw new ValidationError("Invalid category ID");
+        }
+      })
+      setData.categories = categories;
+    } else unsetData.categories = "";
+
+    if (extraFields !== undefined && typeof extraFields === 'object') setData.extraFields = extraFields; else unsetData.extraFields = "";
+    if (images && images.length) setData.images = images; else unsetData.images = "";
+    if (attachments && attachments.length) setData.attachments = attachments; else unsetData.attachments = "";
+    if (labRoom?.trim() && labRoom !== "undefined" && labRoom !== "null") setData.labRoom = labRoom; else unsetData.labRoom = "";
+    if (owner?.trim() && owner !== "undefined" && owner !== "null") {
+      if (!mongoose.Types.ObjectId.isValid(owner)) {
+        throw new ValidationError("Invalid user ID");
       }
-    })
-    setData.categories = categories;
-  } else unsetData.categories = "";
+      setData.owner = new mongoose.Types.ObjectId(String(owner));
+    } else unsetData.owner = "";
 
-  if (extraFields !== undefined && typeof extraFields === 'object') setData.extraFields = extraFields; else unsetData.extraFields = "";
-  if (images && images.length) setData.images = images; else unsetData.images = "";
-  if (attachments && attachments.length) setData.attachments = attachments; else unsetData.attachments = "";
-  if (labRoom?.trim() && labRoom !== "undefined" && labRoom !== "null") setData.labRoom = labRoom; else unsetData.labRoom = "";
-  if (owner?.trim() && owner !== "undefined" && owner !== "null") {
-    if (!mongoose.Types.ObjectId.isValid(owner)) {
-      throw new ValidationError("Invalid user ID");
-    }
-    setData.owner = owner;
-  } else unsetData.owner = "";
+    if (typeof isSerialized === 'boolean') setData.isSerialized = isSerialized; else unsetData.isSerialized = "";
+    if (typeof isRentable === 'boolean') setData.isRentable = isRentable; else unsetData.isRentable = "";
+    if (typeof isVisible === 'boolean') setData.isVisible = isVisible; else unsetData.isVisible = "";
+    if (typeof isShared === 'boolean') setData.isShared = isShared; else unsetData.isShared = "";
+    if (!isNaN(version)) setData.__v = version; else throw new ValidationError("Missing version number");
 
-  if (typeof isSerialized === 'boolean') setData.isSerialized = isSerialized; else unsetData.isSerialized = "";
-  if (typeof isRentable === 'boolean') setData.isRentable = isRentable; else unsetData.isRentable = "";
-  if (typeof isVisible === 'boolean') setData.isVisible = isVisible; else unsetData.isVisible = "";
-  if (typeof isShared === 'boolean') setData.isShared = isShared; else unsetData.isShared = "";
-  if (!isNaN(version)) setData.__v = version; else throw new ValidationError("Missing version number");
-  
-  return { $set: setData, $unset: unsetData };
+    return { $set: setData, $unset: unsetData };
   } catch (error) {
     if (error instanceof AppError) throw error;
     throw new ServerError(error);
   }
 }
 
-const getOrderQuantity = async ({ productId, field, end, start, status }) => {
+
+const getOrderQuantity = async ({ productId, ownerId, field, end, start, status }) => {
   // Find orders for product, that overlap given date range
-  const overlappingOrders = await Order.find({
-    items: {
-      $elemMatch: {
-        product: productId,
-        [`${field}.startDate`]: { $lte: end },
-        [`${field}.endDate`]: { $gte: start },
-        status,
+  const baseItemFilter = {
+    items: { $elemMatch: { product: productId, responsibleOwner: ownerId, status } }
+  };
+
+  let filter = {
+    ...baseItemFilter,
+
+    ...(field === "requested" && {
+      requestedStartDate: { $lte: end },
+      requestedEndDate: { $gte: start }
+    }),
+
+    ...(field === "assigned" && {
+      ownersData: {
+        $elemMatch: {
+          owner: ownerId,
+          assignedStartDate: { $lte: end },
+          assignedEndDate: { $gte: start }
+        }
       }
-    }
-  });
+    })
+  };
+
+  const overlappingOrders = await Order.find(filter);
 
   let orderQuantity = 0;
   let requestsQuantity = 0;
@@ -123,7 +138,11 @@ const getOrderQuantity = async ({ productId, field, end, start, status }) => {
   overlappingOrders.forEach(order => {
     order.items?.forEach(item => {
       if (item.product.toString() === productId) {
-        orderQuantity += Number(item[field].quantity);
+        if (field === "requested") {
+          orderQuantity += Number(item.requestedQuantity || 0);
+        } else if (field === "assigned") {
+          orderQuantity += Number(item.assignedQuantity || 0);
+        }
         requestsQuantity += 1;
       }
     });
@@ -232,7 +251,7 @@ export const createProduct = async (req, res, next) => {
     // if (!updateData.owner) updateData.owner = req.user._id;
 
     // Validate required fields
-    validateRequiredFields(Product, createData);
+    // validateRequiredFields(Product, createData);
 
     // create new product
     const newProduct = new Product(createData);
@@ -258,6 +277,9 @@ export const createProduct = async (req, res, next) => {
 };
 
 export const updateProduct = async (req, res, next) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     // Ensure request body exists
     if (!req.body) {
@@ -281,9 +303,9 @@ export const updateProduct = async (req, res, next) => {
       return next(new BadRequestError('No valid fields to update'));
     }
 
-    let filter = { _id: productId, isDeleted: false };
+    let filterProducts = { _id: productId, isDeleted: false };
     if (role !== "admin") {
-      filter = { _id: productId, isDeleted: false, owner: user }
+      filterProducts = { _id: productId, isDeleted: false, owner: user }
     }
 
     // const updatedProduct = await Product.findOneAndUpdate(filter, updateData, { new: true, runValidators: true }).select('-__v -isDeleted').populate("categories", "name").lean();
@@ -293,8 +315,24 @@ export const updateProduct = async (req, res, next) => {
 
     // return res.status(200).json({ success: true, product: updatedProduct });
 
-    const product = await Product.findOne(filter);
+    const product = await Product.findOne(filterProducts).session(session);
     if (!product) return next(new ResourceNotFoundError("Missing permission or Product"));
+
+    // check owner
+    const originalOwner = product.owner?.toString();
+    const newOwner = updateData.$set.owner?.toString();
+
+    const blockingStatuses = ["approved", "prepared", "rented"];
+
+    if (originalOwner != newOwner) {
+      const filterOrders = {};
+      filterOrders.items = { $elemMatch: { product: productId, status: { $in: blockingStatuses } } };
+      const blockingOrder = await Order.findOne(filterOrders).select("_id").lean().session(session);
+
+      if (blockingOrder) {
+        return next(new ConflictError("Cannot modify ownership while there are active orders"));
+      }
+    }
 
     // Apply updates
     if (updateData.$set) {
@@ -304,10 +342,33 @@ export const updateProduct = async (req, res, next) => {
       Object.keys(updateData.$unset).forEach(key => product.set(key, undefined));
     }
 
-    validateRequiredFields(Product, product);
-    const updatedProduct = await product.save(); // optimistic concurrency enforced
+    // validateRequiredFields(Product, product);
+    const updatedProduct = await product.save({ session }); // optimistic concurrency enforced
+
+    // update orders
+    if (originalOwner != newOwner) {
+      const filterOrders = {}
+      filterOrders.items = { $elemMatch: { product: product._id, status: "pending" } };
+      const pendingOrders = await Order.find(filterOrders).session(session);
+      for (const pendingOrder of pendingOrders) {
+        pendingOrder.items.forEach(item => {
+          if (item.responsibleOwner?.toString() === originalOwner && item.product?.toString() === productId) {
+            item.responsibleOwner = updateData.$set.owner;
+          }
+        });
+        pendingOrder._updatedProducts = [product];
+        await pendingOrder.save({ session });
+      }
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
     return res.status(200).json({ success: true, product: updatedProduct });
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+
     if (error.name === "VersionError") {
       return next(new ConflictError("Product was modified by someone else"));
     }
@@ -390,11 +451,11 @@ export const getProductAvailability = async (req, res, next) => {
       return res.status(404).json({ success: false, message: "Produkt nie znaleziony" });
     }
 
+    const ownerId = product.owner?._id ? product.owner._id?.toString() : product.owner?.toString();
     const start = new Date(startDate);
     const end = new Date(endDate);
 
-    const { orderQuantity } = await getOrderQuantity({ productId, field: "assigned", end, start, status: "approved" });
-    // let reservedQuantity = await getOrderQuantity({ productId, field: "requested", end, start, status: "pending" });
+    const { orderQuantity } = await getOrderQuantity({ productId, ownerId, field: "assigned", end, start, status: "approved" });
 
     // Available stock is stockForRent minus reservedQuantity
     const available = Math.max(0, Number(product.stockForRent) - orderQuantity);
@@ -418,17 +479,18 @@ export const getProductStockStatus = async (req, res, next) => {
       return res.status(404).json({ success: false, message: "Produkt nie znaleziony" });
     }
 
+    const ownerId = product.owner?._id ? product.owner._id?.toString() : product.owner?.toString();
     const start = new Date(startDate);
     const end = new Date(endDate);
 
-    const { orderQuantity, requestsQuantity } = await getOrderQuantity({ productId, field: "requested", start, end, status: "pending" });
-    const { orderQuantity: confirmedQuantity } = await getOrderQuantity({ productId, field: "assigned", start, end, status: "approved" });
+    const { orderQuantity, requestsQuantity } = await getOrderQuantity({ productId, ownerId, field: "requested", start, end, status: "pending" });
+    const { orderQuantity: confirmedQuantity } = await getOrderQuantity({ productId, ownerId, field: "assigned", start, end, status: "approved" });
 
     const available = Math.max(0, Number(product.stockForRent) - (Number(product.stockRentedOut) || 0) - confirmedQuantity);
 
     return res.json({ success: true, inDemand: orderQuantity, requestsQuantity, available });
   } catch (err) {
-    console.error("Błąd w /products/requested:", err);
+    console.error("Błąd w getProductStockStatus:", err);
     return res.status(500).json({ success: false, message: "Błąd serwera" });
   }
 };

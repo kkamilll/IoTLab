@@ -10,7 +10,7 @@ export class AppError extends Error {
 }
 
 export class ValidationError extends AppError {
-  constructor({ message, errors } = {}) {
+  constructor( message = 'Validation failed', errors = null) {
     super(message || 'Validation failed', 422, LOG_LEVELS.WARN);
     if (errors) this.errors = errors;
   }

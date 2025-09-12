@@ -3,13 +3,13 @@ import ReactDOM from "react-dom";
 import axios from "axios";
 
 const Users = () => {
-  const [formData, setFormData] = useState({ 
-    name: "", 
-    email: "", 
-    password: "", 
-    role: "", 
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    role: "",
     labRooms: [],
-    isActive: true 
+    isActive: true
   });
   const [newLabRoom, setNewLabRoom] = useState("");
   const [users, setUsers] = useState([]);
@@ -90,14 +90,14 @@ const Users = () => {
         }
 
         const res = await axios.post(
-  `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/users/create`,
-  formData,
-  {
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem("pos-token")}`
-    }
-  }
-);
+          `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/users/create`,
+          formData,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("pos-token")}`
+            }
+          }
+        );
 
 
         if (res.data.success) {
@@ -122,8 +122,8 @@ const Users = () => {
         if (dataToSend.email === "admin@gmail.com") dataToSend.isActive = true;
 
         const res = await axios.put(
-  `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/users/${editingUserId}`,
-  dataToSend, {
+          `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/users/${editingUserId}`,
+          dataToSend, {
           headers: { Authorization: `Bearer ${localStorage.getItem("pos-token")}` }
         });
 
@@ -296,7 +296,7 @@ const Users = () => {
         <h1 className="text-4xl font-extrabold text-blue-700 text-center">👥 User Management</h1>
 
         <div className="flex flex-col md:flex-row gap-4">
-          <input type="text" placeholder="Search users..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="flex-1 p-3 border border-gray-300 rounded-xl"/>
+          <input type="text" placeholder="Search users..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="flex-1 p-3 border border-gray-300 rounded-xl" />
           <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)} className="p-3 border border-gray-300 rounded-xl">
             <option value="">All Roles</option>
             <option value="admin">Admin</option>

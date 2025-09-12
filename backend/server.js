@@ -37,12 +37,25 @@ const allowedOrigins = [
   'http://iotlab.cs.put.poznan.pl'
 ];
 
+// Cross-Origin Resource Sharing
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   credentials: true
 }));
+
+// Content-Security-Policy
+// app.use((req, res, next) => {
+//   res.setHeader(
+//     "Content-Security-Policy",
+//     "default-src 'self'; " +
+//     "script-src 'self' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/; " +
+//     "frame-src https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/; " +
+//     "style-src 'self' 'unsafe-inline';"
+//   );
+//   next();
+// });
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

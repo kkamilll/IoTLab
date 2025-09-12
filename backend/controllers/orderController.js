@@ -4,7 +4,7 @@ import Order from "../models/Order.js";
 import mongoose from "mongoose";
 import { MongoServerError } from 'mongodb';
 import { AppError, ValidationError, BadRequestError, DuplicateKeyError, ResourceNotFoundError, ConflictError, ServerError } from '../errors/CustomErrors.js'
-import { validateRequiredFields } from '../utils/validateRequiredFields.js'
+// import { validateRequiredFields } from '../utils/validateRequiredFields.js'
 
 export const productOwnerMap = async (order) => {
   const productIdSet = new Set();
@@ -15,12 +15,12 @@ export const productOwnerMap = async (order) => {
       throw new ValidationError("Invalid product ID");
     }
 
-    productIdSet.add(item.product);
+    productIdSet.add(item.product?.toString());
   }
   if (!productIdSet.size) throw new ValidationError("Order cannot be empty");
 
   const productIdArray = [...productIdSet];
-  const products = await Product.find({ _id: { $in: productIdArray }, isRentable: true, isDeleted: false }).select("_id owner");
+  const products = await Product.find({ _id: { $in: productIdArray }, isDeleted: false }).select("_id owner");
   
   const productOwnerMap = {};
   for (const product of products) {
@@ -34,65 +34,54 @@ export const productOwnerMap = async (order) => {
     // }
 
     const ownerId = product.owner?._id ? product.owner._id.toString() : product.owner?.toString();
-    productOwnerMap[product._id.toString()] = ownerId;
+    productOwnerMap[product._id?.toString()] = ownerId;
   }
 
   return productOwnerMap;
 }
 
-const groupOrders = async (order) => {
-  const productOwnerMap = await productOwnerMap(order);
+// const groupOrders = async (order) => {
+//   const productOwnerMap = await productOwnerMap(order);
 
-  const groupedOrders = {};
-  for (const item of order.items) {
-    const owner = productOwnerMap[item.product];
-    if (!owner) throw new ConflictError("Order contains products with missing owners");
+//   const groupedOrders = {};
+//   for (const item of order.items) {
+//     const owner = productOwnerMap[item.product];
+//     if (!owner) throw new ConflictError("Order contains products with missing owners");
 
-    if (!groupedOrders[owner]) {
-      groupedOrders[owner] = {
-        customer: order.customer,
-        items: []
-      };
-    }
+//     if (!groupedOrders[owner]) {
+//       groupedOrders[owner] = {
+//         customer: order.customer,
+//         items: []
+//       };
+//     }
 
-    groupedOrders[owner].items.push(item);
-  }
+//     groupedOrders[owner].items.push(item);
+//   }
+//   const newGroupedOrders = Object.values(groupedOrders);
 
-  const newGroupedOrders = Object.values(groupedOrders);
+//   for (const newGroupedOrder of newGroupedOrders) {
+//     for (const item of newGroupedOrder.items) {
+//       const product = await Product.findById(item.product);
+//       if (!product) {
+//         return res.status(404).json({ message: `Produkt ${item.product} nie istnieje` });
+//       }
 
-  // Validate each item against stock and date range
-  for (const newGroupedOrder of newGroupedOrders) {
-    for (const item of newGroupedOrder.items) {
-      const product = await Product.findById(item.product);
-      if (!product) {
-        // return res.status(404).json({ message: `Produkt ${item.product} nie istnieje` });
-      }
+//       if (item.requested.quantity < 1) {
+//         return res.status(400).json({ message: `Niepoprawna ilość dla ${product.name}` });
+//       }
 
-      if (item.requested.quantity < 1) {
-        // return res.status(400).json({ message: `Niepoprawna ilość dla ${product.name}` });
-      }
+//       if (new Date(item.requested.startDate) > new Date(item.requested.endDate)) {
+//         return res.status(400).json({ message: `Niepoprawne daty dla ${product.name}` });
+//       }
+//     }
+//   }
 
-      if (new Date(item.requested.startDate) > new Date(item.requested.endDate)) {
-        // return res.status(400).json({ message: `Niepoprawne daty dla ${product.name}` });
-      }
-    }
-  }
-
-  // newGroupedOrders.forEach(async (newGroupedOrder) => {
-  //   const order = new Order({
-  //     customer: newGroupedOrder.customer,
-  //     items: newGroupedOrder.items
-  //   });
-  //   await order.save();
-  //   orders.push(order);
-  // })
-
-  return newGroupedOrders;
-}
+//   return newGroupedOrders;
+// }
 
 export const getOrderStatuses = (req, res, next) => {
   try {
-    res.json({ success: true, statuses: Order.schema.path("ownerStatuses.status").enumValues });
+    res.json({ success: true, statuses: Order.schema.path("ownersData.status").enumValues });
   } catch {
     return next(new ServerError({ message: `Error fetching orders: ${error.message}` }));
   }
@@ -117,12 +106,12 @@ export const getOrders = async (req, res, next) => {
     const filter = {};
     if (role === "admin") {
       if (status) {
-        filter.ownerStatuses = { $elemMatch: { status } };
+        filter.ownersData = { $elemMatch: { status } };
       }
     } else {
       const elem = { owner: new mongoose.Types.ObjectId(String(userId)) };
       if (status) elem.status = status;
-      filter.ownerStatuses = { $elemMatch: elem };
+      filter.ownersData = { $elemMatch: elem };
     }
 
     if (email) {
@@ -150,8 +139,8 @@ export const getOrders = async (req, res, next) => {
         items: order.items.filter(
           item => normalizeId(item.responsibleOwner) === userId
         ),
-        ownerStatuses: order.ownerStatuses.filter(
-          ownerStatus => normalizeId(ownerStatus.owner) === userId
+        ownersData: order.ownersData.filter(
+          ownersData => normalizeId(ownersData.owner) === userId
         )
       };
     });
@@ -164,137 +153,101 @@ export const getOrders = async (req, res, next) => {
   }
 };
 
-
-// export const getReturnedOrders = async (req, res, next) => {
-//   try {
-//     // Pobieramy tylko zamówienia, które mają flagę "returned: true"
-//     const orders = await Order.find({ isReturned: true })
-//       .populate("product", "name description stockTotal")
-//       .populate("user", "name email");
-
-//     // if (orders.length === 0) {
-//     //   return next(new ResourceNotFoundError("Orders"));
-//     // }
-
-//     return res.status(200).json({ success: true, orders });
-//   } catch (error) {
-//     // console.error("Error fetching returned orders:", error);
-//     return next(new ServerError({ message: `Error fetching returned orders: ${error.message}` }));
-//   }
-// };
-
-// export const createOrder = async (req, res, next) => {
-//   try {
-//     if (!req.body) {
-//         return next(new BadRequestError("Request body is missing"));
-//     }
-
-//     const userId = req.user._id;
-//     if (!mongoose.Types.ObjectId.isValid(userId)) {
-//       return next(new ValidationError("Invalid user ID"));
-//     }
-
-//     const { productId, quantity } = req.body;
-//     if (!mongoose.Types.ObjectId.isValid(productId)) {
-//       return next(new ValidationError("Invalid product ID"));
-//     }
-
-//     const newOrder = { user: userId, product: productId, quantity };
-//     validateRequiredFields(Order, newOrder);
-
-//     if (quantity < 1) return next(new ValidationError("Quantity must be at least 1"));
-
-//     const updatedProduct  = await Product.findOneAndUpdate({ _id: productId, stockTotal: { $gte: quantity }, isDeleted: false }, { $inc: { stockTotal: -quantity }}, { new: true, runValidators: true });
-//     if (!updatedProduct) {
-//       const productExists = await Product.exists({ _id: productId, isDeleted: false });
-//       if (!productExists) return next(new ResourceNotFoundError('Product'));
-//       return next(new BadRequestError('quantity exceeds stock'));
-//     }
-
-//     const order = new Order({
-//       user: userId,
-//       product: productId,
-//       quantity
-//     });
-
-//     await order.save();
-
-//     return res.status(201).json({ success: true, message: "Order added successfully", order });
-//   } catch (error) {
-//     if (error instanceof MongoServerError && error.code === 11000) {
-//       const [field, value] = Object.entries(error.keyValue)[0];
-//       return next(new DuplicateKeyError({ field, value }));
-//     }
-
-//     if (error.name === 'ValidationError') {
-//       return next(error);
-//     }
-
-//     return next(new ServerError({ message: error.message }));
-//   }
-// };
-
 export const createOrder = async (req, res, next) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     if (!req.body) return next(new BadRequestError("Request body is missing"));
 
-    const { customer, items } = req.body;
+    const { token, customer, items, requestedStartDate, requestedEndDate } = req.body || null;
+    
+    const reCaptchaResponse = await fetch(
+      `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${token}`,
+      { method: "POST" }
+    );
+    const reCaptchaData = await reCaptchaResponse.json();
+    if (!reCaptchaData.success) {
+      return next(new BadRequestError("Recaptcha has to be solved"));
+    }
+
+    if (!customer) throw new ValidationError("Customer information is required");
+    if (!customer.name?.trim()) {
+      throw new ValidationError("Customer name is required");
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!customer.email || !emailRegex.test(customer.email)) {
+      throw new BadRequestError("Invalid email address");
+    }
+    
+    const indexRegex = /^\d{6}$/;
+    if (!customer.index || !indexRegex.test(customer.index)) {
+      throw new BadRequestError("Index must be only 6 digits");
+    }
 
     // Fetch all products in one query
     const productIds = items.map(i => i.product);
-    const products = await Product.find({ _id: { $in: productIds } });
+    const products = await Product.find({ _id: { $in: productIds } }).lean().session(session);
     const productMap = {};
     products.forEach(p => productMap[p._id.toString()] = p);
 
     // Enrich items
     const enrichedItems = items.map(item => {
       const product = productMap[item.product];
-      if (!product) throw new Error(`Produkt ${item.product} nie istnieje`);
-      if (item.requested.quantity < 1) throw new Error(`Niepoprawna ilość dla ${product.name}`);
-      if (new Date(item.requested.startDate) > new Date(item.requested.endDate))
-        throw new Error(`Niepoprawne daty dla ${product.name}`);
+      if (!product) throw new ValidationError(`Produkt ${item.product} nie istnieje`);
+      if (item.requestedQuantity < 1) throw new BadRequestError(`Niepoprawna ilość dla ${product.name}`);
       
-
       return {
         ...item,
         responsibleOwner: product.owner,
         status: "pending",
-        isReturned: false
+        // isReturned: false
       };
     });
 
-    const order = await Order.create({
+    if (new Date(requestedStartDate) > new Date(requestedEndDate))
+        throw new Error(`Start date cannot be after end date`);
+
+    const order = new Order({
       customer,
       items: enrichedItems,
+      requestedStartDate,
+      requestedEndDate,
       status: "pending",
     });
+    await order.save({ session });
 
-    res.status(201).json({ success: true, message: "Zamówienie utworzone", order });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: "Server Error" });
+    await session.commitTransaction();
+    session.endSession();
+
+    res.status(201).json({ success: true, message: "Order created", order });
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+
+    console.warn(error);
+    if (error instanceof AppError) throw error;
+
+    return next(new ServerError({ message: error.message }));
   }
 };
-
-export const quickUpdateOrder = async (req, res, next) => {
-  try {
-
-    return res.status(200).json({ success: true, });
-  } catch (error) {
-    console.error(err);
-    res.status(500).json({ message: "Server Error" });
-  }
-}
 
 export const updateOrder = async (req, res, next) => {
   const session = await mongoose.startSession();
   session.startTransaction();
-
+  
   try {
+    if (!req.body) {
+      return next(new BadRequestError("Request body is missing"));
+    }
+    
     const { orderId } = req.params;
-    let itemUpdates = req.body;
+    let { itemUpdates } = req.body;
+    const { assignedStartDate, assignedEndDate } = req.body;
+    
     const processableStatuses = ["pending", "approved", "prepared"];
-
+    
     // normalize to array
     if (!Array.isArray(itemUpdates)) {
       itemUpdates = [itemUpdates];
@@ -303,6 +256,18 @@ export const updateOrder = async (req, res, next) => {
     const order = await Order.findById(orderId).session(session);
     if (!order) throw new ResourceNotFoundError("Order");
 
+    if(assignedStartDate && assignedEndDate) {
+      const newAssignedStartDate = new Date(assignedStartDate);
+      const newAssignedEndDate = new Date(assignedEndDate);
+      
+      if (new Date(newAssignedStartDate) > new Date(newAssignedEndDate)) {
+        throw new ValidationError(`Invalid date range`);
+      }
+
+      order._newAssignedStartDate = newAssignedStartDate;
+      order._newAssignedEndDate = newAssignedEndDate;
+    }
+
     const currentItemsMap = {};
     for (const item of order.items) {
       currentItemsMap[item._id.toString()] = item;
@@ -310,45 +275,36 @@ export const updateOrder = async (req, res, next) => {
 
     const productStockChanges = new Map();
 
-    for (const update of itemUpdates) {
-      const item = currentItemsMap[update.itemId];
+    for (const itemUpdate of itemUpdates) {
+      const item = currentItemsMap[itemUpdate.itemId];
       if (!item) {
-        console.warn(`Skipping update for non-existing item ${update.itemId}`);
+        console.warn(`Skipping update for non-existing item ${itemUpdate.itemId}`);
         continue;
       }
 
       const prevStatus = item.status;
-      if (prevStatus === update.newStatus) continue; // nothing to do
+      if (prevStatus === itemUpdate.newStatus) continue; // nothing to do
 
-      // validate assigned if provided
-      if (update.assigned && processableStatuses.includes(update.newStatus)) {
-        if (update.assigned.quantity <= 0) {
-          throw new ValidationError(`Quantity must be > 0`);
+      // validate assignedQuantity if provided
+      if (processableStatuses.includes(itemUpdate.newStatus)) {
+        if (itemUpdate.assignedQuantity <= 0) {
+          throw new ValidationError(`Quantity must be greater than 0`);
         }
-        if (
-          new Date(update.assigned.startDate) > new Date(update.assigned.endDate)
-        ) {
-          throw new ValidationError(`Invalid date range`);
-        }
-        item.assigned = update.assigned;
+        item.assignedQuantity = itemUpdate.assignedQuantity;
       }
 
-      item.status = update.newStatus;
+      item.status = itemUpdate.newStatus;
 
       const deltaKey = item.product.toString();
-      const delta = productStockChanges.get(deltaKey) || 0;
+      // const delta = productStockChanges.get(deltaKey) || 0;
 
-      if (update.newStatus === "rented") {
-        productStockChanges.set(
-          deltaKey,
-          delta + (item.assigned?.quantity || 0)
-        );
+      if (itemUpdate.newStatus === "rented") {
+        const currentDelta = productStockChanges.get(deltaKey) ?? 0;
+        productStockChanges.set(deltaKey, currentDelta + (item.assignedQuantity ?? 0));
       }
       if (prevStatus === "rented") {
-        productStockChanges.set(
-          deltaKey,
-          delta - (item.assigned?.quantity || 0)
-        );
+        const currentDelta = productStockChanges.get(deltaKey) ?? 0;
+        productStockChanges.set(deltaKey, currentDelta - (item.assignedQuantity ?? 0));
       }
     }
 
@@ -379,7 +335,7 @@ export const updateOrder = async (req, res, next) => {
     await session.commitTransaction();
     session.endSession();
 
-    res.json({ success: true, order });
+    res.status(200).json({ success: true, order });
   } catch (err) {
     await session.abortTransaction();
     session.endSession();
