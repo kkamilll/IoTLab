@@ -124,7 +124,7 @@ const Orders = () => {
       .filter(item => processableStatuses.includes(item.status))
       .forEach(fetchStockForItem);
 
-  }, [editGroup, currentItemId, datesUpdateData?.assignedStartDate, datesUpdateData?.assignedEndDate]);
+  }, [editGroup, datesUpdateData?.assignedStartDate, datesUpdateData?.assignedEndDate]);
 
   const processableStatuses = ["pending", "approved", "prepared"];
   const rejectableStatuses = ["pending", "approved", "prepared"];
@@ -389,9 +389,7 @@ const Orders = () => {
 
       const dateUpdates = Object.fromEntries(Object.entries(datesUpdateData || {}).filter(([key]) => key === "assignedStartDate" || key === "assignedEndDate").map(([key, value]) => [key, new Date(value)]));
 
-
       const payload = { itemUpdates, ...dateUpdates };
-      console.log(payload, itemUpdates, dateUpdates);
 
       const config = {
         headers: {

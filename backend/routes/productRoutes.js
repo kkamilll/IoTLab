@@ -10,7 +10,7 @@ router.post("/stockStatus", authMiddleware, getProductStockStatus);
 
 router.get("/public", getProductsPublic);
 router.get("/private", authMiddleware, getProductsPrivate);
-router.get("/publicId/:productId", authMiddleware, getProductByIdPublic);
+router.get("/publicId/:productId", getProductByIdPublic);
 router.get("/privateId/:productId", authMiddleware, getProductByIdPrivate);
 router.post("/create", authMiddleware, filesUploadProduct.fields([{ name: "images", maxCount: 5 }, { name: "attachments", maxCount: 3 }]), createProduct);
 router.put("/:productId", authMiddleware, filesUploadProduct.fields([{ name: "images", maxCount: 5 }, { name: "attachments", maxCount: 3 }]), updateProduct);

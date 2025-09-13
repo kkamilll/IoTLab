@@ -5,8 +5,8 @@ import { useAuth } from "../context/AuthContext";
 const Sidebar = () => {
   const menuItems = [
     {name:"Home Page", path: "/", isParent:true},
-    {name:"Dashboard", path: "/admin-dashboard", isParent:true},
-    {name:"Products", path: "/admin-dashboard/products", isParent:false},
+    {name:"Statistics", path: "/admin-dashboard", isParent:true},
+    {name:"Objects", path: "/admin-dashboard/products", isParent:false},
     {name:"Categories", path: "/admin-dashboard/categories", isParent:false},
     {name:"Orders", path: "/admin-dashboard/orders", isParent:false},
     // {name:"Orders History", path: "/admin-dashboard/ReturnedOrders", isParent:false},

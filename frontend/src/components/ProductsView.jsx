@@ -17,7 +17,7 @@ const ProductView = () => {
                 setCategories(res.data.categories);
             }
         } catch (err) {
-            console.error("Błąd pobierania kategorii:", err);
+            console.error("Error fetching categories:", err);
         }
     };
 

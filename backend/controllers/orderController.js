@@ -245,7 +245,6 @@ export const updateOrder = async (req, res, next) => {
     const { orderId } = req.params;
     let { itemUpdates } = req.body;
     const { assignedStartDate, assignedEndDate } = req.body;
-    console.log(req.body, itemUpdates);
     
     const processableStatuses = ["pending", "approved", "prepared"];
     

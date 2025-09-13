@@ -14,25 +14,30 @@ const Dashboard = () => {
   const fetchOrders = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await axios.get(
+        `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       if (res.data.success) setOrders(res.data.orders);
     } catch (err) {
-      console.error("Błąd pobierania zamówień:", err);
+      console.error("Error fetching orders:", err);
     } finally {
       setLoading(false);
     }
   }, [token]);
 
-  useEffect(() => { fetchOrders(); }, [fetchOrders]);
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
 
-  if (loading) return <p className="text-center text-gray-500">Ładowanie danych...</p>;
+  if (loading) return <p className="text-center text-gray-500">Loading data...</p>;
 
-  // --- Produkty ---
+  // --- Products statistics ---
   const productStats = orders.reduce((acc, order) => {
     order.items.forEach(item => {
-      const name = item.product?.name || "Usunięty produkt";
+      const name = item.product?.name || "Deleted Product";
       acc[name] = (acc[name] || 0) + (item.requested?.quantity || 1);
     });
     return acc;
@@ -40,52 +45,52 @@ const Dashboard = () => {
   const barData = Object.entries(productStats).map(([name, qty]) => ({ name, qty }));
   const topProducts = [...barData].sort((a, b) => b.qty - a.qty).slice(0, 5);
 
-  // --- Zwroty ---
+  // --- Returns ---
   const returnedCount = orders.filter(o => o.isReturned).length;
   const pieData = [
-    { name: "Zwrócone", value: returnedCount },
-    { name: "Nie zwrócone", value: orders.length - returnedCount },
+    { name: "Returned", value: returnedCount },
+    { name: "Not Returned", value: orders.length - returnedCount },
   ].filter(d => d.value > 0);
   const COLORS = ["#0088FE", "#FF8042"];
 
-  // --- Statusy zamówień ---
+  // --- Order statuses ---
   const statusStats = orders.reduce((acc, order) => {
-    const status = order.isReturned ? "ZWROCONO" : order.status || "OCZEKUJĄCE";
+    const status = order.isReturned ? "RETURNED" : order.status || "PENDING";
     acc[status] = (acc[status] || 0) + 1;
     return acc;
   }, {});
   const statusData = Object.entries(statusStats).map(([status, count]) => ({ status, count }));
 
-  // --- Trend zamówień w czasie ---
+  // --- Orders over time ---
   const ordersByDate = {};
   orders.forEach(order => {
-    const date = new Date(order.createdAt).toLocaleDateString("pl-PL");
+    const date = new Date(order.createdAt).toLocaleDateString("en-US");
     ordersByDate[date] = (ordersByDate[date] || 0) + 1;
   });
   const lineData = Object.entries(ordersByDate)
     .sort((a, b) => new Date(a[0]) - new Date(b[0]))
     .map(([date, count]) => ({ date, count }));
 
-  // --- Produkty wg kategorii ---
+  // --- Products by category ---
   const categoryStats = {};
   orders.forEach(order => {
     order.items.forEach(item => {
-      const category = item.product?.category?.name || "Brak kategorii";
+      const category = item.product?.category?.name || "No Category";
       categoryStats[category] = (categoryStats[category] || 0) + (item.requested?.quantity || 1);
     });
   });
   const categoryData = Object.entries(categoryStats).map(([category, qty]) => ({ category, qty }));
 
-  // --- Średnia ilość produktów na zamówienie ---
+  // --- Average products per order ---
   const avgProductsData = orders.map(order => ({
     id: order._id,
     avgQty: order.items.reduce((sum, i) => sum + (i.requested?.quantity || 1), 0) / order.items.length
   }));
 
-  // --- Top klienci ---
+  // --- Top clients ---
   const clientStats = {};
   orders.forEach(order => {
-    const email = order.customer?.email || "Brak e-maila";
+    const email = order.customer?.email || "No Email";
     clientStats[email] = (clientStats[email] || 0) + 1;
   });
   const topClients = Object.entries(clientStats)
@@ -95,10 +100,10 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <h1 className="text-4xl font-bold text-center mb-8">Dashboard Zamówień</h1>
+      <h1 className="text-4xl font-bold text-center mb-8">Orders Dashboard</h1>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
-        <ChartCard title="Ilość zamówionych produktów">
+        <ChartCard title="Number of Ordered Products">
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={barData}>
               <XAxis dataKey="name" />
@@ -109,7 +114,7 @@ const Dashboard = () => {
           </ResponsiveContainer>
         </ChartCard>
 
-        <ChartCard title="Top 5 produktów">
+        <ChartCard title="Top 5 Products">
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={topProducts}>
               <XAxis dataKey="name" />
@@ -120,7 +125,7 @@ const Dashboard = () => {
           </ResponsiveContainer>
         </ChartCard>
 
-        <ChartCard title="Procent zwrotów">
+        <ChartCard title="Return Percentage">
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label>
@@ -134,7 +139,7 @@ const Dashboard = () => {
           </ResponsiveContainer>
         </ChartCard>
 
-        <ChartCard title="Statusy zamówień">
+        <ChartCard title="Order Statuses">
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={statusData}>
               <XAxis dataKey="status" />
@@ -145,7 +150,7 @@ const Dashboard = () => {
           </ResponsiveContainer>
         </ChartCard>
 
-        <ChartCard title="Produkty wg kategorii">
+        <ChartCard title="Products by Category">
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={categoryData}>
               <XAxis dataKey="category" />
@@ -156,7 +161,7 @@ const Dashboard = () => {
           </ResponsiveContainer>
         </ChartCard>
 
-        <ChartCard title="Średnia ilość produktów na zamówienie">
+        <ChartCard title="Average Products per Order">
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={avgProductsData}>
               <XAxis dataKey="id" hide />
@@ -167,7 +172,7 @@ const Dashboard = () => {
           </ResponsiveContainer>
         </ChartCard>
 
-        <ChartCard title="Top klienci wg liczby zamówień">
+        <ChartCard title="Top Clients by Number of Orders">
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={topClients}>
               <XAxis dataKey="email" />
@@ -179,7 +184,7 @@ const Dashboard = () => {
         </ChartCard>
 
         <div className="bg-white p-6 rounded shadow col-span-1 lg:col-span-2">
-          <h2 className="text-2xl font-semibold mb-4 text-center">Zamówienia w czasie</h2>
+          <h2 className="text-2xl font-semibold mb-4 text-center">Orders Over Time</h2>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={lineData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -189,7 +194,6 @@ const Dashboard = () => {
               <Line type="monotone" dataKey="count" stroke="#8884d8" strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>
-
         </div>
 
       </div>

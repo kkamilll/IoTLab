@@ -62,6 +62,7 @@ function App() {
         <Route path="/cart" element={<CartPage />} />
         <Route path="/guest-products/:menuCategory" element={<GuestProducts />} />
         <Route path="/mainguest" element={<MainGuest />} />
+        <Route path="/preview" element={<ProductPreview />} />
 
         {/* Admin Dashboard - Protected Routes */}
         <Route

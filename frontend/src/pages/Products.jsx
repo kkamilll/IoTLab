@@ -11,6 +11,7 @@ import autoTable from "jspdf-autotable";
 import { jsPDF } from "jspdf";
 import { useAuth } from "../context/AuthContext";
 import { buildTree } from "../utils/categoryUtils";
+import CategoryTree from "../components/CategoryTree";
 
 const MEGA_BYTE = 1024 * 1024;
 const MAX_FILE_SIZE = 50 * MEGA_BYTE;
@@ -50,10 +51,12 @@ const Products = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [categories, setCategories] = useState([]);
-  const [activeCategory, setActiveCategory] = useState("");
+  const [activeCategories, setActiveCategories] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [hiddenColumns, setHiddenColumns] = useState([]);
-  const [columnsDropdownOpen, setColumnsDropdownOpen] = useState(false);
+const [columnsDropdownOpen, setColumnsDropdownOpen] = useState(false);
+const [categoriesDropdownOpen, setCategoriesDropdownOpen] = useState(false);
+const [expandedCategories, setExpandedCategories] = useState([]);
   // const [newTag, setNewTag] = useState("");
   // const [previewImage, setPreviewImage] = useState(null);
 
@@ -118,38 +121,50 @@ const Products = () => {
     });
   }, [products]);
 
-  useEffect(() => {
-    let filtered = products.filter(p => {
-      const searchLower = searchTerm.toLowerCase();
+useEffect(() => {
+  let filtered = products.filter(p => {
+    const searchLower = searchTerm.toLowerCase();
 
-      if (p.name.toLowerCase().includes(searchLower) ||
-        (p.description && p.description.toLowerCase().includes(searchLower))) return true;
+    if (
+      p.name.toLowerCase().includes(searchLower) ||
+      (p.description && p.description.toLowerCase().includes(searchLower))
+    ) return true;
 
-      if (p.tag?.some(tag => tag.toLowerCase().includes(searchLower))) return true;
+    if (p.tag?.some(tag => tag.toLowerCase().includes(searchLower))) return true;
 
-      if (Object.values(p.extraFields || {}).some(val =>
-        val.toString().toLowerCase().includes(searchLower)
-      )) return true;
+    if (Object.values(p.extraFields || {}).some(val =>
+      val.toString().toLowerCase().includes(searchLower)
+    )) return true;
 
-      return false;
+    return false;
+  });
+
+  // AND filter dla wielu kategorii
+  if (activeCategories.length > 0) {
+    filtered = filtered.filter(p =>
+      activeCategories.every(selectedCatId =>
+        p.categories?.some(cat => cat._id === selectedCatId)
+      )
+    );
+  }
+
+  if (sortConfig.key) {
+    filtered.sort((a, b) => {
+      let valA = a[sortConfig.key] ?? a.extraFields?.[sortConfig.key] ?? "";
+      let valB = b[sortConfig.key] ?? b.extraFields?.[sortConfig.key] ?? "";
+      if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
+      if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
+      return 0;
     });
+  }
 
-    if (activeCategory) {
-      filtered = filtered.filter(p => p.categories?.some(cat => cat._id === activeCategory));
-    }
+  setFilteredProducts(filtered);
+}, [products, searchTerm, sortConfig, activeCategories]);
 
-    if (sortConfig.key) {
-      filtered.sort((a, b) => {
-        let valA = a[sortConfig.key] ?? a.extraFields?.[sortConfig.key] ?? "";
-        let valB = b[sortConfig.key] ?? b.extraFields?.[sortConfig.key] ?? "";
-        if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
-        if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
-        return 0;
-      });
-    }
 
-    setFilteredProducts(filtered);
-  }, [products, searchTerm, sortConfig, activeCategory]);
+
+
+
 
   const fetchCategories = async () => {
     try {
@@ -160,7 +175,7 @@ const Products = () => {
         setCategories(res.data.categories);
       }
     } catch (err) {
-      console.error("Błąd pobierania kategorii:", err);
+      console.error("Error fetching categories:", err);
     }
   };
   // Pobieranie produktów
@@ -529,9 +544,9 @@ const Products = () => {
       } else {
         alert(res.data.message || "Operation failed");
       }
-    } catch (error) {
-      console.error(error)
-      alert(`${error.response.data.message}`);
+    } catch (err) {
+      console.error(err);
+      alert("Server error");
     }
   };
 
@@ -601,10 +616,21 @@ const Products = () => {
     if (!productId) return alert("No product to preview");
     navigate("/admin-dashboard/preview", { state: { productId } });
   };
+const handleCategorySelect = (catId) => {
+  setActiveCategories(prev =>
+    prev.includes(catId) ? prev.filter(id => id !== catId) : [...prev, catId]
+  );
+};
 
+// handler dla rozwoju kategorii
+const handleCategoryExpand = (catId) => {
+  setExpandedCategories(prev =>
+    prev.includes(catId) ? prev.filter(id => id !== catId) : [...prev, catId]
+  );
+};
   return (
     <div className="w-full h-full flex flex-col gap-4 p-6 bg-gray-50">
-      <h1 className="text-3xl font-extrabold text-gray-700">Product Management</h1>
+      <h1 className="text-3xl font-extrabold text-gray-700">Object Management</h1>
 
       {/* Kontrolki */}
       <div className="flex flex-col sm:flex-row justify-between gap-3">
@@ -636,7 +662,7 @@ const Products = () => {
               onClick={() => navigate("/cart")}
               className="px-6 py-3 bg-blue-500 text-white font-semibold rounded hover:bg-blue-600 transition"
             >
-              Przejdź do koszyka
+              Go to Cart
             </button>
           </>
 
@@ -644,21 +670,56 @@ const Products = () => {
       </div>
 
       <div className="flex flex-wrap items-center gap-4 mb-4">
-        {/* Filter by tag */}
-        <div className="flex gap-2 items-center">
-          <label className="font-medium">Filter by category:</label>
-          <select
-            value={activeCategory}
-            onChange={(e) => setActiveCategory(e.target.value)}
-            className="border p-2 rounded"
-          >
+<div className="relative inline-block text-left">
+  <button
+    type="button"
+    onClick={() => setCategoriesDropdownOpen(prev => !prev)}
+    className="inline-flex justify-between w-64 rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
+  >
+    Filter by category
+    <svg
+      className="-mr-1 ml-2 h-5 w-5"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.293l3.71-4.06a.75.75 0 111.08 1.04l-4.25 4.65a.75.75 0 01-1.08 0L5.25 8.27a.75.75 0 01-.02-1.06z" clipRule="evenodd" />
+    </svg>
+  </button>
 
-            <option value="">All</option>
-            {allCategories.map((category, idx) => (
-              <option key={idx} value={category._id}>{category.name}</option>
-            ))}
-          </select>
-        </div>
+ {categoriesDropdownOpen && (
+  <div className="absolute mt-2 w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10 max-h-60 overflow-y-auto">
+    <ul className="py-1">
+      {allCategories.map(category => (
+        <li key={category._id}>
+          <label className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
+            <input
+              type="checkbox"
+              value={category._id}
+              checked={activeCategories.includes(category._id)}
+              onChange={e => {
+                const { checked } = e.target;
+                setActiveCategories(prev =>
+                  checked
+                    ? [...prev, category._id]
+                    : prev.filter(id => id !== category._id)
+                );
+              }}
+              className="accent-blue-500 w-4 h-4"
+            />
+            <span>{category.name}</span>
+          </label>
+        </li>
+      ))}
+    </ul>
+  </div>
+)}
+
+</div>
+
+
+
 
         {/* Columns dropdown */}
         <div className="relative">
@@ -801,7 +862,7 @@ const Products = () => {
                       </div>
 
                       <span className="inline-block bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full sm:mt-0 mt-1">
-                        W koszyku: {cartQuantities[p._id] || 0}
+                        In cart: {cartQuantities[p._id] || 0}
                       </span>
                     </div>
                   </td>
@@ -900,7 +961,7 @@ const Products = () => {
                 </div>
 
                 <span className="inline-block bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full mt-1">
-                  W koszyku: {cartQuantities[p._id] || 0}
+                  In cart: {cartQuantities[p._id] || 0}
                 </span>
               </div>
             </div>
@@ -932,202 +993,272 @@ const Products = () => {
           Next
         </button>
       </div>
-      {openModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded shadow-lg w-full max-w-lg relative max-h-[80vh] overflow-y-auto">
-            {/* <h2 className="text-2xl font-bold mb-4">{editProduct ? "Edit Product" : "Add Product"}</h2> */}
-            <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold">
-                  {editProduct ? "Edit Product" : "Add Product"}
-                </h2>
+ {openModal && (
+  <div className="fixed inset-0  backdrop-blur-md flex items-center justify-center z-50 p-4">
+    <div className="bg-white p-6 rounded shadow-lg w-full max-w-lg md:max-w-xl lg:max-w-2xl relative max-h-[90vh] overflow-auto">
+      <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
+  <div className="flex items-center justify-between mb-4">
+    <h2 className="text-2xl font-bold">
+      {editProduct ? "Edit Product" : "Add Product"}
+    </h2>
 
-                <div className="flex gap-2">
-                  {/* Serializable toggle */}
-                  <button
-                    type="button"
-                    onClick={() => setFormData(prev => ({
-                      ...prev,
-                      isSerialized: !prev.isSerialized,
-                      stockTotal: !prev.isSerialized ? 1 : prev.stockTotal,
-                      stockForRent: !prev.isSerialized ? (prev.isRentable ? 1 : 0) : prev.stockForRent
-                    }))}
-                    className="p-2 rounded-full hover:bg-gray-200 text-3xl"
-                    title="Serializable (Track individually vs grouped)"
-                  >
-                    {formData.isSerialized ? (
-                      <FaCube className="text-blue-500 text-3xl" />
-                    ) : (
-                      <FaCubes className="text-gray-500" />
-                    )}
-                  </button>
+    <div className="flex gap-2">
+      {/* Toggles */}
+      <button
+        type="button"
+        onClick={() => setFormData(prev => ({
+          ...prev,
+          isSerialized: !prev.isSerialized,
+          stockTotal: !prev.isSerialized ? 1 : prev.stockTotal,
+          stockForRent: !prev.isSerialized ? (prev.isRentable ? 1 : 0) : prev.stockForRent
+        }))}
+        className="p-2 rounded-full hover:bg-gray-200 text-3xl"
+        title="Serializable (Track individually vs grouped)"
+      >
+        {formData.isSerialized ? <FaCube className="text-blue-500 text-3xl" /> : <FaCubes className="text-gray-500" />}
+      </button>
 
-                  {/* Rentable toggle */}
-                  <button
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, isRentable: !prev.isRentable, stockForRent: !prev.isRentable ? prev.isSerialized ? "1" : prev.stockForRent : "0" }))}
-                    className="p-2 rounded-full hover:bg-gray-200 text-3xl"
-                    title="Rentable (allow item for rent)"
-                  >
-                    <FaHandshake
-                      className={formData.isRentable ? "text-green-500" : "text-gray-500"}
-                    />
-                  </button>
+      <button
+        type="button"
+        onClick={() => setFormData(prev => ({ ...prev, isRentable: !prev.isRentable, stockForRent: !prev.isRentable ? prev.isSerialized ? "1" : prev.stockForRent : "0" }))}
+        className="p-2 rounded-full hover:bg-gray-200 text-3xl"
+        title="Rentable (allow item for rent)"
+      >
+        <FaHandshake className={formData.isRentable ? "text-green-500" : "text-gray-500"} />
+      </button>
 
-                  {/* Visible toggle */}
-                  <button
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, isVisible: !formData.isVisible, isShared: !prev.isVisible ? true : prev.isShared }))}
-                    className="p-2 rounded-full hover:bg-gray-200 text-3xl"
-                    title="Visible (allow item to be vissible for everyone)"
-                  >
-                    {formData.isVisible ? (
-                      <FaEye className="text-indigo-500" />
-                    ) : (
-                      <FaEyeSlash className="text-gray-500" />
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    name="isShared"
-                    onClick={() => setFormData(prev => ({ ...prev, isShared: !formData.isShared, isVisible: prev.isShared ? false : prev.isVisible }))}
-                    className="p-2 rounded-full hover:bg-gray-200 text-3xl"
-                    title="Shared (allow item to be vissible for other users)"
-                  >
-                    {formData.isShared ? (
-                      <FaUserShield className="text-indigo-500" />
-                    ) : (
-                      <FaUserLock className="text-gray-500" />
-                    )}
-                  </button>
-                </div>
+      <button
+        type="button"
+        onClick={() => setFormData(prev => ({ ...prev, isVisible: !formData.isVisible, isShared: !prev.isVisible ? true : prev.isShared }))}
+        className="p-2 rounded-full hover:bg-gray-200 text-3xl"
+        title="Visible (allow item to be visible for everyone)"
+      >
+        {formData.isVisible ? <FaEye className="text-indigo-500" /> : <FaEyeSlash className="text-gray-500" />}
+      </button>
 
-              </div>
-              <input type="text" name="name" placeholder="Name" value={formData.name} onChange={handleChange} required className="border p-2 rounded" />
-              <input type="text" name="description" placeholder="Description" value={formData.description} onChange={handleChange} className="border p-2 rounded" />
-              <input type="number" name="stockTotal" placeholder="stockTotal" value={formData.stockTotal} onChange={handleChange} min={1} required disabled={formData.isSerialized} className="border p-2 rounded disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed" />
-              <input type="number" name="stockForRent" placeholder="stockForRent" value={formData.stockForRent} onChange={handleChange} min={0} max={formData.stockTotal} required disabled={formData.isSerialized || !formData.isRentable} className="border p-2 rounded disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed" />
-              {extraColumns.map((col, idx) => (
-                <div key={idx} className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    placeholder={col}
-                    value={formData.extraFields?.[col] || ""}
-                    onChange={(e) => handleExtraFieldChange(col, e.target.value)}
-                    className="border p-2 rounded flex-1"
-                  />
-                  {isAdmin && <button type="button" onClick={() => removeExtraField(col)} className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600">X</button>}
-                </div>
-              ))}
-              <label htmlFor="categories">Categories</label>
-              <CategorySelector
-                categoryTree={categoryTree}   // flat array from backend
-                flatCategories={normalizedCategories}
-                formData={formData}
-                setFormData={setFormData}
-              />
+      <button
+        type="button"
+        name="isShared"
+        onClick={() => setFormData(prev => ({ ...prev, isShared: !formData.isShared, isVisible: prev.isShared ? false : prev.isVisible }))}
+        className="p-2 rounded-full hover:bg-gray-200 text-3xl"
+        title="Shared (allow item to be visible for other users)"
+      >
+        {formData.isShared ? <FaUserShield className="text-indigo-500" /> : <FaUserLock className="text-gray-500" />}
+      </button>
+    </div>
+  </div>
 
-              <div className="flex gap-2">
-                <input type="text" name="tag" placeholder="Add tag" value={formData.tag} onChange={handleChange} className="border p-2 rounded flex-1" />
+  {/* Name */}
+  <div>
+    <label htmlFor="name" className="font-semibold">Name</label>
+    <input
+      id="name"
+      type="text"
+      name="name"
+      placeholder="Name"
+      value={formData.name}
+      onChange={handleChange}
+      required
+      className="border p-2 rounded w-full"
+    />
+  </div>
 
-                {/* <button type="button" onClick={() => {
-                  if (newTag && !formData.tags.includes(newTag)) {
-                    setFormData(prev => ({ ...prev, tags: [...prev.tags, newTag] }));
-                    setNewTag("");
-                  }
-                }} className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600">Add</button> */}
-                {/* {formData.tag.map((tag, idx) => (
-                  <span key={idx} className="bg-blue-200 px-2 py-1 rounded flex items-center gap-1">
-                    {tag} <button type="button" onClick={() => setFormData(prev => ({ ...prev, tags: prev.tags.filter(t => t !== tag) }))} className="text-red-600 font-bold">x</button>
-                  </span>
-                ))} */}
+  {/* Description */}
+  <div>
+    <label htmlFor="description" className="font-semibold">Description</label>
+    <input
+      id="description"
+      type="text"
+      name="description"
+      placeholder="Description"
+      value={formData.description}
+      onChange={handleChange}
+      className="border p-2 rounded w-full"
+    />
+  </div>
 
-              </div>
-              <input
-                type="file"
-                accept="*"
-                multiple
-                onChange={handleFilesChange}
-                className="border p-2 rounded"
-              />
+  {/* Stock Total */}
+  <div>
+    <label htmlFor="stockTotal" className="font-semibold">Stock Total</label>
+    <input
+      id="stockTotal"
+      type="number"
+      name="stockTotal"
+      placeholder="Stock Total"
+      value={formData.stockTotal}
+      onChange={handleChange}
+      min={1}
+      required
+      disabled={formData.isSerialized}
+      className="border p-2 rounded w-full disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+    />
+  </div>
 
-              {formData.images?.length > 0 && (
-                <div className="mb-6">
-                  <p className="font-semibold text-gray-700 mb-2">Images:</p>
-                  <div className="flex flex-wrap gap-3">
-                    {formData.images.map((imageObj) => {
-                      const name = imageObj.originalName;
-                      const displayName = truncateFileName(name, MAX_FILE_NAME_LENGTH);
+  {/* Stock For Rent */}
+  <div>
+    <label htmlFor="stockForRent" className="font-semibold">Stock For Rent</label>
+    <input
+      id="stockForRent"
+      type="number"
+      name="stockForRent"
+      placeholder="Stock For Rent"
+      value={formData.stockForRent}
+      onChange={handleChange}
+      min={0}
+      max={formData.stockTotal}
+      required
+      disabled={formData.isSerialized || !formData.isRentable}
+      className="border p-2 rounded w-full disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+    />
+  </div>
 
-                      return (
-                        <span key={imageObj.uniqueKey} className="bg-blue-200 px-2 py-1 rounded flex items-center gap-1" title={name}>
-                          {displayName}
-                          <button type="button" onClick={() => setFormData(prev => ({ ...prev, images: prev.images.map(file => file === imageObj ? { ...file, isVisible: !imageObj.isVisible } : file) }))} className="text-gray-700 hover:text-blue-500">
-                            {imageObj.isVisible ? <FiEye className="w-5 h-5" /> : <FiEyeOff className="w-5 h-5" />}
-                          </button>
-                          <button type="button" onClick={() => setFormData(prev => ({ ...prev, images: prev.images.filter(file => file !== imageObj) }))} className="text-red-600 font-bold">x</button>
-
-                        </span>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {formData.attachments?.length > 0 && (
-                <div className="mb-6">
-                  <p className="font-semibold text-gray-700 mb-2">Attachments:</p>
-                  <div className="flex flex-wrap gap-3">
-                    {formData.attachments.map((attachmentObj) => {
-                      const name = attachmentObj.originalName;
-                      const displayName = truncateFileName(name, MAX_FILE_NAME_LENGTH);
-
-                      return (
-                        <span key={attachmentObj.uniqueKey} className="bg-blue-200 px-2 py-1 rounded flex items-center gap-1" title={name}>
-                          {displayName}
-                          <button type="button" onClick={() => setFormData(prev => ({ ...prev, attachments: prev.attachments.map(file => file === attachmentObj ? { ...file, isVisible: !attachmentObj.isVisible } : file) }))} className="text-gray-700 hover:text-blue-500">
-                            {attachmentObj.isVisible ? <FiEye className="w-5 h-5" /> : <FiEyeOff className="w-5 h-5" />}
-                          </button>
-                          <button type="button" onClick={() => setFormData(prev => ({ ...prev, attachments: prev.attachments.filter(file => file !== attachmentObj) }))} className="text-red-600 font-bold">x</button>
-                        </span>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              <select
-                name="labRoom"
-                value={formData.labRoom}
-                onChange={handleChange}
-                className="border p-2 rounded disabled:bg-gray-100 disabled:text-gray-400"
-              >
-                <option value="">None</option>
-                {labRooms?.map((room) => (
-                  <option key={room} value={room}>{room}</option>
-                ))}
-              </select>
-
-              <select
-                name="owner"
-                value={formData.owner}
-                onChange={handleOwnerChange}
-                className="border p-2 rounded disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
-                disabled={!isAdmin}
-              >
-                {users.map((user) => (
-                  <option key={user._id} value={user._id}>{user.name}</option>
-                ))}
-              </select>
-
-              <div className="flex justify-end gap-2 mt-3">
-                <button type="button" onClick={closeModal} className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">Cancel</button>
-                <button type="submit" className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Save</button>
-              </div>
-            </form>
-          </div>
-        </div>
+  {/* Extra Columns */}
+  {extraColumns.map((col, idx) => (
+    <div key={idx} className="flex items-center gap-2">
+      <label htmlFor={`extra-${col}`} className="font-semibold">{col}</label>
+      <input
+        id={`extra-${col}`}
+        type="text"
+        placeholder={col}
+        value={formData.extraFields?.[col] || ""}
+        onChange={(e) => handleExtraFieldChange(col, e.target.value)}
+        className="border p-2 rounded flex-1"
+      />
+      {isAdmin && (
+        <button type="button" onClick={() => removeExtraField(col)} className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600">X</button>
       )}
+    </div>
+  ))}
+
+  {/* Categories */}
+  <div>
+    <label className="font-semibold">Categories</label>
+    <CategorySelector
+      categoryTree={categoryTree}
+      flatCategories={normalizedCategories}
+      formData={formData}
+      setFormData={setFormData}
+    />
+  </div>
+
+  {/* Tags */}
+  <div>
+    <label htmlFor="tag" className="font-semibold">Tag</label>
+    <div className="flex gap-2">
+      <input
+        id="tag"
+        type="text"
+        name="tag"
+        placeholder="Add tag"
+        value={formData.tag}
+        onChange={handleChange}
+        className="border p-2 rounded flex-1"
+      />
+    </div>
+  </div>
+
+  {/* File Upload */}
+  <div>
+    <label htmlFor="files" className="font-semibold">Upload Files</label>
+    <input
+      id="files"
+      type="file"
+      accept="*"
+      multiple
+      onChange={handleFilesChange}
+      className="border p-2 rounded w-full"
+    />
+  </div>
+
+  {/* Images Display */}
+  {formData.images?.length > 0 && (
+    <div>
+      <p className="font-semibold text-gray-700 mb-2">Images:</p>
+      <div className="flex flex-wrap gap-3">
+        {formData.images.map((imageObj) => {
+          const name = imageObj.originalName;
+          const displayName = truncateFileName(name, MAX_FILE_NAME_LENGTH);
+          return (
+            <span key={imageObj.uniqueKey} className="bg-blue-200 px-2 py-1 rounded flex items-center gap-1" title={name}>
+              {displayName}
+              <button type="button" onClick={() => setFormData(prev => ({ ...prev, images: prev.images.map(file => file === imageObj ? { ...file, isVisible: !imageObj.isVisible } : file) }))} className="text-gray-700 hover:text-blue-500">
+                {imageObj.isVisible ? <FiEye className="w-5 h-5" /> : <FiEyeOff className="w-5 h-5" />}
+              </button>
+              <button type="button" onClick={() => setFormData(prev => ({ ...prev, images: prev.images.filter(file => file !== imageObj) }))} className="text-red-600 font-bold">x</button>
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  )}
+
+  {/* Attachments Display */}
+  {formData.attachments?.length > 0 && (
+    <div>
+      <p className="font-semibold text-gray-700 mb-2">Attachments:</p>
+      <div className="flex flex-wrap gap-3">
+        {formData.attachments.map((attachmentObj) => {
+          const name = attachmentObj.originalName;
+          const displayName = truncateFileName(name, MAX_FILE_NAME_LENGTH);
+          return (
+            <span key={attachmentObj.uniqueKey} className="bg-blue-200 px-2 py-1 rounded flex items-center gap-1" title={name}>
+              {displayName}
+              <button type="button" onClick={() => setFormData(prev => ({ ...prev, attachments: prev.attachments.map(file => file === attachmentObj ? { ...file, isVisible: !attachmentObj.isVisible } : file) }))} className="text-gray-700 hover:text-blue-500">
+                {attachmentObj.isVisible ? <FiEye className="w-5 h-5" /> : <FiEyeOff className="w-5 h-5" />}
+              </button>
+              <button type="button" onClick={() => setFormData(prev => ({ ...prev, attachments: prev.attachments.filter(file => file !== attachmentObj) }))} className="text-red-600 font-bold">x</button>
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  )}
+
+  {/* Lab Room */}
+  <div>
+    <label htmlFor="labRoom" className="font-semibold">Lab Room</label>
+    <select
+      id="labRoom"
+      name="labRoom"
+      value={formData.labRoom}
+      onChange={handleChange}
+      className="border p-2 rounded w-full disabled:bg-gray-100 disabled:text-gray-400"
+    >
+      <option value="">None</option>
+      {labRooms?.map((room) => (
+        <option key={room} value={room}>{room}</option>
+      ))}
+    </select>
+  </div>
+
+  {/* Owner */}
+  <div>
+    <label htmlFor="owner" className="font-semibold">Owner</label>
+    <select
+      id="owner"
+      name="owner"
+      value={formData.owner}
+      onChange={handleOwnerChange}
+      className="border p-2 rounded w-full disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+      disabled={!isAdmin}
+    >
+      {users.map((user) => (
+        <option key={user._id} value={user._id}>{user.name}</option>
+      ))}
+    </select>
+  </div>
+
+  {/* Buttons */}
+  <div className="flex justify-end gap-2 mt-3">
+    <button type="button" onClick={closeModal} className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">Cancel</button>
+    <button type="submit" className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Save</button>
+  </div>
+</form>
+
+    </div>
+  </div>
+)}
+
 
     </div>
   );
