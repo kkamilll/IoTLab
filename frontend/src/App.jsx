@@ -1,5 +1,6 @@
 import './App.css';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import react, { useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 
 // Pages
 import WelcomePage from './pages/WelcomePage';
@@ -27,9 +28,29 @@ import Logout from './components/Logout';
 import ProtectedRoutes from './utils/ProtectedRoutes';
 import RootRedirect from './utils/RootRedirect';
 
+const pathPrefix = "/admin-dashboard";
+const excludedPathsWithPrefix = [`${pathPrefix}/products`];
+
+function GlobalEffect() {
+  const location = useLocation();
+
+  const resetCart = () => {
+    localStorage.setItem("cart", JSON.stringify([]));
+  };
+
+  useEffect(() => {
+    if (location.pathname.startsWith(pathPrefix) && !excludedPathsWithPrefix.includes(location.pathname))
+      resetCart();
+
+  }, [location]);
+
+  return null; // no UI
+}
+
 function App() {
   return (
     <Router>
+      <GlobalEffect />
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<WelcomePage />} />

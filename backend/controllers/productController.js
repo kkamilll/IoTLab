@@ -106,9 +106,11 @@ const initProduct = (req) => {
 
 
 const getOrderQuantity = async ({ productId, ownerId, field, end, start, status }) => {
+  status = Array.isArray(status) ? status : [status];
+
   // Find orders for product, that overlap given date range
   const baseItemFilter = {
-    items: { $elemMatch: { product: productId, responsibleOwner: ownerId, status } }
+    items: { $elemMatch: { product: new mongoose.Types.ObjectId(String(productId)), responsibleOwner: new mongoose.Types.ObjectId(String(ownerId)), status: { $in: status } } }
   };
 
   let filter = {
@@ -122,7 +124,7 @@ const getOrderQuantity = async ({ productId, ownerId, field, end, start, status 
     ...(field === "assigned" && {
       ownersData: {
         $elemMatch: {
-          owner: ownerId,
+          owner: new mongoose.Types.ObjectId(String(ownerId)),
           assignedStartDate: { $lte: end },
           assignedEndDate: { $gte: start }
         }
@@ -130,23 +132,21 @@ const getOrderQuantity = async ({ productId, ownerId, field, end, start, status 
     })
   };
 
-  const overlappingOrders = await Order.find(filter);
-
-  let orderQuantity = 0;
-  let requestsQuantity = 0;
-
-  overlappingOrders.forEach(order => {
-    order.items?.forEach(item => {
-      if (item.product.toString() === productId) {
-        if (field === "requested") {
-          orderQuantity += Number(item.requestedQuantity || 0);
-        } else if (field === "assigned") {
-          orderQuantity += Number(item.assignedQuantity || 0);
-        }
-        requestsQuantity += 1;
+  const result = await Order.aggregate([
+    { $match: filter },
+    { $project: { items: 1 } },
+    { $unwind: "$items" },
+    { $match: { "items.product": new mongoose.Types.ObjectId(String(productId)) } },
+    {
+      $group: {
+        _id: null,
+        orderQuantity: { $sum: `$items.${field === "requested" ? "requestedQuantity" : "assignedQuantity"}` },
+        requestsQuantity: { $sum: 1 }
       }
-    });
-  });
+    }
+  ]);
+  const orderQuantity = result[0]?.orderQuantity || 0;
+  const requestsQuantity = result[0]?.requestsQuantity || 0;
 
   return { orderQuantity, requestsQuantity };
 }
@@ -196,6 +196,7 @@ export const getProductByIdPublic = async (req, res, next) => {
     // Find products for users
     const product = await Product.findOne({ _id: productId, isVisible: true, isDeleted: false }).select('-__v -isDeleted').sort({ name: 1 }).populate([{ path: "categories", select: "name" }, { path: "owner", select: "name" }]).lean();
     product.images = product.images?.filter(image => (image.isVisible)) || [];
+    product.attachments = product.attachments?.filter(attachment => (attachment.isVisible)) || [];
 
     // Send response
     return res.status(200).json({ success: true, product });
@@ -455,7 +456,7 @@ export const getProductAvailability = async (req, res, next) => {
     const start = new Date(startDate);
     const end = new Date(endDate);
 
-    const { orderQuantity } = await getOrderQuantity({ productId, ownerId, field: "assigned", end, start, status: "approved" });
+    const { orderQuantity } = await getOrderQuantity({ productId, ownerId, field: "assigned", end, start, status: ["approved", "prepared", "rented"] });
 
     // Available stock is stockForRent minus reservedQuantity
     const available = Math.max(0, Number(product.stockForRent) - orderQuantity);
@@ -469,9 +470,9 @@ export const getProductAvailability = async (req, res, next) => {
 
 export const getProductStockStatus = async (req, res, next) => {
   try {
-    const { productId, startDate, endDate } = req.body;
-    if (!productId || !startDate || !endDate) {
-      return res.status(400).json({ success: false, message: "Brak danych" });
+    const { productId, startDate, endDate, orderId } = req.body;
+    if (!productId || !startDate || !endDate || !orderId) {
+      return res.status(400).json({ success: false, message: "Missing data" });
     }
 
     const product = await Product.findById(productId);
@@ -483,12 +484,20 @@ export const getProductStockStatus = async (req, res, next) => {
     const start = new Date(startDate);
     const end = new Date(endDate);
 
-    const { orderQuantity, requestsQuantity } = await getOrderQuantity({ productId, ownerId, field: "requested", start, end, status: "pending" });
-    const { orderQuantity: confirmedQuantity } = await getOrderQuantity({ productId, ownerId, field: "assigned", start, end, status: "approved" });
+    const { orderQuantity: inDemand, requestsQuantity } = await getOrderQuantity({ productId, ownerId, field: "requested", start, end, status: "pending" });
+    const { orderQuantity: confirmedQuantityReserved } = await getOrderQuantity({ productId, ownerId, field: "assigned", start, end, status: ["approved", "prepared"] });
 
-    const available = Math.max(0, Number(product.stockForRent) - (Number(product.stockRentedOut) || 0) - confirmedQuantity);
+    const order = await Order.findById(orderId).lean();
+    if (!order) return next(new ResourceNotFoundError("Order"));
 
-    return res.json({ success: true, inDemand: orderQuantity, requestsQuantity, available });
+    const currProduct = order.items?.find(item => item.product?.toString() === productId);
+    const currQuantityAssigned = currProduct?.assignedQuantity || 0;
+
+    const rentedQuantity = Number(product.stockRentedOut) || 0;
+    const availableTotal = Number(product.stockForRent) - rentedQuantity - confirmedQuantityReserved;
+    const availableToAssign = availableTotal + currQuantityAssigned;
+
+    return res.json({ success: true, inDemand, requestsQuantity, availableToAssign, availableTotal, rentedQuantity });
   } catch (err) {
     console.error("Błąd w getProductStockStatus:", err);
     return res.status(500).json({ success: false, message: "Błąd serwera" });

@@ -245,6 +245,7 @@ export const updateOrder = async (req, res, next) => {
     const { orderId } = req.params;
     let { itemUpdates } = req.body;
     const { assignedStartDate, assignedEndDate } = req.body;
+    console.log(req.body, itemUpdates);
     
     const processableStatuses = ["pending", "approved", "prepared"];
     
@@ -317,7 +318,7 @@ export const updateOrder = async (req, res, next) => {
         const delta = productStockChanges.get(product._id.toString());
         if (!delta) continue;
 
-        product.stockRentedOut += delta;
+        product.stockRentedOut = (product.stockRentedOut || 0) + delta;
 
         if (product.stockRentedOut < 0) {
           throw new ConflictError(`Stock for ${product.name} below zero`);

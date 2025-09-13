@@ -2,6 +2,10 @@ import React, { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 
+import { LocalizationProvider, DateTimePicker } from '@mui/x-date-pickers';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import TextField from '@mui/material/TextField';
+
 const Orders = () => {
   const { user, token } = useAuth();
   // const isAdmin = user?.role === "admin";
@@ -65,14 +69,17 @@ const Orders = () => {
       if (!productId || !startDate || !endDate) return null;
 
       const res = await axios.post(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/products/stockStatus`,
-        { productId, startDate, endDate },
+        { productId, startDate, endDate, orderId: editGroup.orderId },
         { headers: { Authorization: `Bearer ${token}` } });
 
       if (res.data.success) {
+        console.log(res.data);
         return {
-          available: res.data.available ?? 0,
+          availableToAssign: res.data.availableToAssign ?? 0,
           inDemand: res.data.inDemand ?? 0,
           requestsQuantity: res.data.requestsQuantity ?? 0,
+          availableTotal: res.data.availableTotal ?? 0,
+          rentedQuantity: res.data.rentedQuantity ?? 0,
         };
       }
       return null;
@@ -208,19 +215,20 @@ const Orders = () => {
         return;
       }
 
-      const itemsToUpdate = group.items
+      const itemUpdates = group.items
         .filter(statusFilter)
         .map(item => ({
+          ...item,
           itemId: item._id,
           newStatus
         }));
 
-      if (!itemsToUpdate.length) return; // nothing to update
+      if (!itemUpdates.length) return; // nothing to update
 
       const config = { headers: { Authorization: `Bearer ${token}` } };
       const res = await axios.put(
         `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders/updateOrder/${orderId}`,
-        itemsToUpdate,
+        { itemUpdates },
         config
       );
 
@@ -290,17 +298,17 @@ const Orders = () => {
     }));
   };
 
-  const handleEditChangeDate = (e) => {
-    const { name, value } = e.target;
-    const date = new Date(value);
-    const isoString = date.toISOString();
-    console.log(`Date change ${name}: field value ${value}, save as ${isoString}`)
+  // const handleEditChangeDate = (e) => {
+  //   const { name, value } = e.target;
+  //   const date = new Date(value);
+  //   const isoString = date.toISOString();
+  //   console.log(`Date change ${name}: field value ${value}, save as ${isoString}`)
 
-    setDatesUpdateData(prev => ({
-      ...prev,
-      [name]: isoString
-    }));
-  };
+  //   setDatesUpdateData(prev => ({
+  //     ...prev,
+  //     [name]: isoString
+  //   }));
+  // };
 
   const handleStatusChange = (itemId, e) => {
     const { name, value } = e.target;
@@ -342,7 +350,7 @@ const Orders = () => {
             return;
           }
 
-          if (quantity > stockStatus[item.itemId].available) {
+          if (quantity > stockStatus[item.itemId].availableToAssign) {
             alert(`${productName} (${productTag}): Item quantity must be within available range`);
             return;
           }
@@ -364,12 +372,12 @@ const Orders = () => {
       const endDate = datesUpdateData?.assignedEndDate;
 
       if (!startDate || !endDate) {
-        alert(`Order ${orderId} require: Both start and end dates are required`);
+        alert(`Both start and end dates are required`);
         return;
       }
 
       if (new Date(startDate) > new Date(endDate)) {
-        alert(`Order ${orderId} require: Start date cannot be after end date`);
+        alert(`Start date cannot be after end date`);
         return;
       }
 
@@ -391,7 +399,7 @@ const Orders = () => {
         },
       };
 
-      const res = await axios.put(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders/updateOrder/${orderId}`, payload, config);
+      const res = await axios.put(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders/updateOrder/${orderId}`, { ...payload }, config);
 
       if (res.data.success) {
         fetchOrders(1);
@@ -409,13 +417,13 @@ const Orders = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center p-6">
       <div className="w-full max-w-6xl flex flex-col gap-6">
-        <h1 className="text-3xl font-extrabold text-gray-800 text-center">Zarządzanie Wypożyczeniami</h1>
+        <h1 className="text-3xl font-extrabold text-gray-800 text-center">Order Management</h1>
 
         {/* Filters */}
         <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
           <input
             type="text"
-            placeholder="Szukaj po e-mailu"
+            placeholder="Filter by email"
             value={emailFilter}
             onChange={(e) => setEmailFilter(e.target.value)}
             className="border border-gray-300 rounded px-3 py-2 w-full md:w-1/3"
@@ -425,7 +433,7 @@ const Orders = () => {
             onChange={(e) => setStatusFilter(e.target.value)}
             className="border border-gray-300 rounded px-3 py-2 w-full md:w-1/4"
           >
-            <option value="">Wszystkie statusy</option>
+            <option value="">All</option>
             {orderStatuses.map((status, idx) => (
               <option key={idx} value={status}>
                 {status}
@@ -435,9 +443,9 @@ const Orders = () => {
         </div>
 
         {orders.length === 0 ? (
-          <div className="text-center p-6 text-gray-500">Brak wypożyczeń</div>
+          <div className="text-center p-6 text-gray-500">No orders found</div>
         ) : (
-          <>
+          <div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {orders
                 .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
@@ -462,6 +470,8 @@ const Orders = () => {
                           assignedStartDate: ownerData?.assignedStartDate,
                           assignedEndDate: ownerData?.assignedEndDate,
                         },
+
+                        hasAssignedDates: !!(ownerData?.assignedStartDate && ownerData?.assignedEndDate),
                       };
                     }
 
@@ -471,15 +481,21 @@ const Orders = () => {
 
                   return (
                     <div key={order._id} className="bg-white rounded-xl shadow p-4 flex flex-col gap-3 hover:shadow-md transition relative">
-                      {order.isReturned && (
+                      {/* {order.isReturned && (
                         <span className="absolute top-2 right-2 bg-yellow-400 text-white px-2 py-1 rounded text-xs font-bold">ZWROCONO</span>
-                      )}
+                      )} */}
 
                       <h2 className="text-lg font-semibold text-gray-700">{order?.customer?.email || "Brak maila"}</h2>
-
                       <div className="border-t border-gray-200 pt-2">
 
                         {Object.values(itemsByOwner).map((group, idx) => {
+                          const hasActions =
+                            canProcessOrder(group) ||
+                            canRejectOrder(group) ||
+                            canPrepareOrder(group) ||
+                            canRentOrder(group) ||
+                            canReturnOrder(group);
+
                           return (
                             <div key={idx} className="mb-8 last:mb-2 border border-gray-200 rounded-lg p-4 bg-gray-50">
                               <div className="flex flex-col gap-1 mb-5">
@@ -492,114 +508,152 @@ const Orders = () => {
                                     {group.status}
                                   </span>
                                 </p>
-                              </div>
 
-                              <ul className="list-disc list-inside space-y-2">
-                                {group.items.map((item, i) => {
-                                  const toggleKey = `${order._id}-${item._id}`;
+                                {/* Dates */}
+                                <div className="mt-2 space-y-2">
+                                  <div className="bg-white border border-gray-200 rounded-md p-2">
+                                    <p className="text-sm font-medium text-gray-600">Requested</p>
+                                    <p className="text-sm text-gray-700">
+                                      📅 {new Date(group.dates?.requestedStartDate).toLocaleDateString("pl-PL")} → {new Date(group.dates?.requestedEndDate).toLocaleDateString("pl-PL")}
+                                    </p>
+                                  </div>
 
-                                  return (
-                                    <li key={i} className="text-gray-700 flex flex-col gap-1">
-                                      <div className={`flex items-center gap-2 ${getStatusColor(item.status)}`}>
-                                        {`${item?.product?.name || "Produkt usunięty"} (${item?.product?.tag})`}
-                                      </div>
-
-
-                                      <button
-                                        onClick={() =>
-                                          setExpanded((prev) => ({ ...prev, [toggleKey]: !prev[toggleKey] }))
-                                        }
-                                        className="text-blue-600 hover:underline text-sm self-start"
-                                      >
-                                        {expanded[toggleKey] ? "Hide details" : "Show details"}
-                                      </button>
-
-                                      {/* Collapsible details */}
-                                      {expanded[toggleKey] && (
-                                        <div className="mt-2 space-y-2 p-2 border rounded-lg border-gray-300 bg-gray-50">
-
-                                          {/* Quantity */}
-                                          <div>
-                                            <p>
-                                              Requested: {item?.requestedQuantity ?? "-"}
-                                            </p>
-                                            {item?.assignedQuantity && item.status !== "pending" && (
-                                              <p>
-                                                Assigned: {item?.assignedQuantity}
-                                              </p>
-                                            )}
-                                          </div>
-
-                                          {/* Dates */}
-                                          {/* <div>
-                                            <p className="font-medium text-gray-700">Period:</p>
-                                            <p>
-                                              Requested: 📅 Start: {new Date(item.requested?.startDate).toLocaleDateString("pl-PL")} - End: {new Date(item?.requested?.endDate).toLocaleDateString("pl-PL")}
-                                            </p>
-                                            {item?.assigned?.startDate && item?.assigned?.endDate && item.status !== "pending" && (
-                                              <p>
-                                                Assigned: 📅 Start: {new Date(item?.assigned?.startDate).toLocaleDateString("pl-PL")} - End: {new Date(item?.assigned?.endDate).toLocaleDateString("pl-PL")}
-                                              </p>
-                                            )}
-                                          </div> */}
-
-                                          {/* Status */}
-                                          <div>
-                                            <p className="font-medium text-gray-700">
-                                              Status: {item?.status || "unknown"}
-                                            </p>
-                                          </div>
-
-                                        </div>
-                                      )}
-
-                                    </li>
-                                  )
-                                })}
-                                <div className="flex flex-wrap gap-2 mb-4">
-                                  {canProcessOrder(group) && (
-                                    <button
-                                      onClick={() => handleOpenModal(group)}
-                                      className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg shadow-md transition-colors duration-200"
-                                    >
-                                      Process
-                                    </button>
-                                  )}
-                                  {canRejectOrder(group) && (
-                                    <button
-                                      onClick={() => handleRejectOrder(group)}
-                                      className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow-md transition-colors duration-200"
-                                    >
-                                      Reject
-                                    </button>
-                                  )}
-                                  {canPrepareOrder(group) && (
-                                    <button
-                                      onClick={() => handlePrepareOrder(group)}
-                                      className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-md transition-colors duration-200"
-                                    >
-                                      Prepare
-                                    </button>
-                                  )}
-                                  {canRentOrder(group) && (
-                                    <button
-                                      onClick={() => handleRentOrder(group)}
-                                      className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg shadow-md transition-colors duration-200"
-                                    >
-                                      Rent
-                                    </button>
-                                  )}
-                                  {canReturnOrder(group) && (
-                                    <button
-                                      onClick={() => handleReturnOrder(group)}
-                                      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md transition-colors duration-200"
-                                    >
-                                      Return
-                                    </button>
+                                  {group.hasAssignedDates && (
+                                    <div className="bg-blue-50 border border-blue-200 rounded-md p-2">
+                                      <p className="text-sm font-medium text-blue-700">Assigned</p>
+                                      <p className="text-sm text-blue-800">
+                                        📅 {new Date(group.dates?.assignedStartDate).toLocaleDateString("pl-PL")} → {new Date(group.dates?.assignedEndDate).toLocaleDateString("pl-PL")}
+                                      </p>
+                                    </div>
                                   )}
                                 </div>
+                              </div>
 
-                              </ul>
+                              <div className="space-y-4">
+                                {group.items.length > 0 && (
+                                  <>
+                                    <p className="font-semibold text-gray-700 text-lg">Items:</p>
+
+
+                                    <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
+                                      <ul className="list-disc list-inside space-y-8">
+                                        {group.items.map((item, i) => {
+                                          const toggleKey = `${order._id}-${item._id}`;
+
+                                          return (
+                                            <li key={i} className="text-gray-700 flex flex-col gap-1 pb-6 border-dashed border-b border-gray-700 last:border-0">
+                                              <div className="flex items-center gap-2 flex-wrap text-gray-800 text-sm">
+                                                <span className="text-gray-500">Name:</span>
+                                                <span>{item?.product?.name || "Deleted Product"}</span>
+                                                <span className="text-gray-500">Tag:</span>
+                                                <span>{item?.product?.tag || "—"}</span>
+                                              </div>
+
+                                              <button
+                                                onClick={() =>
+                                                  setExpanded((prev) => ({ ...prev, [toggleKey]: !prev[toggleKey] }))
+                                                }
+                                                className="inline-block mt-1 px-3 py-1 text-sm font-medium text-blue-600 bg-blue-50 rounded-full hover:bg-blue-100 transition-colors"
+                                              >
+                                                {expanded[toggleKey] ? "Hide details" : "Show details"}
+                                              </button>
+
+                                              {/* Collapsible details */}
+                                              {expanded[toggleKey] && (
+                                                <div>
+                                                  {/* Quantity Section */}
+                                                  <div className="space-y-2">
+                                                    <p className="font-semibold text-gray-700 text-lg">Quantity:</p>
+
+                                                    <div className="flex flex-col gap-2 sm:flex-col md:flex-row md:gap-4 flex-wrap">
+                                                      {/* Requested */}
+                                                      <div className="w-full md:flex-1 bg-white border border-gray-200 rounded-md p-4 text-center break-words">
+                                                        <p className="text-sm text-gray-600 font-medium">Requested</p>
+                                                        <p className="text-gray-800 font-bold text-lg">{item?.requestedQuantity ?? "-"}</p>
+                                                      </div>
+
+                                                      {/* Assigned */}
+                                                      {item?.assignedQuantity && item.status !== "pending" && (
+                                                        <div className="w-full md:flex-1 bg-blue-50 border border-blue-200 rounded-md p-4 text-center break-words">
+                                                          <p className="text-sm text-blue-700 font-medium">Assigned</p>
+                                                          <p className="text-blue-800 font-bold text-lg">{item.assignedQuantity}</p>
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                  </div>
+
+                                                  {/* Status Section */}
+                                                  <div className="flex flex-col gap-1">
+                                                    {/* Label */}
+                                                    <p className="font-semibold text-gray-700 text-lg">Status:</p>
+
+                                                    {/* Value below */}
+                                                    <div className="bg-gray-100 border border-gray-200 rounded-md p-4 text-center break-words">
+                                                      <p className={`text-gray-800 font-bold text-sm ${getStatusColor(item?.status)}`}>
+                                                        {item?.status || "Unknown"}
+                                                      </p>
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              )}
+                                            </li>
+                                          )
+                                        })}
+                                      </ul>
+                                    </div>
+                                  </>
+                                )}
+
+                                {hasActions && (
+                                  <div className="mt-4">
+                                    <p className="font-semibold text-gray-700 mb-2 text-lg">Actions:</p>
+                                    <div className="flex flex-wrap gap-2 mb-4">
+                                      {canProcessOrder(group) && (
+                                        <button
+                                          onClick={() => handleOpenModal(group)}
+                                          className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg shadow-md transition-colors duration-200"
+                                        >
+                                          Process
+                                        </button>
+                                      )}
+                                      {canRejectOrder(group) && (
+                                        <button
+                                          onClick={() => handleRejectOrder(group)}
+                                          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow-md transition-colors duration-200"
+                                        >
+                                          Reject
+                                        </button>
+                                      )}
+                                      {canPrepareOrder(group) && (
+                                        <button
+                                          onClick={() => handlePrepareOrder(group)}
+                                          className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-md transition-colors duration-200"
+                                        >
+                                          Prepare
+                                        </button>
+                                      )}
+                                      {canRentOrder(group) && (
+                                        <button
+                                          onClick={() => handleRentOrder(group)}
+                                          className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg shadow-md transition-colors duration-200"
+                                        >
+                                          Rent
+                                        </button>
+                                      )}
+                                      {canReturnOrder(group) && (
+                                        <button
+                                          onClick={() => handleReturnOrder(group)}
+                                          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md transition-colors duration-200"
+                                        >
+                                          Return
+                                        </button>
+                                      )}
+
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+
                             </div>
                           )
                         })}
@@ -611,29 +665,87 @@ const Orders = () => {
 
             {/* Pagination */}
             <div className="flex justify-center items-center gap-4 mt-6">
-              <button onClick={prevPage} disabled={currentPage === 1} className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded disabled:opacity-50">Poprzednia</button>
-              <span className="text-gray-700">Strona {currentPage} z {totalPages}</span>
-              <button onClick={nextPage} disabled={currentPage === totalPages} className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded disabled:opacity-50">Następna</button>
+              <button onClick={prevPage} disabled={currentPage === 1} className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded disabled:opacity-50">Previous</button>
+              <span className="text-gray-700">Page {currentPage} / {totalPages}</span>
+              <button onClick={nextPage} disabled={currentPage === totalPages} className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded disabled:opacity-50">Next</button>
             </div>
-          </>
+          </div>
         )}
       </div>
 
       {openModal && editGroup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded shadow-lg w-full max-w-lg relative">
-            <h2 className="text-2xl font-bold mb-4">Edit Items - {editGroup.owner?.name}</h2>
+          <div className="bg-white p-6 rounded shadow-lg w-full max-w-lg relative max-h-[80vh] overflow-y-auto">
+            <h2 className="text-2xl font-bold text-gray-800 mb-1">Update Order</h2>
+            <p className="text-lg font-semibold text-gray-700 mb-4">
+              Owner: <span className="font-normal text-gray-800">{editGroup.owner?.name}</span>
+            </p>
+
+            {/* Dates */}
+            <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg mb-4">
+              <p className="font-semibold text-gray-700 mb-3">Order Dates</p>
+              <div className="flex flex-col gap-3">
+
+                {/* Date Handler */}
+                <LocalizationProvider dateAdapter={AdapterDateFns}>
+                  {/* Start Date */}
+                  <DateTimePicker
+                    label="Start Date"
+                    value={datesUpdateData.assignedStartDate ? new Date(datesUpdateData.assignedStartDate) : null}
+                    onChange={(newValue) => {
+                      setDatesUpdateData(prev => ({
+                        ...prev,
+                        assignedStartDate: newValue ? newValue.toISOString() : null
+                      }));
+                    }}
+                    ampm={false}
+                    minDateTime={new Date()}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        className="w-full"
+                        disabled={!processableStatuses.includes(editGroup.status)}
+                      />
+                    )}
+                  />
+
+                  {/* End Date */}
+                  <DateTimePicker
+                    label="End Date"
+                    value={datesUpdateData.assignedEndDate ? new Date(datesUpdateData.assignedEndDate) : null}
+                    onChange={(newValue) => {
+                      setDatesUpdateData(prev => ({
+                        ...prev,
+                        assignedEndDate: newValue ? newValue.toISOString() : null
+                      }));
+                    }}
+                    ampm={false}
+                    minDateTime={datesUpdateData.assignedStartDate ? new Date(datesUpdateData.assignedStartDate) : new Date()}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        className="w-full"
+                        disabled={!processableStatuses.includes(editGroup.status)}
+                      />
+                    )}
+                  />
+                </LocalizationProvider>
+
+              </div>
+            </div>
 
             {/* Item selector */}
-            <div className="flex gap-2 mb-4 overflow-x-auto">
+            <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
               {editGroup.items.map((item) => (
                 <button
                   key={item._id}
                   onClick={() => setCurrentItemId(item._id)}
-                  className={`px-3 py-1 rounded border ${currentItemId === item._id ? "border-blue-500 bg-blue-50" : "border-gray-300"
-                    }`}
+                  className={`px-4 py-2 rounded-lg border text-sm whitespace-nowrap transition-colors
+                    ${currentItemId === item._id
+                      ? "border-blue-500 bg-blue-50 text-blue-700 font-medium"
+                      : "border-gray-300 bg-white hover:bg-gray-50"}`}
                 >
-                  {item.product?.name || "Produkt usunięty"}
+                  {item.product?.name || "Deleted Product"}
                 </button>
               ))}
             </div>
@@ -648,13 +760,71 @@ const Orders = () => {
 
                   return (
                     <>
-                      <h2>{itemData.product?.tag}</h2>
-                      <div className="p-2 bg-gray-100 rounded mb-2">
-                        <p className="font-medium text-gray-700">Requested Info</p>
-                        <p>Quantity: {itemData.requestedQuantity}</p>
-                        <p>Start: {new Date(datesUpdateData.requestedStartDate).toLocaleString("pl-PL")}</p>
-                        <p>End: {new Date(datesUpdateData.requestedEndDate).toLocaleString("pl-PL")}</p>
+                      {/* <h2>tags: {itemData.product?.tag}</h2> */}
+                      <div className="flex flex-col gap-1">
+                        {/* Product Name */}
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-gray-500 text-sm font-medium">Name:</span>
+                          <span className="font-medium text-gray-800">{itemData?.product?.name || "Deleted Product"}</span>
+                        </div>
+
+                        {/* Tags */}
+                        {itemData?.product?.tags?.length > 0 && (
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-gray-500 text-sm font-medium">Tags:</span>
+                            <div className="flex flex-wrap gap-1">
+                              {itemData.product.tags.map((tag, i) => (
+                                <span key={i} className="bg-gray-200 text-gray-700 text-xs px-2 py-0.5 rounded-full">
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
+
+
+                      <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg mb-4">
+                        <p className="font-semibold text-gray-700 mb-3">Requested Info</p>
+                        <div className="grid grid-cols-2 gap-y-2 text-sm">
+                          <p className="text-gray-500">Quantity</p>
+                          <p className="text-gray-800 font-medium">{itemData.requestedQuantity}</p>
+
+                          <p className="text-gray-500">Start</p>
+                          <p className="text-gray-800 font-medium">
+                            {new Date(datesUpdateData.requestedStartDate).toLocaleString("pl-PL")}
+                          </p>
+
+                          <p className="text-gray-500">End</p>
+                          <p className="text-gray-800 font-medium">
+                            {new Date(datesUpdateData.requestedEndDate).toLocaleString("pl-PL")}
+                          </p>
+                        </div>
+                      </div>
+
+                      {stockStatus && processableStatuses.includes(itemData.prevStatus) && stockStatus[currentItemId] && (
+                        <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg mb-4">
+                          <p className="font-semibold text-yellow-800 mb-3">Stock Overview</p>
+                          <div className="grid grid-cols-2 gap-y-2 text-sm">
+                            <p className="text-gray-600">Available to Assign</p>
+                            <p className="text-gray-900 font-medium">{stockStatus[currentItemId].availableToAssign}</p>
+
+                            <p className="text-gray-600">Total Available Stock</p>
+                            <p className="text-gray-900 font-medium">{stockStatus[currentItemId].availableTotal}</p>
+
+                            <p className="text-gray-600">Currently Rented Out</p>
+                            <p className="text-gray-900 font-medium">{stockStatus[currentItemId].rentedQuantity}</p>
+
+                            <p className="text-gray-600">Total Requested Quantity</p>
+                            <p className="text-gray-900 font-medium">{stockStatus[currentItemId].inDemand}</p>
+
+                            <p className="text-gray-600">Number of Requesters</p>
+                            <p className="text-gray-900 font-medium">{stockStatus[currentItemId].requestsQuantity}</p>
+                          </div>
+                        </div>
+                      )}
+
+
                       {/* Quantity */}
                       <div>
                         <label className="font-medium text-gray-700">Quantity</label>
@@ -667,39 +837,6 @@ const Orders = () => {
                           disabled={!processableStatuses.includes(itemData.prevStatus) || (itemData.prevStatus !== highestPriorityGroupStatus) || itemData.newStatus === "rejected"}
                         />
                       </div>
-
-                      {/* Dates */}
-                      <div>
-                        <label className="font-medium text-gray-700">Start Date</label>
-                        <input
-                          type="datetime-local" name="assignedStartDate"
-                          value={formatDateTimeLocal(datesUpdateData.assignedStartDate)}
-                          min={today}
-                          onChange={(e) => handleEditChangeDate(e)}
-                          className="border p-2 rounded w-full disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
-                          disabled={!processableStatuses.includes(itemData.prevStatus) || (itemData.prevStatus !== highestPriorityGroupStatus) || itemData.newStatus === "rejected"}
-                        />
-                      </div>
-
-                      <div>
-                        <label className="font-medium text-gray-700">End Date</label>
-                        <input
-                          type="datetime-local" name="assignedEndDate"
-                          value={formatDateTimeLocal(datesUpdateData.assignedEndDate)}
-                          min={datesUpdateData.assignedStartDate || today}
-                          onChange={(e) => handleEditChangeDate(e)}
-                          className="border p-2 rounded w-full disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
-                          disabled={!processableStatuses.includes(itemData.prevStatus) || (itemData.prevStatus !== highestPriorityGroupStatus) || itemData.newStatus === "rejected"}
-                        />
-                      </div>
-
-                      {stockStatus && processableStatuses.includes(itemData.prevStatus) && stockStatus[currentItemId] && (
-                        <div className="p-2 bg-gray-100 rounded mb-3">
-                          <p>Available: {stockStatus[currentItemId].available}</p>
-                          <p>Total requested: {stockStatus[currentItemId].inDemand}</p>
-                          <p>Number of requesters: {stockStatus[currentItemId].requestsQuantity}</p>
-                        </div>
-                      )}
 
                       {/* Status */}
                       <div>
@@ -723,7 +860,7 @@ const Orders = () => {
                   );
                 })()}
 
-                <div className="flex justify-end gap-2 mt-3">
+                <div className="flex justify-end gap-3 mt-4">
                   <button type="button" onClick={handleCloseModal} className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">Cancel</button>
                   <button type="submit" className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Save</button>
                 </div>
@@ -732,7 +869,6 @@ const Orders = () => {
           </div>
         </div>
       )}
-
 
     </div>
   );
