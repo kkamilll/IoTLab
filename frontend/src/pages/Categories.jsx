@@ -76,7 +76,7 @@ const Categories = () => {
     setCategoryData({
       name: selectedCategory.name || "",
       description: selectedCategory.description || "",
-      parent: selectedCategory?.parent?._id?.toString() || null,
+      parent: selectedCategory?.parent?.toString() || null,
       isVisible: selectedCategory?.isVisible || false,
     });
     setEditCategory(selectedCategory._id);

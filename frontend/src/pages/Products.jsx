@@ -413,19 +413,27 @@ useEffect(() => {
   //   setCartQuantities(prev => ({ ...prev, [product._id]: remaining > 0 ? 1 : 0 }));
   // };
 
-  const addExtraField = () => {
-    const key = prompt("Podaj nazwę nowej kolumny:");
-    if (key && !extraColumns.includes(key)) {
-      setExtraColumns(prev => [...prev, key]);
-      setProducts(prev =>
-        prev.map(p => ({ ...p, extraFields: { ...p.extraFields, [key]: "" } }))
-      );
-      setFormData(prev => ({
-        ...prev,
-        extraFields: { ...prev.extraFields, [key]: "" }
-      }));
-    }
-  };
+const addExtraField = () => {
+  const key = prompt("Podaj nazwę nowej kolumny (max 30 znaków):");
+  if (!key) return; // użytkownik anulował
+  if (key.length > 30) {
+    alert("Nazwa kolumny nie może mieć więcej niż 30 znaków.");
+    return;
+  }
+  if (!extraColumns.includes(key)) {
+    setExtraColumns(prev => [...prev, key]);
+    setProducts(prev =>
+      prev.map(p => ({ ...p, extraFields: { ...p.extraFields, [key]: "" } }))
+    );
+    setFormData(prev => ({
+      ...prev,
+      extraFields: { ...prev.extraFields, [key]: "" }
+    }));
+  } else {
+    alert("Kolumna o takiej nazwie już istnieje.");
+  }
+};
+
 
   const removeExtraField = async (key) => {
     if (!window.confirm(`Delete column "${key}" from all products?`)) return;
@@ -629,45 +637,54 @@ const handleCategoryExpand = (catId) => {
   );
 };
   return (
-    <div className="w-full h-full flex flex-col gap-4 p-6 bg-gray-50">
-      <h1 className="text-3xl font-extrabold text-gray-700">Object Management</h1>
+    <div className=" overflow-hidden w-full h-full flex flex-col gap-4 p-6 bg-gray-50">
+      <h1 className=" overflow-hidden text-3xl font-extrabold text-gray-700">Object Management</h1>
 
-      {/* Kontrolki */}
-      <div className="flex flex-col sm:flex-row justify-between gap-3">
-        <input
-          type="text"
-          placeholder="Search"
-          className="border border-gray-300 p-2 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 flex-1"
-          onChange={handleSearch}
-        />
-        <div className="flex gap-2 flex-wrap">
-          <button className="px-4 py-2 bg-green-500 text-white rounded shadow hover:bg-green-600 transition" onClick={generatePDF}>
-            Export PDF
-          </button>
+{/* Kontrolki */}
+{/* Kontrolki */}
+<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+  {/* Search */}
+  <input
+    type="text"
+    placeholder="Search"
+    className="border border-gray-300 p-3 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 flex-1 min-w-0 text-base"
+    onChange={handleSearch}
+  />
 
-          <>
-            <button
-              className="px-4 py-2 bg-blue-500 text-white rounded shadow hover:bg-blue-600 transition"
-              onClick={() => { setEditProduct(null); setOpenModal(true); }}
-            >
-              Add Product
-            </button>
-            <button
-              className="px-4 py-2 bg-gray-500 text-white rounded shadow hover:bg-gray-600 transition"
-              onClick={addExtraField}
-            >
-              + Add Column
-            </button>
-            <button
-              onClick={() => navigate("/cart")}
-              className="px-6 py-3 bg-blue-500 text-white font-semibold rounded hover:bg-blue-600 transition"
-            >
-              Go to Cart
-            </button>
-          </>
+  {/* Przyciskowa grupa */}
+  <div className="flex flex-wrap gap-3 mt-3 sm:mt-0">
+    <button
+      className="px-5 py-3 h-12 text-base font-medium bg-green-500 text-white rounded shadow hover:bg-green-600 transition"
+      onClick={generatePDF}
+    >
+      Export PDF
+    </button>
 
-        </div>
-      </div>
+    <button
+      className="px-5 py-3 h-12 text-base font-medium bg-blue-500 text-white rounded shadow hover:bg-blue-600 transition"
+      onClick={() => { setEditProduct(null); setOpenModal(true); }}
+    >
+      Add Product
+    </button>
+
+    <button
+      className="px-5 py-3 h-12 text-base font-medium bg-gray-500 text-white rounded shadow hover:bg-gray-600 transition"
+      onClick={addExtraField}
+    >
+      Add Column
+    </button>
+
+    <button
+      onClick={() => navigate("/cart")}
+      className="px-6 py-3 h-12 text-base font-medium bg-purple-500 text-white rounded shadow hover:bg-purple-600 transition"
+    >
+      Go to Cart
+    </button>
+  </div>
+</div>
+
+
+
 
       <div className="flex flex-wrap items-center gap-4 mb-4">
 <div className="relative inline-block text-left">
@@ -758,216 +775,287 @@ const handleCategoryExpand = (catId) => {
 
       {/* Tabela */}
 
-      <div className="w-full">
-        {/* Desktop Table */}
-        <div className="hidden md:block overflow-x-auto w-full shadow rounded border border-gray-200">
-          <table className="table-auto w-full min-w-max divide-y divide-gray-200">
-            <thead className="bg-gray-100">
-              <tr>
-                {allColumns.filter(col => !hiddenColumns.includes(col)).map((col, idx) => (
-                  <th
-                    key={idx}
-                    className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer whitespace-nowrap"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span onClick={() => handleSort(col)} className="truncate">
-                        {col} {sortConfig.key === col ? (sortConfig.direction === "asc" ? "↑" : "↓") : ""}
-                      </span>
-                      {isAdmin && extraColumns.includes(col) && (
-                        <button
-                          onClick={() => removeExtraField(col)}
-                          className="ml-2 px-1 py-0.5 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
+   <div className="w-full">
+  {/* Desktop Table */}
+  <div className="hidden md:block overflow-x-auto w-full shadow rounded border border-gray-200">
+    <table className="table-auto w-full min-w-max divide-y divide-gray-200">
+    <thead className="bg-gray-100">
+  <tr>
+    {allColumns.filter(col => !hiddenColumns.includes(col)).map((col, idx) => (
+      <th
+        key={idx}
+        className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer whitespace-nowrap"
+      >
+        <div className="flex items-center justify-between">
+          <span onClick={() => handleSort(col)} className="truncate">
+            {col} {sortConfig.key === col ? (sortConfig.direction === "asc" ? "↑" : "↓") : ""}
+          </span>
+          {isAdmin && extraColumns.includes(col) && (
+            <button
+              onClick={() => removeExtraField(col)}
+              className="ml-2 px-1 py-0.5 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
+            >
+              X
+            </button>
+          )}
+        </div>
+      </th>
+    ))}
+
+    {/* Actions przed In cart */}
+    {isAdmin && <th className="px-4 py-2 whitespace-nowrap">Actions</th>}
+
+    {/* In cart jako ostatnia kolumna */}
+    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+      In cart
+    </th>
+  </tr>
+</thead>
+
+<tbody className="bg-white divide-y divide-gray-200">
+  {paginatedProducts.map(p => (
+    <tr key={p._id}>
+      {allColumns.filter(col => !hiddenColumns.includes(col)).map((col, idx) => (
+        <td key={idx} className="px-4 py-2 text-sm text-gray-700 whitespace-nowrap">
+          {/* Twoja logika kolumn */}
+          {col === "stockTotal"
+            ? p.stockTotal ?? 0
+            : col === "stockForRent"
+            ? getAvailableStockForProduct(p) ?? 0
+            : col === "categories"
+            ? p.categories?.length > 0
+              ? p.categories.length === 1
+                ? <span>{p.categories[0].name}</span>
+                : (
+                  <div className="relative inline-block w-40">
+                    <select
+                      className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white appearance-none pr-8 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 shadow-sm"
+                      value=""
+                      onChange={(e) => e.preventDefault()}
+                    >
+                      <option value="" disabled hidden>Check Categories</option>
+                      {p.categories.map((c, i) => (
+                        <option key={i} value={c?.name ?? ""}>{c?.name}</option>
+                      ))}
+                    </select>
+                    <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-sm select-none">▼</span>
+                  </div>
+                )
+              : <span className="text-gray-400">—</span>
+            : col === "owner"
+            ? p.owner?.name ?? p.owner
+            : col === "description"
+            ? <span className="truncate cursor-pointer" onClick={() => handlePreview(p._id)} title={p.description}>
+                {p.description?.length > 30 ? p.description.slice(0, 30) + "…" : p.description}
+              </span>
+            : col === "name"
+            ? <span className="truncate cursor-pointer" onClick={() => handlePreview(p._id)} title={p.name}>
+                {p.name}
+              </span>
+            : <span className="truncate" title={p.extraFields?.[col] ?? p[col]}>
+                {(p.extraFields?.[col] ?? p[col])?.toString().length > 30
+                  ? (p.extraFields?.[col] ?? p[col])?.toString().slice(0, 30) + "…"
+                  : p.extraFields?.[col] ?? p[col]}
+              </span>
+          }
+        </td>
+      ))}
+
+      {/* Kolumna Actions */}
+      <td className="px-4 py-2 whitespace-nowrap">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handleEdit(p)}
+            disabled={user.id !== p.owner._id && !isAdmin}
+            className="h-10 px-4 bg-blue-500 text-white rounded hover:bg-blue-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+          >
+            Edit
+          </button>
+          <button
+            onClick={() => handlePreview(p._id)}
+            className="h-10 px-4 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition"
+          >
+            Preview
+          </button>
+          <button
+            onClick={() => handleDelete(p._id)}
+            disabled={user.id !== p.owner._id && !isAdmin}
+            className="h-10 px-4 bg-red-500 text-white rounded hover:bg-red-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+          >
+            Delete
+          </button>
+
+          {/* Quantity controls */}
+          <div className="flex items-center overflow-hidden h-10">
+            <button
+              onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) - 1, p)}
+              className="w-10 h-full bg-gray-200 hover:bg-gray-300 transition"
+              disabled={(cartQuantities[p._id] || 0) <= 0}
+            >
+              -
+            </button>
+            <input
+              type="text"
+              min="0"
+              max={getAvailableStockForProduct(p)}
+              value={cartQuantities[p._id] || 0}
+              onChange={(e) => handleQuantityChange(p._id, Number(e.target.value), p)}
+              className="w-20 text-center outline-none text-1xl h-full p-0 border-none"
+            />
+            <button
+              onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) + 1, p)}
+              className="w-10 h-full bg-gray-200 hover:bg-gray-300 transition"
+              disabled={(cartQuantities[p._id] || 0) >= getAvailableStockForProduct(p)}
+            >
+              +
+            </button>
+          </div>
+        </div>
+      </td>
+
+      {/* In cart jako ostatnia kolumna */}
+      <td className="px-4 py-2 text-center">
+        {cartQuantities[p._id] > 0 ? (
+          <span
+            className="inline-flex items-center justify-center h-10 text-white font-semibold text-base bg-blue-500 rounded-full px-2"
+            style={{ minWidth: '2.5rem' }}
+          >
+            {cartQuantities[p._id]}
+          </span>
+        ) : (
+          <span className="text-gray-400">—</span>
+        )}
+      </td>
+    </tr>
+  ))}
+</tbody>
+
+    </table>
+  </div>
+
+{/* Mobile Cards */}
+<div className="md:hidden flex flex-col gap-4">
+  {paginatedProducts.map(p => (
+    <div key={p._id} className="border rounded shadow p-4 bg-white flex flex-col divide-y divide-gray-200">
+      
+      {/* Data Columns */}
+      {allColumns.filter(col => !hiddenColumns.includes(col)).map((col, idx) => (
+        <div key={idx} className="flex justify-between py-2 items-center">
+          <span className="font-semibold text-gray-500">{col}:</span>
+          <span className="text-gray-700 truncate max-w-[60%] text-right">
+            {col === "stockTotal" ? p.stockTotal ?? 0
+              : col === "stockForRent" ? getAvailableStockForProduct(p) ?? 0
+              : col === "categories" ? (
+                  p.categories?.length > 0 ? (
+                    p.categories.length === 1 ? (
+                      <span>{p.categories[0].name}</span>
+                    ) : (
+                      <div className="relative inline-block w-40">
+                        <select
+                          className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white appearance-none pr-8 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 shadow-sm"
+                          value=""
+                          onChange={(e) => e.preventDefault()}
                         >
-                          X
-                        </button>
-                      )}
-                    </div>
-                  </th>
-                ))}
-                {isAdmin && <th className="px-4 py-2 whitespace-nowrap">Actions</th>}
-              </tr>
-            </thead>
-
-            <tbody className="bg-white divide-y divide-gray-200">
-              {paginatedProducts.map(p => (
-                <tr key={p._id}>
-                  {allColumns.filter(col => !hiddenColumns.includes(col)).map((col, idx) => (
-                    <td key={idx} className="px-4 py-2 text-sm text-gray-700 whitespace-nowrap">
-                      {col === "stockTotal" ? p.stockTotal ?? 0
-                        : col === "stockForRent" ? getAvailableStockForProduct(p) ?? 0
-                          : col === "categories" ? (
-                            <div className="inline-block relative w-32"> {/* stała szerokość */}
-                              <select
-                                className="appearance-none border rounded px-2 py-1 text-sm w-full pr-6 bg-white cursor-pointer"
-                                value=""
-                                onChange={(e) => e.preventDefault()} // tymczasowo blokujemy zmianę
-                              >
-                                {p.categories?.map((c, i) => (
-                                  <option key={i} value={c?.name ?? ""}>
-                                    {(c?.name ?? "").slice(0, 15)}
-                                  </option>
-                                ))}
-                              </select>
-                              {/* Strzałka w dół */}
-                              <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 text-sm">⬇️</span>
-                            </div>
-                          ) : col === "owner" ? p.owner?.name ?? p.owner
-                            : col === "description" ? (
-                              <span className="truncate cursor-pointer" onClick={() => handlePreview(p._id)} title={p.description}>
-                                {p.description?.length > 50 ? p.description.slice(0, 50) + "…" : p.description}
-                              </span>
-                            )
-                              : col === "name" ? (
-                                <span className="truncate cursor-pointer" onClick={() => handlePreview(p._id)} title={p.name}>
-                                  {p.name}
-                                </span>
-                              )
-                                : p[col] ?? p.extraFields?.[col] ?? ""}
-                    </td>
-                  ))}
-                  <td className="px-4 py-2 flex flex-col sm:flex-row sm:items-center gap-2 whitespace-nowrap">
-                    {/* Action buttons + quantity */}
-                    <div className="flex flex-wrap gap-2">
-                      <button onClick={() => handleEdit(p)} disabled={(user.id !== p.owner._id && !isAdmin)} className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
-                        Edit
-                      </button>
-                      <button onClick={() => handlePreview(p._id)} className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition">
-                        Preview
-                      </button>
-                      <button onClick={() => handleDelete(p._id)} disabled={(user.id !== p.owner._id && !isAdmin)} className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
-                        Delete
-                      </button>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2">
-                      <div className="flex items-center border rounded overflow-hidden h-10">
-                        <button
-                          onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) - 1, p)}
-                          className="px-3 bg-gray-200 hover:bg-gray-300 h-full"
-                          disabled={(cartQuantities[p._id] || 0) <= 0}
-                        >-</button>
-                        <input
-                          type="number"
-                          min="0"
-                          max={getAvailableStockForProduct(p)}
-                          value={cartQuantities[p._id] || 0}
-                          onChange={(e) => handleQuantityChange(p._id, e.target.value, p)}
-                          className="w-16 text-center outline-none"
-                        />
-                        <button
-                          onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) + 1, p)}
-                          className="px-3 bg-gray-200 hover:bg-gray-300 h-full"
-                          disabled={(cartQuantities[p._id] || 0) >= getAvailableStockForProduct(p)}
-                        >+</button>
+                          <option value="" disabled hidden>
+                            Check Categories
+                          </option>
+                          {p.categories.map((c, i) => (
+                            <option key={i} value={c?.name ?? ""}>{c?.name}</option>
+                          ))}
+                        </select>
+                        <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-sm select-none">
+                          ▼
+                        </span>
                       </div>
-
-                      <span className="inline-block bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full sm:mt-0 mt-1">
-                        In cart: {cartQuantities[p._id] || 0}
-                      </span>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Mobile Cards */}
-        <div className="md:hidden flex flex-col gap-4">
-          {paginatedProducts.map(p => (
-            <div key={p._id} className="border rounded shadow p-4 bg-white">
-              {allColumns.filter(col => !hiddenColumns.includes(col)).map((col, idx) => (
-                <div key={idx} className="flex justify-between py-1">
-                  <span className="font-semibold text-gray-500">{col}:</span>
-                  <span className="text-gray-700 truncate">
-                    {col === "stockTotal" ? p.stockTotal ?? 0
-                      : col === "stockForRent" ? getAvailableStockForProduct(p) ?? 0
-                        : col === "categories" ? (
-                          <div className="inline-block relative">
-                            <select
-                              className="border rounded px-2 py-1 text-sm"
-                              value=""
-                              onChange={(e) => e.preventDefault()}
-                              style={{ width: '8rem' }} // stała szerokość dla wszystkich opcji
-                            >
-                              <option value="">
-                                {"Categories".slice(0, 15)}
-                              </option>
-
-                              {p.categories?.map((c, i) => (
-                                <option key={i} value={c?.name ?? ""}>
-                                  {(c?.name ?? "").slice(0, 15)}
-                                </option>
-                              ))}
-                            </select>
-
-                          </div>
-                        )
-
-                          : col === "owner" ? p.owner?.name ?? p.owner
-                            : col === "description" ? (
-                              <span className="truncate cursor-pointer" onClick={() => handlePreview(p._id)} title={p.description}>
-                                {p.description?.length > 50 ? p.description.slice(0, 50) + "…" : p.description}
-                              </span>
-                            )
-                              : col === "name" ? (
-                                <span className="truncate cursor-pointer" onClick={() => handlePreview(p._id)} title={p.name}>
-                                  {p.name}
-                                </span>
-                              )
-                                : p[col] ?? p.extraFields?.[col] ?? ""}
+                    )
+                  ) : (
+                    <span className="text-gray-400">—</span>
+                  )
+                )
+              : col === "owner" ? p.owner?.name ?? p.owner
+              : col === "description" ? (
+                  <span className="truncate cursor-pointer" onClick={() => handlePreview(p._id)} title={p.description}>
+                    {p.description?.length > 50 ? p.description.slice(0, 50) + "…" : p.description}
                   </span>
-                </div>
-              ))}
-
-              <div className="flex flex-col gap-2 mt-2">
-                <div className="flex flex-wrap gap-2">
-                  <button onClick={() => handleEdit(p)} disabled={(user.id !== p.owner._id && !isAdmin)} className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
-                    Edit
-                  </button>
-                  <button onClick={() => handlePreview(p._id)} className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition">
-                    Preview
-                  </button>
-                  <button onClick={() => handleDelete(p._id)} disabled={(user.id !== p.owner._id && !isAdmin)} className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
-                    Delete
-                  </button>
-                </div>
-
-                <div className="flex justify-center items-center border rounded-lg overflow-hidden h-10 mt-2 shadow-sm">
-                  <button
-                    onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) - 1, p)}
-                    className="px-4 bg-gray-100 hover:bg-gray-200 transition text-gray-700 font-bold"
-                    disabled={(cartQuantities[p._id] || 0) <= 0}
-                  >
-                    -
-                  </button>
-
-                  <input
-                    type="number"
-                    min="0"
-                    max={getAvailableStockForProduct(p)}
-                    value={cartQuantities[p._id] || 0}
-                    onChange={(e) => handleQuantityChange(p._id, e.target.value, p)}
-                    className="w-16 text-center outline-none border-x border-gray-200 focus:ring-1 focus:ring-blue-400 focus:border-blue-400 transition"
-                  />
-
-                  <button
-                    onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) + 1, p)}
-                    className="px-4 bg-gray-100 hover:bg-gray-200 transition text-gray-700 font-bold"
-                    disabled={(cartQuantities[p._id] || 0) >= getAvailableStockForProduct(p)}
-                  >
-                    +
-                  </button>
-                </div>
-
-                <span className="inline-block bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full mt-1">
-                  In cart: {cartQuantities[p._id] || 0}
-                </span>
-              </div>
-            </div>
-          ))}
+                )
+              : col === "name" ? (
+                  <span className="truncate cursor-pointer" onClick={() => handlePreview(p._id)} title={p.name}>
+                    {p.name}
+                  </span>
+                )
+              : p[col] ?? p.extraFields?.[col] ?? ""}
+          </span>
         </div>
+      ))}
+
+      {/* Action buttons */}
+      <div className="flex flex-wrap gap-2 justify-center mt-2">
+        <button
+          onClick={() => handleEdit(p)}
+          disabled={user.id !== p.owner._id && !isAdmin}
+          className="flex-1 min-w-[80px] px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed text-center"
+        >
+          Edit
+        </button>
+        <button
+          onClick={() => handlePreview(p._id)}
+          className="flex-1 min-w-[80px] px-3 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition text-center"
+        >
+          Preview
+        </button>
+        <button
+          onClick={() => handleDelete(p._id)}
+          disabled={user.id !== p.owner._id && !isAdmin}
+          className="flex-1 min-w-[80px] px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed text-center"
+        >
+          Delete
+        </button>
       </div>
+
+      {/* Quantity selector - moved below buttons */}
+      <div className="flex justify-center items-center border rounded-lg overflow-hidden h-10 mt-2 shadow-sm">
+        <button
+          onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) - 1, p)}
+          className="px-4 bg-gray-100 hover:bg-gray-200 transition text-gray-700 font-bold"
+          disabled={(cartQuantities[p._id] || 0) <= 0}
+        >
+          -
+        </button>
+        <input
+          type="number"
+          min="0"
+          max={getAvailableStockForProduct(p)}
+          value={cartQuantities[p._id] || 0}
+          onChange={(e) => handleQuantityChange(p._id, Number(e.target.value), p)}
+          className="w-16 text-center outline-none border-x border-gray-200 focus:ring-1 focus:ring-blue-400 focus:border-blue-400 transition"
+        />
+        <button
+          onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) + 1, p)}
+          className="px-4 bg-gray-100 hover:bg-gray-200 transition text-gray-700 font-bold"
+          disabled={(cartQuantities[p._id] || 0) >= getAvailableStockForProduct(p)}
+        >
+          +
+        </button>
+      </div>
+
+      {/* Mobile In cart */}
+      <div className="flex justify-center py-2">
+        {cartQuantities[p._id] > 0 ? (
+          <span className="inline-flex items-center justify-center h-10 text-white font-semibold text-base bg-blue-500 rounded-full px-4">
+            In cart: {cartQuantities[p._id]}
+          </span>
+        ) : (
+          <span className="text-gray-400">—</span>
+        )}
+      </div>
+
+    </div>
+  ))}
+</div>
+
+
+</div>
+
 
 
 
@@ -994,8 +1082,15 @@ const handleCategoryExpand = (catId) => {
         </button>
       </div>
  {openModal && (
-  <div className="fixed inset-0  backdrop-blur-md flex items-center justify-center z-50 p-4">
-    <div className="bg-white p-6 rounded shadow-lg w-full max-w-lg md:max-w-xl lg:max-w-2xl relative max-h-[90vh] overflow-auto">
+
+  <div
+    className="fixed inset-0 backdrop-blur-md flex items-center justify-center z-50 p-4"
+    onClick={closeModal} // kliknięcie w overlay zamyka modal
+  >
+    <div
+      className="bg-white p-6 rounded shadow-lg w-full max-w-lg md:max-w-xl lg:max-w-2xl relative max-h-[90vh] overflow-auto"
+      onClick={(e) => e.stopPropagation()} // zatrzymuje propagację kliknięcia
+    >
       <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
   <div className="flex items-center justify-between mb-4">
     <h2 className="text-2xl font-bold">
@@ -1064,18 +1159,22 @@ const handleCategoryExpand = (catId) => {
   </div>
 
   {/* Description */}
-  <div>
-    <label htmlFor="description" className="font-semibold">Description</label>
-    <input
-      id="description"
-      type="text"
-      name="description"
-      placeholder="Description"
-      value={formData.description}
-      onChange={handleChange}
-      className="border p-2 rounded w-full"
-    />
-  </div>
+<div>
+  <label htmlFor="description" className="font-semibold">Description</label>
+  <textarea
+    id="description"
+    name="description"
+    placeholder="Description"
+    value={formData.description}
+    onChange={handleChange}
+    rows={4} // liczba widocznych wierszy
+    maxLength={1000} // limit znaków
+    className="border p-2 rounded w-full resize-y"
+  />
+  <p className="text-sm text-gray-500">{formData.description.length}/1000</p>
+</div>
+
+
 
   {/* Stock Total */}
   <div>
@@ -1113,22 +1212,45 @@ const handleCategoryExpand = (catId) => {
   </div>
 
   {/* Extra Columns */}
-  {extraColumns.map((col, idx) => (
-    <div key={idx} className="flex items-center gap-2">
-      <label htmlFor={`extra-${col}`} className="font-semibold">{col}</label>
-      <input
-        id={`extra-${col}`}
-        type="text"
-        placeholder={col}
-        value={formData.extraFields?.[col] || ""}
-        onChange={(e) => handleExtraFieldChange(col, e.target.value)}
-        className="border p-2 rounded flex-1"
-      />
-      {isAdmin && (
-        <button type="button" onClick={() => removeExtraField(col)} className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600">X</button>
-      )}
-    </div>
-  ))}
+{extraColumns.map((col, idx) => (
+  <div key={idx} className="flex flex-col gap-1 mb-2">
+    <label
+      htmlFor={`extra-${col}`}
+      className="font-semibold"
+      title={col} // pokazuje pełną nazwę przy najechaniu
+    >
+      {col.length > 30 ? col.slice(0, 27) + "…" : col}
+    </label>
+
+    <textarea
+      id={`extra-${col}`}
+      name={col}
+      placeholder={col}
+      value={formData.extraFields?.[col] || ""}
+      onChange={(e) => handleExtraFieldChange(col, e.target.value)}
+      rows={1} // początkowo jedna linijka
+      maxLength={1000} // limit znaków
+      className="border p-2 rounded w-full resize-y"
+    />
+
+    <p className="text-sm text-gray-500">
+      {(formData.extraFields?.[col]?.length || 0)}/1000
+    </p>
+
+    {isAdmin && (
+      <button
+        type="button"
+        onClick={() => removeExtraField(col)}
+        className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 mt-1"
+      >
+        X
+      </button>
+    )}
+  </div>
+))}
+
+
+
 
   {/* Categories */}
   <div>
@@ -1253,9 +1375,13 @@ const handleCategoryExpand = (catId) => {
     <button type="button" onClick={closeModal} className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">Cancel</button>
     <button type="submit" className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Save</button>
   </div>
-</form>
-
+      </form> 
     </div>
+
+
+
+
+
   </div>
 )}
 
