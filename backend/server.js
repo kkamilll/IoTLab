@@ -16,7 +16,7 @@ import productRoutes from './routes/productRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import noteRoutes from './routes/noteRoutes.js';
 import materialRoutes from "./routes/materialRoutes.js";
-
+import componentRoutes from "./routes/componentRoutes.js";
 import { errorHandler } from './middleware/errorHandler.js';
 
 dotenv.config();
@@ -78,7 +78,7 @@ app.use('/products', productRoutes);
 app.use('/orders', orderRoutes);
 app.use('/notes', noteRoutes);
 app.use('/materials', materialRoutes);
-
+app.use('/components', componentRoutes);
 
 app.use(errorHandler);
 

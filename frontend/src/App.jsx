@@ -1,5 +1,5 @@
 import './App.css';
-import react, { useEffect } from "react";
+import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 
 // Pages
@@ -19,10 +19,11 @@ import Materials from './pages/Materials';
 import MainGuest from './pages/MainGuest';
 import Orders from './pages/Orders';
 import Users from './pages/Users';
+import Components from './pages/Components';
+import CategoryFiles from './pages/CategoryFiles';
 
 // Components
 import Logout from './components/Logout';
-// import ReturnedOrders from './components/ReturnedOrders';
 
 // Utils
 import ProtectedRoutes from './utils/ProtectedRoutes';
@@ -41,10 +42,9 @@ function GlobalEffect() {
   useEffect(() => {
     if (location.pathname.startsWith(pathPrefix) && !excludedPathsWithPrefix.includes(location.pathname))
       resetCart();
-
   }, [location]);
 
-  return null; // no UI
+  return null;
 }
 
 function App() {
@@ -64,6 +64,8 @@ function App() {
         <Route path="/mainguest" element={<MainGuest />} />
         <Route path="/preview" element={<ProductPreview />} />
 
+          <Route path="/components/:categoryId" element={<CategoryFiles />} />
+
         {/* Admin Dashboard - Protected Routes */}
         <Route
           path="/admin-dashboard"
@@ -73,7 +75,6 @@ function App() {
             </ProtectedRoutes>
           }
         >
-          {/* Nested routes for Admin */}
           <Route index element={<Dashboard />} />
           <Route path="products" element={<Products />} />
           <Route path="orders" element={<Orders />} />
@@ -82,6 +83,8 @@ function App() {
           <Route path="preview" element={<ProductPreview />} />
           <Route path="notes" element={<Notes />} />
           <Route path="materials" element={<Materials />} />
+          <Route path="components" element={<Components />} />
+
           <Route
             path="categories"
             element={
@@ -90,7 +93,6 @@ function App() {
               </ProtectedRoutes>
             }
           />
-          {/* <Route path="ReturnedOrders" element={<ReturnedOrders />} /> */}
         </Route>
       </Routes>
     </Router>

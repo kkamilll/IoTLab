@@ -14,6 +14,7 @@ const Sidebar = () => {
     {name:"Profile", path: "/admin-dashboard/profile", isParent:false},
     {name:"Notes", path: "/admin-dashboard/notes", isParent:false},
     {name:"Slider", path: "/admin-dashboard/materials", isParent:false},
+    {name:"Components", path: "/admin-dashboard/components", isParent:false},
   ];
 
  const lecturerItems = menuItems.filter(

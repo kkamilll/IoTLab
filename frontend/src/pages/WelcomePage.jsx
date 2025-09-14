@@ -14,7 +14,9 @@ const WelcomePage = () => {
   const [notesLoading, setNotesLoading] = useState(false);
   const [notesError, setNotesError] = useState(null);
   const [notesPage, setNotesPage] = useState(1);
+const [categoryIndex, setCategoryIndex] = useState(0);
 
+  const [categories, setCategories] = useState([]);
   const NOTES_PER_PAGE = 4;
   const totalPages = Math.ceil(notes.length / NOTES_PER_PAGE);
   const paginatedNotes = notes.slice(
@@ -27,7 +29,10 @@ const WelcomePage = () => {
     (async () => {
       try {
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/materials`, { headers });
+        const res = await axios.get(
+          `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/materials`,
+          { headers }
+        );
         if (res.data.success) setMaterials(res.data.data);
       } catch (err) {
         console.error("Error fetching materials:", err);
@@ -42,7 +47,10 @@ const WelcomePage = () => {
       setNotesError(null);
       try {
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/notes`, { headers });
+        const res = await axios.get(
+          `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/notes`,
+          { headers }
+        );
         if (res.data.success && Array.isArray(res.data.data)) setNotes(res.data.data);
         else setNotesError('Invalid server response');
       } catch (err) {
@@ -53,6 +61,20 @@ const WelcomePage = () => {
       }
     })();
   }, [token]);
+
+  // Fetch categories (public)
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await axios.get(
+          `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/components`
+        );
+        if (res.data.success) setCategories(res.data.data);
+      } catch (err) {
+        console.error("Error fetching categories:", err);
+      }
+    })();
+  }, []);
 
   // Timer for current time
   useEffect(() => {
@@ -66,6 +88,10 @@ const WelcomePage = () => {
   const handleBackToSidebar = () => {
     if (['admin', 'lecturer'].includes(user?.role)) navigate('/admin-dashboard');
     else navigate('/');
+  };
+
+  const handleCategoryClick = (id) => {
+      navigate(`/components/${id}`); // jeśli zalogowany → pokaz pliki
   };
 
   return (
@@ -104,83 +130,85 @@ const WelcomePage = () => {
         )}
       </div>
 
-  {/* WELCOME SECTION */}
-<section className="relative py-20 flex justify-center items-center overflow-hidden shadow-1xl">
-  {/* Tło z obrazem */}
-  <div
-    className="absolute inset-0 bg-[url('/uploadsWelcome/aa.jpg')] bg-cover bg-center bg-no-repeat"
-    style={{ filter: 'brightness(0.8)' }}
-  ></div>
+      {/* WELCOME SECTION */}
+      <section className="relative py-20 flex justify-center items-center overflow-hidden shadow-1xl">
+        <div
+          className="absolute inset-0 bg-[url('/uploadsWelcome/aa.jpg')] bg-cover bg-center bg-no-repeat"
+          style={{ filter: 'brightness(0.8)' }}
+        ></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/50"></div>
+        <div className="relative z-10 max-w-3xl text-center px-6">
+          <h1 className="text-5xl md:text-6xl font-extrabold mb-4 leading-tight text-white drop-shadow-xl">
+            IoTLab
+          </h1>
+          <p className="text-lg md:text-2xl mb-8 font-light text-blue-200 drop-shadow-md">
+            Laboratory Room Management System
+          </p>
 
-  {/* Gradient nakładki dla lepszej czytelności */}
-  <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/50"></div>
+          {!user && (
+            <div className="flex flex-col sm:flex-row justify-center gap-6 mt-6">
+              <button
+                onClick={handleLoginClick}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-10 py-3 rounded-full shadow-lg transition duration-300 transform hover:-translate-y-1"
+              >
+                Login
+              </button>
+              <button
+                onClick={() => navigate('/mainguest')}
+                className="bg-green-600 hover:bg-green-700 text-white font-semibold px-10 py-3 rounded-full shadow-lg transition duration-300 transform hover:-translate-y-1"
+              >
+                Order as Guest
+              </button>
+            </div>
+          )}
+        </div>
+      </section>
 
-  {/* Treść */}
-  <div className="relative z-10 max-w-3xl text-center px-6">
-    <h1 className="text-5xl md:text-6xl font-extrabold mb-4 leading-tight text-white drop-shadow-xl">
-      IoTLab
-    </h1>
-    <p className="text-lg md:text-2xl mb-8 font-light text-blue-200 drop-shadow-md">
-      Laboratory Room Management System
-    </p>
+      {/* CATEGORIES */}
+<section className="py-20 bg-white text-gray-900">
+  <div className="max-w-6xl mx-auto px-4">
+    <h2 className="text-4xl font-extrabold text-center mb-14 tracking-tight text-blue-900">
+      Explore Categories
+    </h2>
 
-    {!user && (
-      <div className="flex flex-col sm:flex-row justify-center gap-6 mt-6">
-        <button
-          onClick={handleLoginClick}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-10 py-3 rounded-full shadow-lg transition duration-300 transform hover:-translate-y-1"
-        >
-          Login
-        </button>
-        <button
-          onClick={() => navigate('/mainguest')}
-          className="bg-green-600 hover:bg-green-700 text-white font-semibold px-10 py-3 rounded-full shadow-lg transition duration-300 transform hover:-translate-y-1"
-        >
-          Order as Guest
-        </button>
+    <div className="relative flex items-center">
+      {/* Strzałka w lewo */}
+      <button
+        onClick={() => setCategoryIndex(prev => Math.max(prev - 1, 0))}
+        className="bg-blue-600/80 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition"
+        disabled={categoryIndex === 0}
+      >
+        ←
+      </button>
+
+      {/* Kontenery */}
+      <div className="flex gap-7 flex-1 justify-center overflow-hidden px-2">
+        {categories.slice(categoryIndex, categoryIndex + 3).map(cat => (
+          <div
+            key={cat._id}
+            onClick={() => handleCategoryClick(cat._id)}
+            className="flex-shrink-0 w-[280px] p-10 rounded-3xl shadow-lg hover:shadow-2xl hover:scale-105 transition-transform cursor-pointer flex flex-col justify-between items-center bg-gradient-to-tr from-blue-50 to-blue-100 min-h-[220px]"
+          >
+            <div className="text-6xl mb-4">📁</div>
+            <h3 className="font-semibold text-xl text-blue-800 text-center break-words">{cat.name}</h3>
+          </div>
+        ))}
       </div>
-    )}
+
+      {/* Strzałka w prawo */}
+      <button
+        onClick={() => setCategoryIndex(prev => Math.min(prev + 1, categories.length - 3))}
+        className="bg-blue-600/80 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition"
+        disabled={categoryIndex >= categories.length - 3}
+      >
+        →
+      </button>
+    </div>
   </div>
 </section>
 
 
 
-
-
-
-
-      {/* INFO PANEL */}
-      <section className="py-20 bg-white text-gray-900">
-        <div className="max-w-6xl mx-auto px-6">
-          <h2 className="text-4xl font-extrabold text-center mb-14 tracking-tight text-blue-900">
-            Why Choose Our Inventory System?
-          </h2>
-          <div className="grid md:grid-cols-3 gap-12">
-
-            {/* Full Warehouse Control */}
-            <div className="p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-shadow bg-gradient-to-tr from-blue-50 to-blue-100 cursor-default">
-              <div className="text-5xl mb-5">📦</div>
-              <h3 className="font-semibold text-2xl mb-3 text-blue-800">Full Warehouse Control</h3>
-              <p className="text-gray-700">Track quantities, availability, and product locations in real-time.</p>
-            </div>
-
-            {/* Reports & Analytics */}
-            <div className="p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-shadow bg-gradient-to-tr from-blue-50 to-blue-100 cursor-default">
-              <div className="text-5xl mb-5">📊</div>
-              <h3 className="font-semibold text-2xl mb-3 text-blue-800">Reports & Analytics</h3>
-              <p className="text-gray-700">Generate advanced reports, inventory levels and orders.</p>
-            </div>
-
-            {/* Secure Access */}
-            <div className="p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-shadow bg-gradient-to-tr from-blue-50 to-blue-100 cursor-default">
-              <div className="text-5xl mb-5">🔒</div>
-              <h3 className="font-semibold text-2xl mb-3 text-blue-800">Secure Access</h3>
-              <p className="text-gray-700">Role-based authorization ensures secure access for administrators and staff.</p>
-            </div>
-
-          </div>
-        </div>
-      </section>
 
       {/* MAIN SLIDER */}
       {materials.length > 0 && <MainSlider materials={materials} />}
@@ -212,7 +240,7 @@ const WelcomePage = () => {
                 ))}
               </ul>
 
-              {/* Pagination Buttons */}
+              {/* Pagination */}
               <div className="flex justify-center gap-4 mt-6">
                 <button
                   onClick={() => setNotesPage(prev => Math.max(prev - 1, 1))}
