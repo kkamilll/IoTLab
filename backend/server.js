@@ -33,15 +33,26 @@ app.use(morgan('combined', { stream: accessLogStream }));
 
 const allowedOrigins = [
   'http://localhost:5173',
+  'http://localhost:3500',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:3500',
   'http://150.254.30.162',
   'http://iotlab.cs.put.poznan.pl'
 ];
 
 app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  credentials: true
+  // origin: function (origin, callback) {
+  //   // allow requests with no origin (like mobile apps or curl)
+  //   if (!origin) return callback(null, true);
+
+  //   if (allowedOrigins.includes(origin)) {
+  //     callback(null, true); // allowed
+  //   } else {
+  //     callback(new Error('Not allowed by CORS'));
+  //   }
+  // },
+  // methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  // allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
 
 app.use(express.json());

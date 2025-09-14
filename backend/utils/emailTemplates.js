@@ -17,3 +17,37 @@ export function generateVerificationOtpEmailTemplate(otpCode) {
     </footer>
   </div>`;
 }
+
+export const orderTemplates = {
+  newOrder: ({ order }) => `
+    Hello ${order.customer.name},
+
+    Your order ${order._id} has been received!
+
+    Items:
+    ${order.items.map(
+      (item) => `- ${item.product.name} x ${item.requestedQuantity}`
+    ).join("\n")}
+
+    Start Date: ${order.requestedStartDate.toDateString()}
+    End Date: ${order.requestedEndDate.toDateString()}
+
+    Thank you for your order!
+  `,
+
+  updateOrder: ({ order }) => `
+    Hello ${order.customer.name},
+
+    Your order ${order._id} has been updated.
+
+    Current Items:
+    ${order.items.map(
+      (item) => `- ${item.product.name} x ${item.requestedQuantity} (status: ${item.status})`
+    ).join("\n")}
+
+    Start Date: ${order.requestedStartDate.toDateString()}
+    End Date: ${order.requestedEndDate.toDateString()}
+
+    Thank you!
+  `,
+};

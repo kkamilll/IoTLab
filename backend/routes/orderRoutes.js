@@ -1,6 +1,6 @@
 import express from "express";
 import authMiddleware from "../middleware/authMiddleware.js";
-import { getOrderStatuses, getOrders, createOrder, updateOrder, hardDeleteOrder, sendOrderEmail } from "../controllers/orderController.js";
+import { getOrderStatuses, getOrders, createOrder, updateOrder, hardDeleteOrder } from "../controllers/orderController.js";
 
 const router = express.Router();
 
@@ -14,7 +14,7 @@ router.put("/updateOrder/:orderId", authMiddleware, updateOrder);
 // router.post("/returned", authMiddleware, returnOrder);
 router.delete("/:orderId", authMiddleware, hardDeleteOrder);
 
-router.post("/send-order-email", sendOrderEmail);
+// router.post("/send-order-email", sendOrderEmail);
 // router.post("/update-quantity", authMiddleware, updateOrderQuantity);
 // router.post("/update-dates", authMiddleware, updateOrderDates);
 

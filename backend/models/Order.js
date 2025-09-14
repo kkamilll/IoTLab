@@ -34,7 +34,7 @@ const createOwnersData = (order, ownersMapOld, ownersMap, _newAssignedStartDate,
 
         finalStatus: item.status,
         prevStatus: currOwnerData?.status || "pending",
-        
+
         // hasChanged: false
         hasAssignedDates: !!((_newAssignedStartDate && _newAssignedEndDate) || (prevOwnerData?.assignedStartDate && prevOwnerData?.assignedEndDate)),
       };
@@ -58,7 +58,7 @@ const createOwnersData = (order, ownersMapOld, ownersMap, _newAssignedStartDate,
     const isStatusDecreased = OWNER_STATUS_ORDER.indexOf(data.finalStatus) < OWNER_STATUS_ORDER.indexOf(data.prevStatus);
     const isPrevOrderFinalized = FINALIZED_STATUS_ORDER.includes(data.prevStatus);
 
-    if (isStatusDecreased && !isPrevOrderFinalized) 
+    if (isStatusDecreased && !isPrevOrderFinalized)
       return { owner, assignedStartDate: data.assignedStartDate, assignedEndDate: data.assignedEndDate, status: 'changed' };
 
     if (data.finalStatus == 'pending' || (FINALIZED_STATUS_ORDER.includes(data.finalStatus) && !data.hasAssignedDates))
@@ -133,36 +133,18 @@ orderSchema.pre('save', async function () {
       ownersMap[productId] = productOwner;
     }
 
-    const ownersData = createOwnersData(order, ownersMapOld, ownersMap, order._newAssignedStartDate, order._newAssignedEndDate);
-    order.ownersData = ownersData;
+    order.ownersData = createOwnersData(order, ownersMapOld, ownersMap, order._newAssignedStartDate, order._newAssignedEndDate);
+
+    const isNewOrder = order.isNew;
+    const isUpdate = !order.isNew && order._isUpdate;
 
   } catch (error) {
     // Handle validation error
+    console.error("Error in pre save:", error);
     if (error instanceof AppError) throw error;
     throw new ServerError({ message: error.message });
   }
 });
-
-// orderSchema.pre('updateOne', async function () {
-//   try {
-//     const filter = this.getQuery();
-//     const prevOrder = await Order.findOne(filter); // current DB state
-//     if (!prevOrder) throw new ConflictError("Order not found");
-
-//     const update = this.getUpdate();
-//     if (update.$set) deepMerge(prevOrder, update.$set);
-
-//     const ownersMap = await productOwnerMap(prevOrder);
-//     this.set('ownerStatus', createOwnerStatus(prevOrder, ownersMap));
-//   } catch (error) {
-//     if (error instanceof AppError) throw error;
-//     throw new ServerError({ message: error.message });
-//   }
-// });
-
-// orderSchema.pre('updateOne', ...)
-// orderSchema.pre('findOneAndUpdate', ...)
-// orderSchema.pre('updateMany', ...)
 
 orderSchema.index({ "ownersData.owner": 1 });
 

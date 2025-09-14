@@ -181,11 +181,11 @@ const CartPage = () => {
 
       recaptchaRef.current.reset();
 
-      const orderId = res.data.order._id;
-      await axios.post(
-        `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders/send-order-email`,
-        { orderId }
-      );
+      // const orderId = res.data.order._id;
+      // await axios.post(
+      //   `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders/send-order-email`,
+      //   { orderId }
+      // );
 
       alert("Order submitted and emailed!");
       setCart([]);

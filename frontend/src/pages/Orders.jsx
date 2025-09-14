@@ -376,7 +376,7 @@ const Orders = () => {
         const newStatus = item?.newStatus;
 
         const productName = item?.product?.name || "Unknown product";
-        const productTags = item?.product?.tags[0] || "Unknown tag";
+        const productTags = item?.product?.tags ? item?.product?.tags[0] : "Unknown tag";
 
         const isProcessable = processableStatuses.includes(item.newStatus);
 
@@ -580,7 +580,7 @@ const Orders = () => {
                                                 <span className="text-gray-500">Name:</span>
                                                 <span>{item?.product?.name || "Deleted Product"}</span>
                                                 <span className="text-gray-500">Tags:</span>
-                                                <span>{item?.product?.tags.join(", ") || "—"}</span>
+                                                <span>{item?.product?.tags?.join(", ") || "—"}</span>
                                               </div>
 
                                               <button
@@ -816,7 +816,6 @@ const Orders = () => {
                         </div>
 
                         {/* Tags */}
-                        {console.log(itemData?.product)}
                         {itemData?.product?.tags?.length > 0 && (
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="text-gray-500 text-sm font-medium">Tags:</span>

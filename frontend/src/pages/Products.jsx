@@ -216,8 +216,8 @@ const Products = () => {
       const fetchedUsers = res.data.users;
       setUsers(fetchedUsers);
     } catch (error) {
-      console.error(err);
-      alert(`${err.response.data.message}`);
+      console.error(error);
+      alert(`${error.response.data.message}`);
     }
   }
 
@@ -406,9 +406,14 @@ const Products = () => {
   };
 
   const addExtraField = () => {
-    const key = prompt("Podaj nazwę nowej kolumny:")?.trim()?.toLowerCase();
+    const key = prompt("Enter the name of the new column (max 30 characters):")?.trim()?.toLowerCase();
+    if (!key) return; // użytkownik anulował
+    if (key.length > 30) {
+      alert("Column name cannot be longer than 30 characters.");
+      return;
+    }
 
-    if (key && !extraColumns.some(col => col.toLowerCase() === key)) {
+    if (!extraColumns.includes(key)) {
       setExtraColumns(prev => [...prev, key]);
       setProducts(prev =>
         prev.map(p => ({ ...p, extraFields: { ...p.extraFields, [key]: "" } }))
@@ -417,6 +422,8 @@ const Products = () => {
         ...prev,
         extraFields: { ...prev.extraFields, [key]: "" }
       }));
+    } else {
+      alert("A column with this name already exists.");
     }
   };
 
@@ -529,7 +536,7 @@ const Products = () => {
       const res = editProduct
         ? await axios.put(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/products/${editProduct}`, form, config)
         : await axios.post(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/products/create`, form, config);
-      console.log(res);
+      // console.log(res);
 
       if (res.data.success) {
         fetchProducts();
@@ -611,27 +618,32 @@ const Products = () => {
           className="border border-gray-300 p-2 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 flex-1"
           onChange={handleSearch}
         />
-        <div className="flex gap-2 flex-wrap">
-          <button className="px-4 py-2 bg-green-500 text-white rounded shadow hover:bg-green-600 transition" onClick={generatePDF}>
+
+        {/* Buttons */}
+        <div className="flex flex-wrap gap-3 mt-3 sm:mt-0">
+          <button
+            className="px-5 py-3 h-12 text-base font-medium bg-green-500 text-white rounded shadow hover:bg-green-600 transition"
+            onClick={generatePDF}
+          >
             Export PDF
           </button>
 
           <>
             <button
-              className="px-4 py-2 bg-blue-500 text-white rounded shadow hover:bg-blue-600 transition"
+              className="px-5 py-3 h-12 text-base font-medium bg-blue-500 text-white rounded shadow hover:bg-blue-600 transition"
               onClick={() => { setEditProduct(null); setOpenModal(true); }}
             >
               Add Object
             </button>
             <button
-              className="px-4 py-2 bg-gray-500 text-white rounded shadow hover:bg-gray-600 transition"
+              className="px-5 py-3 h-12 text-base font-medium bg-gray-500 text-white rounded shadow hover:bg-gray-600 transition"
               onClick={addExtraField}
             >
               + Add Column
             </button>
             <button
               onClick={() => navigate("/cart")}
-              className="px-6 py-3 bg-blue-500 text-white font-semibold rounded hover:bg-blue-600 transition"
+              className="px-6 py-3 h-12 text-base font-medium bg-purple-500 text-white rounded shadow hover:bg-purple-600 transition"
             >
               Go to Cart
             </button>
@@ -828,22 +840,22 @@ const Products = () => {
                         </td>
                       );
                     })}
-                  <td className="px-4 py-2 flex flex-col sm:flex-row sm:items-center gap-2 whitespace-nowrap">
+
+                  <td className="px-4 py-2 whitespace-nowrap">
                     {/* Action buttons + quantity */}
-                    <div className="flex flex-wrap gap-2">
-                      <button onClick={() => handleEdit(p)} disabled={(user.id !== p.owner._id && !isAdmin)} className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => handleEdit(p)} disabled={(user.id !== p.owner._id && !isAdmin)} className="h-10 px-4 bg-blue-500 text-white rounded hover:bg-blue-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
                         Edit
                       </button>
-                      <button onClick={() => handlePreview(p._id)} className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition">
+                      <button onClick={() => handlePreview(p._id)} className="h-10 px-4 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition">
                         Preview
                       </button>
-                      <button onClick={() => handleDelete(p._id)} disabled={(user.id !== p.owner._id && !isAdmin)} className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
+                      <button onClick={() => handleDelete(p._id)} disabled={(user.id !== p.owner._id && !isAdmin)} className="h-10 px-4 bg-red-500 text-white rounded hover:bg-red-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
                         Delete
                       </button>
-                    </div>
 
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2">
-                      <div className="flex items-center border rounded overflow-hidden h-10">
+                      {/* Quantity controls */}
+                      <div className="flex items-center overflow-hidden h-10">
                         <button
                           onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) - 1, p)}
                           className="px-3 bg-gray-200 hover:bg-gray-300 h-full"
@@ -863,16 +875,17 @@ const Products = () => {
                           disabled={(cartQuantities[p._id] || 0) >= getAvailableStockForProduct(p)}
                         >+</button>
                       </div>
-
-                      <div className="flex gap-2">
-                        <span className="inline-block bg-gray-100 text-gray-700 text-xs font-semibold px-2 py-1 rounded-full">
-                          Available: {getAvailableStockForProduct(p)}
-                        </span>
-                        <span className="inline-block bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full">
-                          In cart: {cartQuantities[p._id] || 0}
-                        </span>
-                      </div>
                     </div>
+                  </td>
+
+                  {/* In cart jako ostatnia kolumna */}
+                  <td className="px-4 py-2 text-center">
+                    <span className="inline-block bg-gray-100 text-gray-700 text-xs font-semibold px-2 py-1 rounded-full">
+                      Available: {getAvailableStockForProduct(p)}
+                    </span>
+                    <span className="inline-block bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full">
+                      In cart: {cartQuantities[p._id] || 0}
+                    </span>
                   </td>
                 </tr>
               ))}
@@ -950,62 +963,72 @@ const Products = () => {
                 </div>
               ))}
 
-              <div className="flex flex-col gap-2 mt-2">
-                <div className="flex flex-wrap gap-2">
-                  <button onClick={() => handleEdit(p)} disabled={(user.id !== p.owner._id && !isAdmin)} className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
-                    Edit
-                  </button>
-                  <button onClick={() => handlePreview(p._id)} className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition">
-                    Preview
-                  </button>
-                  <button onClick={() => handleDelete(p._id)} disabled={(user.id !== p.owner._id && !isAdmin)} className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
-                    Delete
-                  </button>
-                </div>
+              {/* Action buttons */}
+              <div className="flex flex-wrap gap-2 justify-center mt-2">
+                <button
+                  onClick={() => handleEdit(p)}
+                  disabled={user.id !== p.owner._id && !isAdmin}
+                  className="flex-1 min-w-[80px] px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed text-center"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handlePreview(p._id)}
+                  className="flex-1 min-w-[80px] px-3 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition text-center"
+                >
+                  Preview
+                </button>
+                <button
+                  onClick={() => handleDelete(p._id)}
+                  disabled={user.id !== p.owner._id && !isAdmin}
+                  className="flex-1 min-w-[80px] px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed text-center"
+                >
+                  Delete
+                </button>
+              </div>
 
-                <div className="flex justify-center items-center border rounded-lg overflow-hidden h-10 mt-2 shadow-sm">
-                  <button
-                    onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) - 1, p)}
-                    className="px-4 bg-gray-100 hover:bg-gray-200 transition text-gray-700 font-bold"
-                    disabled={(cartQuantities[p._id] || 0) <= 0}
-                  >
-                    -
-                  </button>
+              <div className="flex justify-center items-center border rounded-lg overflow-hidden h-10 mt-2 shadow-sm">
+                <button
+                  onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) - 1, p)}
+                  className="px-4 bg-gray-100 hover:bg-gray-200 transition text-gray-700 font-bold"
+                  disabled={(cartQuantities[p._id] || 0) <= 0}
+                >
+                  -
+                </button>
 
-                  <input
-                    type="number"
-                    min="0"
-                    max={getAvailableStockForProduct(p)}
-                    value={cartQuantities[p._id] || 0}
-                    onChange={(e) => handleQuantityChange(p._id, e.target.value, p)}
-                    className="w-16 text-center outline-none border-x border-gray-200 focus:ring-1 focus:ring-blue-400 focus:border-blue-400 transition"
-                  />
+                <input
+                  type="number"
+                  min="0"
+                  max={getAvailableStockForProduct(p)}
+                  value={cartQuantities[p._id] || 0}
+                  onChange={(e) => handleQuantityChange(p._id, e.target.value, p)}
+                  className="w-16 text-center outline-none border-x border-gray-200 focus:ring-1 focus:ring-blue-400 focus:border-blue-400 transition"
+                />
 
-                  <button
-                    onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) + 1, p)}
-                    className="px-4 bg-gray-100 hover:bg-gray-200 transition text-gray-700 font-bold"
-                    disabled={(cartQuantities[p._id] || 0) >= getAvailableStockForProduct(p)}
-                  >
-                    +
-                  </button>
-                </div>
+                <button
+                  onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) + 1, p)}
+                  className="px-4 bg-gray-100 hover:bg-gray-200 transition text-gray-700 font-bold"
+                  disabled={(cartQuantities[p._id] || 0) >= getAvailableStockForProduct(p)}
+                >
+                  +
+                </button>
+              </div>
 
-                <div className="flex justify-between items-center mt-1 text-sm text-gray-600">
-                  <span className="bg-gray-100 px-2 py-0.5 rounded">
-                    Available: {getAvailableStockForProduct(p)}
-                  </span>
-                  <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded">
-                    In cart: {cartQuantities[p._id] || 0}
-                  </span>
-                </div>
+              <div className="flex justify-between items-center mt-1 text-sm text-gray-600">
+                <span className="bg-gray-100 px-2 py-0.5 rounded">
+                  Available: {getAvailableStockForProduct(p)}
+                </span>
+                <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded">
+                  In cart: {cartQuantities[p._id] || 0}
+                </span>
               </div>
             </div>
           ))}
         </div>
-      </div>
+      </div >
 
       {/* Paginate */}
-      <div className="flex justify-center items-center gap-4 mt-4">
+      < div className="flex justify-center items-center gap-4 mt-4" >
         <button
           disabled={currentPage === 1}
           onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
@@ -1025,7 +1048,7 @@ const Products = () => {
         >
           Next
         </button>
-      </div>
+      </div >
 
       {openModal && (
         <div className="fixed inset-0 backdrop-blur-md z-50 overflow-y-auto flex items-center justify-center p-4" onClick={closeModal} role="dialog" aria-modal="true">
@@ -1092,23 +1115,27 @@ const Products = () => {
                   placeholder="Name"
                   value={formData.name}
                   onChange={handleChange}
+                  maxLength={100}
                   required
                   className="border p-2 rounded w-full"
                 />
+                <p className="text-sm text-gray-500">{formData.name.length}/100</p>
               </div>
 
               {/* Description */}
               <div>
                 <label htmlFor="description" className="font-semibold">Description</label>
-                <input
+                <textarea
                   id="description"
-                  type="text"
                   name="description"
                   placeholder="Description"
                   value={formData.description}
                   onChange={handleChange}
-                  className="border p-2 rounded w-full"
+                  rows={4} // liczba widocznych wierszy
+                  maxLength={1000} // limit znaków
+                  className="border p-2 rounded w-full resize-y"
                 />
+                <p className="text-sm text-gray-500">{formData.description.length}/1000</p>
               </div>
 
               {/* Stock Total */}
@@ -1148,19 +1175,29 @@ const Products = () => {
 
               {/* Extra Columns */}
               {extraColumns.map((col, idx) => (
-                <div key={idx} className="flex items-center gap-2">
-                  <label htmlFor={`extra-${col}`} className="font-semibold">{col}</label>
-                  <input
+                <div key={idx} className="flex flex-col gap-1 mb-2">
+                  <label
+                    htmlFor={`extra-${col}`}
+                    className="font-semibold"
+                    title={col} // pokazuje pełną nazwę przy najechaniu
+                  >
+                    {col.length > 30 ? col.slice(0, 27) + "…" : col}
+                  </label>
+
+                  <textarea
                     id={`extra-${col}`}
-                    type="text"
+                    name={col}
                     placeholder={col}
                     value={formData.extraFields?.[col] || ""}
                     onChange={(e) => handleExtraFieldChange(col, e.target.value)}
-                    className="border p-2 rounded flex-1"
+                    rows={1} // początkowo jedna linijka
+                    maxLength={1000} // limit znaków
+                    className="border p-2 rounded w-full resize-y"
                   />
-                  {isAdmin && (
-                    <button type="button" onClick={() => removeExtraField(col)} className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600">X</button>
-                  )}
+
+                  <p className="text-sm text-gray-500">
+                    {(formData.extraFields?.[col]?.length || 0)}/1000
+                  </p>
                 </div>
               ))}
 
@@ -1184,6 +1221,7 @@ const Products = () => {
                     type="text"
                     value={newTag}
                     onChange={e => setNewTag(e.target.value)}
+                    maxLength={100}
                     placeholder="Enter a tag"
                     className="border p-2 rounded w-full disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
                     onKeyDown={(e) => {
@@ -1200,6 +1238,7 @@ const Products = () => {
                   >
                     Add
                   </button>
+                  <p className="text-sm text-gray-500">{newTag.length}/100</p>
                 </div>
                 {formData.tags?.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
@@ -1331,7 +1370,7 @@ const Products = () => {
       )}
 
 
-    </div>
+    </div >
   );
 };
 

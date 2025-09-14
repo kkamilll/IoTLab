@@ -34,7 +34,7 @@ export const getUser = async (req, res, next) => {
 // Create new user
 export const createUser = async (req, res, next) => {
   try {
-    if (!req.body) return next(new BadRequestError("Request body is missing"));
+    if (!req.body || Object.keys(req.body).length === 0) return next(new BadRequestError("Request body is missing"));
     const { name, email, password, role, labRooms, isActive } = req.body;
     const newUserData = { name, email, password, role, labRooms, isActive };
     // validateRequiredFields(User, newUserData);
@@ -49,7 +49,11 @@ export const createUser = async (req, res, next) => {
       return next(new DuplicateKeyError({ field, value }));
     }
     
-    if (error.name === 'ValidationError') return next(error);
+    if (error instanceof AppError) return next(error);
+    if (error.name === 'ValidationError') {
+      return next(new BadRequestError('Missing or invalid fields', error.errors));
+    }
+    
     return next(new ServerError({ message: error.message }));
   }
 };

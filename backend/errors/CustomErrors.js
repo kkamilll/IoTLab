@@ -24,7 +24,7 @@ export class BadRequestError extends AppError {
 
 export class DuplicateKeyError extends AppError {
   constructor({ field, value }) {
-    super(`${field} "${value}" already exists`, 400, LOG_LEVELS.WARN);
+    super(`Duplicate ${field}: "${value}"`, 409, LOG_LEVELS.WARN);
     this.field = field;
     this.value = value;
   }

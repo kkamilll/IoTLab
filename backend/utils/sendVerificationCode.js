@@ -4,7 +4,7 @@ import { generateVerificationOtpEmailTemplate } from './emailTemplates.js';
 
 export async function sendVerificationCode(verificationCode, email, res) {
   try {
-    const resetLink = `${import.meta.env.VITE_FRONTEND_URL}/reset-password?email=${encodeURIComponent(email)}`;
+    const resetLink = `http://localhost:${process.env.PORT}/reset-password?email=${encodeURIComponent(email)}`;
     const message = 
       `${generateVerificationOtpEmailTemplate(verificationCode)}
       <p style="color:#ccc;">Lub kliknij tutaj, aby przejść do resetu hasła: 

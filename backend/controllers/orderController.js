@@ -6,6 +6,8 @@ import { MongoServerError } from 'mongodb';
 import { AppError, ValidationError, BadRequestError, DuplicateKeyError, ResourceNotFoundError, ConflictError, ServerError } from '../errors/CustomErrors.js'
 // import { validateRequiredFields } from '../utils/validateRequiredFields.js'
 
+import { handleOrderEmail } from "../utils/sendOrderEmail.js";
+
 export const productOwnerMap = async (order) => {
   const productIdSet = new Set();
   for (const item of order.items) {
@@ -215,11 +217,15 @@ export const createOrder = async (req, res, next) => {
       requestedStartDate,
       requestedEndDate,
       status: "pending",
+      isNew: true,
     });
     await order.save({ session });
 
     await session.commitTransaction();
     session.endSession();
+
+    // console.log("New Order: Calling handleOrderEmail?");
+    await handleOrderEmail(order, true);
 
     res.status(201).json({ success: true, message: "Order created", order });
   } catch (error) {
@@ -257,6 +263,7 @@ export const updateOrder = async (req, res, next) => {
 
     const order = await Order.findById(orderId).session(session);
     if (!order) throw new ResourceNotFoundError("Order");
+    order._isUpdate = true;
 
     if (assignedStartDate && assignedEndDate) {
       const newAssignedStartDate = new Date(assignedStartDate);
@@ -351,10 +358,13 @@ export const updateOrder = async (req, res, next) => {
       product[field] = (product[field] || 0) + delta;
 
       if (product[field] < 0) {
-        throw new ConflictError(`${label} for ${product.name} below zero`);
+        console.warn((`${label} for ${product.name} below zero`, product));
+        // throw new ConflictError(`${label} for ${product.name} below zero`);
       }
+      
       if (limit !== undefined && product[field] > limit) {
-        throw new ConflictError(`${label} for ${product.name} exceeded`);
+        console.warn((`${label} for ${product.name} exceeded`));
+        // throw new ConflictError(`${label} for ${product.name} exceeded`);
       }
     }
 
@@ -386,18 +396,18 @@ export const updateOrder = async (req, res, next) => {
 
         applyProductDelta({
           product,
-          delta: rentedDelta,
-          field: "stockRentedOut",
-          limit: product.stockForRent - product.stockReserved,
-          label: "Stock rented"
-        });
-
-        applyProductDelta({
-          product,
           delta: reservedDelta,
           field: "stockReserved",
           limit: product.stockForRent - product.stockRentedOut,
           label: "Stock reserved"
+        });
+
+        applyProductDelta({
+          product,
+          delta: rentedDelta,
+          field: "stockRentedOut",
+          limit: product.stockForRent - product.stockReserved,
+          label: "Stock rented"
         });
 
         await product.save({ session });
@@ -408,6 +418,9 @@ export const updateOrder = async (req, res, next) => {
 
     await session.commitTransaction();
     session.endSession();
+
+    // console.log("Update Order: Calling handleOrderEmail?");
+    await handleOrderEmail(order, false);
 
     res.status(200).json({ success: true, order });
   } catch (err) {
@@ -471,110 +484,19 @@ export const hardDeleteOrder = async (req, res, next) => {
 export const sendOrderEmail = async (req, res) => {
   try {
     const { orderId } = req.body;
-    if (!orderId) return res.status(400).json({ success: false, message: "Brak ID zamówienia" });
+    if (!orderId) return res.status(400).json({ success: false, message: "Missing order ID" });
 
     const order = await Order.findById(orderId)
       .populate("items.product")
-    if (!order) return res.status(404).json({ success: false, message: "Zamówienie nie istnieje" });
+    if (!order) return res.status(404).json({ success: false, message: "Order doesn't exist" });
 
     const email = order.customerEmail || order.customer?.email;
-    if (!email) return res.status(400).json({ success: false, message: "Brak e-maila klienta" });
+    if (!email) return res.status(400).json({ success: false, message: "Missing customer's email" });
 
-    // await sendEmail(email, "Twoje zamówienie", message);
-    return res.status(200).json({ success: true, message: "Zamówienie wysłane na maila" });
+    await sendEmail(email, "Your Order", message);
+    return res.status(200).json({ success: true, message: "Email sent" });
   } catch (err) {
     console.error("Błąd wysyłki maila:", err);
-    return res.status(500).json({ success: false, message: "Błąd wysyłki maila" });
+    return res.status(500).json({ success: false, message: "Error sending mail" });
   }
 };
-
-// export const updateOrderQuantity = async (req, res) => {
-//   try {
-//     const { orderId, itemId, quantity } = req.body;
-//     if (!orderId || !itemId || !quantity || quantity <= 0) {
-//       return res.status(400).json({ error: "Brak danych lub nieprawidłowa ilość" });
-//     }
-
-//     const order = await Order.findByIdAndUpdate(orderId, {
-//       $set: {
-//         "items.$[elem].confirmed.quantity": quantity
-//       }
-//     },
-//       {
-//         new: true, // return updated doc
-//         arrayFilters: [{ "elem.product": itemId }] // match correct item in array
-//       });
-
-//     if (!order) {
-//       return res.status(404).json({ error: "Order not found" });
-//     }
-//     const updatedItem = order.items.find(
-//       (item) => item.product.toString() === itemId.toString()
-//     );
-//     // const item = order.items.find(i => i.product?._id.toString() === itemId.toString());
-//     // if (!item) return res.status(404).json({ error: "Produkt nie znaleziony w zamówieniu" });
-
-//     // const oldQuantity = order.quantity;
-//     // item.quantity = quantity;
-
-//     // order.history.push({
-//     //   action: "quantity_update",
-//     //   quantity,
-//     //   productName: item.product?.name || item.productName,
-//     //   timestamp: new Date(),
-//     // });
-
-//     // await order.save();
-
-//     res.json({ success: true, order, message: `Zmieniono ilość z ${updatedItem?.requested?.quantity} na ${updatedItem?.confirmed?.quantity}` });
-//   } catch (err) {
-//     console.error("Błąd aktualizacji ilości:", err);
-//     res.status(500).json({ error: "Server error" });
-//   }
-// };
-
-// export const updateOrderDates = async (req, res) => {
-//   try {
-//     const { orderId, itemId, startDate, endDate } = req.body;
-
-//     if (!orderId || !startDate || !endDate) {
-//       return res.status(400).json({ error: "Brak danych do aktualizacji" });
-//     }
-
-//     if (new Date(startDate) > new Date(endDate)) {
-//       return res.status(400).json({ error: "Data rozpoczęcia nie może być późniejsza niż data zakończenia" });
-//     }
-
-//     // const order = await Order.findById(orderId);
-//     const order = await Order.findByIdAndUpdate(orderId, {
-//       $set: {
-//         "items.$[elem].confirmed.startDate": startDate,
-//         "items.$[elem].confirmed.endDate": endDate,
-//       }
-//     },
-//       {
-//         new: true, // return updated doc
-//         arrayFilters: [{ "elem.product": itemId }] // match correct item in array
-//       });
-//     if (!order) return res.status(404).json({ error: "Zamówienie nie znalezione" });
-//     const updatedItem = order.items.find(
-//       (item) => item.product.toString() === itemId.toString()
-//     );
-
-//     const oldStart = updatedItem?.requested?.startDate;
-//     const oldEnd = updatedItem?.requested?.endDate;
-
-//     const newStart = updatedItem?.confirmed?.startDate;
-//     const newEnd = updatedItem?.confirmed?.endDate;
-
-//     // order.startDate = new Date(startDate);
-//     // order.endDate = new Date(endDate);
-
-//     // await order.save();
-
-//     res.json({ success: true, order, message: `Zaktualizowano daty z ${oldStart?.toLocaleDateString()} - ${oldEnd?.toLocaleDateString()} na ${newStart.toLocaleDateString()} - ${newEnd.toLocaleDateString()}` });
-//   } catch (err) {
-//     console.error("Błąd aktualizacji dat:", err);
-//     res.status(500).json({ error: "Błąd serwera" });
-//   }
-// };
