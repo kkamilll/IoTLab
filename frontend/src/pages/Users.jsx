@@ -50,7 +50,7 @@ const Users = () => {
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (labDropdownRef.current && !labDropdownRef.current.contains(e.target)) {
-        setLabDropdownOpen(false);
+        // setLabDropdownOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -392,6 +392,12 @@ const Users = () => {
         value={newLabRoom} 
         onChange={e => setNewLabRoom(e.target.value)} 
         className="border p-2 rounded-xl flex-1"
+        onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          handleAddTag();
+        }
+      }}
       />
       <button type="button" onClick={handleAddLabRoom} className="px-3 py-1 bg-gray-500 text-white rounded-xl">Add</button>
     </div>

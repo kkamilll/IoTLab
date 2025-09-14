@@ -21,14 +21,14 @@ export const productOwnerMap = async (order) => {
 
   const productIdArray = [...productIdSet];
   const products = await Product.find({ _id: { $in: productIdArray }, isDeleted: false }).select("_id owner");
-  
+
   const productOwnerMap = {};
   for (const product of products) {
     if (!product?.owner?.toString()?.trim()) {
       console.warn(`Product ${product._id} has no owner or is not rentable/deleted`);
       continue;
       // throw new ConflictError("Order contains products with missing owners");
-      }
+    }
     // if (!mongoose.Types.ObjectId.isValid(product.owner)) {
     //   throw new ValidationError("Invalid owner ID");
     // }
@@ -124,7 +124,7 @@ export const getOrders = async (req, res, next) => {
         .skip(skip)
         .limit(limit)
         .populate({ path: "items.responsibleOwner", select: "name email" })
-        .populate({ path: "items.product", select: "name stockTotal stockForRent stockRentedOut owner tag" })
+        .populate({ path: "items.product", select: "name stockTotal stockForRent stockRentedOut owner tags" })
         .lean(),
       Order.countDocuments(filter)
     ]);
@@ -161,7 +161,7 @@ export const createOrder = async (req, res, next) => {
     if (!req.body) return next(new BadRequestError("Request body is missing"));
 
     const { token, customer, items, requestedStartDate, requestedEndDate } = req.body || null;
-    
+
     const reCaptchaResponse = await fetch(
       `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${token}`,
       { method: "POST" }
@@ -175,12 +175,12 @@ export const createOrder = async (req, res, next) => {
     if (!customer.name?.trim()) {
       throw new ValidationError("Customer name is required");
     }
-    
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!customer.email || !emailRegex.test(customer.email)) {
       throw new BadRequestError("Invalid email address");
     }
-    
+
     const indexRegex = /^\d{6}$/;
     if (!customer.index || !indexRegex.test(customer.index)) {
       throw new BadRequestError("Index must be only 6 digits");
@@ -197,7 +197,7 @@ export const createOrder = async (req, res, next) => {
       const product = productMap[item.product];
       if (!product) throw new ValidationError(`Produkt ${item.product} nie istnieje`);
       if (item.requestedQuantity < 1) throw new BadRequestError(`Niepoprawna ilość dla ${product.name}`);
-      
+
       return {
         ...item,
         responsibleOwner: product.owner,
@@ -207,7 +207,7 @@ export const createOrder = async (req, res, next) => {
     });
 
     if (new Date(requestedStartDate) > new Date(requestedEndDate))
-        throw new Error(`Start date cannot be after end date`);
+      throw new Error(`Start date cannot be after end date`);
 
     const order = new Order({
       customer,
@@ -236,18 +236,20 @@ export const createOrder = async (req, res, next) => {
 export const updateOrder = async (req, res, next) => {
   const session = await mongoose.startSession();
   session.startTransaction();
-  
+
   try {
     if (!req.body) {
       return next(new BadRequestError("Request body is missing"));
     }
-    
+
     const { orderId } = req.params;
     let { itemUpdates } = req.body;
     const { assignedStartDate, assignedEndDate } = req.body;
-    
+
     const processableStatuses = ["pending", "approved", "prepared"];
-    
+    const rentedStatuses = ['rented'];
+    const reservedStatuses = ["approved", "prepared"];
+
     // normalize to array
     if (!Array.isArray(itemUpdates)) {
       itemUpdates = [itemUpdates];
@@ -256,10 +258,10 @@ export const updateOrder = async (req, res, next) => {
     const order = await Order.findById(orderId).session(session);
     if (!order) throw new ResourceNotFoundError("Order");
 
-    if(assignedStartDate && assignedEndDate) {
+    if (assignedStartDate && assignedEndDate) {
       const newAssignedStartDate = new Date(assignedStartDate);
       const newAssignedEndDate = new Date(assignedEndDate);
-      
+
       if (new Date(newAssignedStartDate) > new Date(newAssignedEndDate)) {
         throw new ValidationError(`Invalid date range`);
       }
@@ -273,7 +275,23 @@ export const updateOrder = async (req, res, next) => {
       currentItemsMap[item._id.toString()] = item;
     }
 
-    const productStockChanges = new Map();
+    const productChanges = {
+      rented: new Map(),
+      reserved: new Map(),
+    };
+
+    function applyDelta({ map, deltaKey, prevStatus, newStatus, statuses, quantity }) {
+      const hasNewStatus = statuses.includes(newStatus);
+      const hasPrevStatus = statuses.includes(prevStatus);
+
+      if (hasNewStatus && !hasPrevStatus) {
+        map.set(deltaKey, (map.get(deltaKey) ?? 0) + (quantity ?? 0));
+        return;
+      } else if (!hasNewStatus && hasPrevStatus) {
+        map.set(deltaKey, (map.get(deltaKey) ?? 0) - (quantity ?? 0));
+        return;
+      }
+    }
 
     for (const itemUpdate of itemUpdates) {
       const item = currentItemsMap[itemUpdate.itemId];
@@ -287,7 +305,7 @@ export const updateOrder = async (req, res, next) => {
 
       // validate assignedQuantity if provided
       if (processableStatuses.includes(itemUpdate.newStatus)) {
-        if (itemUpdate.assignedQuantity <= 0) {
+        if (itemUpdate.assignedQuantity == null && itemUpdate.assignedQuantity <= 0) {
           throw new ValidationError(`Quantity must be greater than 0`);
         }
         item.assignedQuantity = itemUpdate.assignedQuantity;
@@ -298,33 +316,89 @@ export const updateOrder = async (req, res, next) => {
       const deltaKey = item.product.toString();
       // const delta = productStockChanges.get(deltaKey) || 0;
 
-      if (itemUpdate.newStatus === "rented") {
-        const currentDelta = productStockChanges.get(deltaKey) ?? 0;
-        productStockChanges.set(deltaKey, currentDelta + (item.assignedQuantity ?? 0));
+      // if (itemUpdate.newStatus === "rented") {
+      //   const currentDelta = productStockChanges.get(deltaKey) ?? 0;
+      //   productStockChanges.set(deltaKey, currentDelta + (item.assignedQuantity ?? 0));
+      // }
+
+      // if (prevStatus === "rented") {
+      //   const currentDelta = productStockChanges.get(deltaKey) ?? 0;
+      //   productStockChanges.set(deltaKey, currentDelta - (item.assignedQuantity ?? 0));
+      // }
+
+      applyDelta({
+        map: productChanges.rented,
+        deltaKey,
+        prevStatus,
+        newStatus: itemUpdate.newStatus,
+        statuses: rentedStatuses,
+        quantity: item.assignedQuantity,
+      });
+
+      applyDelta({
+        map: productChanges.reserved,
+        deltaKey,
+        prevStatus,
+        newStatus: itemUpdate.newStatus,
+        statuses: reservedStatuses,
+        quantity: item.assignedQuantity,
+      });
+    }
+
+    function applyProductDelta({ product, delta, field, limit, label }) {
+      if (!delta) return;
+
+      product[field] = (product[field] || 0) + delta;
+
+      if (product[field] < 0) {
+        throw new ConflictError(`${label} for ${product.name} below zero`);
       }
-      if (prevStatus === "rented") {
-        const currentDelta = productStockChanges.get(deltaKey) ?? 0;
-        productStockChanges.set(deltaKey, currentDelta - (item.assignedQuantity ?? 0));
+      if (limit !== undefined && product[field] > limit) {
+        throw new ConflictError(`${label} for ${product.name} exceeded`);
       }
     }
 
     // batch load products
-    const productIds = [...productStockChanges.keys()];
+    // const productIds = [...productStockChanges.keys()];
+    const productIds = Array.from(new Set([
+      ...productChanges.rented.keys(),
+      ...productChanges.reserved.keys()
+    ]));
+
     if (productIds.length > 0) {
       const products = await Product.find({ _id: { $in: productIds } }).session(session);
 
       for (const product of products) {
-        const delta = productStockChanges.get(product._id.toString());
-        if (!delta) continue;
+        const rentedDelta = productChanges.rented.get(product._id.toString()) ?? 0;
+        const reservedDelta = productChanges.reserved.get(product._id.toString()) ?? 0;
 
-        product.stockRentedOut = (product.stockRentedOut || 0) + delta;
+        // const delta = productStockChanges.get(product._id.toString());
+        // if (!delta) continue;
 
-        if (product.stockRentedOut < 0) {
-          throw new ConflictError(`Stock for ${product.name} below zero`);
-        }
-        if (product.stockRentedOut > product.stockForRent) {
-          throw new ConflictError(`Stock for ${product.name} exceeded`);
-        }
+        // product.stockRentedOut = (product.stockRentedOut || 0) + delta;
+
+        // if (product.stockRentedOut < 0) {
+        //   throw new ConflictError(`Stock for ${product.name} below zero`);
+        // }
+        // if (product.stockRentedOut > product.stockForRent) {
+        //   throw new ConflictError(`Stock for ${product.name} exceeded`);
+        // }
+
+        applyProductDelta({
+          product,
+          delta: rentedDelta,
+          field: "stockRentedOut",
+          limit: product.stockForRent - product.stockReserved,
+          label: "Stock rented"
+        });
+
+        applyProductDelta({
+          product,
+          delta: reservedDelta,
+          field: "stockReserved",
+          limit: product.stockForRent - product.stockRentedOut,
+          label: "Stock reserved"
+        });
 
         await product.save({ session });
       }

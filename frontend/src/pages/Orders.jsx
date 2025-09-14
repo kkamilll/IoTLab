@@ -6,6 +6,9 @@ import { LocalizationProvider, DateTimePicker } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import TextField from '@mui/material/TextField';
 
+import { rentalAgreementTemplate } from "../templates/rentalAgreementTemplate";
+import jsPDF from "jspdf";
+
 const Orders = () => {
   const { user, token } = useAuth();
   // const isAdmin = user?.role === "admin";
@@ -73,7 +76,7 @@ const Orders = () => {
         { headers: { Authorization: `Bearer ${token}` } });
 
       if (res.data.success) {
-        console.log(res.data);
+        // console.log(res.data);
         return {
           availableToAssign: res.data.availableToAssign ?? 0,
           inDemand: res.data.inDemand ?? 0,
@@ -106,7 +109,7 @@ const Orders = () => {
       const { assignedStartDate, assignedEndDate } = datesUpdateData || {};
       if (!assignedStartDate || !assignedEndDate) return;
 
-      fetchProductStockStatus(currentItem.product._id, assignedStartDate, assignedEndDate)
+      fetchProductStockStatus(currentItem?.product?._id, assignedStartDate, assignedEndDate)
         .then(data => {
           setStockStatus(prev => ({
             ...prev,
@@ -246,6 +249,39 @@ const Orders = () => {
   const handleRentOrder = (group) => handleUpdateOrderItems(group, item => item.status === "prepared", "rented");
   const handleReturnOrder = (group) => handleUpdateOrderItems(group, item => returnableStatuses.includes(item.status), "returned");
 
+  const downloadRentalAgreement = (orderGroup) => {
+    const { owner, items, dates } = orderGroup;
+
+    const content = rentalAgreementTemplate({
+      ownerName: owner?.name ?? "Unknown",
+      institution: "Your Institution Name",
+      items: items.map(i => ({
+        productName: i.product?.name ?? "Deleted Product",
+        quantity: i.assignedQuantity ?? "-"
+      })),
+      startDate: new Date(dates.assignedStartDate).toLocaleDateString("pl-PL"),
+      endDate: new Date(dates.assignedEndDate).toLocaleDateString("pl-PL")
+    });
+
+    const doc = new jsPDF();
+    const lines = content.split("\n");
+    let y = 20;
+
+    doc.setFont("times", "normal");
+    doc.setFontSize(12);
+
+    lines.forEach(line => {
+      doc.text(line, 14, y);
+      y += 8;
+      if (y > 280) {
+        doc.addPage();
+        y = 20;
+      }
+    });
+
+    doc.save(`RentalAgreement_${owner?.name ?? "Unknown"}.pdf`);
+  };
+
   const handleOpenModal = (group) => {
     setEditGroup(group); // store the owner group being edited
 
@@ -340,18 +376,18 @@ const Orders = () => {
         const newStatus = item?.newStatus;
 
         const productName = item?.product?.name || "Unknown product";
-        const productTag = item?.product?.tag || "Unknown tag";
+        const productTags = item?.product?.tags[0] || "Unknown tag";
 
         const isProcessable = processableStatuses.includes(item.newStatus);
 
         if (isProcessable) {
           if (!quantity || quantity < 1) {
-            alert(`${productName} (${productTag}): Item quantity must be >= 1`);
+            alert(`${productName} (${productTags}): Item quantity must be >= 1`);
             return;
           }
 
           if (quantity > stockStatus[item.itemId].availableToAssign) {
-            alert(`${productName} (${productTag}): Item quantity must be within available range`);
+            alert(`${productName} (${productTags}): Item quantity must be within available range`);
             return;
           }
 
@@ -361,7 +397,7 @@ const Orders = () => {
 
           if (highestPriorityGroupStatus === "pending") {
             if (newStatus === highestPriorityGroupStatus) {
-              alert(`${productName} (${productTag}): Status has to be changed.`);
+              alert(`${productName} (${productTags}): Status has to be changed.`);
               return;
             }
           }
@@ -543,8 +579,8 @@ const Orders = () => {
                                               <div className="flex items-center gap-2 flex-wrap text-gray-800 text-sm">
                                                 <span className="text-gray-500">Name:</span>
                                                 <span>{item?.product?.name || "Deleted Product"}</span>
-                                                <span className="text-gray-500">Tag:</span>
-                                                <span>{item?.product?.tag || "—"}</span>
+                                                <span className="text-gray-500">Tags:</span>
+                                                <span>{item?.product?.tags.join(", ") || "—"}</span>
                                               </div>
 
                                               <button
@@ -614,6 +650,7 @@ const Orders = () => {
                                           Process
                                         </button>
                                       )}
+
                                       {canRejectOrder(group) && (
                                         <button
                                           onClick={() => handleRejectOrder(group)}
@@ -622,6 +659,7 @@ const Orders = () => {
                                           Reject
                                         </button>
                                       )}
+
                                       {canPrepareOrder(group) && (
                                         <button
                                           onClick={() => handlePrepareOrder(group)}
@@ -630,6 +668,7 @@ const Orders = () => {
                                           Prepare
                                         </button>
                                       )}
+
                                       {canRentOrder(group) && (
                                         <button
                                           onClick={() => handleRentOrder(group)}
@@ -638,6 +677,7 @@ const Orders = () => {
                                           Rent
                                         </button>
                                       )}
+
                                       {canReturnOrder(group) && (
                                         <button
                                           onClick={() => handleReturnOrder(group)}
@@ -647,6 +687,14 @@ const Orders = () => {
                                         </button>
                                       )}
 
+                                      {group.status === "prepared" && (
+                                        <button
+                                          onClick={() => downloadRentalAgreement(group)}
+                                          className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg shadow-md transition-colors duration-200"
+                                        >
+                                          PDF
+                                        </button>
+                                      )}
                                     </div>
                                   </div>
                                 )}
@@ -672,8 +720,8 @@ const Orders = () => {
       </div>
 
       {openModal && editGroup && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded shadow-lg w-full max-w-lg relative max-h-[80vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm" onClick={handleCloseModal}>
+          <div className="bg-white p-6 rounded shadow-lg w-full max-w-lg md:max-w-xl lg:max-w-2xl mx-auto my-8 max-h-[90vh] overflow-auto relative" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-2xl font-bold text-gray-800 mb-1">Update Order</h2>
             <p className="text-lg font-semibold text-gray-700 mb-4">
               Owner: <span className="font-normal text-gray-800">{editGroup.owner?.name}</span>
@@ -698,6 +746,7 @@ const Orders = () => {
                     }}
                     ampm={false}
                     minDateTime={new Date()}
+                    maxDateTime={datesUpdateData.assignedEndDate ? new Date(datesUpdateData.assignedEndDate) : null}
                     renderInput={(params) => (
                       <TextField
                         {...params}
@@ -767,6 +816,7 @@ const Orders = () => {
                         </div>
 
                         {/* Tags */}
+                        {console.log(itemData?.product)}
                         {itemData?.product?.tags?.length > 0 && (
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="text-gray-500 text-sm font-medium">Tags:</span>
@@ -832,7 +882,7 @@ const Orders = () => {
                           min={1}
                           onChange={(e) => handleEditChange(currentItemId, e)}
                           className="border p-2 rounded w-full disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
-                          disabled={!processableStatuses.includes(itemData.prevStatus) || (itemData.prevStatus !== highestPriorityGroupStatus) || itemData.newStatus === "rejected"}
+                          disabled={!processableStatuses.includes(itemData.prevStatus) || (itemData.prevStatus !== highestPriorityGroupStatus) || itemData.newStatus === "rejected" || !itemData?.product}
                         />
                       </div>
 
@@ -844,7 +894,7 @@ const Orders = () => {
                           value={itemData.newStatus}
                           onChange={(e) => handleStatusChange(currentItemId, e)}
                           className="border p-2 rounded w-full disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
-                          disabled={!processableStatuses.includes(itemData.prevStatus) || (itemData.prevStatus !== highestPriorityGroupStatus)}
+                          disabled={!processableStatuses.includes(itemData.prevStatus) || (itemData.prevStatus !== highestPriorityGroupStatus) || !itemData?.product}
                         >
                           <option key={itemData.prevStatus} disabled={true}>{itemData.prevStatus}</option>
                           {getAllowedStatusChanges(itemData.prevStatus).map((status) => (

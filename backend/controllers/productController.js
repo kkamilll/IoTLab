@@ -6,6 +6,7 @@ import { AppError, ValidationError, BadRequestError, DuplicateKeyError, Permissi
 // import { validateRequiredFields } from '../utils/validateRequiredFields.js'
 
 import Order from "../models/Order.js";
+import { createTagHelper, hardDeleteTagHelper } from '../utils/tagHelpers.js';
 
 const mapUploadedFiles = (filesArray = [], additionalData = []) => {
   const fileNames = filesArray.map(file => file.filename);
@@ -23,7 +24,9 @@ const mapUploadedFiles = (filesArray = [], additionalData = []) => {
 
 const initProduct = (req) => {
   try {
-    const { name, description, tag } = req.body;
+    const { name, description } = req.body;
+    const tags = req.body.tags ? JSON.parse(req.body.tags) : [];
+
     const stockTotal = req.body.stockTotal !== undefined ? Number(req.body.stockTotal) : undefined;
     const stockForRent = req.body.stockForRent !== undefined ? Number(req.body.stockForRent) : undefined;
     const categories = req.body.categories ? JSON.parse(req.body.categories) : undefined;
@@ -45,10 +48,12 @@ const initProduct = (req) => {
 
     const labRoom = req.body.labRoom;
     const owner = req.body.owner;
-    const isSerialized = JSON.parse(req.body.isSerialized);
-    const isRentable = JSON.parse(req.body.isRentable);
-    const isVisible = JSON.parse(req.body.isVisible);
-    const isShared = JSON.parse(req.body.isShared);
+
+    const parseBoolean = (val) => val === true || val === 'true';
+    const isSerialized = parseBoolean(req.body.isSerialized);
+    const isRentable = parseBoolean(req.body.isRentable);
+    const isVisible = parseBoolean(req.body.isVisible);
+    const isShared = parseBoolean(req.body.isShared);
     const version = Number(req.body.version);
 
     const setData = {};
@@ -70,7 +75,13 @@ const initProduct = (req) => {
       setData.stockForRent = stockForRent;
     } else unsetData.stockForRent = "";
 
-    if (tag) setData.tag = tag; else unsetData.tag = "";
+    if (tags) {
+      let tagsArr = tags;
+      if (!Array.isArray(tags))
+        tagsArr = [tags];
+      setData.tags = tagsArr.map(tag => tag.trim().toLowerCase());
+    } else unsetData.tags = "";
+
     if (Array.isArray(categories)) {
       categories.forEach((category) => {
         if (!mongoose.Types.ObjectId.isValid(category)) {
@@ -240,6 +251,8 @@ export const getProductByIdPrivate = async (req, res, next) => {
 };
 
 export const createProduct = async (req, res, next) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
   try {
     // Ensure request body exists
     if (!req.body) {
@@ -249,18 +262,33 @@ export const createProduct = async (req, res, next) => {
     // Extract incoming data
     const updateData = initProduct(req, next);
     const createData = updateData.$set;
-    // if (!updateData.owner) updateData.owner = req.user._id;
+
+    const newTags = updateData.$set.tags || [];
+    const tagRefs = [];
+    for (const tag of newTags) {
+      const newTag = await createTagHelper(tag);
+      tagRefs.push(new mongoose.Types.ObjectId(String(newTag._id)));
+    }
+
+    if (tagRefs.length > 0)
+      createData.tagRefs = tagRefs;
 
     // Validate required fields
     // validateRequiredFields(Product, createData);
 
     // create new product
     const newProduct = new Product(createData);
-    await newProduct.save();
+    await newProduct.save({ session });
+
+    await session.commitTransaction();
+    session.endSession();
 
     // Send response
     return res.status(201).json({ success: true, product: newProduct.toObject() });
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+
     // Handle duplicate key error
     if (error instanceof MongoServerError && error.code === 11000) {
       const [field, value] = Object.entries(error.keyValue)[0];
@@ -318,6 +346,34 @@ export const updateProduct = async (req, res, next) => {
 
     const product = await Product.findOne(filterProducts).session(session);
     if (!product) return next(new ResourceNotFoundError("Missing permission or Product"));
+
+    
+
+    const prevTags = product.tags.map(t => t.toLowerCase().trim());
+    const newTags = (updateData.$set.tags || []).map(t => t.toLowerCase().trim());
+    const tagsChanged = newTags.some(newTag => !prevTags.includes(newTag)) || prevTags.some(newTag => !newTags.includes(newTag));
+
+    if (tagsChanged) {
+      const newTagsFiltered = newTags.filter(newTag => !prevTags.includes(newTag));
+      const newTagRefs = [];
+
+      for (const tag of newTagsFiltered) {
+        const newTag = await createTagHelper(tag, session);
+        newTagRefs.push(new mongoose.Types.ObjectId(String(newTag._id)));
+      }
+
+      const oldTagRefs = product.tagRefs.filter(tagRef => !newTagRefs.some(newTagRef => newTagRef.toString() === tagRef.toString()));
+      for (const oldTagRef of oldTagRefs) {
+        try {
+        await hardDeleteTagHelper(oldTagRef);
+        } catch (error) {
+          console.warn(`Tag ${oldTagRef}: not found`);
+        }
+      }
+
+      if (newTagRefs.length > 0)
+        updateData.$set.tagRefs = newTagRefs;
+    }
 
     // check owner
     const originalOwner = product.owner?.toString();

@@ -6,12 +6,13 @@ const productSchema = new mongoose.Schema({
   
   stockTotal: { type: Number, default: 0 }, // amount of product owned
   stockForRent: { type: Number, default: 0 }, // amount of product offered for rent
-  // stockReserved: { type: Number, default: 0 }, // amount of product wanted by users
+  stockReserved: { type: Number, default: 0 }, // amount of product wanted by users
   stockRentedOut: { type: Number, default: 0 }, // amount of product rented to users
 
   extraFields: { type: Map, of: String, default: {} }, // of: mongoose.Schema.Types.Mixed
   categories: [{ type: mongoose.Schema.Types.ObjectId, ref: "Category" }], // <-- referencja do kategorii
-  tag: { type: String, sparse: true, unique: true },
+  tagRefs: [{ type: mongoose.Schema.Types.ObjectId, ref: "Tag" }],
+  tags: [String],
   labRoom: { type: String },
   
   images: [{

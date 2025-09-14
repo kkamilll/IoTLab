@@ -3,6 +3,11 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
+import TextField from '@mui/material/TextField';
+
 import ReCAPTCHA from "react-google-recaptcha";
 
 const CartPage = () => {
@@ -39,7 +44,7 @@ const CartPage = () => {
       endDate: item.endDate || "",
     }));
     setCart(enriched);
-    if(recaptchaRef.current) recaptchaRef.current.reset();
+    // if (recaptchaRef.current) recaptchaRef.current.reset();
   }, []);
 
   const updateCart = (newCart) => {
@@ -61,12 +66,12 @@ const CartPage = () => {
     updateCart(newCart);
   };
 
-  const handleDateChange = (productId, field, value) => {
-    const newCart = cart.map((item) =>
-      item._id === productId ? { ...item, [field]: value } : item
-    );
-    updateCart(newCart);
-  };
+  // const handleDateChange = (productId, field, value) => {
+  //   const newCart = cart.map((item) =>
+  //     item._id === productId ? { ...item, [field]: value } : item
+  //   );
+  //   updateCart(newCart);
+  // };
 
   const handleRemove = (productId) => {
     const newCart = cart.filter((item) => item._id !== productId);
@@ -104,7 +109,7 @@ const CartPage = () => {
 
   useEffect(() => {
     updateAvailability();
-    if(recaptchaRef.current) recaptchaRef.current.reset();
+    // if (recaptchaRef.current) recaptchaRef.current.reset();
   }, [cart, orderDates]);
 
   // CAPTCHA
@@ -142,7 +147,7 @@ const CartPage = () => {
 
   const handleCheckout = async () => {
     setLoading(true);
-    console.log("token: ", recaptchaRef.current.getValue(), typeof recaptchaRef.current.getValue());
+    // console.log("token: ", recaptchaRef.current.getValue(), typeof recaptchaRef.current.getValue());
 
     try {
       if (!cart.length) return alert("Your cart is empty!");
@@ -203,7 +208,7 @@ const CartPage = () => {
           onClick={() => navigate("/")}
           className="px-6 py-3 bg-blue-500 text-white rounded hover:bg-blue-600"
         >
-          Back to Shop
+          Back
         </button>
       </div>
     );
@@ -231,7 +236,7 @@ const CartPage = () => {
           onClick={() => navigate("/")}
           className="px-6 py-3 bg-blue-500 text-white rounded hover:bg-blue-600"
         >
-          Back to Shop
+          Back
         </button>
       </div>
 
@@ -259,7 +264,7 @@ const CartPage = () => {
                     </div>
                   )}
                   <div>
-                    <h3 className="font-semibold">{item.name}</h3>
+                    <h3 className="font-semibold truncate overflow-hidden whitespace-nowrap max-w-[150px] sm:max-w-[200px]" title={item.name}>{item.name}</h3>
                     <p className="text-sm text-red-600">
                       {availability[item._id] === undefined
                         ? "Select dates"
@@ -360,31 +365,40 @@ const CartPage = () => {
             />
           </div>
 
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 flex flex-col">
-              <label htmlFor="startDate" className="mb-1 font-medium">Start Date</label>
-              <input
-                id="startDate"
-                type="datetime-local"
-                value={orderDates.startDate}
-                onChange={(e) => setOrderDates((prev) => ({ ...prev, startDate: e.target.value }))}
-                min={today}
-                className="border p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-            </div>
+          <LocalizationProvider dateAdapter={AdapterDateFns}>
+            {/* <div className="flex flex-col md:flex-row gap-4"> */}
+              {/* Start Date */}
+                <DateTimePicker
+                  label="Start Date"
+                  value={orderDates.startDate ? new Date(orderDates.startDate) : null}
+                  onChange={(newValue) => {
+                    setOrderDates((prev) => ({
+                      ...prev,
+                      startDate: newValue ? newValue.toISOString() : ""
+                    }));
+                  }}
+                  ampm={false}
+                  minDateTime={new Date()}
+                  maxDateTime={orderDates.endDate ? new Date(orderDates.endDate) : null}
+                  renderInput={(params) => <TextField {...params} className="w-full" />}
+                />
 
-            <div className="flex-1 flex flex-col">
-              <label htmlFor="endDate" className="mb-1 font-medium">End Date</label>
-              <input
-                id="endDate"
-                type="datetime-local"
-                value={orderDates.endDate}
-                onChange={(e) => setOrderDates((prev) => ({ ...prev, endDate: e.target.value }))}
-                min={orderDates.startDate || today}
-                className="border p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-            </div>
-          </div>
+              {/* End Date */}
+                <DateTimePicker
+                  label="End Date"
+                  value={orderDates.endDate ? new Date(orderDates.endDate) : null}
+                  onChange={(newValue) => {
+                    setOrderDates((prev) => ({
+                      ...prev,
+                      endDate: newValue ? newValue.toISOString() : ""
+                    }));
+                  }}
+                  ampm={false}
+                  minDateTime={orderDates.startDate ? new Date(orderDates.startDate) : new Date()}
+                  renderInput={(params) => <TextField {...params} className="w-full" />}
+                />
+            {/* </div> */}
+          </LocalizationProvider>
 
           {/* CAPTCHA */}
           <ReCAPTCHA

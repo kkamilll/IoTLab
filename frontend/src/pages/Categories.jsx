@@ -76,7 +76,7 @@ const Categories = () => {
     setCategoryData({
       name: selectedCategory.name || "",
       description: selectedCategory.description || "",
-      parent: selectedCategory?.parent?._id?.toString() || null,
+      parent: selectedCategory?.parent?.toString() || null,
       isVisible: selectedCategory?.isVisible || false,
     });
     setEditCategory(selectedCategory._id);
@@ -100,15 +100,15 @@ const Categories = () => {
       const config = { headers: { Authorization: `Bearer ${token}` } };
       const res = editCategory
         ? await axios.patch(
-            `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/categories/${editCategory}`,
-            categoryData,
-            config
-          )
+          `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/categories/${editCategory}`,
+          categoryData,
+          config
+        )
         : await axios.post(
-            `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/categories/create`,
-            categoryData,
-            config
-          );
+          `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/categories/create`,
+          categoryData,
+          config
+        );
 
       if (res.data.success) {
         alert(editCategory ? "Category updated" : "Category added");
@@ -195,26 +195,22 @@ const Categories = () => {
                 </button>
               </div>
 
-            
-
-<div className="mb-4">
-  <label className="block mb-1 font-semibold">Name:</label>
-  <input
-    type="text"
-    value={categoryData.name}
-    onChange={(e) =>
-      setCategoryData((prev) => ({ ...prev, name: e.target.value.slice(0, MAX_LENGTH) }))
-    }
-    maxLength={MAX_LENGTH}
-    className="w-full border rounded p-2"
-    placeholder="e.g., Electronics"
-  />
-  <p className="text-sm text-gray-500 mt-1">
-    {categoryData.name.length} / {MAX_LENGTH}
-  </p>
-</div>
-
-
+              <div className="mb-4">
+                <label className="block mb-1 font-semibold">Name:</label>
+                <input
+                  type="text"
+                  value={categoryData.name}
+                  onChange={(e) =>
+                    setCategoryData((prev) => ({ ...prev, name: e.target.value.slice(0, MAX_LENGTH) }))
+                  }
+                  maxLength={MAX_LENGTH}
+                  className="w-full border rounded p-2"
+                  placeholder="e.g., Electronics"
+                />
+                <p className="text-sm text-gray-500 mt-1">
+                  {categoryData.name.length} / {MAX_LENGTH}
+                </p>
+              </div>
 
               <div className="mb-4">
                 <label className="block mb-1 font-semibold">Description:</label>

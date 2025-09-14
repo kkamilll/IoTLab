@@ -100,7 +100,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <h1 className="text-4xl font-bold text-center mb-8">Orders Dashboard</h1>
+      <h1 className="text-4xl font-bold text-center mb-8">Orders Statistics</h1>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
         <ChartCard title="Number of Ordered Products">

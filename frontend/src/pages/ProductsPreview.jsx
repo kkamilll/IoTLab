@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
+import { FaFilePdf, FaFileWord, FaFileExcel, FaFileImage, FaFileAlt, FaFile } from "react-icons/fa";
 
 const ProductPreview = () => {
   const location = useLocation();
@@ -14,8 +15,8 @@ const ProductPreview = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   useEffect(() => setCurrentImageIndex(0), [productId]);
+  const getAvailableStockForProduct = (product) => (Math.max(0, Number(product.stockForRent || 0) - Number(product.stockRentedOut || 0) - Number(product.stockReserved || 0)));
 
-  // Fetch product (dla zalogowanego lub niezalogowanego użytkownika)
   useEffect(() => {
     if (!productId) {
       setError("No product ID provided");
@@ -69,6 +70,20 @@ const ProductPreview = () => {
     setCurrentImageIndex(prev => (prev < product.images.length - 1 ? prev + 1 : 0));
   };
 
+  // Funkcja pomocnicza do wyświetlania ikony w zależności od typu pliku
+  const getFileIcon = (filename) => {
+    const ext = filename.split(".").pop()?.toLowerCase();
+    switch (ext) {
+      case "pdf": return <FaFilePdf className="inline-block mr-2 text-red-500" />;
+      case "doc":
+      case "docx": return <FaFileWord className="inline-block mr-2 text-blue-600" />;
+      case "xls":
+      case "xlsx": return <FaFileExcel className="inline-block mr-2 text-green-600" />;
+      case "txt": return <FaFileAlt className="inline-block mr-2 text-gray-600" />;
+      default: return <FaFile className="inline-block mr-2 text-gray-400" />;
+    }
+  };
+
   if (error) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-red-500">
@@ -88,7 +103,7 @@ const ProductPreview = () => {
   const API_URL = `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}`;
 
   return (
-    <div className="max-w-4xl mx-auto p-6 flex flex-col gap-6 bg-white rounded-xl shadow-md">
+    <div className="max-w-5xl mx-auto p-6 flex flex-col gap-6 bg-white rounded-xl shadow-md">
       <button
         onClick={() => navigate(-1)}
         className="self-start px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition"
@@ -132,50 +147,83 @@ const ProductPreview = () => {
         <p className="text-gray-400">No images</p>
       )}
 
-      {/* Product details */}
-      <div className="space-y-2 text-gray-700 mt-4">
-        <p><strong>Description:</strong> {product.description}</p>
-        <p><strong>Available:</strong> {product.stockForRent}</p>
-        <p><strong>Categories:</strong> {categoryNames.join(", ") || "No categories"}</p>
-        <p><strong>Tag:</strong> {product.tag || <span className="text-gray-500">No tag</span>}</p>
+      {/* Product details (bubble layout) */}
+      <div className="space-y-4 mt-4">
+        {/* Description */}
+        <div className="flex flex-wrap gap-2">
+          <div className="flex-auto min-w-[200px] px-4 py-3 bg-gray-100 rounded-lg">
+            <p className="text-sm font-semibold text-gray-600">Description</p>
+            <p className="text-center text-gray-800 break-words">
+              {product.description || "—"}
+            </p>
+          </div>
+        </div>
 
-        {product.extraFields && Object.keys(product.extraFields).length > 0 && (
-          <div>
-            <strong>Extra Fields:</strong>
-            <ul className="list-disc list-inside mt-1 text-gray-600">
-              {Object.entries(product.extraFields).map(([key, val]) => (
-                <li key={key}>
-                  <span className="font-semibold">{key}:</span> {val}
-                </li>
-              ))}
-            </ul>
+        {/* Available */}
+        <div className="flex flex-wrap gap-2">
+          <div className="flex-auto min-w-[200px] px-4 py-3 bg-green-100 rounded-lg">
+            <p className="text-sm font-semibold text-gray-600">Available</p>
+            <p className="text-center text-green-800">{getAvailableStockForProduct(product)}</p>
+          </div>
+        </div>
+
+        {/* Categories */}
+        {categoryNames.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            <div className="flex-auto min-w-[200px] px-4 py-3 bg-blue-100 rounded-lg">
+              <p className="text-sm font-semibold text-gray-600">Categories</p>
+              <p className="text-center text-blue-800 break-words">
+                {categoryNames.join(", ")}
+              </p>
+            </div>
           </div>
         )}
 
-        {/* Attachments */}
+        {/* Tags */}
+        {product.tags && (
+          <div className="flex flex-wrap gap-2">
+            <div className="flex-auto min-w-[200px] px-4 py-3 bg-purple-100 rounded-lg">
+              <p className="text-sm font-semibold text-gray-600">Tags</p>
+              <p className="text-center text-purple-800">{product.tags.join(", ")}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Extra fields */}
+        {product.extraFields &&
+          Object.entries(product.extraFields).map(([key, val]) => (
+            <div key={key} className="flex flex-wrap gap-2">
+              <div className="flex-auto min-w-[200px] px-4 py-3 bg-yellow-100 rounded-lg">
+                <p className="text-sm font-semibold text-gray-600">{key}</p>
+                <p className="text-center text-yellow-800 break-words">{val}</p>
+              </div>
+            </div>
+          ))}
+
+        {/* Attachments with icons */}
         {product.attachments?.length > 0 && (
-          <div>
-            <h3 className="font-semibold text-gray-700 mt-4 mb-2">Attachments:</h3>
-            <ul className="list-disc list-inside text-gray-600">
+          <div className="flex flex-wrap gap-2">
+            <div className="flex-auto min-w-[200px] px-4 py-3 bg-pink-100 rounded-lg">
+              <p className="text-sm font-semibold text-gray-600">Attachments</p>
               {product.attachments.map(att => (
-                <li key={att.uniqueKey}>
-                  <a
-                    href={`${API_URL}/uploads/products/${att.filename}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-500 hover:underline"
-                  >
-                    {att.originalName}
-                  </a>
-                </li>
+                <a
+                  key={att.uniqueKey}
+                  href={`${API_URL}/uploads/products/${att.filename}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-pink-800 hover:underline flex items-center gap-2 break-words justify-center"
+                >
+                  {getFileIcon(att.originalName)}
+                  <span>{att.originalName}</span>
+                </a>
               ))}
-            </ul>
+            </div>
           </div>
         )}
       </div>
 
       {/* Action buttons */}
-      <div className="flex flex-col sm:flex-row sm:gap-4 mt-4">
+      <div className="flex flex-col sm:flex-row sm:gap-4 mt-6">
         <button
           onClick={() => handleAddToCart(product)}
           className="flex-1 px-6 py-3 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 transition"
