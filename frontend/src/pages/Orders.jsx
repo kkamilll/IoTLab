@@ -8,6 +8,8 @@ import TextField from '@mui/material/TextField';
 
 import { rentalAgreementTemplate } from "../templates/rentalAgreementTemplate";
 import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+
 
 const Orders = () => {
   const { user, token } = useAuth();
@@ -249,37 +251,42 @@ const Orders = () => {
   const handleRentOrder = (group) => handleUpdateOrderItems(group, item => item.status === "prepared", "rented");
   const handleReturnOrder = (group) => handleUpdateOrderItems(group, item => returnableStatuses.includes(item.status), "returned");
 
-  const downloadRentalAgreement = (orderGroup) => {
-    const { owner, items, dates } = orderGroup;
+  const downloadRentalAgreement = async (orderGroup) => {
+    const { customerInfo, owner, items, dates } = orderGroup;
 
     const content = rentalAgreementTemplate({
-      ownerName: owner?.name ?? "Unknown",
-      institution: "Your Institution Name",
+      customerInfo: customerInfo ?? "Unknown",
       items: items.map(i => ({
         productName: i.product?.name ?? "Deleted Product",
         quantity: i.assignedQuantity ?? "-"
       })),
-      startDate: new Date(dates.assignedStartDate).toLocaleDateString("pl-PL"),
-      endDate: new Date(dates.assignedEndDate).toLocaleDateString("pl-PL")
+      startDate: new Date(dates.assignedStartDate).toLocaleDateString("en-GB"),
+      endDate: new Date(dates.assignedEndDate).toLocaleDateString("en-GB"),
+      today
     });
 
-    const doc = new jsPDF();
-    const lines = content.split("\n");
-    let y = 20;
+    // Create a hidden container for rendering HTML
+    const container = document.createElement("div");
+    container.innerHTML = content;
+    container.style.width = "800px"; // PDF width reference
+    container.style.position = "absolute";
+    container.style.left = "-9999px";
+    document.body.appendChild(container);
 
-    doc.setFont("times", "normal");
-    doc.setFontSize(12);
+    // Render HTML to canvas
+    const canvas = await html2canvas(container, { scale: 2 });
+    const imgData = canvas.toDataURL("image/png");
 
-    lines.forEach(line => {
-      doc.text(line, 14, y);
-      y += 8;
-      if (y > 280) {
-        doc.addPage();
-        y = 20;
-      }
-    });
+    // Add to PDF
+    const pdf = new jsPDF("p", "pt", "a4");
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
 
-    doc.save(`RentalAgreement_${owner?.name ?? "Unknown"}.pdf`);
+    pdf.save(`RentalAgreement_${owner?.name ?? "Unknown"}.pdf`);
+
+    // Cleanup
+    document.body.removeChild(container);
   };
 
   const handleOpenModal = (group) => {
@@ -493,6 +500,7 @@ const Orders = () => {
                         orderId: order._id,
                         items: [],
 
+                        customerInfo: order.customer,
                         owner: item?.responsibleOwner || { name: "Nieznany właściciel" },
                         ownerData: ownerData,
                         status: ownerData?.status,

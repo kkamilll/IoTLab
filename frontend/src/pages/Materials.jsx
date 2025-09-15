@@ -153,7 +153,7 @@ const Materials = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex justify-center py-10 px-4">
       <div className="w-full max-w-7xl bg-white rounded-2xl shadow-2xl p-8">
-        <h2 className="text-4xl font-extrabold text-blue-700 mb-10 text-center">📸 Your Materials</h2>
+        <h2 className="text-4xl font-extrabold text-blue-700 mb-10 text-center">📸 Your Slider</h2>
 
         {/* Upload */}
        <div className="flex flex-col sm:flex-row gap-4 mb-8">
@@ -190,7 +190,7 @@ const Materials = () => {
   {/* Link Input */}
   <div className="flex flex-col w-full sm:w-1/3">
     <label htmlFor="material-link" className="text-sm font-medium text-gray-700 mb-1">
-      Material Link
+      Slider Link
     </label>
     <input
       id="material-link"
@@ -217,7 +217,7 @@ const Materials = () => {
 
 
         {/* Gallery */}
-        {materials.length === 0 ? <div className="text-center text-gray-400 py-16 select-none italic">No materials — add images!</div> :
+        {materials.length === 0 ? <div className="text-center text-gray-400 py-16 select-none italic">No images!</div> :
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={materials.map(m => m._id)} strategy={rectSortingStrategy}>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">

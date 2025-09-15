@@ -8,6 +8,9 @@ import { AppError, ValidationError, BadRequestError, DuplicateKeyError, Resource
 
 import { handleOrderEmail } from "../utils/sendOrderEmail.js";
 
+import { v4 as uuidv4 } from "uuid";
+import { randomBytes } from "crypto";
+
 export const productOwnerMap = async (order) => {
   const productIdSet = new Set();
   for (const item of order.items) {
@@ -174,9 +177,9 @@ export const createOrder = async (req, res, next) => {
     }
 
     if (!customer) throw new ValidationError("Customer information is required");
-    if (!customer.name?.trim()) {
-      throw new ValidationError("Customer name is required");
-    }
+    // if (!customer.name?.trim()) {
+    //   throw new ValidationError("Customer name is required");
+    // }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!customer.email || !emailRegex.test(customer.email)) {
@@ -211,7 +214,9 @@ export const createOrder = async (req, res, next) => {
     if (new Date(requestedStartDate) > new Date(requestedEndDate))
       throw new Error(`Start date cannot be after end date`);
 
+    const customerKey = randomBytes(8).toString("hex");
     const order = new Order({
+      customerKey,
       customer,
       items: enrichedItems,
       requestedStartDate,
@@ -219,13 +224,37 @@ export const createOrder = async (req, res, next) => {
       status: "pending",
       isNew: true,
     });
-    await order.save({ session });
+
+    let successSave = false;
+    let attempt = 0;
+    const maxAttempts = 10;
+
+    while (!successSave && attempt < maxAttempts) {
+      try {
+        order.uuid = uuidv4();
+        await order.save({ session });
+
+        successSave = true;
+      } catch (error) {
+        if (error.code === 11000 && error.keyPattern?.uuid) {
+          console.warn(`UUID exists: ${order.uuid}`);
+          attempt++;
+          continue;
+        }
+
+        throw error;
+      }
+    }
+
+    if (!successSave) {
+      throw new ServerError(`Failed to save order after ${maxAttempts} UUID attempts`);
+    }
 
     await session.commitTransaction();
     session.endSession();
 
     // console.log("New Order: Calling handleOrderEmail?");
-    await handleOrderEmail(order, true);
+    await handleOrderEmail(order, customerKey, order.uuid);
 
     res.status(201).json({ success: true, message: "Order created", order });
   } catch (error) {
@@ -361,7 +390,7 @@ export const updateOrder = async (req, res, next) => {
         console.warn((`${label} for ${product.name} below zero`, product));
         // throw new ConflictError(`${label} for ${product.name} below zero`);
       }
-      
+
       if (limit !== undefined && product[field] > limit) {
         console.warn((`${label} for ${product.name} exceeded`));
         // throw new ConflictError(`${label} for ${product.name} exceeded`);
@@ -420,7 +449,7 @@ export const updateOrder = async (req, res, next) => {
     session.endSession();
 
     // console.log("Update Order: Calling handleOrderEmail?");
-    await handleOrderEmail(order, false);
+    await handleOrderEmail(order);
 
     res.status(200).json({ success: true, order });
   } catch (err) {
@@ -481,22 +510,55 @@ export const hardDeleteOrder = async (req, res, next) => {
   }
 };
 
-export const sendOrderEmail = async (req, res) => {
+export const getCustomerOrder = async (req, res, next) => {
   try {
-    const { orderId } = req.body;
-    if (!orderId) return res.status(400).json({ success: false, message: "Missing order ID" });
+    const { orderUUID } = req.params;
+    if (!orderUUID) return res.status(400).json({ success: false, message: "Missing order ID" });
 
-    const order = await Order.findById(orderId)
-      .populate("items.product")
+    const order = await Order.findOne({ uuid: orderUUID })
+      .populate({ path: "items.responsibleOwner", select: "name" })
+      .populate({ path: "items.product", select: "name" })
+      .lean();
     if (!order) return res.status(404).json({ success: false, message: "Order doesn't exist" });
 
-    const email = order.customerEmail || order.customer?.email;
-    if (!email) return res.status(400).json({ success: false, message: "Missing customer's email" });
-
-    await sendEmail(email, "Your Order", message);
-    return res.status(200).json({ success: true, message: "Email sent" });
+    return res.status(200).json({ success: true, order });
   } catch (err) {
     console.error("Błąd wysyłki maila:", err);
     return res.status(500).json({ success: false, message: "Error sending mail" });
+  }
+};
+
+export const customerUpdateOrder = async (req, res, next) => {
+  try {
+    if (!req.body) return next(new BadRequestError("Request missing body"));
+
+    const { orderId } = req.params;
+    if (!orderId) return res.status(400).json({ success: false, message: "Missing order ID" });
+
+    const { ownerId, customerApproval } = req.body;
+
+    const order = await Order.findById(orderId);
+    if (!order) return res.status(404).json({ success: false, message: "Order doesn't exist" });
+
+    // Update ownersData
+    const ownerData = order.ownersData.find(od => od.owner?.toString() === ownerId?.toString() && od.status === "approved");
+    if (ownerData) ownerData.customerApproval = customerApproval;
+
+    // Optionally update items if customer rejected
+    if (!customerApproval) {
+      order.items.forEach(item => {
+        if (item.responsibleOwner?.toString() === ownerId?.toString()) {
+          item.status = "rejected";
+        }
+      });
+    }
+
+    // console.log(order);
+    await order.save();
+
+    return res.status(200).json({ success: true, order });
+  } catch (error) {
+    console.error("Error updating order:", error);
+    return res.status(500).json({ success: false, message: "Error updating order" });
   }
 };

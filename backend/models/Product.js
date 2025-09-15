@@ -11,7 +11,7 @@ const productSchema = new mongoose.Schema({
 
   extraFields: { type: Map, of: String, default: {} }, // of: mongoose.Schema.Types.Mixed
   categories: [{ type: mongoose.Schema.Types.ObjectId, ref: "Category" }], // <-- referencja do kategorii
-  tagRefs: [{ type: mongoose.Schema.Types.ObjectId, ref: "Tag" }],
+  // tagRefs: [{ type: mongoose.Schema.Types.ObjectId, ref: "Tag" }],
   tags: [String],
   labRoom: { type: String },
   
@@ -19,6 +19,7 @@ const productSchema = new mongoose.Schema({
     filename: { type: String, required: true },
     originalName: { type: String, required: true },
     uniqueKey: { type: String },
+    path: { type: String, required: true },
     isVisible: { type: Boolean, default: false },
     size: { type: Number }
   }],
@@ -27,6 +28,7 @@ const productSchema = new mongoose.Schema({
     filename: { type: String, required: true },
     originalName: { type: String, required: true },
     uniqueKey: { type: String },
+    path: { type: String, required: true },
     isVisible: { type: Boolean, default: false },
     size: { type: Number }
   }],

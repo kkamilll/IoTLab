@@ -82,7 +82,7 @@ const Products = () => {
   };
 
   // const allColumns = ["name", "description", "Owned", "tag", ...extraColumns];
-  const allColumns = ["name", "description", "stockTotal", "stockForRent", "categories", "owner", ...extraColumns];
+  const allColumns = ["name", "description", "in stock", "for rent", "categories", "owner", ...extraColumns];
   // const allColumns = ["name", "description", "stock", "hiddenStock", "category", "owner", ...extraColumns];
 
   const allCategories = Object.values( // create an array of objects from object of objects
@@ -359,7 +359,8 @@ const Products = () => {
     const newFiles = Array.from(e.target.files);
     const oldImages = formData.images || [];
     const newImages = newFiles.filter(file => file.type.startsWith("image/"));
-
+    console.log(oldImages);
+    
     // if (newFiles.length !== newImages.length) {
     //   alert("Only image files are allowed!");
     // }
@@ -506,7 +507,7 @@ const Products = () => {
         form.append("newImagesData", JSON.stringify(imagesData));
       }
       if (serverImages && serverImages.length) {
-        const imagesData = serverImages.map(imgObj => ({ filename: imgObj.filename, originalName: imgObj.originalName, uniqueKey: imgObj.uniqueKey, isVisible: imgObj.isVisible }))
+        const imagesData = serverImages.map(imgObj => ({ fileId: imgObj._id, filename: imgObj.filename, originalName: imgObj.originalName, uniqueKey: imgObj.uniqueKey, isVisible: imgObj.isVisible }))
         form.append("oldImages", JSON.stringify(imagesData))
       }
 
@@ -522,7 +523,7 @@ const Products = () => {
         form.append("newAttachmentsData", JSON.stringify(attachmentsData));
       }
       if (serverAttachments && serverAttachments.length) {
-        const attachmentsData = serverAttachments.map(attachmentObj => ({ filename: attachmentObj.filename, originalName: attachmentObj.originalName, uniqueKey: attachmentObj.uniqueKey, isVisible: attachmentObj.isVisible }))
+        const attachmentsData = serverAttachments.map(attachmentObj => ({ fileId: attachmentObj._id, filename: attachmentObj.filename, originalName: attachmentObj.originalName, uniqueKey: attachmentObj.uniqueKey, isVisible: attachmentObj.isVisible }))
         form.append("oldAttachments", JSON.stringify(attachmentsData))
       }
 
@@ -731,16 +732,7 @@ const Products = () => {
         </div>
       </div>
 
-
-
-
-
-
-
-
-
       {/* Tabela */}
-
       <div className="w-full">
         {/* Desktop Table */}
         <div className="hidden md:block overflow-x-auto w-full shadow rounded border border-gray-200">
@@ -779,31 +771,28 @@ const Products = () => {
                     .map((col, idx) => {
                       let value;
                       switch (col) {
-                        case "stockTotal":
-                          value = p.stockTotal ?? 0;
+                        case "in stock":
+                          value = <p className="min-w-20">{p.stockTotal ?? 0}</p>
                           break;
 
-                        case "stockForRent":
-                          value = p.stockForRent ?? 0;
+                        case "for rent":
+                          value = <p className="min-w-20">{p.stockForRent ?? 0}</p>
                           break;
 
                         case "categories":
                           value = (
-                            <div className="inline-block relative w-32">
+                            <div className="relative inline-block w-40">
                               <select
-                                className="appearance-none border rounded px-2 py-1 text-sm w-full pr-6 bg-white cursor-pointer"
+                                className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white appearance-none pr-8 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 shadow-sm"
                                 value=""
                                 onChange={(e) => e.preventDefault()} // temporarily block change
                               >
-                                {p.categories?.map((c, i) => (
-                                  <option key={i} value={c?.name ?? ""}>
-                                    {(c?.name ?? "").slice(0, 15)}
-                                  </option>
+                                <option value="" disabled hidden>Check Categories</option>
+                                {p.categories.map((c, i) => (
+                                  <option key={i} value={c?.name ?? ""}>{c?.name}</option>
                                 ))}
                               </select>
-                              <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 text-sm">
-                                ⬇️
-                              </span>
+                              <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-sm select-none">▼</span>
                             </div>
                           );
                           break;
@@ -879,7 +868,7 @@ const Products = () => {
                   </td>
 
                   {/* In cart jako ostatnia kolumna */}
-                  <td className="px-4 py-2 text-center">
+                  <td className="px-4 py-2 text-center flex justify-center items-center gap-4">
                     <span className="inline-block bg-gray-100 text-gray-700 text-xs font-semibold px-2 py-1 rounded-full">
                       Available: {getAvailableStockForProduct(p)}
                     </span>
@@ -911,20 +900,20 @@ const Products = () => {
 
                         case "categories":
                           return (
-                            <div className="inline-block relative">
+                            <div className="relative inline-block w-40">
                               <select
-                                className="border rounded px-2 py-1 text-sm"
+                                className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white appearance-none pr-8 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 shadow-sm"
                                 value=""
                                 onChange={(e) => e.preventDefault()}
-                                style={{ width: "8rem" }}
                               >
-                                <option value="">Categories</option>
-                                {p.categories?.map((c, i) => (
-                                  <option key={i} value={c?.name ?? ""}>
-                                    {(c?.name ?? "").slice(0, 15)}
-                                  </option>
+                                <option value="" disabled hidden>Check Categories</option>
+                                {p.categories.map((c, i) => (
+                                  <option key={i} value={c?.name ?? ""}>{c?.name}</option>
                                 ))}
                               </select>
+                              <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-sm select-none">
+                                ▼
+                              </span>
                             </div>
                           );
 
@@ -1238,8 +1227,8 @@ const Products = () => {
                   >
                     Add
                   </button>
-                  <p className="text-sm text-gray-500">{newTag.length}/100</p>
                 </div>
+                <p className="text-sm text-gray-500 mt-1">{newTag.length}/100</p>
                 {formData.tags?.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
                     {formData.tags.map((tag, index) => {
@@ -1266,6 +1255,7 @@ const Products = () => {
                   </div>
                 )}
               </div>
+              
 
               {/* File Upload */}
               <div>

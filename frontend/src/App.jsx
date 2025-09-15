@@ -1,5 +1,5 @@
 import './App.css';
-import React, { useEffect } from "react";
+import react, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 
 // Pages
@@ -19,11 +19,14 @@ import Materials from './pages/Materials';
 import MainGuest from './pages/MainGuest';
 import Orders from './pages/Orders';
 import Users from './pages/Users';
+import OrderPreview from './pages/OrderPreview';
+
 import Components from './pages/Components';
-import CategoryFiles from './pages/CategoryFiles';
+import ComponentPreview from './pages/ComponentPreview';
 
 // Components
 import Logout from './components/Logout';
+// import ReturnedOrders from './components/ReturnedOrders';
 
 // Utils
 import ProtectedRoutes from './utils/ProtectedRoutes';
@@ -42,6 +45,7 @@ function GlobalEffect() {
   useEffect(() => {
     if (location.pathname.startsWith(pathPrefix) && !excludedPathsWithPrefix.includes(location.pathname))
       resetCart();
+
   }, [location]);
 
   return null;
@@ -63,8 +67,8 @@ function App() {
         <Route path="/guest-products/:menuCategory" element={<GuestProducts />} />
         <Route path="/mainguest" element={<MainGuest />} />
         <Route path="/preview" element={<ProductPreview />} />
-
-          <Route path="/components/:categoryId" element={<CategoryFiles />} />
+        <Route path="/orderPreview/:orderUUID" element={<OrderPreview />} />
+        <Route path="/components/:categoryId" element={<ComponentPreview />} />
 
         {/* Admin Dashboard - Protected Routes */}
         <Route

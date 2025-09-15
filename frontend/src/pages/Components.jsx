@@ -4,8 +4,8 @@ import { useAuth } from "../context/AuthContext";
 
 const Components = () => {
   const { token } = useAuth();
-  const [categories, setCategories] = useState([]);
-  const [newCategory, setNewCategory] = useState("");
+  const [collections, setCollections] = useState([]);
+  const [newCollection, setNewCollection] = useState("");
   const [expanded, setExpanded] = useState(null);
   const [fileInputs, setFileInputs] = useState({}); // dla wielu kategorii
 
@@ -15,49 +15,49 @@ const Components = () => {
   });
 
   // Pobierz kategorie
-  const fetchCategories = async () => {
+  const fetchCollections = async () => {
     try {
       const res = await axiosInstance.get("/components");
-      if (res.data.success) setCategories(res.data.data);
+      if (res.data.success) setCollections(res.data.data);
     } catch {
-      alert("Error fetching categories");
+      alert("Error fetching collections");
     }
   };
 
   // Dodaj kategorię
-  const addCategory = async () => {
-    if (!newCategory.trim()) return;
+  const addCollection = async () => {
+    if (!newCollection.trim()) return;
     try {
-      const res = await axiosInstance.post("/components/create", { name: newCategory });
+      const res = await axiosInstance.post("/components/create", { name: newCollection });
       if (res.data.success) {
-        setCategories(prev => [...prev, res.data.data]);
-        setNewCategory("");
+        setCollections(prev => [...prev, res.data.data]);
+        setNewCollection("");
       }
     } catch {
-      alert("Error adding category");
+      alert("Error adding collections");
     }
   };
 
   // Upload pliku
-  const addFile = async (categoryId) => {
-    const file = fileInputs[categoryId];
+  const addFile = async (collectionId) => {
+    const file = fileInputs[collectionId];
     if (!file) return alert("Choose a file first!");
 
     const formData = new FormData();
     formData.append("file", file);
 
     try {
-      const res = await axiosInstance.post(`/components/${categoryId}/files`, formData, {
+      const res = await axiosInstance.post(`/components/${collectionId}/files`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
       if (res.data.success) {
-        setCategories(prev =>
+        setCollections(prev =>
           prev.map(cat =>
-            cat._id === categoryId ? { ...cat, files: [...cat.files, res.data.data] } : cat
+            cat._id === collectionId ? { ...cat, files: [...cat.files, res.data.data] } : cat
           )
         );
-        setFileInputs(prev => ({ ...prev, [categoryId]: null }));
+        setFileInputs(prev => ({ ...prev, [collectionId]: null }));
       }
     } catch {
       alert("Error uploading file");
@@ -65,12 +65,12 @@ const Components = () => {
   };
 
   // Usuń plik
-  const deleteFile = async (categoryId, fileId) => {
+  const deleteFile = async (collectionId, fileId) => {
     try {
-      await axiosInstance.delete(`/components/${categoryId}/files/${fileId}`);
-      setCategories(prev =>
+      await axiosInstance.delete(`/components/${collectionId}/files/${fileId}`);
+      setCollections(prev =>
         prev.map(cat =>
-          cat._id === categoryId
+          cat._id === collectionId
             ? { ...cat, files: cat.files.filter(f => f._id !== fileId) }
             : cat
         )
@@ -80,7 +80,7 @@ const Components = () => {
     }
   };
 
-  useEffect(() => { fetchCategories(); }, []);
+  useEffect(() => { fetchCollections(); }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex justify-center py-10 px-4">
@@ -89,33 +89,33 @@ const Components = () => {
         {/* Dodaj kategorię */}
         <div className="flex gap-3">
           <input
-            value={newCategory}
-            onChange={e => setNewCategory(e.target.value)}
-            placeholder="New category..."
+            value={newCollection}
+            onChange={e => setNewCollection(e.target.value)}
+            placeholder="New collection..."
             className="flex-1 border rounded-xl px-3 py-2"
           />
-          <button onClick={addCategory} className="bg-blue-600 text-white px-4 py-2 rounded-xl">
+          <button onClick={addCollection} className="bg-blue-600 text-white px-4 py-2 rounded-xl">
             Add
           </button>
         </div>
 
         {/* Lista kategorii */}
-        {categories.map(category => (
-          <div key={category._id} className="border rounded-xl p-4 bg-gray-50">
+        {collections.map(collection => (
+          <div key={collection._id} className="border rounded-xl p-4 bg-gray-50">
             <button
-              onClick={() => setExpanded(expanded === category._id ? null : category._id)}
+              onClick={() => setExpanded(expanded === collection._id ? null : collection._id)}
               className="text-lg font-semibold text-blue-900 flex-1 text-left"
             >
-              {expanded === category._id ? "▼" : "▶"} {category.name}
+              {expanded === collection._id ? "▼" : "▶"} {collection.name}
             </button>
 
-            {expanded === category._id && (
+            {expanded === collection._id && (
               <div className="mt-3">
                 {/* Pliki */}
-                {category.files.map(file => (
+                {collection.files.map(file => (
                   <div key={file._id} className="flex justify-between items-center bg-white p-2 rounded mb-2">
                     <a
-                      href={`/${file.path}`}
+                      href={`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/${file.path}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 underline"
@@ -123,7 +123,7 @@ const Components = () => {
                       {file.name}
                     </a>
                     <button
-                      onClick={() => deleteFile(category._id, file._id)}
+                      onClick={() => deleteFile(collection._id, file._id)}
                       className="text-red-500 hover:text-red-700"
                     >
                       🗑️
@@ -135,11 +135,11 @@ const Components = () => {
                 <div className="flex gap-2 mt-3">
                   <input
                     type="file"
-                    onChange={e => setFileInputs(prev => ({ ...prev, [category._id]: e.target.files[0] }))}
+                    onChange={e => setFileInputs(prev => ({ ...prev, [collection._id]: e.target.files[0] }))}
                     className="flex-1"
                   />
                   <button
-                    onClick={() => addFile(category._id)}
+                    onClick={() => addFile(collection._id)}
                     className="bg-green-500 text-white px-3 py-2 rounded"
                   >
                     Upload

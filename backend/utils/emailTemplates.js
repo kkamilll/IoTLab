@@ -19,10 +19,11 @@ export function generateVerificationOtpEmailTemplate(otpCode) {
 }
 
 export const orderTemplates = {
-  newOrder: ({ order }) => `
+  newOrder: ({ order, customerKey, uuid }) => `
     Hello ${order.customer.name},
 
     Your order ${order._id} has been received!
+    You can see status of the order on ${process.env.FRONTEND_IP}${process.env.FRONTEND_PORT}${process.env.FRONTEND_ORDER_PATH}/${uuid} with password: ${customerKey}
 
     Items:
     ${order.items.map(

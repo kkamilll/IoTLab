@@ -20,7 +20,7 @@ export const sendEmail = async (email, subject, message) => {
     };
 
     await transporter.sendMail(mailOptions);
-    console.log(`Order email sent to ${email}`); // now this will run if successful
+    // console.log(`Order email sent to ${email}`); // now this will run if successful
 
   } catch (err) {
     console.error("Failed to send email:", err); // <-- this will show why it's failing

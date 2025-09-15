@@ -1,29 +1,24 @@
 import express from "express";
 import multer from "multer";
 import {
-  getComponents,
-  createCategory,
-  deleteCategory,
+  getCollections,
+  createCollection,
+  deleteCollection,
   addFile,
   deleteFile,
-  getComponentById,
+  getCollectionById,
 } from "../controllers/ComponentController.js";
+
 import authMiddleware from "../middleware/authMiddleware.js";
+import { filesUploadCollection } from "../middleware/fileUpload.js";
 
 const router = express.Router();
 
-// konfiguracja Multer – pliki idą do folderu uploads/
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "uploads/"),
-  filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
-});
-const upload = multer({ storage });
-
-router.get("/", getComponents);
-router.post("/create", authMiddleware, createCategory);
-router.delete("/:categoryId", authMiddleware, deleteCategory);
-router.post("/:categoryId/files", authMiddleware, upload.single("file"), addFile);
-router.delete("/:categoryId/files/:fileId", authMiddleware, deleteFile);
-router.get("/:categoryId", getComponentById);
+router.get("/", getCollections);
+router.post("/create", authMiddleware, createCollection);
+router.delete("/:collectionId", authMiddleware, deleteCollection);
+router.post("/:collectionId/files", authMiddleware, filesUploadCollection.single("file"), addFile);
+router.delete("/:collectionId/files/:fileId", authMiddleware, deleteFile);
+router.get("/:collectionId", getCollectionById);
 
 export default router;

@@ -20,7 +20,7 @@ const Users = () => {
   const [showForm, setShowForm] = useState(false);
   const labDropdownRef = useRef();
 
-  const USERS_PER_PAGE = 2;
+  const USERS_PER_PAGE = 10;
 
   // --- Fetch users ---
   const fetchUsers = async () => {

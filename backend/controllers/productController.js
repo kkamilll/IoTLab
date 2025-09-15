@@ -9,16 +9,27 @@ import Order from "../models/Order.js";
 import { createTagHelper, hardDeleteTagHelper } from '../utils/tagHelpers.js';
 
 const mapUploadedFiles = (filesArray = [], additionalData = []) => {
-  const fileNames = filesArray.map(file => file.filename);
-  const fileSizes = filesArray.map(file => file.size || 0);
+  // const fileNames = filesArray.map(file => file.filename);
+  // const fileSizes = filesArray.map(file => file.size || 0);
 
-  if (fileNames.length !== additionalData.length || fileNames.length !== fileSizes.length) return [];
-  return fileNames.map((filename, idx) => ({
-    filename,
-    originalName: additionalData[idx].originalName,
+  // if (fileNames.length !== additionalData.length || fileNames.length !== fileSizes.length) return [];
+  // return fileNames.map((filename, idx) => ({
+  //   filename,
+  //   originalName: additionalData[idx].originalName,
+  //   uniqueKey: additionalData[idx]?.uniqueKey,
+  //   isVisible: additionalData[idx]?.isVisible || false,
+  //   size: fileSizes[idx]
+  // }));
+
+  if (!filesArray.length || filesArray.length !== additionalData.length) return [];
+
+  return filesArray.map((file, idx) => ({
+    filename: file.filename,
+    originalName: additionalData[idx]?.originalName || file.originalname,
     uniqueKey: additionalData[idx]?.uniqueKey,
     isVisible: additionalData[idx]?.isVisible || false,
-    size: fileSizes[idx]
+    size: file.size || 0,
+    path: file.path, // <-- added path here
   }));
 }
 
@@ -208,6 +219,15 @@ export const getProductByIdPublic = async (req, res, next) => {
     const product = await Product.findOne({ _id: productId, isVisible: true, isDeleted: false }).select('-__v -isDeleted').sort({ name: 1 }).populate([{ path: "categories", select: "name" }, { path: "owner", select: "name" }]).lean();
     product.images = product.images?.filter(image => (image.isVisible)) || [];
     product.attachments = product.attachments?.filter(attachment => (attachment.isVisible)) || [];
+    // product.images = product.images?.filter(image => (image.isVisible)).map(img => {
+    //   const { path, ...rest } = img;
+    //   return rest;
+    // }) || [];
+    // product.attachments = product.attachments?.filter(attachment => (attachment.isVisible))
+    // .map(att => {
+    //   const { path, ...rest } = att;
+    //   return rest;
+    // }) || [];
 
     // Send response
     return res.status(200).json({ success: true, product });
@@ -263,15 +283,15 @@ export const createProduct = async (req, res, next) => {
     const updateData = initProduct(req, next);
     const createData = updateData.$set;
 
-    const newTags = updateData.$set.tags || [];
-    const tagRefs = [];
-    for (const tag of newTags) {
-      const newTag = await createTagHelper(tag);
-      tagRefs.push(new mongoose.Types.ObjectId(String(newTag._id)));
-    }
+    // const newTags = updateData.$set.tags || [];
+    // const tagRefs = [];
+    // for (const tag of newTags) {
+    //   const newTag = await createTagHelper(tag);
+    //   tagRefs.push(new mongoose.Types.ObjectId(String(newTag._id)));
+    // }
 
-    if (tagRefs.length > 0)
-      createData.tagRefs = tagRefs;
+    // if (tagRefs.length > 0)
+    //   createData.tagRefs = tagRefs;
 
     // Validate required fields
     // validateRequiredFields(Product, createData);
@@ -347,32 +367,18 @@ export const updateProduct = async (req, res, next) => {
     const product = await Product.findOne(filterProducts).session(session);
     if (!product) return next(new ResourceNotFoundError("Missing permission or Product"));
 
-    
+    if (updateData.$set.images || updateData.$set.attachments) {
+      const fileFields = ["images", "attachments"];
 
-    const prevTags = product.tags.map(t => t.toLowerCase().trim());
-    const newTags = (updateData.$set.tags || []).map(t => t.toLowerCase().trim());
-    const tagsChanged = newTags.some(newTag => !prevTags.includes(newTag)) || prevTags.some(newTag => !newTags.includes(newTag));
+      for (const field of fileFields) {
+        const fileArr = updateData.$set[field];
+        if (!fileArr) continue;
+        console.log(fileArr);
 
-    if (tagsChanged) {
-      const newTagsFiltered = newTags.filter(newTag => !prevTags.includes(newTag));
-      const newTagRefs = [];
-
-      for (const tag of newTagsFiltered) {
-        const newTag = await createTagHelper(tag, session);
-        newTagRefs.push(new mongoose.Types.ObjectId(String(newTag._id)));
-      }
-
-      const oldTagRefs = product.tagRefs.filter(tagRef => !newTagRefs.some(newTagRef => newTagRef.toString() === tagRef.toString()));
-      for (const oldTagRef of oldTagRefs) {
-        try {
-        await hardDeleteTagHelper(oldTagRef);
-        } catch (error) {
-          console.warn(`Tag ${oldTagRef}: not found`);
+        for (const file of fileArr) {
+          file.path = product[field].find(fileProd => fileProd._id.toString() === file.fileId.toString())?.path;
         }
       }
-
-      if (newTagRefs.length > 0)
-        updateData.$set.tagRefs = newTagRefs;
     }
 
     // check owner

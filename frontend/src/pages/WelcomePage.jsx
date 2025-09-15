@@ -14,9 +14,12 @@ const WelcomePage = () => {
   const [notesLoading, setNotesLoading] = useState(false);
   const [notesError, setNotesError] = useState(null);
   const [notesPage, setNotesPage] = useState(1);
-const [categoryIndex, setCategoryIndex] = useState(0);
 
-  const [categories, setCategories] = useState([]);
+  const [collectionIndex, setCollectionIndex] = useState(0);
+  const [collections, setCollections] = useState([]);
+
+  const [visibleCount, setVisibleCount] = useState(3);
+
   const NOTES_PER_PAGE = 4;
   const totalPages = Math.ceil(notes.length / NOTES_PER_PAGE);
   const paginatedNotes = notes.slice(
@@ -29,10 +32,7 @@ const [categoryIndex, setCategoryIndex] = useState(0);
     (async () => {
       try {
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const res = await axios.get(
-          `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/materials`,
-          { headers }
-        );
+        const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/materials`, { headers });
         if (res.data.success) setMaterials(res.data.data);
       } catch (err) {
         console.error("Error fetching materials:", err);
@@ -47,10 +47,7 @@ const [categoryIndex, setCategoryIndex] = useState(0);
       setNotesError(null);
       try {
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const res = await axios.get(
-          `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/notes`,
-          { headers }
-        );
+        const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/notes`, { headers });
         if (res.data.success && Array.isArray(res.data.data)) setNotes(res.data.data);
         else setNotesError('Invalid server response');
       } catch (err) {
@@ -62,25 +59,47 @@ const [categoryIndex, setCategoryIndex] = useState(0);
     })();
   }, [token]);
 
-  // Fetch categories (public)
+  // Fetch components (public)
   useEffect(() => {
     (async () => {
       try {
         const res = await axios.get(
           `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/components`
         );
-        if (res.data.success) setCategories(res.data.data);
+        if (res.data.success) setCollections(res.data.data);
       } catch (err) {
-        console.error("Error fetching categories:", err);
+        console.error("Error fetching collections:", err);
       }
     })();
   }, []);
+
+  useEffect(() => {
+    const updateVisible = () => {
+      if (window.innerWidth < 640) setVisibleCount(1); // mobile
+      else if (window.innerWidth < 1024) setVisibleCount(2); // tablet
+      else setVisibleCount(3); // desktop
+    };
+    updateVisible();
+    window.addEventListener("resize", updateVisible);
+    return () => window.removeEventListener("resize", updateVisible);
+  }, []);
+
+  useEffect(() => {
+    if (!collections.length || !visibleCount) return;
+
+    const maxStartIndex = Math.max(0, collections.length - visibleCount);
+    setCollectionIndex(prevIndex => { return Math.min(prevIndex, maxStartIndex) });
+  }, [visibleCount]);
 
   // Timer for current time
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  const handleCollectionClick = (id) => {
+    navigate(`/components/${id}`); // jeśli zalogowany → pokaz pliki
+  };
 
   // Handlers
   const handleLoginClick = () => navigate('/login');
@@ -90,17 +109,13 @@ const [categoryIndex, setCategoryIndex] = useState(0);
     else navigate('/');
   };
 
-  const handleCategoryClick = (id) => {
-      navigate(`/components/${id}`); // jeśli zalogowany → pokaz pliki
-  };
-
   return (
     <div className="w-full min-h-screen font-sans bg-gradient-to-b from-blue-900 to-blue-700 text-gray-900">
 
       {/* TOPBAR */}
       <div className="w-full py-2 px-4 text-white text-sm font-semibold tracking-wide flex flex-col md:flex-row md:items-center md:justify-between gap-2">
         <span>
-          {`${currentTime.getDate().toString().padStart(2,'0')}.${(currentTime.getMonth()+1).toString().padStart(2,'0')}.${currentTime.getFullYear()} ${currentTime.getHours().toString().padStart(2,'0')}:${currentTime.getMinutes().toString().padStart(2,'0')}:${currentTime.getSeconds().toString().padStart(2,'0')}`}
+          {`${currentTime.getDate().toString().padStart(2, '0')}.${(currentTime.getMonth() + 1).toString().padStart(2, '0')}.${currentTime.getFullYear()} ${currentTime.getHours().toString().padStart(2, '0')}:${currentTime.getMinutes().toString().padStart(2, '0')}:${currentTime.getSeconds().toString().padStart(2, '0')}`}
         </span>
 
         {user && (
@@ -130,7 +145,6 @@ const [categoryIndex, setCategoryIndex] = useState(0);
         )}
       </div>
 
-      {/* WELCOME SECTION */}
       <section className="relative py-20 flex justify-center items-center overflow-hidden shadow-1xl">
         <div
           className="absolute inset-0 bg-[url('/uploadsWelcome/aa.jpg')] bg-cover bg-center bg-no-repeat"
@@ -164,51 +178,48 @@ const [categoryIndex, setCategoryIndex] = useState(0);
         </div>
       </section>
 
-      {/* CATEGORIES */}
-<section className="py-20 bg-white text-gray-900">
-  <div className="max-w-6xl mx-auto px-4">
-    <h2 className="text-4xl font-extrabold text-center mb-14 tracking-tight text-blue-900">
-      Explore Categories
-    </h2>
+      {/* Components */}
+      <section className="py-20 bg-white text-gray-900">
+        <div className="max-w-6xl mx-auto px-4">
+          <h2 className="text-4xl font-extrabold text-center mb-14 tracking-tight text-blue-900">
+            Explore Collections
+          </h2>
 
-    <div className="relative flex items-center">
-      {/* Strzałka w lewo */}
-      <button
-        onClick={() => setCategoryIndex(prev => Math.max(prev - 1, 0))}
-        className="bg-blue-600/80 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition"
-        disabled={categoryIndex === 0}
-      >
-        ←
-      </button>
+          <div className="relative flex items-center">
+            {/* Strzałka w lewo */}
+            <button
+              onClick={() => setCollectionIndex(prev => Math.max(prev - 1, 0))}
+              className="bg-blue-600/80 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition"
+              disabled={collectionIndex === 0}
+            >
+              ←
+            </button>
 
-      {/* Kontenery */}
-      <div className="flex gap-7 flex-1 justify-center overflow-hidden px-2">
-        {categories.slice(categoryIndex, categoryIndex + 3).map(cat => (
-          <div
-            key={cat._id}
-            onClick={() => handleCategoryClick(cat._id)}
-            className="flex-shrink-0 w-[280px] p-10 rounded-3xl shadow-lg hover:shadow-2xl hover:scale-105 transition-transform cursor-pointer flex flex-col justify-between items-center bg-gradient-to-tr from-blue-50 to-blue-100 min-h-[220px]"
-          >
-            <div className="text-6xl mb-4">📁</div>
-            <h3 className="font-semibold text-xl text-blue-800 text-center break-words">{cat.name}</h3>
+            {/* Kontenery */}
+            <div className="flex gap-7 flex-1 justify-center overflow-hidden px-2">
+              {collections.slice(collectionIndex, collectionIndex + visibleCount).map(cat => (
+                <div
+                  key={cat._id}
+                  onClick={() => handleCollectionClick(cat._id)}
+                  className="flex-shrink-0 w-[280px] p-10 rounded-3xl shadow-lg hover:shadow-2xl hover:scale-105 transition-transform cursor-pointer flex flex-col justify-between items-center bg-gradient-to-tr from-blue-50 to-blue-100 min-h-[220px]"
+                >
+                  <div className="text-6xl mb-4">📁</div>
+                  <h3 className="font-semibold text-xl text-blue-800 text-center break-words">{cat.name}</h3>
+                </div>
+              ))}
+            </div>
+
+            {/* Strzałka w prawo */}
+            <button
+              onClick={() => setCollectionIndex(prev => Math.min(prev + 1, collections.length - visibleCount))}
+              className="bg-blue-600/80 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition"
+              disabled={collectionIndex >= collections.length - visibleCount}
+            >
+              →
+            </button>
           </div>
-        ))}
-      </div>
-
-      {/* Strzałka w prawo */}
-      <button
-        onClick={() => setCategoryIndex(prev => Math.min(prev + 1, categories.length - 3))}
-        className="bg-blue-600/80 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition"
-        disabled={categoryIndex >= categories.length - 3}
-      >
-        →
-      </button>
-    </div>
-  </div>
-</section>
-
-
-
+        </div>
+      </section>
 
       {/* MAIN SLIDER */}
       {materials.length > 0 && <MainSlider materials={materials} />}
@@ -234,7 +245,7 @@ const [categoryIndex, setCategoryIndex] = useState(0);
                     </p>
                     <div className="mt-3 text-blue-200 text-sm font-light italic">
                       Added by <strong>{note.author?.name || 'Anonymous'}</strong> •{' '}
-                      {`${new Date(note.createdAt).getDate().toString().padStart(2,'0')}.${(new Date(note.createdAt).getMonth()+1).toString().padStart(2,'0')}.${new Date(note.createdAt).getFullYear()} ${new Date(note.createdAt).getHours().toString().padStart(2,'0')}:${new Date(note.createdAt).getMinutes().toString().padStart(2,'0')}:${new Date(note.createdAt).getSeconds().toString().padStart(2,'0')}`}
+                      {`${new Date(note.createdAt).getDate().toString().padStart(2, '0')}.${(new Date(note.createdAt).getMonth() + 1).toString().padStart(2, '0')}.${new Date(note.createdAt).getFullYear()} ${new Date(note.createdAt).getHours().toString().padStart(2, '0')}:${new Date(note.createdAt).getMinutes().toString().padStart(2, '0')}:${new Date(note.createdAt).getSeconds().toString().padStart(2, '0')}`}
                     </div>
                   </li>
                 ))}

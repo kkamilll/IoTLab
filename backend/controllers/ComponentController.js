@@ -7,26 +7,25 @@ import {
   ServerError,
 } from "../errors/CustomErrors.js";
 
-// Pobierz kategorie
-export const getComponents = async (req, res, next) => {
+export const getCollections = async (req, res, next) => {
   try {
-    const categories = await Component.find().populate("author", "name email");
-    res.status(200).json({ success: true, data: categories });
+    const collections = await Component.find().populate("author", "name email");
+    res.status(200).json({ success: true, data: collections });
   } catch (err) {
     return next(new ServerError({ message: err.message }));
   }
 };
-// Pobierz kategorię po ID
-export const getComponentById = async (req, res, next) => {
+
+export const getCollectionById = async (req, res, next) => {
   try {
-    const { categoryId } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(categoryId))
+    const { collectionId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(collectionId))
       return next(new BadRequestError("Invalid ID"));
 
-    const category = await Component.findById(categoryId).populate("author", "name email");
-    if (!category) return next(new ResourceNotFoundError("Category"));
+    const collection = await Component.findById(collectionId).populate("author", "name email");
+    if (!collection) return next(new ResourceNotFoundError("Collection"));
 
-    res.status(200).json({ success: true, data: category });
+    res.status(200).json({ success: true, data: collection });
   } catch (err) {
     return next(new ServerError({ message: err.message }));
   }
@@ -34,34 +33,34 @@ export const getComponentById = async (req, res, next) => {
 
 
 // Dodaj kategorię
-export const createCategory = async (req, res, next) => {
+export const createCollection = async (req, res, next) => {
   try {
     const { name } = req.body;
     const userId = req.user._id;
-    if (!name) return next(new BadRequestError("Category name required"));
+    if (!name) return next(new BadRequestError("Collection name required"));
 
-    const category = new Component({ name, files: [], author: userId });
-    await category.save();
-    await category.populate("author", "name email");
+    const collection = new Component({ name, files: [], author: userId });
+    await collection.save();
+    await collection.populate("author", "name email");
 
-    res.status(201).json({ success: true, data: category });
+    res.status(201).json({ success: true, data: collection });
   } catch (err) {
     return next(new ServerError({ message: err.message }));
   }
 };
 
 // Usuń kategorię
-export const deleteCategory = async (req, res, next) => {
+export const deleteCollection = async (req, res, next) => {
   try {
-    const { categoryId } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(categoryId))
+    const { collectionId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(collectionId))
       return next(new BadRequestError("Invalid ID"));
 
-    const category = await Component.findById(categoryId);
-    if (!category) return next(new ResourceNotFoundError("Category"));
+    const collection = await Component.findById(collectionId);
+    if (!collection) return next(new ResourceNotFoundError("Collection"));
 
-    await category.deleteOne();
-    res.status(200).json({ success: true, message: "Category deleted" });
+    await collection.deleteOne();
+    res.status(200).json({ success: true, message: "Collection deleted" });
   } catch (err) {
     return next(new ServerError({ message: err.message }));
   }
@@ -70,11 +69,11 @@ export const deleteCategory = async (req, res, next) => {
 // Dodaj plik do kategorii
 export const addFile = async (req, res, next) => {
   try {
-    const { categoryId } = req.params;
+    const { collectionId } = req.params;
     if (!req.file) return next(new BadRequestError("File required"));
 
-    const category = await Component.findById(categoryId);
-    if (!category) return next(new ResourceNotFoundError("Category"));
+    const collection = await Component.findById(collectionId);
+    if (!collection) return next(new ResourceNotFoundError("Collection"));
 
     const newFile = {
       name: req.file.originalname,
@@ -82,12 +81,12 @@ export const addFile = async (req, res, next) => {
       mimeType: req.file.mimetype,
     };
 
-    category.files.push(newFile);
-    await category.save();
+    collection.files.push(newFile);
+    await collection.save();
 
     res.status(201).json({
       success: true,
-      data: category.files[category.files.length - 1],
+      data: collection.files[collection.files.length - 1],
     });
   } catch (err) {
     return next(new ServerError({ message: err.message }));
@@ -97,12 +96,12 @@ export const addFile = async (req, res, next) => {
 // Usuń plik
 export const deleteFile = async (req, res, next) => {
   try {
-    const { categoryId, fileId } = req.params;
-    const category = await Component.findById(categoryId);
-    if (!category) return next(new ResourceNotFoundError("Category"));
+    const { collectionId, fileId } = req.params;
+    const collection = await Component.findById(collectionId);
+    if (!collection) return next(new ResourceNotFoundError("Collection"));
 
-    category.files = category.files.filter(f => f._id.toString() !== fileId);
-    await category.save();
+    collection.files = collection.files.filter(f => f._id.toString() !== fileId);
+    await collection.save();
 
     res.status(200).json({ success: true, message: "File deleted" });
   } catch (err) {

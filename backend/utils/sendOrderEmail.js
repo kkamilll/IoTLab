@@ -1,40 +1,39 @@
 import { orderTemplates } from "./emailTemplates.js";
 import { sendEmail } from "./sendEmail.js"; // whatever your actual email sending function is
 
-export const handleOrderEmail = async (order, isNew = true) => {
+export const handleOrderEmail = async (order, customerKey = null, uuid = null) => {
     try {
         if (!order) return;
 
-        const type = isNew ? "new" : "update";
+        const type = customerKey && uuid ? "new" : "update";
 
-        await sendOrderEmail(order, type);
+        await sendOrderEmail(order, customerKey, uuid);
 
-        console.log(`Order email sent (${type}) for order ${order._id}`);
+        // console.log(`Order email sent (${type}) for order ${order._id}`);
     } catch (err) {
         console.error("Error sending order email:", err);
     }
 };
 
-const sendOrderEmail = async (order, type = "new") => {
+const sendOrderEmail = async (order, customerKey = null, uuid = null) => {
     try {
         if (!order) throw new Error("Missing order");
+
+        const type = customerKey && uuid ? "new" : "update";
 
         const email = order.customer?.email;
         if (!email) throw new Error("Missing customer's email");
 
         let message;
 
-        if (type === "new") {
-            message = orderTemplates.newOrder({ order });
-        } else if (type === "update") {
-            message = orderTemplates.updateOrder({ order });
+        if (customerKey) {
+            message = orderTemplates.newOrder({ order, customerKey, uuid });
         } else {
-            throw new Error("Invalid email type");
+            message = orderTemplates.updateOrder({ order });
         }
 
-        console.log("test");
         await sendEmail(email, `Order ${type === "new" ? "Confirmation" : "Update"} ${order._id}`, message);
-        console.log(`Order ${type} email sent to ${email}`);
+        // console.log(`Order ${type} email sent to ${email}`);
     } catch (error) {
         console.error("Failed to send email:", err);
     }

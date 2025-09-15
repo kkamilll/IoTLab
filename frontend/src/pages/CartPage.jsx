@@ -10,23 +10,29 @@ import TextField from '@mui/material/TextField';
 
 import ReCAPTCHA from "react-google-recaptcha";
 
+const phoneRegex = /^\d{9,10}$/;
+
 const CartPage = () => {
   const [cart, setCart] = useState([]);
   const [availability, setAvailability] = useState({});
   const [orderCustomer, setOrderCustomer] = useState({
-    name: "",
-    email: "",
+    firstName: "",
+    lastName: "",
     index: "",
+    semester: "",
+    yearOfStudy: "",
+    fieldOfStudy: "",
+    specialization: "",
+    phoneNumber: "",
+    email: "",
+    purpose: "",
+    notes: "",
   });
+
   const [orderDates, setOrderDates] = useState({
     startDate: "",
     endDate: ""
   });
-
-
-  // CAPTCHA states
-  // const [captchaText, setCaptchaText] = useState("");
-  // const [captchaInput, setCaptchaInput] = useState("");
 
   const navigate = useNavigate();
   const { token } = useAuth();
@@ -66,13 +72,6 @@ const CartPage = () => {
     updateCart(newCart);
   };
 
-  // const handleDateChange = (productId, field, value) => {
-  //   const newCart = cart.map((item) =>
-  //     item._id === productId ? { ...item, [field]: value } : item
-  //   );
-  //   updateCart(newCart);
-  // };
-
   const handleRemove = (productId) => {
     const newCart = cart.filter((item) => item._id !== productId);
     updateCart(newCart);
@@ -109,89 +108,79 @@ const CartPage = () => {
 
   useEffect(() => {
     updateAvailability();
-    // if (recaptchaRef.current) recaptchaRef.current.reset();
   }, [cart, orderDates]);
-
-  // CAPTCHA
-  // const generateCaptcha = () => {
-  //   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789"; // ABCDEFGHJKLMNPQRSTUVWXYZ23456789
-  //   let text = "";
-  //   for (let i = 0; i < 5; i++) {
-  //     text += chars.charAt(Math.floor(Math.random() * chars.length));
-  //   }
-  //   setCaptchaText(text);
-  // };
-
-  // const drawCaptcha = () => {
-  //   const canvas = document.getElementById("captchaCanvas");
-  //   if (!canvas) return;
-  //   const ctx = canvas.getContext("2d");
-  //   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  //   ctx.fillStyle = "#f2f2f2";
-  //   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  //   ctx.font = "30px Arial";
-  //   ctx.fillStyle = "#000";
-  //   ctx.fillText(captchaText, 10, 35);
-
-  //   for (let i = 0; i < 5; i++) {
-  //     ctx.strokeStyle = `rgb(${Math.random()*255},${Math.random()*255},${Math.random()*255})`;
-  //     ctx.beginPath();
-  //     ctx.moveTo(Math.random()*150, Math.random()*50);
-  //     ctx.lineTo(Math.random()*150, Math.random()*50);
-  //     ctx.stroke();
-  //   }
-  // };
-
-  // useEffect(() => generateCaptcha(), []);
-  // useEffect(() => drawCaptcha(), [captchaText]);
 
   const handleCheckout = async () => {
     setLoading(true);
-    // console.log("token: ", recaptchaRef.current.getValue(), typeof recaptchaRef.current.getValue());
 
     try {
+      // Check if cart is empty
       if (!cart.length) return alert("Your cart is empty!");
-      if (!orderCustomer.email || !orderCustomer.name || !orderCustomer.index)
-        return alert("Please fill in your contact information!");
-      // if (captchaInput.toUpperCase() !== captchaText)
-      //   return alert("Invalid CAPTCHA!");
 
+      // Validate required customer fields
+      const requiredFields = [
+        "firstName",
+        //"lastName",
+        //"index",
+        //"semester",
+        //"yearOfStudy",
+        //"fieldOfStudy",
+        //"specialization",
+        //"phoneNumber",
+        "email",
+        "purpose",
+      ];
+
+      const missingField = requiredFields.find(
+        (field) => !orderCustomer[field] || orderCustomer[field].trim() === ""
+      );
+
+      if (missingField) {
+        return alert(`Please fill in your ${missingField}!`);
+      }
+
+      // reCAPTCHA validation
       const token = recaptchaRef.current.getValue();
-
       if (!token) {
         alert("Please verify that you are human!");
         return;
       }
 
+      if (phoneRegex) {
+        if (!phoneRegex.test(orderCustomer.phoneNumber)) {
+          return alert("Phone number must be 9–10 digits");
+        }
+      }
+
+      // Date validation
       if (!orderDates.startDate || !orderDates.endDate)
         return alert("Please select start and end dates for the order!");
       if (orderDates.startDate > orderDates.endDate)
         return alert("Start date cannot be after end date!");
 
+      // Prepare items
       const items = cart.map((item) => ({
         product: item._id,
         requestedQuantity: item.quantity,
       }));
 
-
+      // Send order to backend
       const res = await axios.post(
         `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders/create`,
-        { token, customer: orderCustomer, items, requestedStartDate: orderDates.startDate, requestedEndDate: orderDates.endDate }
+        {
+          token,
+          customer: orderCustomer,
+          items,
+          requestedStartDate: orderDates.startDate,
+          requestedEndDate: orderDates.endDate,
+        }
       );
 
       recaptchaRef.current.reset();
 
-      // const orderId = res.data.order._id;
-      // await axios.post(
-      //   `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders/send-order-email`,
-      //   { orderId }
-      // );
-
       alert("Order submitted and emailed!");
       setCart([]);
       localStorage.removeItem("cart");
-      // setCaptchaInput("");
-      // generateCaptcha();
     } catch (error) {
       console.error(error);
       alert(error.response?.data?.message || error.message || "Order error");
@@ -336,68 +325,172 @@ const CartPage = () => {
         <h3 className="text-2xl font-semibold mb-4">Customer Information</h3>
         <div className="flex flex-col gap-4">
           <div className="flex flex-col md:flex-row gap-4">
-            <input
-              type="text"
-              name="name"
-              placeholder="Full Name"
-              value={orderCustomer.name}
-              onChange={handleCustomerChange}
-              className="flex-1 border p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-            />
-            <input
-              type="email"
-              name="email"
-              placeholder="Your Email"
-              value={orderCustomer.email}
-              onChange={handleCustomerChange}
-              className="flex-1 border p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-            />
+
+            <div className="flex-1 flex flex-col">
+              <label htmlFor="firstName" className="mb-1 font-medium text-gray-700">First Name</label>
+              <input
+                id="firstName"
+                type="text"
+                name="firstName"
+                value={orderCustomer.firstName}
+                onChange={handleCustomerChange}
+                className="border p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+            </div>
+
+            <div className="flex-1 flex flex-col">
+              <label htmlFor="lastName" className="mb-1 font-medium text-gray-700">Last Name</label>
+              <input
+                id="lastName"
+                type="text"
+                name="lastName"
+                value={orderCustomer.lastName}
+                onChange={handleCustomerChange}
+                className="border p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+            </div>
+          </div>
+
+          {/* University Info */}
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1 flex flex-col">
+              <label htmlFor="index" className="mb-1 font-medium text-gray-700">Index</label>
+              <input
+                id="index"
+                type="text"
+                name="index"
+                value={orderCustomer.index}
+                onChange={handleCustomerChange}
+                className="border p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+            </div>
+
+            <div className="flex-1 flex flex-col">
+              <label htmlFor="semester" className="mb-1 font-medium text-gray-700">Semester</label>
+              <input
+                id="semester"
+                type="text"
+                name="semester"
+                value={orderCustomer.semester}
+                onChange={handleCustomerChange}
+                className="border p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+            </div>
           </div>
 
           <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1 flex flex-col">
+              <label htmlFor="yearOfStudy" className="mb-1 font-medium text-gray-700">Year of Study</label>
+              <input
+                id="yearOfStudy"
+                type="text"
+                name="yearOfStudy"
+                value={orderCustomer.yearOfStudy}
+                onChange={handleCustomerChange}
+                className="border p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+            </div>
+
+            <div className="flex-1 flex flex-col">
+              <label htmlFor="fieldOfStudy" className="mb-1 font-medium text-gray-700">Field of Study</label>
+              <input
+                id="fieldOfStudy"
+                type="text"
+                name="fieldOfStudy"
+                value={orderCustomer.fieldOfStudy}
+                onChange={handleCustomerChange}
+                className="border p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1 flex flex-col">
+              <label htmlFor="specialization" className="mb-1 font-medium text-gray-700">Specialization</label>
+              <input
+                id="specialization"
+                type="text"
+                name="specialization"
+                value={orderCustomer.specialization}
+                onChange={handleCustomerChange}
+                className="border p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+            </div>
+
+            <div className="flex-1 flex flex-col">
+              <label htmlFor="phoneNumber" className="mb-1 font-medium text-gray-700">Phone Number</label>
+              <input
+                id="phoneNumber"
+                type="tel"
+                name="phoneNumber"
+                value={orderCustomer.phoneNumber}
+                onChange={handleCustomerChange}
+                className="border p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+            </div>
+          </div>
+
+          {/* Email */}
+          <div className="flex flex-col">
+            <label htmlFor="email" className="mb-1 font-medium text-gray-700">Email Address</label>
             <input
-              type="tel"
-              name="index"
-              placeholder="Index"
-              value={orderCustomer.index}
+              id="email"
+              type="email"
+              name="email"
+              value={orderCustomer.email}
               onChange={handleCustomerChange}
-              className="flex-1 border p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="border p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
             />
           </div>
 
+          {/* Purpose */}
+          <div className="flex flex-col">
+            <label htmlFor="purpose" className="mb-1 font-medium text-gray-700">Purpose / Notes</label>
+            <textarea
+              id="purpose"
+              name="purpose"
+              value={orderCustomer.purpose}
+              onChange={handleCustomerChange}
+              className="border p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
+            />
+          </div>
+
+          {/* Dates */}
           <LocalizationProvider dateAdapter={AdapterDateFns}>
-            {/* <div className="flex flex-col md:flex-row gap-4"> */}
-              {/* Start Date */}
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1 flex flex-col">
+                <label className="mb-1 font-medium text-gray-700">Start Date</label>
                 <DateTimePicker
-                  label="Start Date"
                   value={orderDates.startDate ? new Date(orderDates.startDate) : null}
-                  onChange={(newValue) => {
+                  onChange={(newValue) =>
                     setOrderDates((prev) => ({
                       ...prev,
-                      startDate: newValue ? newValue.toISOString() : ""
-                    }));
-                  }}
+                      startDate: newValue ? newValue.toISOString() : "",
+                    }))
+                  }
                   ampm={false}
                   minDateTime={new Date()}
                   maxDateTime={orderDates.endDate ? new Date(orderDates.endDate) : null}
                   renderInput={(params) => <TextField {...params} className="w-full" />}
                 />
+              </div>
 
-              {/* End Date */}
+              <div className="flex-1 flex flex-col">
+                <label className="mb-1 font-medium text-gray-700">End Date</label>
                 <DateTimePicker
-                  label="End Date"
                   value={orderDates.endDate ? new Date(orderDates.endDate) : null}
-                  onChange={(newValue) => {
+                  onChange={(newValue) =>
                     setOrderDates((prev) => ({
                       ...prev,
-                      endDate: newValue ? newValue.toISOString() : ""
-                    }));
-                  }}
+                      endDate: newValue ? newValue.toISOString() : "",
+                    }))
+                  }
                   ampm={false}
                   minDateTime={orderDates.startDate ? new Date(orderDates.startDate) : new Date()}
                   renderInput={(params) => <TextField {...params} className="w-full" />}
                 />
-            {/* </div> */}
+              </div>
+            </div>
           </LocalizationProvider>
 
           {/* CAPTCHA */}

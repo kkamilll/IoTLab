@@ -35,6 +35,8 @@ const createOwnersData = (order, ownersMapOld, ownersMap, _newAssignedStartDate,
         finalStatus: item.status,
         prevStatus: currOwnerData?.status || "pending",
 
+        customerApproval: currOwnerData?.customerApproval ?? null,
+
         // hasChanged: false
         hasAssignedDates: !!((_newAssignedStartDate && _newAssignedEndDate) || (prevOwnerData?.assignedStartDate && prevOwnerData?.assignedEndDate)),
       };
@@ -57,14 +59,19 @@ const createOwnersData = (order, ownersMapOld, ownersMap, _newAssignedStartDate,
   const ownerData = Object.entries(ownerDataMap).map(([owner, data]) => {
     const isStatusDecreased = OWNER_STATUS_ORDER.indexOf(data.finalStatus) < OWNER_STATUS_ORDER.indexOf(data.prevStatus);
     const isPrevOrderFinalized = FINALIZED_STATUS_ORDER.includes(data.prevStatus);
+    
+    const assignedStartDate = data.assignedStartDate;
+    const assignedEndDate = data.assignedEndDate;
+
+    const customerApproval = data.customerApproval;
 
     if (isStatusDecreased && !isPrevOrderFinalized)
-      return { owner, assignedStartDate: data.assignedStartDate, assignedEndDate: data.assignedEndDate, status: 'changed' };
+      return { owner, assignedStartDate, assignedEndDate, status: 'changed', customerApproval };
 
     if (data.finalStatus == 'pending' || (FINALIZED_STATUS_ORDER.includes(data.finalStatus) && !data.hasAssignedDates))
-      return { owner, status: data.finalStatus };
+      return { owner, status: data.finalStatus, customerApproval };
 
-    return { owner, assignedStartDate: data.assignedStartDate, assignedEndDate: data.assignedEndDate, status: data.finalStatus };
+    return { owner, assignedStartDate, assignedEndDate, status: data.finalStatus, customerApproval };
   });
 
   return ownerData;
@@ -76,9 +83,17 @@ const STATUS_HISTORY_ACTIONS = ["approved", "prepared", "rented", "returned", "c
 const STATUS_HISTORY_ROLES = ["owner", "admin", "system"];
 
 const orderCustomerSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  email: { type: String, required: true },
+  firstName: { type: String, required: true },
+  lastName: { type: String, required: true },
   index: { type: String, required: true },
+  semester: { type: Number, required: true },
+  yearOfStudy: { type: Number, required: true },
+  fieldOfStudy: { type: String, required: true },
+  specialization: { type: String },
+  phoneNumber: { type: String, required: true },
+  email: { type: String, required: true },
+  purpose: { type: String },
+  notes: { type: String }, 
 }, { _id: false });
 
 const orderItemSchema = new mongoose.Schema({
@@ -95,6 +110,8 @@ const ownerDataSchema = new mongoose.Schema({
   owner: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   status: { type: String, enum: OWNERS_DATA_STATUS, default: "pending" },
 
+  customerApproval: { type: Boolean },
+
   assignedStartDate: { type: Date },
   assignedEndDate: { type: Date },
 }, { _id: false });
@@ -110,6 +127,9 @@ const statusHistorySchema = new mongoose.Schema({
 }, { _id: false });
 
 const orderSchema = new mongoose.Schema({
+  uuid: { type: String, required: true, unique: true, default: () => require("crypto").randomUUID() },
+  customerKey: { type: String, required: true },
+
   customer: { type: orderCustomerSchema, required: true },
   items: { type: [orderItemSchema], required: true, validate: [arr => arr.length > 0, "Order must have at least one item"] },
 

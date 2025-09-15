@@ -17,6 +17,9 @@ import orderRoutes from './routes/orderRoutes.js';
 import noteRoutes from './routes/noteRoutes.js';
 import materialRoutes from "./routes/materialRoutes.js";
 import componentRoutes from "./routes/componentRoutes.js";
+
+import fileRoutes from "./routes/fileRoutes.js"
+
 import { errorHandler } from './middleware/errorHandler.js';
 
 dotenv.config();
@@ -69,7 +72,10 @@ app.use((err, req, res, next) => {
   next();
 });
 
+
+
 app.use('/uploads', express.static('uploads'));
+app.use('/file', fileRoutes);
 
 app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
@@ -79,6 +85,7 @@ app.use('/orders', orderRoutes);
 app.use('/notes', noteRoutes);
 app.use('/materials', materialRoutes);
 app.use('/components', componentRoutes);
+
 
 app.use(errorHandler);
 
