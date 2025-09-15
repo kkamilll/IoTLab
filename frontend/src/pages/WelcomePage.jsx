@@ -118,31 +118,39 @@ const WelcomePage = () => {
           {`${currentTime.getDate().toString().padStart(2, '0')}.${(currentTime.getMonth() + 1).toString().padStart(2, '0')}.${currentTime.getFullYear()} ${currentTime.getHours().toString().padStart(2, '0')}:${currentTime.getMinutes().toString().padStart(2, '0')}:${currentTime.getSeconds().toString().padStart(2, '0')}`}
         </span>
 
-        {user && (
-          <div className="flex flex-col sm:flex-row items-center gap-3 bg-white px-4 py-2 rounded-full shadow-md text-black text-sm font-semibold">
-            <span className="truncate max-w-[140px] sm:max-w-none">{user.name}</span>
+    {user && (
+  <div className="flex flex-col sm:flex-row items-center gap-3 text-white text-sm font-semibold w-full sm:w-auto">
+    <span className="truncate max-w-[140px] sm:max-w-none">{user.name}</span>
 
-            <button
-              onClick={handleBackToSidebar}
-              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 transition-colors text-white rounded-full px-5 py-2 shadow-md focus:outline-none focus:ring-2 focus:ring-green-500"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
-              Back
-            </button>
+    {/* Back button - outline */}
+    <button
+      onClick={handleBackToSidebar}
+      className="flex items-center justify-center gap-2 border border-green-500 text-green-500 
+                 hover:bg-green-500 hover:text-white transition-colors rounded-full 
+                 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400 w-full sm:w-auto"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+      </svg>
+      Back
+    </button>
 
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 transition-colors text-white rounded-full px-5 py-2 shadow-md focus:outline-none focus:ring-2 focus:ring-red-500"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7" />
-              </svg>
-              Logout
-            </button>
-          </div>
-        )}
+    {/* Logout button - filled */}
+    <button
+      onClick={handleLogout}
+      className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 active:bg-red-800 
+                 transition-colors text-white rounded-full px-4 py-2 shadow-sm 
+                 focus:outline-none focus:ring-2 focus:ring-red-400 w-full sm:w-auto"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7" />
+      </svg>
+      Logout
+    </button>
+  </div>
+)}
+
+
       </div>
 
       <section className="relative py-20 flex justify-center items-center overflow-hidden shadow-1xl">
@@ -179,47 +187,80 @@ const WelcomePage = () => {
       </section>
 
       {/* Components */}
-      <section className="py-20 bg-white text-gray-900">
-        <div className="max-w-6xl mx-auto px-4">
-          <h2 className="text-4xl font-extrabold text-center mb-14 tracking-tight text-blue-900">
-            Explore Collections
-          </h2>
+  <section className="py-20 bg-white text-gray-900"> 
+  <div className="max-w-6xl mx-auto px-4">
+  
 
-          <div className="relative flex items-center">
-            {/* Strzałka w lewo */}
-            <button
-              onClick={() => setCollectionIndex(prev => Math.max(prev - 1, 0))}
-              className="bg-blue-600/80 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition"
-              disabled={collectionIndex === 0}
-            >
-              ←
-            </button>
+    {/* Desktop: 3 karty + strzałki */}
+<div className="hidden md:flex items-center gap-6">
+  {/* Strzałka w lewo */}
+  {collections.length > 3 && (
+    <button
+      onClick={() => setCollectionIndex(prev => Math.max(prev - 1, 0))}
+      className="bg-blue-600/80 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition disabled:opacity-40"
+      disabled={collectionIndex === 0}
+    >
+      ←
+    </button>
+  )}
 
-            {/* Kontenery */}
-            <div className="flex gap-7 flex-1 justify-center overflow-hidden px-2">
-              {collections.slice(collectionIndex, collectionIndex + visibleCount).map(cat => (
-                <div
-                  key={cat._id}
-                  onClick={() => handleCollectionClick(cat._id)}
-                  className="flex-shrink-0 w-[280px] p-10 rounded-3xl shadow-lg hover:shadow-2xl hover:scale-105 transition-transform cursor-pointer flex flex-col justify-between items-center bg-gradient-to-tr from-blue-50 to-blue-100 min-h-[220px]"
-                >
-                  <div className="text-6xl mb-4">📁</div>
-                  <h3 className="font-semibold text-xl text-blue-800 text-center break-words">{cat.name}</h3>
-                </div>
-              ))}
-            </div>
-
-            {/* Strzałka w prawo */}
-            <button
-              onClick={() => setCollectionIndex(prev => Math.min(prev + 1, collections.length - visibleCount))}
-              className="bg-blue-600/80 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition"
-              disabled={collectionIndex >= collections.length - visibleCount}
-            >
-              →
-            </button>
-          </div>
+  {/* Widok 3 kart */}
+  <div className="flex gap-6 flex-1 justify-center overflow-hidden">
+    {collections.slice(collectionIndex, collectionIndex + 3).map((cat) => (
+      <div
+        key={cat._id}
+        onClick={() => handleCollectionClick(cat._id)}
+        className="flex-shrink-0 w-[260px] p-8 rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:bg-blue-50 transition cursor-pointer flex flex-col items-center text-center"
+      >
+        <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-[clamp(1.5rem,3vw,2rem)] mb-4">
+          📁
         </div>
-      </section>
+        <h3 className="font-semibold text-[clamp(0.875rem,2vw,1.125rem)] text-blue-800 break-words text-center">
+          {cat.name}
+        </h3>
+      </div>
+    ))}
+  </div>
+
+  {/* Strzałka w prawo */}
+  {collections.length > 3 && (
+    <button
+      onClick={() =>
+        setCollectionIndex(prev =>
+          Math.min(prev + 1, collections.length - 3)
+        )
+      }
+      className="bg-blue-600/80 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition disabled:opacity-40"
+      disabled={collectionIndex >= collections.length - 3}
+    >
+      →
+    </button>
+  )}
+</div>
+
+
+    {/* Mobile: poziomy scroll */}
+    <div className="md:hidden flex gap-5 overflow-x-auto snap-x snap-mandatory px-1 scrollbar-hide mt-6">
+      {collections.map((cat) => (
+        <div
+          key={cat._id}
+          onClick={() => handleCollectionClick(cat._id)}
+          className="snap-center flex-shrink-0 w-[220px] p-8 rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:bg-blue-50 transition cursor-pointer flex flex-col items-center text-center"
+        >
+          <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center text-[clamp(1.2rem,4vw,1.5rem)] mb-3">
+            📁
+          </div>
+          <h3 className="font-semibold text-[clamp(0.75rem,3vw,1rem)] text-blue-800 break-words text-center">
+            {cat.name}
+          </h3>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+
+
 
       {/* MAIN SLIDER */}
       {materials.length > 0 && <MainSlider materials={materials} />}

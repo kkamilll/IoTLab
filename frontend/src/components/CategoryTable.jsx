@@ -97,14 +97,29 @@ const levelColors = [
                 </span>
               </div>
 
-              {hasChildren && (
-                <button
-                  className="ml-2 px-3 py-1 rounded-full bg-white text-blue-700 hover:bg-blue-100 transition-colors font-bold flex-shrink-0 text-sm sm:text-base"
-                  onClick={() => toggleExpand(category._id)}
-                >
-                  {isExpanded ? "−" : "+"}
-                </button>
-              )}
+      <div className="flex items-center gap-2 ml-2">
+  {/* Przycisk informacji */}
+  {category.description && (
+    <button
+      onClick={() => toggleDescription(category._id)}
+      className="px-2 py-1 rounded-full bg-gray-600 text-white hover:bg-gray-700 transition-colors flex items-center justify-center"
+      title="Show description"
+    >
+      <FaInfoCircle size={14} />
+    </button>
+  )}
+
+  {/* Przycisk rozwijania dzieci */}
+  {hasChildren && (
+    <button
+      className="px-3 py-1 rounded-full bg-white text-blue-700 hover:bg-blue-100 transition-colors font-bold flex-shrink-0 text-sm sm:text-base"
+      onClick={() => toggleExpand(category._id)}
+    >
+      {isExpanded ? "−" : "+"}
+    </button>
+  )}
+</div>
+
             </div>
 
             <div className="flex flex-wrap gap-2 mt-2 items-center">
@@ -132,14 +147,7 @@ const levelColors = [
                 color="red"
                 onClick={() => handleDelete(category._id)}
               />
-              {category.description && (
-                <button
-                  className="flex items-center gap-2 px-3 py-2 text-white bg-gray-600 hover:bg-gray-700 rounded-lg text-sm sm:text-base"
-                  onClick={() => toggleDescription(category._id)}
-                >
-                  <FaInfoCircle size={16} /> Description
-                </button>
-              )}
+              
             </div>
 
             {showDescription && category.description && (

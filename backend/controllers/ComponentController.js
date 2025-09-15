@@ -108,3 +108,25 @@ export const deleteFile = async (req, res, next) => {
     return next(new ServerError({ message: err.message }));
   }
 };
+// Edytuj nazwę kolekcji
+export const editCollection = async (req, res, next) => {
+  try {
+    const { collectionId } = req.params;
+    const { name } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(collectionId))
+      return next(new BadRequestError("Invalid ID"));
+
+    if (!name) return next(new BadRequestError("Collection name required"));
+
+    const collection = await Component.findById(collectionId);
+    if (!collection) return next(new ResourceNotFoundError("Collection"));
+
+    collection.name = name;
+    await collection.save();
+
+    res.status(200).json({ success: true, data: collection });
+  } catch (err) {
+    return next(new ServerError({ message: err.message }));
+  }
+};

@@ -1,18 +1,21 @@
-import React, { useEffect, useState, useMemo } from "react"; 
+import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { FaFolder } from "react-icons/fa";
+import { FaFolder, FaInfoCircle } from "react-icons/fa";
 import { buildTree } from "../utils/categoryUtils";
 
 const MainGuest = () => {
   const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
-  const [openIds, setOpenIds] = useState(new Set());
+  const [expandedIds, setExpandedIds] = useState(new Set());
+  const [showDescriptionIds, setShowDescriptionIds] = useState(new Set());
 
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/categories/public`);
+        const res = await axios.get(
+          `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/categories/public`
+        );
         setCategories(res.data.categories || []);
       } catch (err) {
         console.error("Error fetching categories:", err);
@@ -32,69 +35,63 @@ const MainGuest = () => {
     [categories]
   );
 
-  const categoryTree = useMemo(() => buildTree(normalizedCategories), [normalizedCategories]);
+  const categoryTree = useMemo(
+    () => buildTree(normalizedCategories),
+    [normalizedCategories]
+  );
 
-  const toggleOpen = (id) => {
-    setOpenIds((prev) => {
+  const toggleExpand = (id) => {
+    setExpandedIds((prev) => {
       const copy = new Set(prev);
       copy.has(id) ? copy.delete(id) : copy.add(id);
       return copy;
     });
   };
 
-  const renderCategory = (category, level = 0) => {
-    const hasChildren = category.children && category.children.length > 0;
-    const isOpen = openIds.has(category._id);
-
-    const gradients = [
-      "from-blue-100 via-blue-200 to-blue-300",
-      "from-blue-200 via-blue-300 to-blue-400",
-      "from-blue-300 via-blue-400 to-blue-500",
-      "from-blue-400 via-blue-500 to-blue-600",
-    ];
-    const gradient = gradients[level % gradients.length];
-
-    return (
-      <div key={category._id} className="mb-3 w-full">
-        <div
-          className={`p-4 rounded-xl shadow-md flex flex-col transition-transform transform
-            text-gray-900 hover:scale-105 hover:shadow-lg bg-gradient-to-br ${gradient} break-words`}
-          style={{ paddingLeft: 16 + level * 16, paddingRight: 16, maxWidth: '100%' }}
-        >
-          <div className="flex justify-between items-center w-full">
-            <div
-              className="flex items-center gap-3 cursor-pointer flex-1 min-w-0"
-              onClick={() => navigate(`/guest-products/${category._id}`)}
-            >
-              <FaFolder size={18} className="text-blue-700 flex-shrink-0" />
-              <span className="font-medium text-base sm:text-lg truncate">{category.name}</span>
-            </div>
-            {hasChildren && (
-              <button
-                className="ml-2 px-6 p-1 rounded-full bg-white text-blue-700 hover:bg-blue-100 transition-colors font-bold flex-shrink-0"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleOpen(category._id);
-                }}
-              >
-                {isOpen ? "−" : "+"}
-              </button>
-            )}
-          </div>
-
-          {hasChildren && isOpen && (
-            <div className="mt-2 border-l-2 border-blue-300 w-full">
-              {category.children.map((child) => renderCategory(child, level + 1))}
-            </div>
-          )}
-        </div>
-      </div>
-    );
+  const toggleDescription = (id) => {
+    setShowDescriptionIds((prev) => {
+      const copy = new Set(prev);
+      copy.has(id) ? copy.delete(id) : copy.add(id);
+      return copy;
+    });
   };
+
+  const flattenTreeNonRecursive = (nodes) => {
+    let result = [];
+    let stack = nodes.map((node) => ({ ...node, level: 0 }));
+    while (stack.length) {
+      const current = stack.shift();
+      result.push(current);
+      if (
+        current.children &&
+        current.children.length > 0 &&
+        expandedIds.has(current._id)
+      ) {
+        const childrenWithLevel = current.children.map((child) => ({
+          ...child,
+          level: current.level + 1,
+        }));
+        stack = [...childrenWithLevel, ...stack];
+      }
+    }
+    return result;
+  };
+
+  const flatCategories = flattenTreeNonRecursive(categoryTree);
+
+  const levelColors = [
+    "bg-blue-50",
+    "bg-blue-200",
+    "bg-blue-300",
+    "bg-blue-400",
+    "bg-blue-500",
+    "bg-blue-600",
+    "bg-blue-700",
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex justify-center py-10 px-4">
-      <div className="w-full max-w-4xl">
+      <div className="w-full max-w-3xl">
         {/* Back button */}
         <div className="mb-6 text-left">
           <button
@@ -105,10 +102,69 @@ const MainGuest = () => {
           </button>
         </div>
 
-        <h1 className="text-3xl font-extrabold mb-8 text-blue-900 text-center">Categories</h1>
-        {categoryTree.length > 0 ? (
-          <div className="flex flex-col gap-3 w-full">
-            {Object.values(categoryTree).flat().map((category) => renderCategory(category))}
+        <h1 className="text-3xl font-extrabold mb-8 text-blue-900 text-center">
+          Categories
+        </h1>
+
+        {flatCategories.length > 0 ? (
+          <div className="w-full flex flex-col gap-4">
+            {flatCategories.map((category) => {
+              const hasChildren =
+                category.children && category.children.length > 0;
+              const isExpanded = expandedIds.has(category._id);
+              const showDescription = showDescriptionIds.has(category._id);
+              const colorClass =
+                levelColors[category.level % levelColors.length];
+
+              return (
+                <div
+                  key={category._id}
+                  className={`w-full p-3 sm:p-4 rounded-xl shadow-md flex flex-col transition-transform transform hover:scale-105 hover:shadow-lg ${colorClass}`}
+                >
+                  <div className="flex justify-between items-center w-full">
+                    <div
+                      className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 cursor-pointer"
+                      onClick={() =>
+                        navigate(`/guest-products/${category._id}`)
+                      }
+                    >
+                      <FaFolder
+                        size={16}
+                        className="text-blue-700 flex-shrink-0"
+                      />
+                      <span className="font-medium text-sm sm:text-base truncate">
+                        {category.name}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {category.description && (
+                        <button
+                          className="flex items-center gap-1 px-2 py-1 text-xs sm:text-sm text-white bg-gray-600 hover:bg-gray-700 rounded-lg"
+                          onClick={() => toggleDescription(category._id)}
+                        >
+                          <FaInfoCircle size={14} /> 
+                        </button>
+                      )}
+                      {hasChildren && (
+                        <button
+                          className="px-3 py-1 rounded-full bg-white text-blue-700 hover:bg-blue-100 transition-colors font-bold text-sm sm:text-base"
+                          onClick={() => toggleExpand(category._id)}
+                        >
+                          {isExpanded ? "−" : "+"}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {showDescription && category.description && (
+                    <div className="mt-2 p-2 bg-white rounded-md shadow-inner text-gray-700 text-sm sm:text-base">
+                      {category.description}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         ) : (
           <p className="text-blue-700 text-center">Loading categories...</p>

@@ -458,8 +458,7 @@ const Orders = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center p-6">
       <div className="w-full max-w-6xl flex flex-col gap-6">
-        <h1 className="text-3xl font-extrabold text-gray-800 text-center">Order Management</h1>
-
+        <h1 className="text-3xl font-extrabold text-blue-700 text-center">Order Management</h1>
         {/* Filters */}
         <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
           <input

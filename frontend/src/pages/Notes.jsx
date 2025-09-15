@@ -41,7 +41,6 @@ const Notes = () => {
     try {
       const res = await axiosInstance.get("/notes");
       if (res.data.success) {
-        // Sortuj po ważności i po dacie aktualizacji (najnowsze u góry)
         const sortedNotes = res.data.data.sort((a, b) => {
           if (b.important !== a.important) return b.important - a.important;
           return new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt);
@@ -132,17 +131,14 @@ const Notes = () => {
   useEffect(() => { adjustAddTextareaHeight(); }, [text]);
   useEffect(() => { adjustEditingTextareaHeight(); }, [editingText]);
 
-  // Lista autorów, w tym "Anonymous"
   const authors = Array.from(
     new Set(notes.map(note => note.author?.name || "Anonymous").filter(Boolean))
   );
 
-  // Filtracja notatek
   const filteredNotes = authorFilter
     ? notes.filter(note => (note.author?.name || "Anonymous") === authorFilter)
     : notes;
 
-  // Paginacja
   const totalPages = Math.ceil(filteredNotes.length / NOTES_PER_PAGE);
   const paginatedNotes = filteredNotes.slice(
     (currentPage - 1) * NOTES_PER_PAGE,
@@ -221,15 +217,26 @@ const Notes = () => {
               {/* Treść notatki */}
               <div className="flex-1 overflow-x-auto mb-4">
                 {editingId === note._id ? (
-                  <textarea
-                    ref={editingTextareaRef}
-                    value={editingText}
-                    onChange={e => { if (e.target.value.length <= MAX_LENGTH) setEditingText(e.target.value); }}
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400 transition resize-none overflow-auto max-h-60"
-                  />
+                  <div className="flex flex-col gap-2">
+                    <textarea
+                      ref={editingTextareaRef}
+                      value={editingText}
+                      onChange={e => { if (e.target.value.length <= MAX_LENGTH) setEditingText(e.target.value); }}
+                      className="w-full border border-gray-300 rounded-xl px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400 transition resize-none overflow-auto max-h-60"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setEditingImportant(!editingImportant)}
+                      className={`px-3 py-1 rounded-xl border font-semibold transition self-start ${editingImportant
+                          ? "bg-red-500 text-white border-red-400 shadow-md"
+                          : "bg-white text-red-600 border-red-400 hover:bg-red-100 hover:text-red-700"
+                        }`}
+                    >
+                      Important
+                    </button>
+                  </div>
                 ) : (
                   <p className="font-medium text-gray-800 break-words break-all whitespace-pre-wrap">
-                    {note.important && <span className="text-red-600 font-bold mr-2">❗</span>}
                     {note.text}
                   </p>
                 )}
@@ -237,7 +244,6 @@ const Notes = () => {
 
               {/* Stopka */}
               <div className="flex flex-col sm:flex-row justify-between items-center gap-2 pt-3 border-t border-gray-200">
-                {/* Autor i data */}
                 <div className="flex flex-col text-left">
                   <p className="text-sm text-gray-500">
                     Added by <strong>{note.author?.name || "Anonymous"}</strong>
@@ -247,7 +253,6 @@ const Notes = () => {
                   </p>
                 </div>
 
-                {/* Przyciski */}
                 <div className="flex gap-2 flex-wrap">
                   {editingId === note._id ? (
                     <>

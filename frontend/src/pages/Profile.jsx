@@ -90,7 +90,7 @@ const Profile = () => {
       <div className="w-full max-w-lg sm:max-w-md bg-white rounded-3xl shadow-xl p-6 sm:p-10 text-base">
 
         {/* --- Header --- */}
-        <h2 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-8 text-center">👤 Profile</h2>
+        <h2 className="text-3xl sm:text-4xl font-extrabold text-blue-700 mb-8 text-center">👤 Profile</h2>
 
         {/* --- User Info Inputs --- */}
         <div className="mb-5">

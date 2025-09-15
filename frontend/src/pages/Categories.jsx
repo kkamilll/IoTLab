@@ -141,10 +141,10 @@ const Categories = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center p-6">
       <div className="w-full max-w-6xl bg-white rounded shadow-md p-8 flex flex-col gap-8">
-        <h1 className="text-3xl font-extrabold text-gray-800 text-center">
+        <h1 className="text-3xl font-extrabold text-blue-700 text-center">
           Category Management
         </h1>
-
+        
         {/* Add Category po prawej */}
         <div className="flex justify-end">
           <button
