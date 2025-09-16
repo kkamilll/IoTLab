@@ -17,6 +17,4 @@ router.put("/:productId", authMiddleware, filesUploadProduct.fields([{ name: "im
 router.delete("/:productId", authMiddleware, hardDeleteProduct);
 router.delete("/extraField/:key", authMiddleware, deleteExtraField);
 
-
-
 export default router;

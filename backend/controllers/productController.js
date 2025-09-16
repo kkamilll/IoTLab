@@ -9,18 +9,6 @@ import Order from "../models/Order.js";
 import { createTagHelper, hardDeleteTagHelper } from '../utils/tagHelpers.js';
 
 const mapUploadedFiles = (filesArray = [], additionalData = []) => {
-  // const fileNames = filesArray.map(file => file.filename);
-  // const fileSizes = filesArray.map(file => file.size || 0);
-
-  // if (fileNames.length !== additionalData.length || fileNames.length !== fileSizes.length) return [];
-  // return fileNames.map((filename, idx) => ({
-  //   filename,
-  //   originalName: additionalData[idx].originalName,
-  //   uniqueKey: additionalData[idx]?.uniqueKey,
-  //   isVisible: additionalData[idx]?.isVisible || false,
-  //   size: fileSizes[idx]
-  // }));
-
   if (!filesArray.length || filesArray.length !== additionalData.length) return [];
 
   return filesArray.map((file, idx) => ({
@@ -125,7 +113,6 @@ const initProduct = (req) => {
     throw new ServerError(error);
   }
 }
-
 
 const getOrderQuantity = async ({ productId, ownerId, field, end, start, status }) => {
   status = Array.isArray(status) ? status : [status];
@@ -373,7 +360,7 @@ export const updateProduct = async (req, res, next) => {
       for (const field of fileFields) {
         const fileArr = updateData.$set[field];
         if (!fileArr) continue;
-        console.log(fileArr);
+        // console.log(fileArr);
 
         for (const file of fileArr) {
           file.path = product[field].find(fileProd => fileProd._id.toString() === file.fileId.toString())?.path;

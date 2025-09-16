@@ -108,7 +108,7 @@ export const deleteFile = async (req, res, next) => {
     return next(new ServerError({ message: err.message }));
   }
 };
-// Edytuj nazwę kolekcji
+
 export const editCollection = async (req, res, next) => {
   try {
     const { collectionId } = req.params;

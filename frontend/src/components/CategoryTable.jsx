@@ -59,15 +59,15 @@ export default function CategoryCards({
   const flatCategories = flattenTreeNonRecursive(categoryTree);
 
   // Strongly different colors per level
-const levelColors = [
-  "bg-blue-50",   // niemal biały niebieski
-  "bg-blue-200",  // jasny niebieski
-  "bg-blue-300",  // średni jasny
-  "bg-blue-400",  // średni
-  "bg-blue-500",  // wyraźny
-  "bg-blue-600",  // ciemny
-  "bg-blue-700",  // bardzo ciemny
-];
+  const levelColors = [
+    "bg-blue-50",   // niemal biały niebieski
+    "bg-blue-200",  // jasny niebieski
+    "bg-blue-300",  // średni jasny
+    "bg-blue-400",  // średni
+    "bg-blue-500",  // wyraźny
+    "bg-blue-600",  // ciemny
+    "bg-blue-700",  // bardzo ciemny
+  ];
 
 
   if (!categoryTree || categoryTree.length === 0) {
@@ -97,29 +97,28 @@ const levelColors = [
                 </span>
               </div>
 
-      <div className="flex items-center gap-2 ml-2">
-  {/* Przycisk informacji */}
-  {category.description && (
-    <button
-      onClick={() => toggleDescription(category._id)}
-      className="px-2 py-1 rounded-full bg-gray-600 text-white hover:bg-gray-700 transition-colors flex items-center justify-center"
-      title="Show description"
-    >
-      <FaInfoCircle size={14} />
-    </button>
-  )}
+              <div className="flex items-center gap-2 ml-2">
+                {/* Przycisk informacji */}
+                {category.description && (
+                  <button
+                    onClick={() => toggleDescription(category._id)}
+                    className="px-2 py-1 rounded-full bg-gray-600 text-white hover:bg-gray-700 transition-colors flex items-center justify-center"
+                    title="Show description"
+                  >
+                    <FaInfoCircle size={14} />
+                  </button>
+                )}
 
-  {/* Przycisk rozwijania dzieci */}
-  {hasChildren && (
-    <button
-      className="px-3 py-1 rounded-full bg-white text-blue-700 hover:bg-blue-100 transition-colors font-bold flex-shrink-0 text-sm sm:text-base"
-      onClick={() => toggleExpand(category._id)}
-    >
-      {isExpanded ? "−" : "+"}
-    </button>
-  )}
-</div>
-
+                {/* Przycisk rozwijania dzieci */}
+                {hasChildren && (
+                  <button
+                    className="px-3 py-1 rounded-full bg-white text-blue-700 hover:bg-blue-100 transition-colors font-bold flex-shrink-0 text-sm sm:text-base"
+                    onClick={() => toggleExpand(category._id)}
+                  >
+                    {isExpanded ? "−" : "+"}
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="flex flex-wrap gap-2 mt-2 items-center">

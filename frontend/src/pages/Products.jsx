@@ -359,7 +359,6 @@ const Products = () => {
     const newFiles = Array.from(e.target.files);
     const oldImages = formData.images || [];
     const newImages = newFiles.filter(file => file.type.startsWith("image/"));
-    console.log(oldImages);
     
     // if (newFiles.length !== newImages.length) {
     //   alert("Only image files are allowed!");
@@ -1414,8 +1413,6 @@ const generatePDF = () => {
           </div>
         </div>
       )}
-
-
     </div >
   );
 };

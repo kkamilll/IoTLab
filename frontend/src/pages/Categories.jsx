@@ -144,7 +144,7 @@ const Categories = () => {
         <h1 className="text-3xl font-extrabold text-blue-700 text-center">
           Category Management
         </h1>
-        
+
         {/* Add Category po prawej */}
         <div className="flex justify-end">
           <button

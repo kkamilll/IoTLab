@@ -196,20 +196,20 @@ const Orders = () => {
 
   const today = new Date().toISOString().split("T")[0];
 
-  const formatDateTimeLocal = (dateInput) => {
-    if (!dateInput) return "";
+  // const formatDateTimeLocal = (dateInput) => {
+  //   if (!dateInput) return "";
 
-    const date = new Date(dateInput);
-    if (isNaN(date.getTime())) return "";
+  //   const date = new Date(dateInput);
+  //   if (isNaN(date.getTime())) return "";
 
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const hours = String(date.getHours()).padStart(2, "0");
-    const minutes = String(date.getMinutes()).padStart(2, "0");
+  //   const year = date.getFullYear();
+  //   const month = String(date.getMonth() + 1).padStart(2, "0");
+  //   const day = String(date.getDate()).padStart(2, "0");
+  //   const hours = String(date.getHours()).padStart(2, "0");
+  //   const minutes = String(date.getMinutes()).padStart(2, "0");
 
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
-  };
+  //   return `${year}-${month}-${day}T${hours}:${minutes}`;
+  // };
 
   const handleUpdateOrderItems = async (group, statusFilter, newStatus) => {
     try {
@@ -268,7 +268,7 @@ const Orders = () => {
     // Create a hidden container for rendering HTML
     const container = document.createElement("div");
     container.innerHTML = content;
-    container.style.width = "800px"; // PDF width reference
+    container.style.width = "800px";
     container.style.position = "absolute";
     container.style.left = "-9999px";
     document.body.appendChild(container);
@@ -459,6 +459,7 @@ const Orders = () => {
     <div className="min-h-screen bg-gray-50 flex flex-col items-center p-6">
       <div className="w-full max-w-6xl flex flex-col gap-6">
         <h1 className="text-3xl font-extrabold text-blue-700 text-center">Order Management</h1>
+
         {/* Filters */}
         <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
           <input

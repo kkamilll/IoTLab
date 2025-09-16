@@ -45,44 +45,175 @@ export const productOwnerMap = async (order) => {
   return productOwnerMap;
 }
 
-// const groupOrders = async (order) => {
-//   const productOwnerMap = await productOwnerMap(order);
+export const getOrderStats = async (req, res, next) => {
+  try {
+    const { ownerId, productId } = req.query;
 
-//   const groupedOrders = {};
-//   for (const item of order.items) {
-//     const owner = productOwnerMap[item.product];
-//     if (!owner) throw new ConflictError("Order contains products with missing owners");
+    const ParamfilterOwner = {};
+    const ParamfilterItem = {};
 
-//     if (!groupedOrders[owner]) {
-//       groupedOrders[owner] = {
-//         customer: order.customer,
-//         items: []
-//       };
-//     }
+    if (ownerId) {
+      ParamfilterOwner["ownersData.owner"] = new mongoose.Types.ObjectId(String(ownerId));
+    }
 
-//     groupedOrders[owner].items.push(item);
-//   }
-//   const newGroupedOrders = Object.values(groupedOrders);
+    if (productId) {
+      ParamfilterItem["items.product"] = new mongoose.Types.ObjectId(String(productId));
+    }
 
-//   for (const newGroupedOrder of newGroupedOrders) {
-//     for (const item of newGroupedOrder.items) {
-//       const product = await Product.findById(item.product);
-//       if (!product) {
-//         return res.status(404).json({ message: `Produkt ${item.product} nie istnieje` });
-//       }
+    const basePipeline = (useItemMatch = true) => [
+      { $project: { items: 1, customer: 1 } },
+      { $unwind: "$items" },
+      ...(useItemMatch ? [{ $match: ParamfilterItem }] : []),
+      {
+        $lookup: {
+          from: "products",
+          localField: "items.product",
+          foreignField: "_id",
+          as: "productDoc"
+        }
+      },
+      { $unwind: "$productDoc" },
+    ];
 
-//       if (item.requested.quantity < 1) {
-//         return res.status(400).json({ message: `Niepoprawna ilość dla ${product.name}` });
-//       }
+    const categoryLookUpPipeline = (useItemMatch = true) => [
+      ...basePipeline(useItemMatch),
+      {
+        $lookup: {
+          from: "categories",
+          localField: "productDoc.categories",
+          foreignField: "_id",
+          as: "categoryDoc"
+        }
+      }
+    ];
 
-//       if (new Date(item.requested.startDate) > new Date(item.requested.endDate)) {
-//         return res.status(400).json({ message: `Niepoprawne daty dla ${product.name}` });
-//       }
-//     }
-//   }
+    const pendingStatuses = ['pending'];
+    const approvedStatuses = ['approved', 'prepared'];
+    const rentedStatuses = ['rented'];
+    const returnedStatuses = ['returned'];
+    const rejectedStatuses = ['rejected'];
 
-//   return newGroupedOrders;
-// }
+    const requestedQuantityStatuses = ['pending'];
+    const assignedQuantityStatuses = ['approved', 'prepared', 'rented', 'returned'];
+
+    const disperseQuantity = (status, totalRequested, totalAssigned) => {
+      if (requestedQuantityStatuses.includes(status)) {
+        return totalRequested ?? 0;
+      } else if (assignedQuantityStatuses.includes(status)) {
+        return totalAssigned ?? 0;
+      } else {
+        // fallback: prefer assigned, else requested, else 0
+        return totalAssigned ?? totalRequested ?? 0;
+      }
+    }
+
+    const statisticMap = {}
+    const ownersDataStatuses = ["changed", "pending", "approved", "prepared", "rented", "returned", "rejected"];
+    for (const status of ownersDataStatuses) {
+      const statusFilter = { ...ParamfilterOwner, "ownersData.status": status };
+
+      // Total stats aggregation
+      const totalStats = await Order.aggregate([
+        { $match: statusFilter },
+        ...categoryLookUpPipeline(true),
+        {
+          $group: {
+            _id: null,
+            totalRequested: { $sum: "$items.requestedQuantity" },
+            totalAssigned: { $sum: "$items.assignedQuantity" },
+            totalCategories: { $addToSet: "$categoryDoc.name" },
+            totalOwners: { $addToSet: "$items.responsibleOwner" }
+          }
+        }
+      ]);
+
+      // Stats per category aggregation
+      const statsPerCategory = await Order.aggregate([
+        { $match: statusFilter },
+        ...categoryLookUpPipeline(false),
+        { $unwind: { path: "$categoryDoc", preserveNullAndEmptyArrays: true } },
+        {
+          $group: {
+            _id: { $ifNull: ["$categoryDoc.name", "No Category"] },
+            totalRequested: { $sum: "$items.requestedQuantity" },
+            totalAssigned: { $sum: "$items.assignedQuantity" }
+          }
+        }
+      ]);
+
+
+      const total = totalStats[0] || { totalRequested: 0, totalAssigned: 0, totalCategories: [], totalOwners: [] };
+      const flatCategories = Array.isArray(total.totalCategories) ? total.totalCategories.flat() : [];
+      statisticMap[status] = {
+        totalRequested: total.totalRequested,
+        totalAssigned: total.totalAssigned,
+        totalCategories: flatCategories || [],
+        statsPerCategory
+      };
+    }
+
+    // console.log("---------------------------------------------------------------------------------------------------------------------------------------");
+    // console.log("statisticMap", statisticMap);
+    // console.log("---------------------------------------------------------------------------------------------------------------------------------------");
+    // console.log("statsPerCategory", statisticMap["pending"]);
+
+    const response = {};
+
+    const getTotalItemsPerStatus = (statusCheck) => {
+      return Object.entries(statisticMap).reduce((sum, [status, s]) => {
+        if (statusCheck.includes(status)) return (sum + disperseQuantity(status, s.totalRequested, s.totalAssigned));
+        return sum;
+      }, 0
+      )
+    };
+    // console.log(statisticMap);
+
+    // Total requested & returned
+    response.totalItemsRequested = getTotalItemsPerStatus(pendingStatuses);
+    response.totalItemsApproved = getTotalItemsPerStatus(approvedStatuses);
+    response.totalItemsRented = getTotalItemsPerStatus(rentedStatuses);
+    response.totalItemsReturned = getTotalItemsPerStatus(returnedStatuses);
+    response.totalItemsRejected = getTotalItemsPerStatus(rejectedStatuses);
+
+    response.statisticMap = {};
+    for (const status of ownersDataStatuses) {
+      response.statisticMap[status] = statisticMap[status].statsPerCategory;
+    }
+
+    response.topProducts = {};
+    const topProductsStatuses = { "pending": pendingStatuses, "reserved": approvedStatuses, "rented": rentedStatuses, "returned": returnedStatuses };
+
+    for (const [status, statusArr] of Object.entries(topProductsStatuses)) {
+      const topProductsFilter = { ...ParamfilterOwner, "ownersData.status": { $in: statusArr } };
+
+      const topProducts = await Order.aggregate([
+        { $match: topProductsFilter },
+        ...basePipeline(false),
+        { $match: { "items.status": { $in: statusArr } } },
+        {
+          $group: {
+            _id: "$productDoc.name",
+            totalQuantity: { $sum: status === "pending" ? "$items.requestedQuantity" : "$items.assignedQuantity" },
+          }
+        },
+        { $sort: { totalAssigned: -1 } },
+        { $limit: 5 }
+      ]);
+      response.topProducts[status] = topProducts;
+    }
+
+    // console.log("topProducts", response.topProducts);
+    // console.log("---------------------------------------------------------------------------------------------------------------------------------------");
+    // console.log("response", response);
+
+    return res.status(200).json({ success: true, response });
+
+
+  } catch (err) {
+    console.error("Error fetching order stats:", err);
+    return next(err);
+  }
+};
 
 export const getOrderStatuses = (req, res, next) => {
   try {

@@ -1,9 +1,10 @@
 import express from "express";
 import authMiddleware from "../middleware/authMiddleware.js";
-import { getOrderStatuses, getOrders, createOrder, updateOrder, customerUpdateOrder, hardDeleteOrder, getCustomerOrder } from "../controllers/orderController.js";
+import { getOrderStatuses, getOrders, createOrder, updateOrder, customerUpdateOrder, hardDeleteOrder, getCustomerOrder, getOrderStats } from "../controllers/orderController.js";
 
 const router = express.Router();
 
+router.get("/stats", authMiddleware, getOrderStats);
 router.get("/statuses", authMiddleware, getOrderStatuses);
 
 // router.get("/returned", authMiddleware, getReturnedOrders);

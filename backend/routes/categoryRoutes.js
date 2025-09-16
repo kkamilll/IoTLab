@@ -8,8 +8,11 @@ const router = express.Router();
 
 router.get("/public", getCategoriesPublic);
 router.get("/private", authMiddleware, getCategoriesPrivate);
+
 router.post("/create", authMiddleware, createCategory);
+
 router.patch("/:categoryId", authMiddleware, updateCategory);
+
 router.delete("/:categoryId", authMiddleware, deleteCategory);
 
 export default router;

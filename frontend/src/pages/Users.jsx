@@ -288,7 +288,7 @@ const Users = () => {
       <Sidebar />
 
       <main className="flex-1 p-4 md:p-6 lg:p-10 overflow-x-auto">
-        <h1 className="text-3xl font-extrabold text-center text-blue-700 mb-6">User Management</h1>
+        <h1 className="text-3xl font-extrabold text-center text-blue-700 mb-6">👥 User Management</h1>
 
         {/* Filters and add */}
         <div className="flex flex-col md:flex-row gap-4 mb-4">
