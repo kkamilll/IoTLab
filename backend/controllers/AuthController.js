@@ -46,8 +46,7 @@ export const login = async (req, res, next) => {
       user: { id: user._id, name: user.name, email: user.email, role: user.role },
     });
   } catch (error) {
-    console.error("Login error:", error);
-    return res.status(500).json({ success: false, message: "Internal server error" });
+    next(error);
   }
 };
 
@@ -71,8 +70,7 @@ export const forgotPassword = async (req, res, next) => {
     await sendVerificationCode(otpCode, user.email, res);
     return res.status(200).json({ success: true, message: "Verification Code sent to email" });
   } catch (error) {
-    console.error("Error sending OTP code:", error);
-    return res.status(500).json({ success: false, message: "Internal server error" });
+    next(error);
   }
 };
 
@@ -104,7 +102,6 @@ export const resetPassword = async (req, res, next) => {
 
     return res.status(200).json({ success: true, message: "Password has been successfully changed" });
   } catch (error) {
-    console.error("Password reset error:", error);
-    return res.status(500).json({ success: false, message: "Internal server error" });
+    next(error);
   }
 };

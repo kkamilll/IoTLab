@@ -10,7 +10,7 @@ export const getNotes = async (req, res, next) => {
       .sort({ important: -1, createdAt: -1 });
     res.status(200).json({ success: true, data: notes });
   } catch (error) {
-    return next(new ServerError({ message: error.message }));
+    next(error);
   }
 };
 
@@ -32,7 +32,7 @@ export const createNote = async (req, res, next) => {
     await newNote.populate("author", "name email");
     res.status(201).json({ success: true, data: newNote });
   } catch (error) {
-    return next(new ServerError({ message: error.message }));
+    next(error);
   }
 };
 
@@ -54,7 +54,7 @@ export const hardDeleteNote = async (req, res, next) => {
     await note.deleteOne();
     res.status(200).json({ success: true, message: "Note Deleted" });
   } catch (error) {
-    return next(new ServerError({ message: error.message }));
+    next(error);
   }
 };
 
@@ -81,6 +81,6 @@ export const updateNote = async (req, res, next) => {
     await note.populate("author", "name email");
     res.status(200).json({ success: true, data: note });
   } catch (error) {
-    return next(new ServerError({ message: error.message }));
+    next(error);
   }
 };

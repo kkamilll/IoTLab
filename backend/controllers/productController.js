@@ -6,7 +6,7 @@ import { AppError, ValidationError, BadRequestError, DuplicateKeyError, Permissi
 // import { validateRequiredFields } from '../utils/validateRequiredFields.js'
 
 import Order from "../models/Order.js";
-import { createTagHelper, hardDeleteTagHelper } from '../utils/tagHelpers.js';
+import { createTagHelper, hardDeleteTagHelper } from '../utils/tagHelpers.js'; // check for tags uniqueness, no longer valid i guess, but might be interesting grouping option with some changes, but not necessary
 
 const mapUploadedFiles = (filesArray = [], additionalData = []) => {
   if (!filesArray.length || filesArray.length !== additionalData.length) return [];
@@ -17,7 +17,7 @@ const mapUploadedFiles = (filesArray = [], additionalData = []) => {
     uniqueKey: additionalData[idx]?.uniqueKey,
     isVisible: additionalData[idx]?.isVisible || false,
     size: file.size || 0,
-    path: file.path, // <-- added path here
+    path: file.path,
   }));
 }
 
@@ -33,17 +33,17 @@ const initProduct = (req) => {
 
     const newImageFiles = req.files?.images;
     const newImagesData = req.body.newImagesData ? JSON.parse(req.body.newImagesData) : [];
-    const newImages = mapUploadedFiles(newImageFiles, newImagesData);
+    const images = mapUploadedFiles(newImageFiles, newImagesData);
 
     const oldImages = req.body.oldImages ? JSON.parse(req.body.oldImages) : [];
-    const images = [...oldImages, ...newImages];
+    // const images = [...oldImages, ...newImages];
 
     const newAttachmentsFiles = req.files?.attachments;
     const newAttachmentsData = req.body.newAttachmentsData ? JSON.parse(req.body.newAttachmentsData) : [];
-    const newAttachments = mapUploadedFiles(newAttachmentsFiles, newAttachmentsData);
+    const attachments = mapUploadedFiles(newAttachmentsFiles, newAttachmentsData);
 
     const oldAttachments = req.body.oldAttachments ? JSON.parse(req.body.oldAttachments) : [];
-    const attachments = [...oldAttachments, ...newAttachments];
+    // const attachments = [...oldAttachments, ...newAttachments];
 
     const labRoom = req.body.labRoom;
     const owner = req.body.owner;
@@ -91,8 +91,13 @@ const initProduct = (req) => {
     } else unsetData.categories = "";
 
     if (extraFields !== undefined && typeof extraFields === 'object') setData.extraFields = extraFields; else unsetData.extraFields = "";
+
     if (images && images.length) setData.images = images; else unsetData.images = "";
+    if (oldImages && oldImages.length) setData.oldImages = oldImages; else unsetData.oldImages = "";
+
     if (attachments && attachments.length) setData.attachments = attachments; else unsetData.attachments = "";
+    if (oldAttachments && oldAttachments.length) setData.oldAttachments = oldAttachments; else unsetData.oldAttachments = "";
+
     if (labRoom?.trim() && labRoom !== "undefined" && labRoom !== "null") setData.labRoom = labRoom; else unsetData.labRoom = "";
     if (owner?.trim() && owner !== "undefined" && owner !== "null") {
       if (!mongoose.Types.ObjectId.isValid(owner)) {
@@ -296,19 +301,7 @@ export const createProduct = async (req, res, next) => {
     await session.abortTransaction();
     session.endSession();
 
-    // Handle duplicate key error
-    if (error instanceof MongoServerError && error.code === 11000) {
-      const [field, value] = Object.entries(error.keyValue)[0];
-      return next(new DuplicateKeyError({ field, value }));
-    }
-
-    // Handle validation error
-    if (error.name === 'ValidationError') {
-      return next(error);
-    }
-
-    // Handle unexpected server error
-    return next(new ServerError({ message: error.message }));
+    next(error);
   }
 };
 
@@ -354,18 +347,29 @@ export const updateProduct = async (req, res, next) => {
     const product = await Product.findOne(filterProducts).session(session);
     if (!product) return next(new ResourceNotFoundError("Missing permission or Product"));
 
-    if (updateData.$set.images || updateData.$set.attachments) {
-      const fileFields = ["images", "attachments"];
+    // Handle files (images & attachments)
+    const fileFields = [["oldImages", "images"], ["oldAttachments", "attachments"]];
 
-      for (const field of fileFields) {
-        const fileArr = updateData.$set[field];
-        if (!fileArr) continue;
-        // console.log(fileArr);
+    for (const [filterFields, productField] of fileFields) {
+      const setOldFiles = updateData?.$set[filterFields];
+      const unsetOldFiles = updateData?.$unset[filterFields];
+      if (unsetOldFiles != null) continue;
 
-        for (const file of fileArr) {
-          file.path = product[field].find(fileProd => fileProd._id.toString() === file.fileId.toString())?.path;
-        }
-      }
+      // const productFilesFiltered = product[productField].filter(file => filterSetFiles.some(filterFile => file._id.toString() === filterFile.fileId.toString()));
+      const productFilesFiltered = setOldFiles.map(setFile => {
+        const productFile = product[productField].find(productFile =>
+          productFile._id.toString() === setFile.fileId.toString()
+        );
+
+        if (!productFile) return null;
+        return { ...(productFile?.toObject() ?? productFile), isVisible: setFile.isVisible }
+      }).filter(Boolean);
+
+
+      if (!updateData.$set[productField]) updateData.$set[productField] = productFilesFiltered;
+      else updateData.$set[productField].push(...productFilesFiltered);
+
+      delete updateData.$unset[productField];
     }
 
     // check owner

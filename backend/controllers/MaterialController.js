@@ -11,8 +11,7 @@ export const getMaterials = async (req, res) => {
 
     res.status(200).json({ success: true, data: materials });
   } catch (error) {
-    console.error("❌ getMaterials error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    next(error);
   }
 };
 
@@ -37,8 +36,7 @@ export const addMaterial = async (req, res) => {
 
     res.status(201).json({ success: true, data: newMaterial });
   } catch (error) {
-    console.error("addMaterial error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    next(error);
   }
 };
 
@@ -54,8 +52,7 @@ export const deleteMaterial = async (req, res) => {
 
     res.status(200).json({ success: true, message: "Material deleted" });
   } catch (error) {
-    console.error("❌ deleteMaterial error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    next(error);
   }
 };
 
@@ -71,8 +68,7 @@ export const updateMaterialLink = async (req, res) => {
 
     res.status(200).json({ success: true, data: material });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: "Server error" });
+    next(error);
   }
 };
 
@@ -87,8 +83,7 @@ export const reorderMaterials = async (req, res) => {
 
     await Material.bulkWrite(bulkOps);
     res.status(200).json({ success: true, message: "Order updated" });
-  } catch (err) {
-    console.error("reorderMaterials error:", err);
-    res.status(500).json({ success: false, message: "Server error" });
+  } catch (error) {
+    next(error);
   }
 };

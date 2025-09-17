@@ -28,7 +28,7 @@ export const getCategoriesPublic = async (req, res, next) => {
         const categories = await Category.find({ isVisible: true }).populate("parent", "name").lean();
         res.status(200).json({ success: true, categories });
     } catch (error) {
-        return next(new ServerError({ message: error.message }));
+        next(error);
     }
 }
 
@@ -37,7 +37,7 @@ export const getCategoriesPrivate = async (req, res, next) => {
         const categories = await Category.find().populate("parent", "name").lean();
         res.status(200).json({ success: true, categories });
     } catch (error) {
-        return next(new ServerError({ message: error.message }));
+        next(error);
     }
 }
 
@@ -66,16 +66,7 @@ export const createCategory = async (req, res, next) => {
         const category = await Category.create({ ...updateData });
         res.status(201).json({ success: true, category });
     } catch (error) {
-        if (error instanceof MongoServerError && error.code === 11000) {
-            const [field, value] = Object.entries(error.keyValue)[0];
-            return next(new DuplicateKeyError({ field, value }));
-        }
-
-        if (error.name === 'ValidationError') {
-            return next(error);
-        }
-
-        return next(new ServerError({ message: error.message }));
+        next(error);
     }
 }
 
@@ -105,7 +96,7 @@ export const updateCategory = async (req, res, next) => {
         const category = await Category.findByIdAndUpdate(categoryId, { name, description, parent, isVisible }, { new: true, runValidators: true });
         res.status(200).json({ success: true, category });
     } catch (error) {
-        return next(new ServerError({ message: error.message }));
+        next(error);
     }
 }
 
@@ -124,6 +115,6 @@ export const deleteCategory = async (req, res, next) => {
 
         res.status(200).json({ success: true, message: "Category deleted" })
     } catch (error) {
-        return next(new ServerError({ message: error.message }));
+        next(error);
     }
 }

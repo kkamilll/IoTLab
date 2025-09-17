@@ -1,6 +1,11 @@
 import { LOG_LEVELS } from "../errors/errorLevels.js";
 
 export function errorHandler(error, req, res, next) {
+  if (error instanceof MongoServerError && error.code === 11000) {
+    const [field, value] = Object.entries(error.keyValue)[0];
+    error = new DuplicateKeyError({ field, value });
+  }
+
   switch (error.logLevel) {
     case LOG_LEVELS.ERROR:
         console.error(`ERROR: [${error.name}]`, error.message);
@@ -12,8 +17,8 @@ export function errorHandler(error, req, res, next) {
         console.info(`INFO: [${error.name}]`, error.message);
         break;
     case LOG_LEVELS.SILENT:
+        break;
     default:
-        // nothing
         break;
     }
 

@@ -11,8 +11,8 @@ export const getCollections = async (req, res, next) => {
   try {
     const collections = await Component.find().populate("author", "name email");
     res.status(200).json({ success: true, data: collections });
-  } catch (err) {
-    return next(new ServerError({ message: err.message }));
+  } catch (error) {
+    next(error);
   }
 };
 
@@ -26,8 +26,8 @@ export const getCollectionById = async (req, res, next) => {
     if (!collection) return next(new ResourceNotFoundError("Collection"));
 
     res.status(200).json({ success: true, data: collection });
-  } catch (err) {
-    return next(new ServerError({ message: err.message }));
+  } catch (error) {
+    next(error);
   }
 };
 
@@ -44,8 +44,8 @@ export const createCollection = async (req, res, next) => {
     await collection.populate("author", "name email");
 
     res.status(201).json({ success: true, data: collection });
-  } catch (err) {
-    return next(new ServerError({ message: err.message }));
+  } catch (error) {
+    next(error);
   }
 };
 
@@ -61,8 +61,8 @@ export const deleteCollection = async (req, res, next) => {
 
     await collection.deleteOne();
     res.status(200).json({ success: true, message: "Collection deleted" });
-  } catch (err) {
-    return next(new ServerError({ message: err.message }));
+  } catch (error) {
+    next(error);
   }
 };
 
@@ -88,8 +88,8 @@ export const addFile = async (req, res, next) => {
       success: true,
       data: collection.files[collection.files.length - 1],
     });
-  } catch (err) {
-    return next(new ServerError({ message: err.message }));
+  } catch (error) {
+    next(error);
   }
 };
 
@@ -104,8 +104,8 @@ export const deleteFile = async (req, res, next) => {
     await collection.save();
 
     res.status(200).json({ success: true, message: "File deleted" });
-  } catch (err) {
-    return next(new ServerError({ message: err.message }));
+  } catch (error) {
+    next(error);
   }
 };
 
@@ -126,7 +126,7 @@ export const editCollection = async (req, res, next) => {
     await collection.save();
 
     res.status(200).json({ success: true, data: collection });
-  } catch (err) {
-    return next(new ServerError({ message: err.message }));
+  } catch (error) {
+    next(error);
   }
 };

@@ -209,17 +209,16 @@ export const getOrderStats = async (req, res, next) => {
     return res.status(200).json({ success: true, response });
 
 
-  } catch (err) {
-    console.error("Error fetching order stats:", err);
-    return next(err);
+  } catch (error) {
+    next(error);
   }
 };
 
 export const getOrderStatuses = (req, res, next) => {
   try {
     res.json({ success: true, statuses: Order.schema.path("ownersData.status").enumValues });
-  } catch {
-    return next(new ServerError({ message: `Error fetching orders: ${error.message}` }));
+  } catch (error) {
+    next(error);
   }
 };
 
@@ -285,7 +284,7 @@ export const getOrders = async (req, res, next) => {
 
     return res.status(200).json({ success: true, orders: personalizedOrders, page, totalPages, totalOrders });
   } catch (error) {
-    return next(new ServerError({ message: `Error fetching orders: ${error.message}` }));
+    next(error);
   }
 };
 
@@ -392,10 +391,8 @@ export const createOrder = async (req, res, next) => {
     await session.abortTransaction();
     session.endSession();
 
-    console.warn(error);
-    if (error instanceof AppError) throw error;
-
-    return next(new ServerError({ message: error.message }));
+    // Handle duplicate key error
+    next(error);
   }
 };
 
@@ -583,37 +580,12 @@ export const updateOrder = async (req, res, next) => {
     await handleOrderEmail(order);
 
     res.status(200).json({ success: true, order });
-  } catch (err) {
+  } catch (error) {
     await session.abortTransaction();
     session.endSession();
-    next(err);
+    next(error);
   }
 };
-
-
-// TODO: add transaction
-// export const returnOrder = async (req, res, next) => {
-//   try {
-//     const { orderId } = req.body;
-//     if (!mongoose.Types.ObjectId.isValid(orderId)) {
-//       return next(new BadRequestError("Invalid order ID"));
-//     }
-
-//     const order = await Order.findOneAndUpdate({ _id: orderId, isReturned: false }, { isReturned: true }, { new: true });
-//     // if (!order) return res.status(404).json({ success: false, error: "Zamówienie nie istnieje" });
-//     if (!order) return next(new BadRequestError("Order not found or already returned"));
-
-//     // przywracamy stock produktu
-//     const updatedProduct = await Product.findByIdAndUpdate(order.product, { $inc: { stockTotal: order.quantity } }, { runValidators: true });
-//     if (!updatedProduct) {
-//       console.warn(`Product ${order.product} does not exist. Order ${orderId} will still be returned.`);
-//     }
-
-//     res.status(200).json({ success: true, message: "Zamówienie zwrócone", order });
-//   } catch (error) {
-//     return next(new ServerError({ message: `Error returning orders: ${error.message}` }));
-//   }
-// };
 
 export const hardDeleteOrder = async (req, res, next) => {
   // add transaction, still race condition possible?
@@ -637,7 +609,7 @@ export const hardDeleteOrder = async (req, res, next) => {
 
     return res.status(200).json({ success: true, message: "Order deleted and stockTotal updated" });
   } catch (error) {
-    return next(new ServerError({ message: error.message }));
+    next(error);
   }
 };
 
@@ -653,9 +625,8 @@ export const getCustomerOrder = async (req, res, next) => {
     if (!order) return res.status(404).json({ success: false, message: "Order doesn't exist" });
 
     return res.status(200).json({ success: true, order });
-  } catch (err) {
-    console.error("Błąd wysyłki maila:", err);
-    return res.status(500).json({ success: false, message: "Error sending mail" });
+  } catch (error) {
+    next(error);
   }
 };
 
@@ -689,7 +660,6 @@ export const customerUpdateOrder = async (req, res, next) => {
 
     return res.status(200).json({ success: true, order });
   } catch (error) {
-    console.error("Error updating order:", error);
-    return res.status(500).json({ success: false, message: "Error updating order" });
+    next(error);
   }
 };
