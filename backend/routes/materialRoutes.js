@@ -7,9 +7,12 @@ import { addMaterial, getMaterials, deleteMaterial, reorderMaterials, updateMate
 const router = express.Router();
 
 router.get("/", getMaterials);
+
 router.post("/", authMiddleware, filesUploadMaterial.single("file"), addMaterial);
-router.delete("/:id", authMiddleware, deleteMaterial);
+
 router.patch("/reorder", authMiddleware, reorderMaterials);
 router.patch("/:id", authMiddleware, updateMaterialLink);
+
+router.delete("/:id", authMiddleware, deleteMaterial);
 
 export default router;

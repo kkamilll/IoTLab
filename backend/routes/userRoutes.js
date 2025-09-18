@@ -4,11 +4,14 @@ import { getUsers, getUser, createUser, updateUserProfile, updateUser, deleteUse
 
 const router = express.Router();
 
-router.get('/', authMiddleware, getUsers);
 router.get('/profile', authMiddleware, getUser);
+router.get('/', authMiddleware, getUsers);
+
 router.post('/create', authMiddleware, createUser);
+
 router.put('/profile', authMiddleware, updateUserProfile);
 router.put('/:userId', authMiddleware, updateUser);
+
 router.delete('/:userId', authMiddleware, deleteUser);
 
 export default router;

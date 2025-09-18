@@ -17,6 +17,7 @@ import orderRoutes from './routes/orderRoutes.js';
 import noteRoutes from './routes/noteRoutes.js';
 import materialRoutes from "./routes/materialRoutes.js";
 import componentRoutes from "./routes/componentRoutes.js";
+import templateRoutes from './routes/templateRoutes.js'
 
 import fileRoutes from "./routes/fileRoutes.js"
 
@@ -75,7 +76,7 @@ app.use((err, req, res, next) => {
 
 
 app.use('/uploads', express.static('uploads'));
-app.use('/file', fileRoutes);
+app.use('/files', fileRoutes);
 
 app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
@@ -85,6 +86,7 @@ app.use('/orders', orderRoutes);
 app.use('/notes', noteRoutes);
 app.use('/materials', materialRoutes);
 app.use('/components', componentRoutes);
+app.use('/templates', templateRoutes);
 
 
 app.use(errorHandler);

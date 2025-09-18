@@ -1,5 +1,7 @@
 import Component from "../models/Component.js";
 import mongoose from "mongoose";
+import fs from "fs";
+
 import {
   BadRequestError,
   ResourceNotFoundError,
@@ -9,7 +11,7 @@ import {
 
 export const getCollections = async (req, res, next) => {
   try {
-    const collections = await Component.find().populate("author", "name email");
+    const collections = await Component.find().populate("author", "name email").lean();
     res.status(200).json({ success: true, data: collections });
   } catch (error) {
     next(error);
@@ -22,7 +24,7 @@ export const getCollectionById = async (req, res, next) => {
     if (!mongoose.Types.ObjectId.isValid(collectionId))
       return next(new BadRequestError("Invalid ID"));
 
-    const collection = await Component.findById(collectionId).populate("author", "name email");
+    const collection = await Component.findById(collectionId).populate("author", "name email").lean();
     if (!collection) return next(new ResourceNotFoundError("Collection"));
 
     res.status(200).json({ success: true, data: collection });
@@ -35,11 +37,11 @@ export const getCollectionById = async (req, res, next) => {
 // Dodaj kategorię
 export const createCollection = async (req, res, next) => {
   try {
-    const { name } = req.body;
+    const { name, logo } = req.body;
     const userId = req.user._id;
     if (!name) return next(new BadRequestError("Collection name required"));
 
-    const collection = new Component({ name, files: [], author: userId });
+    const collection = new Component({ name, logo, files: [], author: userId });
     await collection.save();
     await collection.populate("author", "name email");
 
@@ -66,6 +68,68 @@ export const deleteCollection = async (req, res, next) => {
   }
 };
 
+export const addLink = async (req, res, next) => {
+  try {
+    const { collectionId } = req.params;
+    let { text, href } = req.body;
+
+    const collection = await Component.findById(collectionId);
+    if (!collection) return next(new ResourceNotFoundError("Collection"));
+
+    if (!/^https?:\/\//i.test(href)) href = "http://" + href.trim();
+
+    const newLink = { text, href };
+    collection.links.push(newLink);
+
+    await collection.save();
+
+    res.status(201).json({ success: true, data: newLink });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export const updateLink = async (req, res, next) => {
+  try {
+    const { collectionId, fileId } = req.params;
+    let { text, href } = req.body;
+    if (!text || !href) return next(new BadRequestError("Link text and redirection is required"));
+
+    if (!/^https?:\/\//i.test(href)) href = "http://" + href.trim();
+
+    const collection = await Component.findById(collectionId);
+    if (!collection) return next(new ResourceNotFoundError("Collection"));
+
+    const link = collection.links.id(fileId);
+    if (!link) return next(new ResourceNotFoundError("Link"));
+
+    link.text = text;
+    link.href = href; 
+
+    await collection.save();
+
+    res.status(200).json({ success: true, message: "Link updated" });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export const deleteLink = async (req, res, next) => {
+  try {
+    const { collectionId, fileId } = req.params;
+
+    const collection = await Component.findById(collectionId);
+    if (!collection) return next(new ResourceNotFoundError("Collection"));
+
+    collection.links = collection.links.filter(link => link._id.toString() !== fileId);
+    await collection.save();
+
+    res.status(200).json({ success: true, message: "Link deleted" });
+  } catch (error) {
+    next(error);
+  }
+}
+
 // Dodaj plik do kategorii
 export const addFile = async (req, res, next) => {
   try {
@@ -84,10 +148,7 @@ export const addFile = async (req, res, next) => {
     collection.files.push(newFile);
     await collection.save();
 
-    res.status(201).json({
-      success: true,
-      data: collection.files[collection.files.length - 1],
-    });
+    res.status(201).json({ success: true, data: newFile });
   } catch (error) {
     next(error);
   }
@@ -100,8 +161,12 @@ export const deleteFile = async (req, res, next) => {
     const collection = await Component.findById(collectionId);
     if (!collection) return next(new ResourceNotFoundError("Collection"));
 
+    const fileToDelete = collection.files.find(f => f._id.toString() === fileId);
+
     collection.files = collection.files.filter(f => f._id.toString() !== fileId);
     await collection.save();
+
+    if (fileToDelete && fs.existsSync(fileToDelete.path)) await fs.promises.unlink(fileToDelete.path);
 
     res.status(200).json({ success: true, message: "File deleted" });
   } catch (error) {
@@ -112,7 +177,7 @@ export const deleteFile = async (req, res, next) => {
 export const editCollection = async (req, res, next) => {
   try {
     const { collectionId } = req.params;
-    const { name } = req.body;
+    const { name, logo } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(collectionId))
       return next(new BadRequestError("Invalid ID"));
@@ -123,6 +188,8 @@ export const editCollection = async (req, res, next) => {
     if (!collection) return next(new ResourceNotFoundError("Collection"));
 
     collection.name = name;
+    if(logo) collection.logo = logo;
+
     await collection.save();
 
     res.status(200).json({ success: true, data: collection });

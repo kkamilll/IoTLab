@@ -41,8 +41,8 @@ const Orders = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.data.success) setOrderStatuses(res.data.statuses);
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      console.error(error);
     }
   };
 
@@ -64,8 +64,8 @@ const Orders = () => {
         setTotalPages(res.data.totalPages);
         setCurrentPage(res.data.page);
       }
-    } catch (err) {
-      console.error("Error fetching orders:", err);
+    } catch (error) {
+      console.error("Error fetching orders:", error);
     }
   };
 
@@ -152,23 +152,25 @@ const Orders = () => {
   };
 
   const getStatusColor = (groupStatus) => {
-    switch (groupStatus) {
-      case "changed":
-        return "text-red-800"; // really noticeable
-      case "pending":
-      case "approved":
-      case "prepared":
-        return "text-yellow-600";
-      case "rented":
-        return "text-green-600";
-      case "returned":
-        return "text-blue-600";
-      case "rejected":
-        return "text-gray-500";
-      default:
-        return "text-red-700"; // fallback for unexpected statuses
-    }
-  };
+  switch (groupStatus) {
+    case "changed":
+      return "text-red-800 bg-red-50";
+    case "pending":
+      return "text-yellow-600 bg-yellow-50";
+    case "approved":
+      return "text-lime-600 bg-lime-50";
+    case "prepared":
+      return "text-indigo-600 bg-indigo-50";
+    case "rented":
+      return "text-green-600 bg-green-50";
+    case "returned":
+      return "text-blue-600 bg-blue-50";
+    case "rejected":
+      return "text-gray-600 bg-gray-50";
+    default:
+      return "text-red-700 bg-red-50";
+  }
+};
 
   const getAllowedStatusChanges = (status) => {
     if (status === "pending") return ["approved", "rejected"];
@@ -542,12 +544,12 @@ const Orders = () => {
                             <div key={idx} className="mb-8 last:mb-2 border border-gray-200 rounded-lg p-4 bg-gray-50">
                               <div className="flex flex-col gap-1 mb-5">
                                 <h4 className="font-semibold text-gray-700">
-                                  Owner: {group.owner?.name || "Nieznany"}
+                                  Owner: { group.owner?.name || "Nieznany" }
                                 </h4>
 
                                 <p className="text-sm text-gray-500">
                                   Status: <span className={`font-medium ${getStatusColor(group.status)}`}>
-                                    {group.status}
+                                    { group.status }
                                   </span>
                                 </p>
 
@@ -560,7 +562,7 @@ const Orders = () => {
                                     </p>
                                   </div>
 
-                                  {group.hasAssignedDates && (
+                                  { group.hasAssignedDates && (
                                     <div className="bg-blue-50 border border-blue-200 rounded-md p-2">
                                       <p className="text-sm font-medium text-blue-700">Assigned</p>
                                       <p className="text-sm text-blue-800">
@@ -572,7 +574,7 @@ const Orders = () => {
                               </div>
 
                               <div className="space-y-4">
-                                {group.items.length > 0 && (
+                                { group.items.length > 0 && (
                                   <>
                                     <p className="font-semibold text-gray-700 text-lg">Items:</p>
 
@@ -597,11 +599,11 @@ const Orders = () => {
                                                 }
                                                 className="inline-block mt-1 px-3 py-1 text-sm font-medium text-blue-600 bg-blue-50 rounded-full hover:bg-blue-100 transition-colors"
                                               >
-                                                {expanded[toggleKey] ? "Hide details" : "Show details"}
+                                                { expanded[toggleKey] ? "Hide details" : "Show details"}
                                               </button>
 
                                               {/* Collapsible details */}
-                                              {expanded[toggleKey] && (
+                                              { expanded[toggleKey] && (
                                                 <div>
                                                   {/* Quantity Section */}
                                                   <div className="space-y-2">
@@ -646,7 +648,7 @@ const Orders = () => {
                                   </>
                                 )}
 
-                                {hasActions && (
+                                { hasActions && (
                                   <div className="mt-4">
                                     <p className="font-semibold text-gray-700 mb-2 text-lg">Actions:</p>
                                     <div className="flex flex-wrap gap-2 mb-4">
@@ -695,7 +697,7 @@ const Orders = () => {
                                         </button>
                                       )}
 
-                                      {group.status === "prepared" && (
+                                      { group.status === "prepared" || group.status === "rented" && (
                                         <button
                                           onClick={() => downloadRentalAgreement(group)}
                                           className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg shadow-md transition-colors duration-200"
@@ -755,6 +757,7 @@ const Orders = () => {
                     ampm={false}
                     minDateTime={new Date()}
                     maxDateTime={datesUpdateData.assignedEndDate ? new Date(datesUpdateData.assignedEndDate) : null}
+                    format="dd/MM/yyyy HH:mm"
                     renderInput={(params) => (
                       <TextField
                         {...params}
@@ -776,6 +779,7 @@ const Orders = () => {
                     }}
                     ampm={false}
                     minDateTime={datesUpdateData.assignedStartDate ? new Date(datesUpdateData.assignedStartDate) : new Date()}
+                    format="dd/MM/yyyy HH:mm"
                     renderInput={(params) => (
                       <TextField
                         {...params}

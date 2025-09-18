@@ -1,4 +1,6 @@
 import { LOG_LEVELS } from "../errors/errorLevels.js";
+import { MongoServerError } from 'mongodb';
+import { DuplicateKeyError } from '../errors/CustomErrors.js'
 
 export function errorHandler(error, req, res, next) {
   if (error instanceof MongoServerError && error.code === 11000) {

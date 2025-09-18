@@ -1,7 +1,6 @@
 import Product from "../models/Product.js";
 
 import mongoose from "mongoose";
-import { MongoServerError } from 'mongodb';
 import { AppError, ValidationError, BadRequestError, DuplicateKeyError, PermissionError, ResourceNotFoundError, ConflictError, ServerError } from '../errors/CustomErrors.js'
 // import { validateRequiredFields } from '../utils/validateRequiredFields.js'
 

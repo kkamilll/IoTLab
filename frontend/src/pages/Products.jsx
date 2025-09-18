@@ -359,6 +359,7 @@ const Products = () => {
     const newFiles = Array.from(e.target.files);
     const oldImages = formData.images || [];
     const newImages = newFiles.filter(file => file.type.startsWith("image/"));
+    console.log(oldImages);
     
     // if (newFiles.length !== newImages.length) {
     //   alert("Only image files are allowed!");
@@ -834,23 +835,40 @@ const generatePDF = () => {
                     value = <p className="min-w-20">{p.stockForRent ?? 0}</p>;
                     break;
 
-                  case "categories":
-                    value = (
-                      <div className="relative inline-block w-40">
-                        <select
-                          className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white appearance-none pr-8 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 shadow-sm"
-                          value=""
-                          onChange={(e) => e.preventDefault()} // temporarily block change
-                        >
-                          <option value="" disabled hidden>Check Categories</option>
-                          {p.categories.map((c, i) => (
-                            <option key={i} value={c?.name ?? ""}>{c?.name}</option>
-                          ))}
-                        </select>
-                        <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-sm select-none">▼</span>
-                      </div>
-                    );
-                    break;
+                 case "categories":
+  value = (
+    <div className="relative inline-block w-40">
+      <select
+        className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white appearance-none pr-8 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 shadow-sm"
+        value={p.categories.length === 1 ? p.categories[0]?.name ?? "" : ""}
+        onChange={(e) => e.preventDefault()}
+        disabled={p.categories.length <= 1} // blokada przy 0 i 1
+      >
+        {p.categories.length === 0 && <option value="" disabled>-</option>}
+        {p.categories.length === 1 && (
+          <option value={p.categories[0]?.name ?? ""}>
+            {p.categories[0]?.name ?? "-"}
+          </option>
+        )}
+        {p.categories.length > 1 && (
+          <>
+            <option value="" disabled hidden>Check Categories</option>
+            {p.categories.map((c, i) => (
+              <option key={i} value={c?.name ?? ""}>{c?.name}</option>
+            ))}
+          </>
+        )}
+      </select>
+
+      {p.categories.length > 1 && (
+        <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-sm select-none">
+          ▼
+        </span>
+      )}
+    </div>
+  );
+  break;
+
 
                   case "owner":
                     value = p.owner?.name ?? p.owner;
@@ -980,23 +998,39 @@ const generatePDF = () => {
           <span className="text-gray-700 truncate">{p.stockForRent ?? 0}</span>
         </div>
 
-        {/* Categories */}
-        <div className="flex justify-between py-1 border-b border-gray-200 last:border-b-0">
-          <span className="font-semibold text-gray-500">Categories:</span>
-          <div className="relative inline-block w-40">
-            <select
-              className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white appearance-none pr-8 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 shadow-sm"
-              value=""
-              onChange={(e) => e.preventDefault()}
-            >
-              <option value="" disabled hidden>Check Categories</option>
-              {p.categories.map((c, i) => (
-                <option key={i} value={c?.name ?? ""}>{c?.name}</option>
-              ))}
-            </select>
-            <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-sm select-none">▼</span>
-          </div>
-        </div>
+     {/* Categories */}
+<div className="flex justify-between py-1 border-b border-gray-200 last:border-b-0">
+  <span className="font-semibold text-gray-500">Categories:</span>
+  <div className="relative inline-block w-40">
+    <select
+      className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white appearance-none pr-8 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 shadow-sm"
+      value={p.categories.length === 1 ? p.categories[0]?.name ?? "" : ""}
+      onChange={(e) => e.preventDefault()}
+      disabled={p.categories.length <= 1} // zablokowane jeśli 0 lub 1
+    >
+      {p.categories.length === 0 && (
+        <option value="" disabled>-</option>
+      )}
+      {p.categories.length > 1 && (
+        <>
+          <option value="" disabled hidden>Check Categories</option>
+          {p.categories.map((c, i) => (
+            <option key={i} value={c?.name ?? ""}>{c?.name}</option>
+          ))}
+        </>
+      )}
+      {p.categories.length === 1 && (
+        <option value={p.categories[0]?.name ?? ""}>{p.categories[0]?.name ?? "-"}</option>
+      )}
+    </select>
+
+    {p.categories.length > 1 && (
+      <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-sm select-none">
+        ▼
+      </span>
+    )}
+  </div>
+</div>
 
         {/* Owner */}
         <div className="flex justify-between py-1 border-b border-gray-200 last:border-b-0">
@@ -1413,6 +1447,7 @@ const generatePDF = () => {
           </div>
         </div>
       )}
+
     </div >
   );
 };

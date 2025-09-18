@@ -6,7 +6,7 @@ import { MongoServerError } from 'mongodb';
 import { AppError, ValidationError, BadRequestError, DuplicateKeyError, ResourceNotFoundError, ConflictError, ServerError } from '../errors/CustomErrors.js'
 // import { validateRequiredFields } from '../utils/validateRequiredFields.js'
 
-import { handleOrderEmail } from "../utils/sendOrderEmail.js";
+import { sendOrderEmail } from "../utils/sendEmail.js";
 
 import { v4 as uuidv4 } from "uuid";
 import { randomBytes } from "crypto";
@@ -63,7 +63,7 @@ export const getOrderStats = async (req, res, next) => {
     const basePipeline = (useItemMatch = true) => [
       { $project: { items: 1, customer: 1 } },
       { $unwind: "$items" },
-      ...(useItemMatch ? [{ $match: ParamfilterItem }] : []),
+      ...(useItemMatch && productId ? [{ $match: ParamfilterItem }] : []),
       {
         $lookup: {
           from: "products",
@@ -196,7 +196,7 @@ export const getOrderStats = async (req, res, next) => {
             totalQuantity: { $sum: status === "pending" ? "$items.requestedQuantity" : "$items.assignedQuantity" },
           }
         },
-        { $sort: { totalAssigned: -1 } },
+        { $sort: { totalQuantity: -1 } },
         { $limit: 5 }
       ]);
       response.topProducts[status] = topProducts;
@@ -207,7 +207,6 @@ export const getOrderStats = async (req, res, next) => {
     // console.log("response", response);
 
     return res.status(200).json({ success: true, response });
-
 
   } catch (error) {
     next(error);
@@ -297,9 +296,16 @@ export const createOrder = async (req, res, next) => {
 
     const { token, customer, items, requestedStartDate, requestedEndDate } = req.body || null;
 
+    const params = new URLSearchParams();
+    params.append("secret", process.env.RECAPTCHA_SECRET_KEY);
+    params.append("response", token);
+
     const reCaptchaResponse = await fetch(
-      `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${token}`,
-      { method: "POST" }
+      `https://www.google.com/recaptcha/api/siteverify`,
+      { 
+        method: "POST",
+        body: params,
+       }
     );
     const reCaptchaData = await reCaptchaResponse.json();
     if (!reCaptchaData.success) {
@@ -380,11 +386,10 @@ export const createOrder = async (req, res, next) => {
       throw new ServerError(`Failed to save order after ${maxAttempts} UUID attempts`);
     }
 
+    await sendOrderEmail(order, customerKey, order.uuid);
+
     await session.commitTransaction();
     session.endSession();
-
-    // console.log("New Order: Calling handleOrderEmail?");
-    await handleOrderEmail(order, customerKey, order.uuid);
 
     res.status(201).json({ success: true, message: "Order created", order });
   } catch (error) {
@@ -573,11 +578,10 @@ export const updateOrder = async (req, res, next) => {
 
     await order.save({ session });
 
+    await sendOrderEmail(order);
+
     await session.commitTransaction();
     session.endSession();
-
-    // console.log("Update Order: Calling handleOrderEmail?");
-    await handleOrderEmail(order);
 
     res.status(200).json({ success: true, order });
   } catch (error) {

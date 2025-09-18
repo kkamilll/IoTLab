@@ -15,10 +15,11 @@ const Sidebar = () => {
     {name:"Notes", path: "/admin-dashboard/notes", isParent:false},
     {name:"Slider", path: "/admin-dashboard/materials", isParent:false},
     {name:"Components", path: "/admin-dashboard/components", isParent:false},
+    {name: "Templates", path: "/admin-dashboard/templates", isParent:false},
   ];
 
  const lecturerItems = menuItems.filter(
-  item => item.name !== "Categories" && item.name !== "Slider" && item.name !== "Notes" && item.name !== "Users"
+  item => item.name !== "Categories" && item.name !== "Slider" && item.name !== "Notes" && item.name !== "Users" && item.name !== "Templates"
 );
 
 const customerItems = [

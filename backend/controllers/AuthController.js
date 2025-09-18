@@ -1,7 +1,7 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
-import { sendVerificationCode } from "../utils/sendVerificationCode.js";
+import { sendVerificationCode } from "../utils/sendEmail.js";
 
 import mongoose from "mongoose";
 import { MongoServerError } from 'mongodb';

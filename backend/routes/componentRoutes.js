@@ -3,7 +3,10 @@ import {
   getCollections,
   createCollection,
   deleteCollection,
+  addLink,
   addFile,
+  updateLink,
+  deleteLink,
   deleteFile,
   getCollectionById,
   editCollection,
@@ -18,8 +21,12 @@ router.get("/:collectionId", getCollectionById);
 router.get("/", getCollections);
 
 router.post("/create", authMiddleware, createCollection);
+router.post("/:collectionId/links", authMiddleware, addLink);
 router.post("/:collectionId/files", authMiddleware, filesUploadCollection.single("file"), addFile);
 
+router.put("/:collectionId/links/:fileId", authMiddleware, updateLink);
+
+router.delete("/:collectionId/links/:fileId", authMiddleware, deleteLink);
 router.delete("/:collectionId/files/:fileId", authMiddleware, deleteFile);
 router.delete("/:collectionId", authMiddleware, deleteCollection);
 

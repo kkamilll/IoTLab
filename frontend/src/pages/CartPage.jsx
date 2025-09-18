@@ -176,8 +176,6 @@ const CartPage = () => {
         }
       );
 
-      recaptchaRef.current.reset();
-
       alert("Order submitted and emailed!");
       setCart([]);
       localStorage.removeItem("cart");
@@ -185,6 +183,7 @@ const CartPage = () => {
       console.error(error);
       alert(error.response?.data?.message || error.message || "Order error");
     } finally {
+      recaptchaRef.current.reset();
       setLoading(false);
     }
   };
@@ -471,6 +470,7 @@ const CartPage = () => {
                   ampm={false}
                   minDateTime={new Date()}
                   maxDateTime={orderDates.endDate ? new Date(orderDates.endDate) : null}
+                  format="dd/MM/yyyy HH:mm"
                   renderInput={(params) => <TextField {...params} className="w-full" />}
                 />
               </div>
@@ -487,6 +487,7 @@ const CartPage = () => {
                   }
                   ampm={false}
                   minDateTime={orderDates.startDate ? new Date(orderDates.startDate) : new Date()}
+                  format="dd/MM/yyyy HH:mm"
                   renderInput={(params) => <TextField {...params} className="w-full" />}
                 />
               </div>

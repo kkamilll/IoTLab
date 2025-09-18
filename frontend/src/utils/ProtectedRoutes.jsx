@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
+import { Outlet } from "react-router-dom";
 
 const ProtectedRoutes = ({children, requireRole}) => {
     const {user} = useAuth();
@@ -22,7 +23,7 @@ const ProtectedRoutes = ({children, requireRole}) => {
     if(!user) return null;
     if(!requireRole.includes(user.role)) return null;
 
-    return children;
+    return children ? children : <Outlet />;
 }
 
 export default ProtectedRoutes;

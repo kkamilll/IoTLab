@@ -3,230 +3,361 @@ import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 
 const Components = () => {
-    const { token } = useAuth();
-    const [collections, setCollections] = useState([]);
-    const [newCollection, setNewCollection] = useState("");
-    const [expanded, setExpanded] = useState(null);
-    const [fileInputs, setFileInputs] = useState({});
+  const { token } = useAuth();
+  const [collections, setCollections] = useState([]);
+  const [newCollection, setNewCollection] = useState("");
+  const [newCollectionLogo, setNewCollectionLogo] = useState("");
+  const [expanded, setExpanded] = useState(null);
 
-    const [editingId, setEditingId] = useState(null);
-    const [editingName, setEditingName] = useState("");
+  const [linkInputs, setLinkInputs] = useState({});
+  const [editingLink, setEditingLink] = useState({ id: null, text: "", href: "" });
 
-    const axiosInstance = axios.create({
-        baseURL: `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}`,
-        headers: { Authorization: `Bearer ${token}` },
-    });
+  const [editingId, setEditingId] = useState(null);
+  const [editingName, setEditingName] = useState("");
+  const [editingLogo, setEditingLogo] = useState("");
 
-    // Pobierz kategorie
-    const fetchCollections = async () => {
-        try {
-            const res = await axiosInstance.get("/components");
-            if (res.data.success) setCollections(res.data.data);
-        } catch {
-            alert("Error fetching collections");
-        }
-    };
+  const axiosInstance = axios.create({
+    baseURL: `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}`,
+    headers: { Authorization: `Bearer ${token}` },
+  });
 
-    // Dodaj kategorię
-    const addCollection = async () => {
-        if (!newCollection.trim()) return;
-        try {
-            const res = await axiosInstance.post("/components/create", { name: newCollection });
-            if (res.data.success) {
-                setCollections(prev => [...prev, res.data.data]);
-                setNewCollection("");
-            }
-        } catch {
-            alert("Error adding collections");
-        }
-    };
+  // Fetch collections
+  const fetchCollections = async () => {
+    try {
+      const res = await axiosInstance.get("/components");
+      if (res.data.success) setCollections(res.data.data);
+    } catch {
+      alert("Error fetching collections");
+    }
+  };
 
-    // Usuń kolekcję
-    const deleteCollection = async (collectionId) => {
-        if (!window.confirm("Are you sure you want to delete this collection?")) return;
-        try {
-            await axiosInstance.delete(`/components/${collectionId}`);
-            setCollections(prev => prev.filter(cat => cat._id !== collectionId));
-            if (expanded === collectionId) setExpanded(null);
-        } catch {
-            alert("Error deleting collection");
-        }
-    };
+  // Add collection
+  const addCollection = async () => {
+    if (!newCollection.trim()) return;
 
-    // Edytuj nazwę kategorii
-    const editCollectionName = async (collectionId) => {
-        if (!editingName.trim()) return;
-        try {
-            const res = await axiosInstance.patch(`/components/${collectionId}`, { name: editingName });
-            if (res.data.success) {
-                setCollections(prev =>
-                    prev.map(cat => (cat._id === collectionId ? { ...cat, name: editingName } : cat))
-                );
-                setEditingId(null);
-                setEditingName("");
-            }
-        } catch {
-            alert("Error editing collection");
-        }
-    };
+    try {
+      const payload = { name: newCollection };
+      if (newCollectionLogo.trim()) payload.logo = newCollectionLogo;
 
-    // Upload pliku
-    const addFile = async (collectionId) => {
-        const file = fileInputs[collectionId];
-        if (!file) return alert("Choose a file first!");
+      await axiosInstance.post("/components/create", payload);
+      await fetchCollections();
 
-        const formData = new FormData();
-        formData.append("file", file);
+      setNewCollection("");
+      setNewCollectionLogo("");
+    } catch {
+      alert("Error adding collection");
+    }
+  };
 
-        try {
-            const res = await axiosInstance.post(`/components/${collectionId}/files`, formData, {
-                headers: { "Content-Type": "multipart/form-data" },
-            });
+  // Delete collection
+  const deleteCollection = async (collectionId) => {
+    if (!window.confirm("Are you sure you want to delete this collection?")) return;
+    try {
+      await axiosInstance.delete(`/components/${collectionId}`);
+      await fetchCollections();
+      setExpanded(null);
+    } catch {
+      alert("Error deleting collection");
+    }
+  };
 
-            if (res.data.success) {
-                setCollections(prev =>
-                    prev.map(cat =>
-                        cat._id === collectionId ? { ...cat, files: [...cat.files, res.data.data] } : cat
-                    )
-                );
-                setFileInputs(prev => ({ ...prev, [collectionId]: null }));
-            }
-        } catch {
-            alert("Error uploading file");
-        }
-    };
+  // Edit collection name and logo
+  const editCollection = async (collectionId) => {
+    if (!editingName.trim()) return;
 
-    // Usuń plik
-    const deleteFile = async (collectionId, fileId) => {
-        try {
-            await axiosInstance.delete(`/components/${collectionId}/files/${fileId}`);
-            setCollections(prev =>
-                prev.map(cat =>
-                    cat._id === collectionId
-                        ? { ...cat, files: cat.files.filter(f => f._id !== fileId) }
-                        : cat
-                )
-            );
-        } catch {
-            alert("Error deleting file");
-        }
-    };
+    try {
+      const payload = { name: editingName };
+      if (editingLogo.trim()) payload.logo = editingLogo;
 
-    useEffect(() => { fetchCollections(); }, []);
+      await axiosInstance.patch(`/components/${collectionId}`, payload);
+      await fetchCollections();
 
-    return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex justify-center py-10 px-4">
-            <div className="w-full max-w-3xl bg-white rounded-2xl shadow-2xl p-6 sm:p-8 flex flex-col gap-6">
-                <h2 className="text-3xl sm:text-4xl font-extrabold text-blue-700">📂 Components</h2>
+      setEditingId(null);
+      setEditingName("");
+      setEditingLogo("");
+    } catch {
+      alert("Error editing collection");
+    }
+  };
 
-                {/* Dodaj kategorię */}
-                <div className="flex gap-3">
-                    <input
-                        value={newCollection}
-                        onChange={e => setNewCollection(e.target.value.slice(0, 25))}
-                        placeholder="New collection..."
-                        className="flex-1 border rounded-xl px-3 py-2"
-                    />
-                    <button onClick={addCollection} className="bg-blue-600 text-white px-4 py-2 rounded-xl">
-                        Add
+  // Add link
+  const addLink = async (collectionId) => {
+    const input = linkInputs[collectionId];
+    if (!input?.text || !input?.href) return alert("Text and URL are required");
+
+    let href = input.href;
+    if (!/^https?:\/\//i.test(href)) href = "http://" + href;
+
+    try {
+      await axiosInstance.post(`/components/${collectionId}/links`, { text: input.text, href });
+      await fetchCollections();
+
+      setLinkInputs(prev => ({ ...prev, [collectionId]: { text: "", href: "" } }));
+    } catch {
+      alert("Error adding link");
+    }
+  };
+
+  // Delete link
+  const deleteLink = async (collectionId, linkId) => {
+    try {
+      await axiosInstance.delete(`/components/${collectionId}/links/${linkId}`);
+      await fetchCollections();
+    } catch {
+      alert("Error deleting link");
+    }
+  };
+
+  // Edit link
+  const saveLink = async (collectionId) => {
+    if (!editingLink.text || !editingLink.href) return alert("Text and URL are required");
+
+    let href = editingLink.href;
+    if (!/^https?:\/\//i.test(href)) href = "http://" + href;
+
+    try {
+      await axiosInstance.put(`/components/${collectionId}/links/${editingLink.id}`, {
+        text: editingLink.text,
+        href
+      });
+      await fetchCollections();
+
+      setEditingLink({ id: null, text: "", href: "" });
+    } catch {
+      alert("Error updating link");
+    }
+  };
+
+  // Start editing link
+  const startEditingLink = (link) => {
+    setEditingLink({ id: link._id, text: link.text, href: link.href });
+  };
+
+  // Upload file
+  const [fileInputs, setFileInputs] = useState({});
+  const addFile = async (collectionId) => {
+    const file = fileInputs[collectionId];
+    if (!file) return alert("Choose a file first!");
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      await axiosInstance.post(`/components/${collectionId}/files`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      await fetchCollections();
+      setFileInputs(prev => ({ ...prev, [collectionId]: null }));
+    } catch {
+      alert("Error uploading file");
+    }
+  };
+
+  // Delete file
+  const deleteFile = async (collectionId, fileId) => {
+    try {
+      await axiosInstance.delete(`/components/${collectionId}/files/${fileId}`);
+      await fetchCollections();
+    } catch {
+      alert("Error deleting file");
+    }
+  };
+
+  useEffect(() => {
+    fetchCollections();
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex justify-center py-10 px-4">
+      <div className="w-full max-w-3xl bg-white rounded-2xl shadow-2xl p-6 sm:p-8 flex flex-col gap-6">
+        <h2 className="text-3xl sm:text-4xl font-extrabold text-blue-700">📂 Components</h2>
+
+        {/* Add collection */}
+        <div className="flex flex-col gap-2">
+          <input
+            value={newCollection}
+            onChange={e => setNewCollection(e.target.value.slice(0, 25))}
+            placeholder="New collection name..."
+            className="flex-1 border rounded-xl px-3 py-2"
+          />
+          <div className="flex gap-3">
+            <input
+              value={newCollectionLogo}
+              onChange={e => setNewCollectionLogo(e.target.value)}
+              placeholder="Optional logo"
+              className="flex-1 border rounded-xl px-3 py-2"
+            />
+            <button
+              onClick={addCollection}
+              className="bg-blue-600 text-white px-4 py-2 rounded-xl"
+            >
+              Add
+            </button>
+          </div>
+        </div>
+
+        {/* List of collections */}
+        {collections.map(collection => (
+          <div key={collection._id} className="border rounded-xl p-4 bg-gray-50">
+            <div className="flex justify-between items-center">
+              {editingId === collection._id ? (
+                <div className="flex-1 flex flex-col gap-2">
+                  <input
+                    value={editingName}
+                    onChange={e => setEditingName(e.target.value)}
+                    className="flex-1 border rounded px-2 py-1"
+                    placeholder="Collection name"
+                  />
+                  <input
+                    value={editingLogo}
+                    onChange={e => setEditingLogo(e.target.value)}
+                    className="flex-1 border rounded px-2 py-1"
+                    placeholder="Logo string"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => editCollection(collection._id)}
+                      className="bg-green-500 text-white px-2 py-1 rounded"
+                    >
+                      ✅
                     </button>
+                    <button
+                      onClick={() => { setEditingId(null); setEditingName(""); setEditingLogo(""); }}
+                      className="bg-gray-300 text-black px-2 py-1 rounded"
+                    >
+                      ❌
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setExpanded(expanded === collection._id ? null : collection._id)}
+                  className="text-lg font-semibold text-blue-900 flex-1 text-left flex items-center gap-2"
+                >
+                  {expanded === collection._id ? "▼" : "▶"}
+                  {collection.logo && (
+                    <span className="text-xl">
+                      {collection.logo.length > 10 ? collection.logo.slice(0, 10) + "…" : collection.logo}
+                    </span>
+                  )}
+                  {collection.name.length > 10 ? collection.name.slice(0, 10) + "…" : collection.name}
+                </button>
+              )}
+
+              {editingId !== collection._id && (
+                <div className="flex gap-2 ml-3">
+                  <button
+                    onClick={() => { setEditingId(collection._id); setEditingName(collection.name); setEditingLogo(collection.logo || ""); }}
+                    className="text-yellow-500 hover:text-yellow-700"
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    onClick={() => deleteCollection(collection._id)}
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    🗑️
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Expanded content */}
+            {expanded === collection._id && (
+              <div className="mt-3">
+                {/* Files */}
+                {collection.files.map(file => (
+                  <div key={file._id} className="flex justify-between items-center bg-white p-2 rounded mb-2">
+                    <a
+                      href={`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/${file.path}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 underline"
+                    >
+                      {file.name}
+                    </a>
+                    <button
+                      onClick={() => deleteFile(collection._id, file._id)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                ))}
+
+                {/* Add file */}
+                <div className="flex gap-2 mt-3">
+                  <input
+                    type="file"
+                    onChange={e => setFileInputs(prev => ({ ...prev, [collection._id]: e.target.files[0] }))}
+                    className="flex-1"
+                  />
+                  <button
+                    onClick={() => addFile(collection._id)}
+                    className="bg-green-500 text-white px-3 py-2 rounded"
+                  >
+                    Upload
+                  </button>
                 </div>
 
-                {/* Lista kategorii */}
-                {collections.map(collection => (
-                    <div key={collection._id} className="border rounded-xl p-4 bg-gray-50">
-                        <div className="flex justify-between items-center">
-                            {editingId === collection._id ? (
-                                <div className="flex-1 flex gap-2 items-center">
-                                    <input
-                                        value={editingName}
-                                        onChange={e => setEditingName(e.target.value)}
-                                        className="flex-1 border rounded px-2 py-1"
-                                    />
-                                    <button
-                                        onClick={() => editCollectionName(collection._id)}
-                                        className="bg-green-500 text-white px-2 py-1 rounded"
-                                    >
-                                        ✅
-                                    </button>
-                                    <button
-                                        onClick={() => { setEditingId(null); setEditingName(""); }}
-                                        className="bg-gray-300 text-black px-2 py-1 rounded"
-                                    >
-                                        ❌
-                                    </button>
-                                </div>
-                            ) : (
-                                <button
-                                    onClick={() => setExpanded(expanded === collection._id ? null : collection._id)}
-                                    className="text-lg font-semibold text-blue-900 flex-1 text-left"
-                                >
-                                    {expanded === collection._id ? "▼" : "▶"} {collection.name}
-                                </button>
-                            )}
-
-                            {/* Edytuj i usuń */}
-                            {editingId !== collection._id && (
-                                <div className="flex gap-2 ml-3">
-                                    <button
-                                        onClick={() => { setEditingId(collection._id); setEditingName(collection.name); }}
-                                        className="text-yellow-500 hover:text-yellow-700"
-                                    >
-                                        ✏️
-                                    </button>
-                                    <button
-                                        onClick={() => deleteCollection(collection._id)}
-                                        className="text-red-500 hover:text-red-700"
-                                    >
-                                        🗑️
-                                    </button>
-                                </div>
-                            )}
+                {/* Links */}
+                <div className="mt-3">
+                  <h4 className="font-semibold mb-2">Links:</h4>
+                  {collection.links.map(link => (
+                    <div key={link._id} className="flex gap-2 items-center mb-2">
+                      {editingLink.id === link._id ? (
+                        <div className="flex flex-1 gap-2">
+                          <input
+                            className="border px-2 py-1 rounded flex-1"
+                            value={editingLink.text}
+                            onChange={e => setEditingLink(prev => ({ ...prev, text: e.target.value }))}
+                            placeholder="Text"
+                          />
+                          <input
+                            className="border px-2 py-1 rounded flex-1"
+                            value={editingLink.href}
+                            onChange={e => setEditingLink(prev => ({ ...prev, href: e.target.value }))}
+                            placeholder="URL"
+                          />
+                          <button className="bg-green-500 text-white px-2 rounded" onClick={() => saveLink(collection._id)}>✅</button>
+                          <button className="bg-gray-300 px-2 rounded" onClick={() => setEditingLink({ id: null, text: "", href: "" })}>❌</button>
                         </div>
-
-                        {expanded === collection._id && (
-                            <div className="mt-3">
-                                {/* Pliki */}
-                                {collection.files.map(file => (
-                                    <div key={file._id} className="flex justify-between items-center bg-white p-2 rounded mb-2">
-                                        <a
-                                            href={`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/${file.path}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-blue-600 underline"
-                                        >
-                                            {file.name}
-                                        </a>
-                                        <button
-                                            onClick={() => deleteFile(collection._id, file._id)}
-                                            className="text-red-500 hover:text-red-700"
-                                        >
-                                            🗑️
-                                        </button>
-                                    </div>
-                                ))}
-
-                                {/* Dodaj plik */}
-                                <div className="flex gap-2 mt-3">
-                                    <input
-                                        type="file"
-                                        onChange={e => setFileInputs(prev => ({ ...prev, [collection._id]: e.target.files[0] }))}
-                                        className="flex-1"
-                                    />
-                                    <button
-                                        onClick={() => addFile(collection._id)}
-                                        className="bg-green-500 text-white px-3 py-2 rounded"
-                                    >
-                                        Upload
-                                    </button>
-                                </div>
-                            </div>
-                        )}
+                      ) : (
+                        <div className="flex flex-1 gap-2">
+                          <a href={link.href} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline flex-1">
+                            {link.text}
+                          </a>
+                          <button className="text-yellow-500" onClick={() => startEditingLink(link)}>✏️</button>
+                          <button className="text-red-500" onClick={() => deleteLink(collection._id, link._id)}>🗑️</button>
+                        </div>
+                      )}
                     </div>
-                ))}
-            </div>
-        </div>
-    );
+                  ))}
+
+                  {/* Add new link */}
+                  <div className="flex gap-2 mt-2">
+                    <input
+                      className="border px-2 py-1 rounded flex-1"
+                      placeholder="Text"
+                      value={linkInputs[collection._id]?.text || ""}
+                      onChange={e => setLinkInputs(prev => ({ ...prev, [collection._id]: { ...prev[collection._id], text: e.target.value } }))}
+                    />
+                    <input
+                      className="border px-2 py-1 rounded flex-1"
+                      placeholder="URL"
+                      value={linkInputs[collection._id]?.href || ""}
+                      onChange={e => setLinkInputs(prev => ({ ...prev, [collection._id]: { ...prev[collection._id], href: e.target.value } }))}
+                    />
+                    <button className="bg-green-500 text-white px-3 py-1 rounded" onClick={() => addLink(collection._id)}>Add</button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 };
 
 export default Components;
