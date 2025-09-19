@@ -89,6 +89,17 @@ const MainGuest = () => {
     "bg-blue-700",
   ];
 
+  const allCategory = {
+    _id: "", // unique key
+    name: "All",
+    logo: <FaFolder size={16} className="text-blue-700 flex-shrink-0" />,
+    description: null,
+    children: [],
+    level: 0,
+  };
+
+  const categoriesWithAll = [allCategory, ...flatCategories];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex justify-center py-10 px-4">
       <div className="w-full max-w-3xl">
@@ -106,9 +117,10 @@ const MainGuest = () => {
           Categories
         </h1>
 
-        {flatCategories.length > 0 ? (
+        {categoriesWithAll.length > 0 ? (
           <div className="w-full flex flex-col gap-4">
-            {flatCategories.map((category) => {
+            
+            {categoriesWithAll.map((category) => {
               const hasChildren =
                 category.children && category.children.length > 0;
               const isExpanded = expandedIds.has(category._id);

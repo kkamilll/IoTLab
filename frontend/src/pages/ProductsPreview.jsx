@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
-import { FaFilePdf, FaFileWord, FaFileExcel, FaFileImage, FaFileAlt, FaFile } from "react-icons/fa";
+import { FaFilePdf, FaFileWord, FaFileExcel, FaFileImage, FaFileAlt, FaFile, FaShoppingCart } from "react-icons/fa";
 
 const ProductPreview = () => {
   const location = useLocation();
@@ -13,6 +13,8 @@ const ProductPreview = () => {
   const [categoryNames, setCategoryNames] = useState([]);
   const [error, setError] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  const [cartQuantities, setCartQuantities] = useState({});
 
   useEffect(() => setCurrentImageIndex(0), [productId]);
   const getAvailableStockForProduct = (product) => (Math.max(0, Number(product.stockForRent || 0) - Number(product.stockRentedOut || 0) - Number(product.stockReserved || 0)));
@@ -97,6 +99,34 @@ const ProductPreview = () => {
       </div>
     );
   }
+
+  const handleQuantityChange = (productId, value, product) => {
+    let qty = parseInt(value, 10);
+
+    // minimalna ilość 0, maksymalna = dostępny stock
+    if (isNaN(qty) || qty < 0) qty = 0;
+    if (qty > getAvailableStockForProduct(product)) qty = getAvailableStockForProduct(product);
+
+    // aktualizacja stanu koszyka
+    setCartQuantities(prev => ({ ...prev, [productId]: qty }));
+
+    // aktualizacja localStorage
+    const cart = JSON.parse(localStorage.getItem("cart")) || [];
+    const existingIndex = cart.findIndex(p => p._id === productId);
+
+    if (qty === 0) {
+      if (existingIndex !== -1) cart.splice(existingIndex, 1);
+    } else {
+      if (existingIndex !== -1) {
+        cart[existingIndex].quantity = qty;
+      } else {
+        cart.push({ ...product, quantity: qty });
+      }
+    }
+
+    localStorage.setItem("cart", JSON.stringify(cart));
+    // setCartQuantitiesInCart(cart.reduce((acc, item) => ({ ...acc, [item._id]: item.quantity }), {}));
+  };
 
   if (!product) return <div className="p-6 text-center">Loading product...</div>;
 
@@ -223,20 +253,59 @@ const ProductPreview = () => {
       </div>
 
       {/* Action buttons */}
-      <div className="flex flex-col sm:flex-row sm:gap-4 mt-6">
-        <button
-          onClick={() => handleAddToCart(product)}
-          className="flex-1 px-6 py-3 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 transition"
-        >
-          Add to Cart
-        </button>
+      <div className="flex flex-col sm:flex-row sm:gap-6 mt-6 items-stretch sm:items-stretch">
+        <div className="flex flex-1 sm:flex-none items-center gap-0 justify-center sm:justify-start">
+          <span className="bg-gray-100 text-gray-700 px-3 rounded-l-xl font-medium border border-r-0 border-gray-300 flex items-center h-14">
+            In cart:
+          </span>
+
+          {/* Quantity Selector */}
+          <div className="flex border rounded-r-xl shadow-sm overflow-hidden h-14 flex-shrink-0">
+            <button
+              onClick={() =>
+                handleQuantityChange(product._id, (cartQuantities[product._id] || 0) - 1, product)
+              }
+              className="w-14 h-full bg-gray-100 hover:bg-gray-200 transition text-gray-700 text-2xl font-bold disabled:opacity-40 disabled:cursor-not-allowed"
+              disabled={(cartQuantities[product._id] || 0) <= 0}
+            >
+              −
+            </button>
+
+            <input
+              type="number"
+              min="0"
+              max={getAvailableStockForProduct(product)}
+              value={cartQuantities[product._id] || 0}
+              onChange={(e) =>
+                handleQuantityChange(product._id, e.target.value, product)
+              }
+              className="w-20 h-full text-center text-lg font-semibold outline-none border-x border-gray-200 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+            />
+
+            <button
+              onClick={() =>
+                handleQuantityChange(product._id, (cartQuantities[product._id] || 0) + 1, product)
+              }
+              className="w-14 h-full bg-gray-100 hover:bg-gray-200 transition text-gray-700 text-2xl font-bold disabled:opacity-40 disabled:cursor-not-allowed"
+              disabled={
+                (cartQuantities[product._id] || 0) >= getAvailableStockForProduct(product)
+              }
+            >
+              +
+            </button>
+          </div>
+        </div>
+
+        {/* Cart Button */}
         <button
           onClick={() => navigate("/cart")}
-          className="flex-1 px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition mt-2 sm:mt-0"
+          className="flex-1 px-8 py-4 bg-blue-500 text-white text-lg font-semibold rounded-xl hover:bg-blue-600 transition mt-4 sm:mt-0 h-14 sm:h-14"
         >
           Go to Cart
         </button>
       </div>
+
+
     </div>
   );
 };

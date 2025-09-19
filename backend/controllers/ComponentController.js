@@ -22,7 +22,7 @@ export const getCollectionById = async (req, res, next) => {
   try {
     const { collectionId } = req.params;
     if (!mongoose.Types.ObjectId.isValid(collectionId))
-      return next(new BadRequestError("Invalid ID"));
+      return next(new BadRequestError("Invalid collection ID"));
 
     const collection = await Component.findById(collectionId).populate("author", "name email").lean();
     if (!collection) return next(new ResourceNotFoundError("Collection"));
@@ -56,7 +56,7 @@ export const deleteCollection = async (req, res, next) => {
   try {
     const { collectionId } = req.params;
     if (!mongoose.Types.ObjectId.isValid(collectionId))
-      return next(new BadRequestError("Invalid ID"));
+      return next(new BadRequestError("Invalid collection ID"));
 
     const collection = await Component.findById(collectionId);
     if (!collection) return next(new ResourceNotFoundError("Collection"));
@@ -180,7 +180,7 @@ export const editCollection = async (req, res, next) => {
     const { name, logo } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(collectionId))
-      return next(new BadRequestError("Invalid ID"));
+      return next(new BadRequestError("Invalid collection ID"));
 
     if (!name) return next(new BadRequestError("Collection name required"));
 

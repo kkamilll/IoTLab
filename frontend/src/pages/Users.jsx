@@ -4,8 +4,8 @@ import axios from "axios";
 import Sidebar from "../components/Sidebar";
 
 const Users = () => {
-  const [formData, setFormData] = useState({ 
-    name: "", email: "", password: "", role: "", labRooms: [], isActive: true 
+  const [formData, setFormData] = useState({
+    name: "", email: "", password: "", role: "", labRooms: [], isActive: true
   });
   const [newLabRoom, setNewLabRoom] = useState("");
   const [users, setUsers] = useState([]);
@@ -72,6 +72,14 @@ const Users = () => {
     }
   };
 
+  const handleRemoveLabRoom = (roomToRemove) => {
+    setFormData(prev => ({
+      ...prev,
+      labRooms: prev.labRooms.filter(room => room !== roomToRemove)
+    }));
+  };
+
+
   // --- Reset form ---
   const resetForm = () => {
     setFormData({ name: "", email: "", password: "", role: "", labRooms: [], isActive: true });
@@ -123,8 +131,8 @@ const Users = () => {
         const res = await axios.put(
           `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/users/${editingUserId}`,
           dataToSend, {
-            headers: { Authorization: `Bearer ${localStorage.getItem("pos-token")}` }
-          }
+          headers: { Authorization: `Bearer ${localStorage.getItem("pos-token")}` }
+        }
         );
 
         if (res.data.success) {
@@ -291,7 +299,7 @@ const Users = () => {
 
         {/* Filters and add */}
         <div className="flex flex-col md:flex-row gap-4 mb-4">
-          <input type="text" placeholder="Search users..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="flex-1 p-2 border rounded-xl"/>
+          <input type="text" placeholder="Search users..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="flex-1 p-2 border rounded-xl" />
           <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)} className="p-2 border rounded-xl">
             <option value="">All Roles</option>
             <option value="admin">Admin</option>
@@ -312,112 +320,130 @@ const Users = () => {
         {/* Add/Edit Form */}
         {showForm && (
           <form onSubmit={handleSubmit} className="flex flex-col space-y-4 bg-gray-50 p-6 rounded-2xl shadow-lg mb-6">
-  
-  <div className="flex flex-col">
-    <label htmlFor="name" className="text-gray-700 font-medium mb-1">Name</label>
-    <input 
-      id="name"
-      type="text" 
-      name="name" 
-      value={formData.name} 
-      onChange={handleChange} 
-      className="p-3 border rounded-xl" 
-    />
-  </div>
 
-  <div className="flex flex-col">
-    <label htmlFor="email" className="text-gray-700 font-medium mb-1">Email</label>
-    <input 
-      id="email"
-      type="email" 
-      name="email" 
-      value={formData.email} 
-      onChange={handleChange} 
-      className="p-3 border rounded-xl" 
-    />
-  </div>
+            <div className="flex flex-col">
+              <label htmlFor="name" className="text-gray-700 font-medium mb-1">Name</label>
+              <input
+                id="name"
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                className="p-3 border rounded-xl"
+              />
+            </div>
 
-  <div className="flex flex-col">
-    <label htmlFor="password" className="text-gray-700 font-medium mb-1">Password</label>
-    <input 
-      id="password"
-      type="password" 
-      name="password" 
-      value={formData.password} 
-      onChange={handleChange} 
-      className="p-3 border rounded-xl" 
-    />
-  </div>
+            <div className="flex flex-col">
+              <label htmlFor="email" className="text-gray-700 font-medium mb-1">Email</label>
+              <input
+                id="email"
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className="p-3 border rounded-xl"
+              />
+            </div>
 
-  <div className="flex flex-col">
-    <label htmlFor="role" className="text-gray-700 font-medium mb-1">Role</label>
-    <select 
-      id="role"
-      name="role" 
-      value={formData.role} 
-      onChange={handleChange} 
-      className="p-3 border rounded-xl"
-    >
-      <option value="">Select Role</option>
-      <option value="admin">Admin</option>
-      <option value="lecturer">Lecturer</option>
-    </select>
-  </div>
+            <div className="flex flex-col">
+              <label htmlFor="password" className="text-gray-700 font-medium mb-1">Password</label>
+              <input
+                id="password"
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                className="p-3 border rounded-xl"
+              />
+            </div>
 
-  <div className="flex items-center gap-2">
-    <input
-      type="checkbox"
-      id="isActive"
-      name="isActive"
-      checked={formData.isActive}
-      onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
-      className="w-5 h-5"
-      disabled={formData.name === "admin" && formData.email === "admin@gmail.com"}
-    />
-    <label
-      htmlFor="isActive"
-      className={`text-gray-700 font-medium ${formData.name === "Admin" && formData.email === "admin@gmail.com" ? "opacity-50" : ""}`}
-    >
-      Active Account
-    </label>
-  </div>
+            <div className="flex flex-col">
+              <label htmlFor="role" className="text-gray-700 font-medium mb-1">Role</label>
+              <select
+                id="role"
+                name="role"
+                value={formData.role}
+                onChange={handleChange}
+                className="p-3 border rounded-xl"
+              >
+                <option value="">Select Role</option>
+                <option value="admin">Admin</option>
+                <option value="lecturer">Lecturer</option>
+              </select>
+            </div>
 
-  <div className="flex flex-col gap-2">
-    <label htmlFor="labRoom" className="text-gray-700 font-medium">Add lab room</label>
-    <div className="flex gap-2">
-      <input 
-        id="labRoom"
-        type="text" 
-        value={newLabRoom} 
-        onChange={e => setNewLabRoom(e.target.value)} 
-        className="border p-2 rounded-xl flex-1"
-        onKeyDown={(e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          handleAddTag();
-        }
-      }}
-      />
-      <button type="button" onClick={handleAddLabRoom} className="px-3 py-1 bg-gray-500 text-white rounded-xl">Add</button>
-    </div>
-  </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="isActive"
+                name="isActive"
+                checked={formData.isActive}
+                onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
+                className="w-5 h-5"
+                disabled={formData.name === "admin" && formData.email === "admin@gmail.com"}
+              />
+              <label
+                htmlFor="isActive"
+                className={`text-gray-700 font-medium ${formData.name === "Admin" && formData.email === "admin@gmail.com" ? "opacity-50" : ""}`}
+              >
+                Active Account
+              </label>
+            </div>
 
-  {formData.labRooms.length > 0 && (
-    <div ref={labDropdownRef} className="flex flex-wrap gap-2">
-      {formData.labRooms.map((room, i) => (
-        <span key={i} className="bg-blue-200 px-3 py-1 rounded-2xl text-sm font-semibold">{room}</span>
-      ))}
-    </div>
-  )}
+            <div className="flex flex-col gap-2">
+              <label htmlFor="labRoom" className="text-gray-700 font-medium">Add lab room</label>
+              <div className="flex gap-2">
+                <input
+                  id="labRoom"
+                  type="text"
+                  value={newLabRoom}
+                  onChange={e => setNewLabRoom(e.target.value)}
+                  className="border p-2 rounded-xl flex-1"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAddLabRoom();
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={handleAddLabRoom}
+                  className="px-3 py-1 bg-gray-500 text-white rounded-xl hover:bg-gray-600"
+                >
+                  Add
+                </button>
+              </div>
 
-  <button 
-    type="submit" 
-    disabled={submitLoading} 
-    className={`p-3 rounded-xl text-white font-semibold ${submitLoading ? "bg-green-300" : "bg-green-600 hover:bg-green-700"}`}
-  >
-    {submitLoading ? (editingUserId ? "Saving..." : "Adding...") : (editingUserId ? "💾 Save Changes" : "➕ Add User")}
-  </button>
-</form>
+              {formData.labRooms.length > 0 && (
+                <div ref={labDropdownRef} className="flex flex-wrap gap-2 mt-2">
+                  {formData.labRooms.map((room, i) => (
+                    <span
+                      key={i}
+                      className="bg-blue-200 px-3 py-1 rounded-2xl text-sm font-semibold flex items-center gap-1"
+                    >
+                      {room}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveLabRoom(room)}
+                        className="text-red-600 font-bold hover:text-red-700"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              disabled={submitLoading}
+              className={`p-3 rounded-xl text-white font-semibold ${submitLoading ? "bg-green-300" : "bg-green-600 hover:bg-green-700"}`}
+            >
+              {submitLoading ? (editingUserId ? "Saving..." : "Adding...") : (editingUserId ? "💾 Save Changes" : "➕ Add User")}
+            </button>
+          </form>
 
         )}
 
@@ -438,26 +464,26 @@ const Users = () => {
             <tbody>
               {paginatedUsers.map((user, idx) => (
                 <tr key={user._id} className="bg-gray-50 hover:bg-blue-50 transition">
-                  <td className="p-3 hidden md:table-cell">{(currentPage-1)*USERS_PER_PAGE+idx+1}</td>
+                  <td className="p-3 hidden md:table-cell">{(currentPage - 1) * USERS_PER_PAGE + idx + 1}</td>
                   <td className="p-3">{user.name}</td>
                   <td className="p-3 hidden lg:table-cell">{user.email}</td>
                   <td className="p-3">{user.role}</td>
                   <td className="p-3">{user.isActive ? "Active" : "Inactive"}</td>
-                  <td className="p-3 hidden lg:table-cell">{user.labRooms?.length>0?<LabRoomsDropdown rooms={user.labRooms}/>: "—"}</td>
-                  <td className="p-3 text-center"><ActionMenu user={user} onEdit={startEdit} onDelete={handleDelete} loadingId={deleteLoadingId}/></td>
+                  <td className="p-3 hidden lg:table-cell">{user.labRooms?.length > 0 ? <LabRoomsDropdown rooms={user.labRooms} /> : "—"}</td>
+                  <td className="p-3 text-center"><ActionMenu user={user} onEdit={startEdit} onDelete={handleDelete} loadingId={deleteLoadingId} /></td>
                 </tr>
               ))}
             </tbody>
           </table>
 
           {/* Pagination */}
-          {totalPages>1 && (
+          {totalPages > 1 && (
             <div className="flex justify-center gap-2 py-3">
-              <button onClick={()=>setCurrentPage(prev=>Math.max(prev-1,1))} disabled={currentPage===1} className="px-3 py-1 bg-blue-200 rounded-xl hover:bg-blue-300">Prev</button>
-              {Array.from({length:totalPages},(_,i)=>(
-                <button key={i} onClick={()=>setCurrentPage(i+1)} className={`px-3 py-1 rounded-xl ${currentPage===i+1?"bg-blue-600 text-white":"bg-blue-200 hover:bg-blue-300"}`}>{i+1}</button>
+              <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1} className="px-3 py-1 bg-blue-200 rounded-xl hover:bg-blue-300">Prev</button>
+              {Array.from({ length: totalPages }, (_, i) => (
+                <button key={i} onClick={() => setCurrentPage(i + 1)} className={`px-3 py-1 rounded-xl ${currentPage === i + 1 ? "bg-blue-600 text-white" : "bg-blue-200 hover:bg-blue-300"}`}>{i + 1}</button>
               ))}
-              <button onClick={()=>setCurrentPage(prev=>Math.min(prev+1,totalPages))} disabled={currentPage===totalPages} className="px-3 py-1 bg-blue-200 rounded-xl hover:bg-blue-300">Next</button>
+              <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages} className="px-3 py-1 bg-blue-200 rounded-xl hover:bg-blue-300">Next</button>
             </div>
           )}
         </div>

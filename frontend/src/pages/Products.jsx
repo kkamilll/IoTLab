@@ -62,7 +62,7 @@ const Products = () => {
   // const [previewImage, setPreviewImage] = useState(null);
 
   const [cartQuantities, setCartQuantities] = useState({});
-  const [cartQuantitiesInCart, setCartQuantitiesInCart] = useState({});
+  // const [cartQuantitiesInCart, setCartQuantitiesInCart] = useState({});
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -359,7 +359,7 @@ const Products = () => {
     const newFiles = Array.from(e.target.files);
     const oldImages = formData.images || [];
     const newImages = newFiles.filter(file => file.type.startsWith("image/"));
-    console.log(oldImages);
+    // console.log(oldImages);
     
     // if (newFiles.length !== newImages.length) {
     //   alert("Only image files are allowed!");
@@ -403,7 +403,7 @@ const Products = () => {
     }
 
     localStorage.setItem("cart", JSON.stringify(cart));
-    setCartQuantitiesInCart(cart.reduce((acc, item) => ({ ...acc, [item._id]: item.quantity }), {}));
+    // setCartQuantitiesInCart(cart.reduce((acc, item) => ({ ...acc, [item._id]: item.quantity }), {}));
   };
 
   const addExtraField = () => {
@@ -960,17 +960,17 @@ const generatePDF = () => {
 
   {/* Mobile Cards */}
   <div className="md:hidden flex flex-col gap-4">
-    {paginatedProducts.map(p => (
-      <div key={p._id} className="border rounded shadow p-4 bg-white flex flex-col gap-2">
+    {paginatedProducts.map(product => (
+      <div key={product._id} className="border rounded shadow p-4 bg-white flex flex-col gap-2">
 
         {/* Name */}
         <div className="flex justify-between py-1 border-b border-gray-200 last:border-b-0">
           <span className="font-semibold text-gray-500">Name:</span>
           <span
             className="text-gray-700 truncate cursor-pointer relative z-10 text-blue-600 hover:underline"
-            onClick={() => handlePreview(p._id)}
+            onClick={() => handlePreview(product._id)}
           >
-            {p.name}
+            {product.name}
           </span>
         </div>
 
@@ -979,23 +979,23 @@ const generatePDF = () => {
           <span className="font-semibold text-gray-500">Description:</span>
           <span
             className="text-gray-700 truncate cursor-pointer text-blue-600 hover:underline"
-            onClick={() => handlePreview(p._id)}
-            title={p.description}
+            onClick={() => handlePreview(product._id)}
+            title={product.description}
           >
-            {p.description?.length > 50 ? p.description.slice(0, 30) + "…" : p.description}
+            {product.description?.length > 50 ? product.description.slice(0, 30) + "…" : product.description}
           </span>
         </div>
 
         {/* Stock Total */}
         <div className="flex justify-between py-1 border-b border-gray-200 last:border-b-0">
           <span className="font-semibold text-gray-500">In stock:</span>
-          <span className="text-gray-700 truncate">{p.stockTotal ?? 0}</span>
+          <span className="text-gray-700 truncate">{product.stockTotal ?? 0}</span>
         </div>
 
         {/* Stock For Rent */}
         <div className="flex justify-between py-1 border-b border-gray-200 last:border-b-0">
           <span className="font-semibold text-gray-500">For rent:</span>
-          <span className="text-gray-700 truncate">{p.stockForRent ?? 0}</span>
+          <span className="text-gray-700 truncate">{product.stockForRent ?? 0}</span>
         </div>
 
      {/* Categories */}
@@ -1004,27 +1004,27 @@ const generatePDF = () => {
   <div className="relative inline-block w-40">
     <select
       className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white appearance-none pr-8 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 shadow-sm"
-      value={p.categories.length === 1 ? p.categories[0]?.name ?? "" : ""}
+      value={product.categories.length === 1 ? product.categories[0]?.name ?? "" : ""}
       onChange={(e) => e.preventDefault()}
-      disabled={p.categories.length <= 1} // zablokowane jeśli 0 lub 1
+      disabled={product.categories.length <= 1} // zablokowane jeśli 0 lub 1
     >
-      {p.categories.length === 0 && (
+      {product.categories.length === 0 && (
         <option value="" disabled>-</option>
       )}
-      {p.categories.length > 1 && (
+      {product.categories.length > 1 && (
         <>
           <option value="" disabled hidden>Check Categories</option>
-          {p.categories.map((c, i) => (
+          {product.categories.map((c, i) => (
             <option key={i} value={c?.name ?? ""}>{c?.name}</option>
           ))}
         </>
       )}
-      {p.categories.length === 1 && (
-        <option value={p.categories[0]?.name ?? ""}>{p.categories[0]?.name ?? "-"}</option>
+      {product.categories.length === 1 && (
+        <option value={product.categories[0]?.name ?? ""}>{product.categories[0]?.name ?? "-"}</option>
       )}
     </select>
 
-    {p.categories.length > 1 && (
+    {product.categories.length > 1 && (
       <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-sm select-none">
         ▼
       </span>
@@ -1035,32 +1035,40 @@ const generatePDF = () => {
         {/* Owner */}
         <div className="flex justify-between py-1 border-b border-gray-200 last:border-b-0">
           <span className="font-semibold text-gray-500">Owner:</span>
-          <span className="text-gray-700 truncate">{p.owner?.name ?? p.owner}</span>
+          <span className="text-gray-700 truncate">{product.owner?.name ?? product.owner}</span>
         </div>
 
         {/* Quantity controls */}
-        <div className="flex justify-center items-center border rounded-lg overflow-hidden h-10 mt-2 shadow-sm">
+        <div className="flex border rounded-xl shadow-sm overflow-hidden h-14 w-full">
           <button
-            onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) - 1, p)}
-            className="px-4 bg-gray-100 hover:bg-gray-200 transition text-gray-700 font-bold"
-            disabled={(cartQuantities[p._id] || 0) <= 0}
+            onClick={() =>
+              handleQuantityChange(product._id, (cartQuantities[product._id] || 0) - 1, product)
+            }
+            className="w-1/4 h-full bg-gray-100 hover:bg-gray-200 transition text-gray-700 text-2xl font-bold disabled:opacity-40 disabled:cursor-not-allowed"
+            disabled={(cartQuantities[product._id] || 0) <= 0}
           >
-            -
+            −
           </button>
 
           <input
             type="number"
             min="0"
-            max={getAvailableStockForProduct(p)}
-            value={cartQuantities[p._id] || 0}
-            onChange={(e) => handleQuantityChange(p._id, e.target.value, p)}
-            className="w-16 text-center outline-none border-x border-gray-200 focus:ring-1 focus:ring-blue-400 focus:border-blue-400 transition"
+            max={getAvailableStockForProduct(product)}
+            value={cartQuantities[product._id] || 0}
+            onChange={(e) =>
+              handleQuantityChange(product._id, e.target.value, product)
+            }
+            className="min-w-20 flex-1 h-full text-center text-lg font-semibold outline-none border-x border-gray-200 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
           />
 
           <button
-            onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) + 1, p)}
-            className="px-4 bg-gray-100 hover:bg-gray-200 transition text-gray-700 font-bold"
-            disabled={(cartQuantities[p._id] || 0) >= getAvailableStockForProduct(p)}
+            onClick={() =>
+              handleQuantityChange(product._id, (cartQuantities[product._id] || 0) + 1, product)
+            }
+            className="w-1/4 h-full bg-gray-100 hover:bg-gray-200 transition text-gray-700 text-2xl font-bold disabled:opacity-40 disabled:cursor-not-allowed"
+            disabled={
+              (cartQuantities[product._id] || 0) >= getAvailableStockForProduct(product)
+            }
           >
             +
           </button>
@@ -1069,31 +1077,31 @@ const generatePDF = () => {
         {/* In cart / Available */}
         <div className="flex justify-between items-center mt-1 text-sm text-gray-600">
           <span className="bg-gray-100 px-2 py-0.5 rounded">
-            Available: {getAvailableStockForProduct(p)}
+            Available: {getAvailableStockForProduct(product)}
           </span>
           <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded">
-            In cart: {cartQuantities[p._id] || 0}
+            In cart: {cartQuantities[product._id] || 0}
           </span>
         </div>
 
         {/* Action buttons */}
         <div className="flex flex-wrap gap-2 justify-center mt-2">
           <button
-            onClick={() => handleEdit(p)}
-            disabled={user.id !== p.owner._id && !isAdmin}
+            onClick={() => handleEdit(product)}
+            disabled={user.id !== product.owner._id && !isAdmin}
             className="flex-1 min-w-[80px] px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed text-center"
           >
             Edit
           </button>
           <button
-            onClick={() => handlePreview(p._id)}
+            onClick={() => handlePreview(product._id)}
             className="flex-1 min-w-[80px] px-3 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition text-center"
           >
             Preview
           </button>
           <button
-            onClick={() => handleDelete(p._id)}
-            disabled={user.id !== p.owner._id && !isAdmin}
+            onClick={() => handleDelete(product._id)}
+            disabled={user.id !== product.owner._id && !isAdmin}
             className="flex-1 min-w-[80px] px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed text-center"
           >
             Delete

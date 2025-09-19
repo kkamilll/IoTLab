@@ -8,18 +8,17 @@ const WelcomePage = () => {
   const navigate = useNavigate();
   const { token, user, logout } = useAuth();
 
-  // -------------------- STATE -------------------- //
   const [materials, setMaterials] = useState([]);
-  const [collections, setCollections] = useState([]);
-  const [collectionIndex, setCollectionIndex] = useState(0);
-  const [visibleCount, setVisibleCount] = useState(3);
-
+  const [currentTime, setCurrentTime] = useState(new Date());
   const [notes, setNotes] = useState([]);
   const [notesLoading, setNotesLoading] = useState(false);
   const [notesError, setNotesError] = useState(null);
   const [notesPage, setNotesPage] = useState(1);
 
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [collectionIndex, setCollectionIndex] = useState(0);
+  const [collections, setCollections] = useState([]);
+
+  const [visibleCount, setVisibleCount] = useState(3);
 
   const NOTES_PER_PAGE = 4;
   const totalPages = Math.ceil(notes.length / NOTES_PER_PAGE);
@@ -28,17 +27,12 @@ const WelcomePage = () => {
     notesPage * NOTES_PER_PAGE
   );
 
-  // -------------------- FETCH DATA -------------------- //
-
   // Fetch materials
   useEffect(() => {
     (async () => {
       try {
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const res = await axios.get(
-          `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/materials`,
-          { headers }
-        );
+        const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/materials`, { headers });
         if (res.data.success) setMaterials(res.data.data);
       } catch (err) {
         console.error("Error fetching materials:", err);
@@ -53,10 +47,7 @@ const WelcomePage = () => {
       setNotesError(null);
       try {
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const res = await axios.get(
-          `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/notes`,
-          { headers }
-        );
+        const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/notes`, { headers });
         if (res.data.success && Array.isArray(res.data.data)) setNotes(res.data.data);
         else setNotesError('Invalid server response');
       } catch (err) {
@@ -68,7 +59,7 @@ const WelcomePage = () => {
     })();
   }, [token]);
 
-  // Fetch collections (public)
+  // Fetch components (public)
   useEffect(() => {
     (async () => {
       try {
@@ -82,7 +73,6 @@ const WelcomePage = () => {
     })();
   }, []);
 
-  // -------------------- RESIZE HANDLER -------------------- //
   useEffect(() => {
     const updateVisible = () => {
       if (window.innerWidth < 640) setVisibleCount(1); // mobile
@@ -94,12 +84,12 @@ const WelcomePage = () => {
     return () => window.removeEventListener("resize", updateVisible);
   }, []);
 
-  // Adjust collection index when visibleCount changes
   useEffect(() => {
     if (!collections.length || !visibleCount) return;
+
     const maxStartIndex = Math.max(0, collections.length - visibleCount);
-    setCollectionIndex(prevIndex => Math.min(prevIndex, maxStartIndex));
-  }, [visibleCount, collections]);
+    setCollectionIndex(prevIndex => { return Math.min(prevIndex, maxStartIndex) });
+  }, [visibleCount]);
 
   // Timer for current time
   useEffect(() => {
@@ -107,20 +97,22 @@ const WelcomePage = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // -------------------- HANDLERS -------------------- //
+  const handleCollectionClick = (id) => {
+    navigate(`/components/${id}`); // jeśli zalogowany → pokaz pliki
+  };
+
+  // Handlers
   const handleLoginClick = () => navigate('/login');
   const handleLogout = () => { logout(); navigate('/'); };
   const handleBackToSidebar = () => {
     if (['admin', 'lecturer'].includes(user?.role)) navigate('/admin-dashboard');
     else navigate('/');
   };
-  const handleCollectionClick = (id) => navigate(`/components/${id}`);
 
-  // -------------------- RENDER -------------------- //
   return (
     <div className="w-full min-h-screen font-sans bg-gradient-to-b from-blue-900 to-blue-700 text-gray-900">
 
-      {/* -------------------- TOPBAR -------------------- */}
+      {/* TOPBAR */}
       <div className="w-full py-2 px-4 text-white text-sm font-semibold tracking-wide flex flex-col md:flex-row md:items-center md:justify-between gap-2">
         <span>
           {`${currentTime.getDate().toString().padStart(2, '0')}.${(currentTime.getMonth() + 1).toString().padStart(2, '0')}.${currentTime.getFullYear()} ${currentTime.getHours().toString().padStart(2, '0')}:${currentTime.getMinutes().toString().padStart(2, '0')}:${currentTime.getSeconds().toString().padStart(2, '0')}`}
@@ -130,11 +122,12 @@ const WelcomePage = () => {
           <div className="flex flex-col sm:flex-row items-center gap-3 text-white text-sm font-semibold w-full sm:w-auto">
             <span className="truncate max-w-[140px] sm:max-w-none">{user.name}</span>
 
+            {/* Back button - outline */}
             <button
               onClick={handleBackToSidebar}
               className="flex items-center justify-center gap-2 border border-green-500 text-green-500 
-                         hover:bg-green-500 hover:text-white transition-colors rounded-full 
-                         px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400 w-full sm:w-auto"
+                 hover:bg-green-500 hover:text-white transition-colors rounded-full 
+                 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400 w-full sm:w-auto"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -142,11 +135,12 @@ const WelcomePage = () => {
               Back
             </button>
 
+            {/* Logout button - filled */}
             <button
               onClick={handleLogout}
               className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 active:bg-red-800 
-                         transition-colors text-white rounded-full px-4 py-2 shadow-sm 
-                         focus:outline-none focus:ring-2 focus:ring-red-400 w-full sm:w-auto"
+                 transition-colors text-white rounded-full px-4 py-2 shadow-sm 
+                 focus:outline-none focus:ring-2 focus:ring-red-400 w-full sm:w-auto"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7" />
@@ -155,15 +149,15 @@ const WelcomePage = () => {
             </button>
           </div>
         )}
+
       </div>
 
-      {/* -------------------- WELCOME SECTION -------------------- */}
       <section className="relative py-20 flex justify-center items-center overflow-hidden shadow-1xl">
         <div
           className="absolute inset-0 bg-[url('/uploadsWelcome/aa.jpg')] bg-cover bg-center bg-no-repeat"
           style={{ filter: 'brightness(0.8)' }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/50" />
+        ></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/50"></div>
         <div className="relative z-10 max-w-3xl text-center px-6">
           <h1 className="text-5xl md:text-6xl font-extrabold mb-4 leading-tight text-white drop-shadow-xl">
             IoTLab
@@ -191,66 +185,68 @@ const WelcomePage = () => {
         </div>
       </section>
 
-      {/* -------------------- COLLECTIONS / COMPONENTS -------------------- */}
       <section className="py-20 bg-white text-gray-900">
         <div className="max-w-6xl mx-auto px-4">
+          <h2 className="text-4xl font-extrabold text-center mb-14 tracking-tight text-blue-900">
+            Explore Collections
+          </h2>
 
-          {/* Desktop view: 3 cards + arrows */}
-          <div className="hidden md:flex items-center gap-6">
-            {collections.length > 3 && (
-              <button
-                onClick={() => setCollectionIndex(prev => Math.max(prev - 1, 0))}
-                className="bg-blue-600/80 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition disabled:opacity-40"
-                disabled={collectionIndex === 0}
-              >
-                ←
-              </button>
-            )}
+          <div className="relative flex items-center">
+            {/* Left arrow */}
+            <button
+              onClick={() => setCollectionIndex(prev => Math.max(prev - 1, 0))}
+              className="bg-blue-600/80 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition disabled:opacity-40"
+              disabled={collectionIndex === 0}
+            >
+              ←
+            </button>
 
-            <div className="flex gap-6 flex-1 justify-center overflow-hidden">
-              {collections.slice(collectionIndex, collectionIndex + 3).map((collection) => (
+            {/* Cards */}
+            <div className="flex gap-6 flex-1 justify-center overflow-hidden px-2">
+              {collections.slice(collectionIndex, collectionIndex + visibleCount).map(collection => (
                 <div
                   key={collection._id}
                   onClick={() => handleCollectionClick(collection._id)}
-                  className="flex-shrink-0 w-[260px] p-8 rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:bg-blue-50 transition cursor-pointer flex flex-col items-center text-center"
+                  className="snap-center flex-shrink-0 w-[220px] p-8 rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:bg-blue-50 transition cursor-pointer flex flex-col items-center text-center"
                 >
-                  <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-[clamp(1.5rem,3vw,2rem)] mb-4">{collection.logo?.length > 3 ? collection.logo.slice(0, 3) + "…" : collection.logo}</div>
-                  <h3 className="font-semibold text-[clamp(0.875rem,2vw,1.125rem)] text-blue-800 break-words text-center">{collection.name}</h3>
+                  <div
+                    className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center text-[clamp(1.2rem,4vw,1.5rem)] mb-3 truncate"
+                    title={collection.logo} // full logo on hover
+                  >
+                    {collection.logo}
+                  </div>
+
+                  <h3
+                    className="font-semibold text-[clamp(0.75rem,3vw,1rem)] text-blue-800 truncate w-full text-center"
+                    title={collection.name} // full name on hover
+                  >
+                    {collection.name}
+                  </h3>
                 </div>
+
               ))}
             </div>
 
-            {collections.length > 3 && (
-              <button
-                onClick={() => setCollectionIndex(prev => Math.min(prev + 1, collections.length - 3))}
-                className="bg-blue-600/80 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition disabled:opacity-40"
-                disabled={collectionIndex >= collections.length - 3}
-              >
-                →
-              </button>
-            )}
-          </div>
-
-          {/* Mobile view: horizontal scroll */}
-          <div className="md:hidden flex gap-5 overflow-x-auto snap-x snap-mandatory px-1 scrollbar-hide mt-6">
-            {collections.map((cat) => (
-              <div
-                key={cat._id}
-                onClick={() => handleCollectionClick(cat._id)}
-                className="snap-center flex-shrink-0 w-[220px] p-8 rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:bg-blue-50 transition cursor-pointer flex flex-col items-center text-center"
-              >
-                <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center text-[clamp(1.2rem,4vw,1.5rem)] mb-3">📁</div>
-                <h3 className="font-semibold text-[clamp(0.75rem,3vw,1rem)] text-blue-800 break-words text-center">{cat.name}</h3>
-              </div>
-            ))}
+            {/* Right arrow */}
+            <button
+              onClick={() =>
+                setCollectionIndex(prev =>
+                  Math.min(prev + 1, collections.length - visibleCount)
+                )
+              }
+              className="bg-blue-600/80 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition disabled:opacity-40"
+              disabled={collectionIndex >= collections.length - visibleCount}
+            >
+              →
+            </button>
           </div>
         </div>
       </section>
 
-      {/* -------------------- MAIN SLIDER -------------------- */}
+      {/* MAIN SLIDER */}
       {materials.length > 0 && <MainSlider materials={materials} />}
 
-      {/* -------------------- NOTES & ANNOUNCEMENTS -------------------- */}
+      {/* NOTES & ANNOUNCEMENTS */}
       <section className="py-16 bg-blue-900 text-white px-6 md:px-12">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-4xl font-extrabold mb-10 text-center tracking-wide">Announcements & Notes</h2>
@@ -266,7 +262,9 @@ const WelcomePage = () => {
               <ul className="grid gap-6 sm:grid-cols-2">
                 {paginatedNotes.map(note => (
                   <li key={note._id} className="bg-blue-800 rounded-xl p-6 shadow-md hover:shadow-lg transition-transform duration-300 hover:scale-[1.02] flex flex-col">
-                    <p className="text-white text-lg leading-relaxed font-medium whitespace-pre-wrap break-words break-all">{note.text}</p>
+                    <p className="text-white text-lg leading-relaxed font-medium whitespace-pre-wrap break-words break-all">
+                      {note.text}
+                    </p>
                     <div className="mt-3 text-blue-200 text-sm font-light italic">
                       Added by <strong>{note.author?.name || 'Anonymous'}</strong> •{' '}
                       {`${new Date(note.createdAt).getDate().toString().padStart(2, '0')}.${(new Date(note.createdAt).getMonth() + 1).toString().padStart(2, '0')}.${new Date(note.createdAt).getFullYear()} ${new Date(note.createdAt).getHours().toString().padStart(2, '0')}:${new Date(note.createdAt).getMinutes().toString().padStart(2, '0')}:${new Date(note.createdAt).getSeconds().toString().padStart(2, '0')}`}
@@ -284,7 +282,9 @@ const WelcomePage = () => {
                 >
                   Previous
                 </button>
-                <span className="px-4 py-2 bg-blue-800 text-white font-semibold rounded-full shadow-inner">{notesPage} / {totalPages}</span>
+                <span className="px-4 py-2 bg-blue-800 text-white font-semibold rounded-full shadow-inner">
+                  {notesPage} / {totalPages}
+                </span>
                 <button
                   onClick={() => setNotesPage(prev => Math.min(prev + 1, totalPages))}
                   disabled={notesPage === totalPages}
@@ -298,7 +298,7 @@ const WelcomePage = () => {
         </div>
       </section>
 
-      {/* -------------------- FOOTER -------------------- */}
+      {/* FOOTER */}
       <footer className="bg-blue-900/70 text-center py-6 text-sm text-blue-200 font-light tracking-wide">
         © {new Date().getFullYear()} Laboratory Room Management System. All rights reserved.
       </footer>

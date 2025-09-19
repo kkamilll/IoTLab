@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 
 const CollectionFiles = () => {
+  const navigate = useNavigate();
+
   const { token } = useAuth();
   const { collectionId } = useParams();
   const [collection, setCollection] = useState(null);
@@ -74,72 +76,92 @@ const CollectionFiles = () => {
   if (!collection) return <p className="text-center mt-10 text-red-500">Collection not found.</p>;
 
   return (
-    <div className="min-h-screen p-8 bg-gray-100">
-      <h1 className="text-3xl font-bold mb-6">{collection.name}</h1>
+    <div className="min-h-screen bg-gray-50 flex justify-center py-10 px-4">
+      <div className="w-full max-w-4xl flex flex-col gap-6">
 
-      {/* Files section */}
-      {collection.files.length === 0 && <p>No files in this collection.</p>}
-
-      <ul className="space-y-3 mb-6">
-        {collection.files.map((file) => (
-          <li
-            key={file._id}
-            className="bg-white p-4 rounded shadow flex justify-between items-center"
+        {/* Back + Title */}
+        <div className="flex items-center justify-between mb-4">
+          <button
+            onClick={() => navigate("/")}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
           >
-            <button
-              onClick={() => handlePreview(file._id)}
-              className="text-blue-600 underline"
-            >
-              {file.name}
-            </button>
-            <button
-              onClick={() => handleDownload(file._id, file.originalName || file.name)}
-              className="ml-4 text-green-600 underline"
-            >
-              Download
-            </button>
-          </li>
-        ))}
-      </ul>
+            Back
+          </button>
+          <h1 className="text-3xl font-extrabold text-blue-900 text-center flex-1">
+            {collection.name}
+          </h1>
+          <div className="w-[72px]" /> {/* pusta przestrzeń */}
+        </div>
 
-      {/* Links section */}
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold mb-2">Links:</h2>
-        {collection.links.length === 0 ? (
-          <p>No links in this collection.</p>
-        ) : (
-          <ul className="space-y-2">
-            {collection.links.map((link) => (
-              <li key={link._id} className="bg-white p-3 rounded shadow">
-                {console.log(link)}
+        {/* Files section */}
+        <div className="flex flex-col gap-4">
+          <h2 className="text-xl font-semibold mb-2">Files:</h2>
+          {collection.files.length === 0 ? (
+            <p className="text-center text-gray-500 mt-4">No files in this category.</p>
+          ) : (
+            collection.files.map((file) => (
+              <div key={file._id} className="border rounded-xl p-4 bg-white flex justify-between items-center shadow hover:shadow-md transition">
+                <button
+                  onClick={() => handlePreview(file._id)}
+                  className="text-blue-600 font-medium underline hover:text-blue-800 transition"
+                >
+                  {file.name}
+                </button>
+                <button
+                  onClick={() => handleDownload(file._id, file.originalName || file.name)}
+                  className="text-green-600 underline hover:text-green-800 transition"
+                >
+                  Download
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Links section */}
+        <div className="flex flex-col gap-4">
+          <h2 className="text-xl font-semibold mb-2">Links:</h2>
+          {collection.links.length === 0 ? (
+            <p className="text-center text-gray-500 mt-4">No links in this collection.</p>
+          ) : (
+            collection.links.map((link) => (
+              <div key={link._id} className="border rounded-xl p-4 bg-white flex justify-between items-center shadow hover:shadow-md transition over justify-center overflow-hidden">
                 <a
                   href={link.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 underline break-words"
+                  className="text-blue-600 underline break-words truncate"
                 >
-                  {link.text.length > 50 ? link.text.slice(0, 50) + "…" : link.text}
+                  {link.text}
                 </a>
-              </li>
-            ))}
-          </ul>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Preview */}
+        {selectedFile && (
+          <div className="mt-6 flex flex-col gap-3">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold text-gray-800">Preview:</h2>
+              <button
+                onClick={() => setSelectedFile(null)}
+                className="text-red-600 underline hover:text-red-800 transition"
+              >
+                Hide
+              </button>
+            </div>
+            <div className="border rounded-xl shadow overflow-hidden">
+              <embed
+                src={selectedFile}
+                type="application/pdf"
+                width="100%"
+                height="600px"
+              />
+            </div>
+          </div>
         )}
       </div>
-
-      {/* Preview */}
-      {selectedFile && (
-        <div className="mt-6">
-          <h2 className="text-xl font-semibold mb-2">Preview:</h2>
-          <div className="border rounded shadow">
-            <embed
-              src={selectedFile}
-              type="application/pdf"
-              width="100%"
-              height="600px"
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 };

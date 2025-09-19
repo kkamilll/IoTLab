@@ -15,7 +15,7 @@ export const getTemplateById = async (req, res, next) => {
     try {
         const { templateId } = req.params;
         if (!mongoose.Types.ObjectId.isValid(templateId))
-            return next(new BadRequestError("Invalid ID"));
+            return next(new BadRequestError("Invalid template ID"));
 
         const template = await Template.findById(templateId).lean();
         if (!template) {
@@ -78,7 +78,7 @@ export const updateTemplate = async (req, res, next) => {
 
         const { templateId } = req.params;
         if (!mongoose.Types.ObjectId.isValid(templateId))
-            return next(new BadRequestError("Invalid ID"));
+            return next(new BadRequestError("Invalid template ID"));
 
         const { name, subject, body, isDefault } = req.body;
 
@@ -109,7 +109,7 @@ export const deleteTemplate = async (req, res, next) => {
     try {
         const { templateId } = req.params;
         if (!mongoose.Types.ObjectId.isValid(templateId))
-            return next(new BadRequestError("Invalid ID"));
+            return next(new BadRequestError("Invalid template ID"));
 
         const template = await Template.findById(templateId);
         if (!template) {
