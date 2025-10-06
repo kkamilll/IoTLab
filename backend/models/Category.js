@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 const categorySchema = new mongoose.Schema({
-  name: { type: String, required: true, unique: true },
+  name: { type: String, required: true },
   description: { type: String, default: "" },
   parent: { type: mongoose.Schema.Types.ObjectId, ref: "Category", default: null },
   isVisible: { type: Boolean, default: false }

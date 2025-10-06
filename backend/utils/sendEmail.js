@@ -15,16 +15,65 @@ export const sendEmail = async (email, subject, message) => {
       },
     });
 
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8" />
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              background: #f9fafb;
+              padding: 20px;
+              margin: 0;
+              color: #333;
+            }
+            .container {
+              max-width: 600px;
+              margin: 0 auto;
+              background: #ffffff;
+              border-radius: 8px;
+              padding: 24px;
+              box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            }
+            h1 {
+              font-size: 20px;
+              color: #2563eb;
+              margin-bottom: 16px;
+            }
+            p {
+              line-height: 1.6;
+              margin-bottom: 12px;
+            }
+            .footer {
+              margin-top: 20px;
+              font-size: 12px;
+              color: #888;
+              text-align: center;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>${subject}</h1>
+            ${message}
+            <div class="footer">
+              <p>Thanks for choosing our service 🚀</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
     const mailOptions = {
       from: process.env.SMTP_MAIL,
       to: email,
       subject,
-      html: message,
+      html: htmlContent,
     };
 
     await transporter.sendMail(mailOptions);
     // console.log(`Order email sent to ${email}`); // now this will run if successful
-
   } catch (error) {
     throw error;
   }

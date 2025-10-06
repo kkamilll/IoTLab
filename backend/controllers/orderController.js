@@ -1,6 +1,7 @@
 import Product from "../models/Product.js";
 import Order from "../models/Order.js";
 
+import bcrypt from "bcrypt";
 import mongoose from "mongoose";
 import { MongoServerError } from 'mongodb';
 import { AppError, ValidationError, BadRequestError, DuplicateKeyError, ResourceNotFoundError, ConflictError, ServerError } from '../errors/CustomErrors.js'
@@ -351,8 +352,10 @@ export const createOrder = async (req, res, next) => {
       throw new Error(`Start date cannot be after end date`);
 
     const customerKey = randomBytes(8).toString("hex");
+    const encryptedCustomerKey = await bcrypt.hash(customerKey, 10);
+
     const order = new Order({
-      customerKey,
+      customerKey: encryptedCustomerKey,
       customer,
       items: enrichedItems,
       requestedStartDate,
@@ -620,13 +623,19 @@ export const hardDeleteOrder = async (req, res, next) => {
 export const getCustomerOrder = async (req, res, next) => {
   try {
     const { orderUUID } = req.params;
-    if (!orderUUID) return res.status(400).json({ success: false, message: "Missing order ID" });
+    const secret = req.headers["x-order-secret"];
+    if (!orderUUID) return res.status(400).json({ success: false, message: "Missing order UUID" });
+    if (!secret) return res.status(401).json({ success: false, message: "Missing access code" });
 
     const order = await Order.findOne({ uuid: orderUUID })
       .populate({ path: "items.responsibleOwner", select: "name" })
       .populate({ path: "items.product", select: "name" })
       .lean();
     if (!order) return res.status(404).json({ success: false, message: "Order doesn't exist" });
+
+    const isMatch = await bcrypt.compare(secret, order.customerKey);
+    if (!isMatch)
+      return res.status(403).json({ success: false, message: "Invalid access code" });
 
     return res.status(200).json({ success: true, order });
   } catch (error) {
@@ -638,13 +647,19 @@ export const customerUpdateOrder = async (req, res, next) => {
   try {
     if (!req.body) return next(new BadRequestError("Request missing body"));
 
-    const { orderId } = req.params;
-    if (!orderId) return res.status(400).json({ success: false, message: "Missing order ID" });
+    const { orderID } = req.params;
+    const secret = req.headers["x-order-secret"];
+    if (!orderID ) return res.status(400).json({ success: false, message: "Missing order ID" });
+    if (!secret) return res.status(401).json({ success: false, message: "Missing access code" });
 
     const { ownerId, customerApproval } = req.body;
 
-    const order = await Order.findById(orderId);
+    const order = await Order.findById(orderID);
     if (!order) return res.status(404).json({ success: false, message: "Order doesn't exist" });
+
+    const isMatch = await bcrypt.compare(secret, order.customerKey);
+    if (!isMatch)
+      return res.status(403).json({ success: false, message: "Invalid access code" });
 
     // Update ownersData
     const ownerData = order.ownersData.find(od => od.owner?.toString() === ownerId?.toString() && od.status === "approved");

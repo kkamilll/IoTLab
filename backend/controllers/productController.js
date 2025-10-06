@@ -527,7 +527,7 @@ export const getProductStockStatus = async (req, res, next) => {
       return res.status(400).json({ success: false, message: "Missing data" });
     }
 
-    const product = await Product.findById(productId);
+    const product = await Product.findById(productId).lean();
     if (!product || product.isDeleted) {
       return res.status(404).json({ success: false, message: "Produkt nie znaleziony" });
     }
@@ -536,18 +536,30 @@ export const getProductStockStatus = async (req, res, next) => {
     const start = new Date(startDate);
     const end = new Date(endDate);
 
-    const { orderQuantity: inDemand, requestsQuantity } = await getOrderQuantity({ productId, ownerId, field: "requested", start, end, status: "pending" });
-    const { orderQuantity: confirmedQuantityReserved } = await getOrderQuantity({ productId, ownerId, field: "assigned", start, end, status: ["approved", "prepared"] });
-
     const order = await Order.findById(orderId).lean();
     if (!order) return next(new ResourceNotFoundError("Order"));
-
     const currProduct = order.items?.find(item => item.product?.toString() === productId);
+
+    const { orderQuantity: inDemand, requestsQuantity } = await getOrderQuantity({ productId, ownerId, field: "requested", start, end, status: "pending" });
+    const { orderQuantity: confirmedQuantityReserved } = await getOrderQuantity({ productId, ownerId, field: "assigned", start, end, status: ["approved", "prepared"] });
+    const { orderQuantity: rentedQuantity } = await getOrderQuantity({ productId, ownerId, field: "assigned", start, end, status: ["rented"] });
+    // is better to add also agregation for rented? 
+    // the plus is will stop counting objects that are supposed to be returned before checking start date, so system will allow to allocate more objects technically, 
+    // the minus is kinda bigger vulnerability to late returns, but it won't prevent those situations completely, where reserved object cannot be rented because any of them weren't returned
+    
+    // will this work?:
+    // const { orderQuantity: lateQuantity } = await getOrderQuantity({ productId, ownerId, field: "assigned", start: -inf, end: today, status: ["rented"] });
+    // so orders that started already and were supposed to be returned at this moment already
+
+    // const confirmedQuantityReserved = Number(product.stockReserved) || 0;
+    // const rentedQuantity = Number(product.stockRentedOut) || 0;
     const currQuantityAssigned = currProduct?.assignedQuantity || 0;
 
-    const rentedQuantity = Number(product.stockRentedOut) || 0;
     const availableTotal = Number(product.stockForRent) - rentedQuantity - confirmedQuantityReserved;
-    const availableToAssign = availableTotal + currQuantityAssigned;
+    
+    let availableToAssign = availableTotal;
+    // if (currProduct.status !== "pending")
+      availableToAssign = availableTotal + currQuantityAssigned;
 
     return res.json({ success: true, inDemand, requestsQuantity, availableToAssign, availableTotal, rentedQuantity });
   } catch (err) {

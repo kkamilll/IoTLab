@@ -51,6 +51,15 @@ const ProductPreview = () => {
     setCategoryNames((product.categories || []).map(cat => cat?.name));
   }, [product]);
 
+  useEffect(() => {
+      setCartQuantities(prev => {
+        const cart = JSON.parse(localStorage.getItem("cart")) || [];
+        const newQuantities = {};
+        cart.forEach(cartItem => newQuantities[cartItem._id] = cartItem.quantity);
+        return newQuantities;
+      })
+    }, []);
+
   const handleAddToCart = (product) => {
     const cart = JSON.parse(localStorage.getItem("cart")) || [];
     const existingIndex = cart.findIndex(p => p._id === product._id);

@@ -4,6 +4,7 @@ import { productOwnerMap } from "../controllers/orderController.js";
 import { AppError, ValidationError, ConflictError, ServerError } from '../errors/CustomErrors.js'
 
 const OWNER_STATUS_ORDER = ["pending", "approved", "prepared", "rented", "returned", "rejected"];
+const PROCESSED_STATUS_ORDER = ["rented", "returned", "rejected"]
 const FINALIZED_STATUS_ORDER = ["returned", "rejected"];
 
 const createOwnersData = (order, ownersMapOld, ownersMap, _newAssignedStartDate, _newAssignedEndDate) => {
@@ -12,16 +13,16 @@ const createOwnersData = (order, ownersMapOld, ownersMap, _newAssignedStartDate,
   for (const item of order.items) {
     const productId = item.product._id ? item.product._id.toString() : item.product.toString();
 
-    const ownerId = ownersMap[productId];
     const prevOwnerId = ownersMapOld[productId];
-
+    const ownerId = ownersMap[productId];
+    
     const prevOwnerData = order.ownersData?.find(ownerData => ownerData.owner.toString() === prevOwnerId);
     const currOwnerData = order.ownersData?.find(ownerData => ownerData.owner.toString() === ownerId);
 
-
     if (!ownerId) {
-      console.warn(`Skipping item ${item._id} because its product ${productId} has no owner`);
-      continue;
+      throw new ConflictError("Cannot order item without owner: object ${item._id} has no owner"); // change it to check responsible owner?
+      // console.warn(`Skipping item ${item._id} because its product ${productId} has no owner`);
+      // continue;
     }
     // if (!ownerId) throw new ConflictError("Order contains products with missing owners");
 
@@ -59,14 +60,22 @@ const createOwnersData = (order, ownersMapOld, ownersMap, _newAssignedStartDate,
   const ownerData = Object.entries(ownerDataMap).map(([owner, data]) => {
     const isStatusDecreased = OWNER_STATUS_ORDER.indexOf(data.finalStatus) < OWNER_STATUS_ORDER.indexOf(data.prevStatus);
     const isPrevOrderFinalized = FINALIZED_STATUS_ORDER.includes(data.prevStatus);
+    const isPrevOrderProcessed = PROCESSED_STATUS_ORDER.includes(data.prevStatus);
     
     const assignedStartDate = data.assignedStartDate;
     const assignedEndDate = data.assignedEndDate;
 
     const customerApproval = data.customerApproval;
 
-    if (isStatusDecreased && !isPrevOrderFinalized)
+    if (isStatusDecreased) {
+      if (data.finalStatus !== 'pending')
+        throw new ConflictError("Cannot change item that has been proccessed.");
+
+      if (isPrevOrderProcessed)
+        throw new ConflictError("Cannot change owner: some of the pending orders with given item have to be processed first.");
+
       return { owner, assignedStartDate, assignedEndDate, status: 'changed', customerApproval };
+    }
 
     if (data.finalStatus == 'pending' || (FINALIZED_STATUS_ORDER.includes(data.finalStatus) && !data.hasAssignedDates))
       return { owner, status: data.finalStatus, customerApproval };

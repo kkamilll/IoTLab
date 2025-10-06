@@ -10,7 +10,7 @@ router.get("/customerOrder/:orderUUID", getCustomerOrder);
 router.get("/", authMiddleware, getOrders);
 
 router.post("/create", createOrder);
-router.post("/customerUpdate/:orderId", customerUpdateOrder);
+router.post("/customerUpdate/:orderUUID", customerUpdateOrder);
 
 router.put("/updateOrder/:orderId", authMiddleware, updateOrder);
 

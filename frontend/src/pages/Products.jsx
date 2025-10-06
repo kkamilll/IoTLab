@@ -82,7 +82,7 @@ const Products = () => {
   };
 
   // const allColumns = ["name", "description", "Owned", "tag", ...extraColumns];
-  const allColumns = ["name", "description", "in stock", "for rent", "categories", "owner", ...extraColumns];
+  const allColumns = ["name", "description", "total", "for rent", "categories", "owner", ...extraColumns];
   // const allColumns = ["name", "description", "stock", "hiddenStock", "category", "owner", ...extraColumns];
 
   const allCategories = Object.values( // create an array of objects from object of objects
@@ -360,7 +360,7 @@ const Products = () => {
     const oldImages = formData.images || [];
     const newImages = newFiles.filter(file => file.type.startsWith("image/"));
     // console.log(oldImages);
-    
+
     // if (newFiles.length !== newImages.length) {
     //   alert("Only image files are allowed!");
     // }
@@ -463,19 +463,19 @@ const Products = () => {
 
   const handleSearch = (e) => setSearchTerm(e.target.value.toLowerCase());
 
- const handleSort = (key) => {
-  if (sortConfig.key === key) {
-    if (sortConfig.direction === "asc") {
-      setSortConfig({ key, direction: "desc" });
-    } else if (sortConfig.direction === "desc") {
-      setSortConfig({ key: null, direction: null }); // brak sortowania
+  const handleSort = (key) => {
+    if (sortConfig.key === key) {
+      if (sortConfig.direction === "asc") {
+        setSortConfig({ key, direction: "desc" });
+      } else if (sortConfig.direction === "desc") {
+        setSortConfig({ key: null, direction: null }); // brak sortowania
+      } else {
+        setSortConfig({ key, direction: "asc" });
+      }
     } else {
       setSortConfig({ key, direction: "asc" });
     }
-  } else {
-    setSortConfig({ key, direction: "asc" });
-  }
-};
+  };
 
 
   // Dodanie obsługi plików w handleSubmit
@@ -571,53 +571,53 @@ const Products = () => {
     }
   };
 
-const generatePDF = () => {
-  if (filteredProducts.length === 0) return alert("No products to export.");
+  const generatePDF = () => {
+    if (filteredProducts.length === 0) return alert("No products to export.");
 
-  // Landscape (poziomo)
-  const doc = new jsPDF({ orientation: "landscape" });
-  doc.text("Product List", 14, 15);
+    // Landscape (poziomo)
+    const doc = new jsPDF({ orientation: "landscape" });
+    doc.text("Product List", 14, 15);
 
-  const visibleColumns = allColumns.filter(col => !hiddenColumns.includes(col));
-  const headers = ["#", ...visibleColumns];
+    const visibleColumns = allColumns.filter(col => !hiddenColumns.includes(col));
+    const headers = ["#", ...visibleColumns];
 
-  const rows = filteredProducts.map((p, i) =>
-    visibleColumns.map(col => {
-      switch (col) {
-        case "stockTotal": return p.stockTotal ?? 0;
-        case "stockForRent": return p.stockForRent ?? 0;
-        case "categories": return p.categories?.map(c => c?.name ?? "").join(", ") ?? "";
-        case "owner": return p.owner?.name ?? p.owner ?? "";
-        case "description": return p.description ?? "";
-        case "name": return p.name ?? "";
-        default: return p[col] ?? p.extraFields?.[col] ?? "";
-      }
-    })
-  );
+    const rows = filteredProducts.map((p, i) =>
+      visibleColumns.map(col => {
+        switch (col) {
+          case "total": return p.stockTotal ?? 0;
+          case "for rent": return p.stockForRent ?? 0;
+          case "categories": return p.categories?.map(c => c?.name ?? "").join(", ") ?? "";
+          case "owner": return p.owner?.name ?? p.owner ?? "";
+          case "description": return p.description ?? "";
+          case "name": return p.name ?? "";
+          default: return p[col] ?? p.extraFields?.[col] ?? "";
+        }
+      })
+    );
 
-  const numberedRows = rows.map((row, idx) => [idx + 1, ...row]);
+    const numberedRows = rows.map((row, idx) => [idx + 1, ...row]);
 
-  // Automatyczne dopasowanie kolumn i zawijanie tekstu
-  const columnStyles = {};
-  headers.forEach((h, i) => {
-    if (h === "name") columnStyles[i] = { cellWidth: 50 };
-    else if (h === "description") columnStyles[i] = { cellWidth: 70 };
-    else if (h === "#") columnStyles[i] = { cellWidth: 10 };
-    else columnStyles[i] = { cellWidth: 'auto' };
-  });
+    // Automatyczne dopasowanie kolumn i zawijanie tekstu
+    const columnStyles = {};
+    headers.forEach((h, i) => {
+      if (h === "name") columnStyles[i] = { cellWidth: 50 };
+      else if (h === "description") columnStyles[i] = { cellWidth: 70 };
+      else if (h === "#") columnStyles[i] = { cellWidth: 10 };
+      else columnStyles[i] = { cellWidth: 'auto' };
+    });
 
-  autoTable(doc, {
-    head: [headers],
-    body: numberedRows,
-    startY: 20,
-    styles: { fontSize: 8, overflow: 'linebreak', cellPadding: 2 },
-    headStyles: { fillColor: [22, 160, 133] },
-    columnStyles,
-    margin: { left: 10, right: 10 },
-  });
+    autoTable(doc, {
+      head: [headers],
+      body: numberedRows,
+      startY: 20,
+      styles: { fontSize: 8, overflow: 'linebreak', cellPadding: 2 },
+      headStyles: { fillColor: [22, 160, 133] },
+      columnStyles,
+      margin: { left: 10, right: 10 },
+    });
 
-  doc.save("products.pdf");
-};
+    doc.save("products.pdf");
+  };
   const handlePreview = (productId) => {
     if (!productId) return alert("No product to preview");
     navigate("/admin-dashboard/preview", { state: { productId } });
@@ -648,469 +648,469 @@ const generatePDF = () => {
         />
 
         {/* Buttons */}
-  <div className="flex flex-col sm:flex-row flex-wrap gap-3 mt-3 sm:mt-0 w-full">
-  <button
-    className="flex-1 min-w-[120px] px-4 py-2.5 h-10 text-sm font-medium bg-green-500 text-white rounded shadow hover:bg-green-600 transition w-full sm:w-auto"
-    onClick={generatePDF}
-  >
-    Export PDF
-  </button>
+        <div className="flex flex-col sm:flex-row flex-wrap gap-3 mt-3 sm:mt-0 w-full">
+          <button
+            className="flex-1 min-w-[120px] px-4 py-2.5 h-10 text-sm font-medium bg-green-500 text-white rounded shadow hover:bg-green-600 transition w-full sm:w-auto"
+            onClick={generatePDF}
+          >
+            Export PDF
+          </button>
 
-  <button
-    className="flex-1 min-w-[120px] px-4 py-2.5 h-10 text-sm font-medium bg-blue-500 text-white rounded shadow hover:bg-blue-600 transition w-full sm:w-auto"
-    onClick={() => { setEditProduct(null); setOpenModal(true); }}
-  >
-    Add Object
-  </button>
+          <button
+            className="flex-1 min-w-[120px] px-4 py-2.5 h-10 text-sm font-medium bg-blue-500 text-white rounded shadow hover:bg-blue-600 transition w-full sm:w-auto"
+            onClick={() => { setEditProduct(null); setOpenModal(true); }}
+          >
+            Add Object
+          </button>
 
-  <button
-    className="flex-1 min-w-[120px] px-4 py-2.5 h-10 text-sm font-medium bg-gray-500 text-white rounded shadow hover:bg-gray-600 transition w-full sm:w-auto"
-    onClick={addExtraField}
-  >
-    Add Column
-  </button>
+          <button
+            className="flex-1 min-w-[120px] px-4 py-2.5 h-10 text-sm font-medium bg-gray-500 text-white rounded shadow hover:bg-gray-600 transition w-full sm:w-auto"
+            onClick={addExtraField}
+          >
+            Add Column
+          </button>
 
-  <button
-    onClick={() => navigate("/cart")}
-    className="flex-1 min-w-[120px] px-5 py-2.5 h-10 text-sm font-medium bg-purple-500 text-white rounded shadow hover:bg-purple-600 transition w-full sm:w-auto"
-  >
-    Go to Cart
-  </button>
-</div>
+          <button
+            onClick={() => navigate("/cart")}
+            className="flex-1 min-w-[120px] px-5 py-2.5 h-10 text-sm font-medium bg-purple-500 text-white rounded shadow hover:bg-purple-600 transition w-full sm:w-auto"
+          >
+            Go to Cart
+          </button>
+        </div>
 
 
       </div>
 
-    <div className="flex flex-wrap items-center gap-4 mb-4">
-  {/* Filter by Category */}
-  <div className="relative inline-block text-left w-64">
-    <button
-      type="button"
-      onClick={() => setCategoriesDropdownOpen(prev => !prev)}
-      className="inline-flex justify-between w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
-    >
-      Filter by Category
-      <svg
-        className="-mr-1 ml-2 h-5 w-5"
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 20 20"
-        fill="currentColor"
-        aria-hidden="true"
-      >
-        <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.293l3.71-4.06a.75.75 0 111.08 1.04l-4.25 4.65a.75.75 0 01-1.08 0L5.25 8.27a.75.75 0 01-.02-1.06z" clipRule="evenodd" />
-      </svg>
-    </button>
+      <div className="flex flex-wrap items-center gap-4 mb-4">
+        {/* Filter by Category */}
+        <div className="relative inline-block text-left w-64">
+          <button
+            type="button"
+            onClick={() => setCategoriesDropdownOpen(prev => !prev)}
+            className="inline-flex justify-between w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
+          >
+            Filter by Category
+            <svg
+              className="-mr-1 ml-2 h-5 w-5"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.293l3.71-4.06a.75.75 0 111.08 1.04l-4.25 4.65a.75.75 0 01-1.08 0L5.25 8.27a.75.75 0 01-.02-1.06z" clipRule="evenodd" />
+            </svg>
+          </button>
 
-    {categoriesDropdownOpen && (
-      <div
-        className="absolute mt-2 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10 overflow-y-auto"
-        style={{
-          maxHeight: allCategories.length > 5 ? '8rem' : 'auto',
-        }}
-      >
-        <ul className="py-1">
-          {allCategories.map(category => (
-            <li key={category._id}>
-              <label className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
-                <input
-                  type="checkbox"
-                  value={category._id}
-                  checked={activeCategories.includes(category._id)}
-                  onChange={e => {
-                    const { checked } = e.target;
-                    setActiveCategories(prev =>
-                      checked
-                        ? [...prev, category._id]
-                        : prev.filter(id => id !== category._id)
-                    );
-                  }}
-                  className="accent-blue-500 w-4 h-4"
-                />
-                <span>{category.name}</span>
-              </label>
-            </li>
-          ))}
-        </ul>
+          {categoriesDropdownOpen && (
+            <div
+              className="absolute mt-2 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10 overflow-y-auto"
+              style={{
+                maxHeight: allCategories.length > 5 ? '8rem' : 'auto',
+              }}
+            >
+              <ul className="py-1">
+                {allCategories.map(category => (
+                  <li key={category._id}>
+                    <label className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        value={category._id}
+                        checked={activeCategories.includes(category._id)}
+                        onChange={e => {
+                          const { checked } = e.target;
+                          setActiveCategories(prev =>
+                            checked
+                              ? [...prev, category._id]
+                              : prev.filter(id => id !== category._id)
+                          );
+                        }}
+                        className="accent-blue-500 w-4 h-4"
+                      />
+                      <span>{category.name}</span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+
+        {/* Show Columns */}
+        <div className="relative inline-block text-left w-64">
+          <button
+            type="button"
+            onClick={() => setColumnsDropdownOpen(prev => !prev)}
+            className="inline-flex justify-between w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
+          >
+            {columnsDropdownOpen ? "Hide Columns" : "Show Columns"}
+            <svg
+              className={`-mr-1 ml-2 h-5 w-5 transform transition-transform ${columnsDropdownOpen ? "rotate-180" : ""}`}
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.293l3.71-4.06a.75.75 0 111.08 1.04l-4.25 4.65a.75.75 0 01-1.08 0L5.25 8.27a.75.75 0 01-.02-1.06z" clipRule="evenodd" />
+            </svg>
+          </button>
+
+          {columnsDropdownOpen && (
+            <ul
+              className="absolute mt-2 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10 overflow-y-auto max-h-60 py-1"
+            >
+              {allColumns.map(col => (
+                <li key={col}>
+                  <label className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={!hiddenColumns.includes(col)}
+                      onChange={() => toggleColumn(col)}
+                      className="accent-blue-500 w-4 h-4"
+                    />
+                    <span>{col}</span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
-    )}
-  </div>
-
-  {/* Show Columns */}
-  <div className="relative inline-block text-left w-64">
-    <button
-      type="button"
-      onClick={() => setColumnsDropdownOpen(prev => !prev)}
-      className="inline-flex justify-between w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
-    >
-      {columnsDropdownOpen ? "Hide Columns" : "Show Columns"}
-      <svg
-        className={`-mr-1 ml-2 h-5 w-5 transform transition-transform ${columnsDropdownOpen ? "rotate-180" : ""}`}
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 20 20"
-        fill="currentColor"
-        aria-hidden="true"
-      >
-        <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.293l3.71-4.06a.75.75 0 111.08 1.04l-4.25 4.65a.75.75 0 01-1.08 0L5.25 8.27a.75.75 0 01-.02-1.06z" clipRule="evenodd" />
-      </svg>
-    </button>
-
-    {columnsDropdownOpen && (
-      <ul
-        className="absolute mt-2 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10 overflow-y-auto max-h-60 py-1"
-      >
-        {allColumns.map(col => (
-          <li key={col}>
-            <label className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={!hiddenColumns.includes(col)}
-                onChange={() => toggleColumn(col)}
-                className="accent-blue-500 w-4 h-4"
-              />
-              <span>{col}</span>
-            </label>
-          </li>
-        ))}
-      </ul>
-    )}
-  </div>
-</div>
 
 
       {/* Tabela */}
-    <div className="w-full">
-  {/* Desktop Table */}
-  <div className="hidden md:block overflow-x-auto w-full shadow rounded border border-gray-200">
-    <table className="table-auto w-full min-w-max divide-y divide-gray-200">
-      <thead className="bg-gray-100">
-        <tr>
-          {allColumns.filter(col => !hiddenColumns.includes(col)).map((col, idx) => (
-            <th
-              key={idx}
-              className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer whitespace-nowrap"
-            >
-              <div className="flex items-center justify-between">
-                <span
-                  onClick={() => handleSort(col)}
-                  className="truncate cursor-pointer select-none"
-                >
-                  {col}{" "}
-                  {sortConfig.key === col
-                    ? sortConfig.direction === "asc"
-                      ? "↑"
-                      : sortConfig.direction === "desc"
-                      ? "↓"
-                      : ""
-                    : ""}
-                </span>
-
-                {isAdmin && extraColumns.includes(col) && (
-                  <button
-                    onClick={() => removeExtraField(col)}
-                    className="ml-2 px-1 py-0.5 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
+      <div className="w-full">
+        {/* Desktop Table */}
+        <div className="hidden md:block overflow-x-auto w-full shadow rounded border border-gray-200">
+          <table className="table-auto w-full min-w-max divide-y divide-gray-200">
+            <thead className="bg-gray-100">
+              <tr>
+                {allColumns.filter(col => !hiddenColumns.includes(col)).map((col, idx) => (
+                  <th
+                    key={idx}
+                    className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer whitespace-nowrap"
                   >
-                    X
-                  </button>
-                )}
-              </div>
-            </th>
-          ))}
-          {isAdmin && <th className="px-4 py-2 whitespace-nowrap">Actions</th>}
-        </tr>
-      </thead>
+                    <div className="flex items-center justify-between">
+                      <span
+                        onClick={() => handleSort(col)}
+                        className="truncate cursor-pointer select-none"
+                      >
+                        {col}{" "}
+                        {sortConfig.key === col
+                          ? sortConfig.direction === "asc"
+                            ? "↑"
+                            : sortConfig.direction === "desc"
+                              ? "↓"
+                              : ""
+                          : ""}
+                      </span>
 
-      <tbody className="bg-white divide-y divide-gray-200">
-        {paginatedProducts.map((p) => (
-          <tr key={p._id}>
-            {allColumns
-              .filter((col) => !hiddenColumns.includes(col))
-              .map((col, idx) => {
-                let value;
-                switch (col) {
-                  case "in stock":
-                    value = <p className="min-w-20">{p.stockTotal ?? 0}</p>;
-                    break;
+                      {isAdmin && extraColumns.includes(col) && (
+                        <button
+                          onClick={() => removeExtraField(col)}
+                          className="ml-2 px-1 py-0.5 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
+                        >
+                          X
+                        </button>
+                      )}
+                    </div>
+                  </th>
+                ))}
+                {isAdmin && <th className="px-4 py-2 whitespace-nowrap">Actions</th>}
+              </tr>
+            </thead>
 
-                  case "for rent":
-                    value = <p className="min-w-20">{p.stockForRent ?? 0}</p>;
-                    break;
+            <tbody className="bg-white divide-y divide-gray-200">
+              {paginatedProducts.map((p) => (
+                <tr key={p._id}>
+                  {allColumns
+                    .filter((col) => !hiddenColumns.includes(col))
+                    .map((col, idx) => {
+                      let value;
+                      switch (col) {
+                        case "total":
+                          value = <p className="min-w-20">{p.stockTotal ?? 0}</p>;
+                          break;
 
-                 case "categories":
-  value = (
-    <div className="relative inline-block w-40">
-      <select
-        className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white appearance-none pr-8 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 shadow-sm"
-        value={p.categories.length === 1 ? p.categories[0]?.name ?? "" : ""}
-        onChange={(e) => e.preventDefault()}
-        disabled={p.categories.length <= 1} // blokada przy 0 i 1
-      >
-        {p.categories.length === 0 && <option value="" disabled>-</option>}
-        {p.categories.length === 1 && (
-          <option value={p.categories[0]?.name ?? ""}>
-            {p.categories[0]?.name ?? "-"}
-          </option>
-        )}
-        {p.categories.length > 1 && (
-          <>
-            <option value="" disabled hidden>Check Categories</option>
-            {p.categories.map((c, i) => (
-              <option key={i} value={c?.name ?? ""}>{c?.name}</option>
-            ))}
-          </>
-        )}
-      </select>
+                        case "for rent":
+                          value = <p className="min-w-20">{p.stockForRent ?? 0}</p>;
+                          break;
 
-      {p.categories.length > 1 && (
-        <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-sm select-none">
-          ▼
-        </span>
-      )}
-    </div>
-  );
-  break;
+                        case "categories":
+                          value = (
+                            <div className="relative inline-block w-40">
+                              <select
+                                className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white appearance-none pr-8 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 shadow-sm"
+                                value={p.categories.length === 1 ? p.categories[0]?.name ?? "" : ""}
+                                onChange={(e) => e.preventDefault()}
+                                disabled={p.categories.length <= 1} // blokada przy 0 i 1
+                              >
+                                {p.categories.length === 0 && <option value="" disabled>-</option>}
+                                {p.categories.length === 1 && (
+                                  <option value={p.categories[0]?.name ?? ""}>
+                                    {p.categories[0]?.name ?? "-"}
+                                  </option>
+                                )}
+                                {p.categories.length > 1 && (
+                                  <>
+                                    <option value="" disabled hidden>Check Categories</option>
+                                    {p.categories.map((c, i) => (
+                                      <option key={i} value={c?.name ?? ""}>{c?.name}</option>
+                                    ))}
+                                  </>
+                                )}
+                              </select>
+
+                              {p.categories.length > 1 && (
+                                <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-sm select-none">
+                                  ▼
+                                </span>
+                              )}
+                            </div>
+                          );
+                          break;
 
 
-                  case "owner":
-                    value = p.owner?.name ?? p.owner;
-                    break;
+                        case "owner":
+                          value = p.owner?.name ?? p.owner;
+                          break;
 
-                  case "description":
-                  case "name":
-                    value = p[col];
-                    break;
+                        case "description":
+                        case "name":
+                          value = p[col];
+                          break;
 
-                  default:
-                    value = p[col] ?? p.extraFields?.[col] ?? "";
-                }
+                        default:
+                          value = p[col] ?? p.extraFields?.[col] ?? "";
+                      }
 
-                const isString = typeof value === "string";
-                const maxLength = 25;
-                const truncated = isString && value.length > maxLength ? value.slice(0, maxLength) + "…" : value;
+                      const isString = typeof value === "string";
+                      const maxLength = 25;
+                      const truncated = isString && value.length > maxLength ? value.slice(0, maxLength) + "…" : value;
 
-                return (
-                  <td key={idx} className="px-4 py-2 text-sm text-gray-700 whitespace-nowrap">
-                    {col === "categories" ? (
-                      value
-                    ) : isString ? (
-                     <span
-  className="truncate cursor-pointer"
-  title={value}
-  onClick={col === "name" || col === "description" ? () => handlePreview(p._id) : undefined}
->
-  {truncated}
-</span>
+                      return (
+                        <td key={idx} className="px-4 py-2 text-sm text-gray-700 whitespace-nowrap">
+                          {col === "categories" ? (
+                            value
+                          ) : isString ? (
+                            <span
+                              className="truncate cursor-pointer"
+                              title={value}
+                              onClick={col === "name" || col === "description" ? () => handlePreview(p._id) : undefined}
+                            >
+                              {truncated}
+                            </span>
 
-                    ) : (
-                      value
-                    )}
+                          ) : (
+                            value
+                          )}
+                        </td>
+                      );
+                    })}
+
+                  <td className="px-4 py-2 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => handleEdit(p)} disabled={(user.id !== p.owner._id && !isAdmin)} className="h-10 px-4 bg-blue-500 text-white rounded hover:bg-blue-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
+                        Edit
+                      </button>
+                      <button onClick={() => handlePreview(p._id)} className="h-10 px-4 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition">
+                        Preview
+                      </button>
+                      <button onClick={() => handleDelete(p._id)} disabled={(user.id !== p.owner._id && !isAdmin)} className="h-10 px-4 bg-red-500 text-white rounded hover:bg-red-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
+                        Delete
+                      </button>
+
+                      <div className="flex items-center overflow-hidden h-10">
+                        <button
+                          onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) - 1, p)}
+                          className="px-3 bg-gray-200 hover:bg-gray-300 h-full"
+                          disabled={(cartQuantities[p._id] || 0) <= 0}
+                        >-</button>
+                        <input
+                          type="number"
+                          min="0"
+                          max={getAvailableStockForProduct(p)}
+                          value={cartQuantities[p._id] || 0}
+                          onChange={(e) => handleQuantityChange(p._id, e.target.value, p)}
+                          className="w-16 text-center outline-none"
+                        />
+                        <button
+                          onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) + 1, p)}
+                          className="px-3 bg-gray-200 hover:bg-gray-300 h-full"
+                          disabled={(cartQuantities[p._id] || 0) >= getAvailableStockForProduct(p)}
+                        >+</button>
+                      </div>
+                    </div>
                   </td>
-                );
-              })}
 
-            <td className="px-4 py-2 whitespace-nowrap">
-              <div className="flex items-center gap-2">
-                <button onClick={() => handleEdit(p)} disabled={(user.id !== p.owner._id && !isAdmin)} className="h-10 px-4 bg-blue-500 text-white rounded hover:bg-blue-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
-                  Edit
-                </button>
-                <button onClick={() => handlePreview(p._id)} className="h-10 px-4 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition">
-                  Preview
-                </button>
-                <button onClick={() => handleDelete(p._id)} disabled={(user.id !== p.owner._id && !isAdmin)} className="h-10 px-4 bg-red-500 text-white rounded hover:bg-red-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
-                  Delete
-                </button>
+                  <td className="px-4 py-2">
+                    <div className="flex flex-col sm:flex-row justify-center items-center gap-2 sm:gap-4">
+                      <span className="inline-block bg-gray-100 text-gray-700 text-sm font-semibold px-2 py-1 rounded-full text-center">
+                        Available: {getAvailableStockForProduct(p)}
+                      </span>
+                      <span className="inline-block bg-green-100 text-green-800 text-sm font-semibold px-2 py-1 rounded-full text-center">
+                        In cart: {cartQuantities[p._id] || 0}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
-                <div className="flex items-center overflow-hidden h-10">
-                  <button
-                    onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) - 1, p)}
-                    className="px-3 bg-gray-200 hover:bg-gray-300 h-full"
-                    disabled={(cartQuantities[p._id] || 0) <= 0}
-                  >-</button>
-                  <input
-                    type="number"
-                    min="0"
-                    max={getAvailableStockForProduct(p)}
-                    value={cartQuantities[p._id] || 0}
-                    onChange={(e) => handleQuantityChange(p._id, e.target.value, p)}
-                    className="w-16 text-center outline-none"
-                  />
-                  <button
-                    onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) + 1, p)}
-                    className="px-3 bg-gray-200 hover:bg-gray-300 h-full"
-                    disabled={(cartQuantities[p._id] || 0) >= getAvailableStockForProduct(p)}
-                  >+</button>
+        {/* Mobile Cards */}
+        <div className="md:hidden flex flex-col gap-4">
+          {paginatedProducts.map(product => (
+            <div key={product._id} className="border rounded shadow p-4 bg-white flex flex-col gap-2">
+
+              {/* Name */}
+              <div className="flex justify-between py-1 border-b border-gray-200 last:border-b-0">
+                <span className="font-semibold text-gray-500">Name:</span>
+                <span
+                  className="text-gray-700 truncate cursor-pointer relative z-10 text-blue-600 hover:underline"
+                  onClick={() => handlePreview(product._id)}
+                >
+                  {product.name}
+                </span>
+              </div>
+
+              {/* Description */}
+              <div className="flex justify-between py-1 border-b border-gray-200 last:border-b-0">
+                <span className="font-semibold text-gray-500">Description:</span>
+                <span
+                  className="text-gray-700 truncate cursor-pointer text-blue-600 hover:underline"
+                  onClick={() => handlePreview(product._id)}
+                  title={product.description}
+                >
+                  {product.description?.length > 50 ? product.description.slice(0, 30) + "…" : product.description}
+                </span>
+              </div>
+
+              {/* Stock Total */}
+              <div className="flex justify-between py-1 border-b border-gray-200 last:border-b-0">
+                <span className="font-semibold text-gray-500">Total:</span>
+                <span className="text-gray-700 truncate">{product.stockTotal ?? 0}</span>
+              </div>
+
+              {/* Stock For Rent */}
+              <div className="flex justify-between py-1 border-b border-gray-200 last:border-b-0">
+                <span className="font-semibold text-gray-500">For rent:</span>
+                <span className="text-gray-700 truncate">{product.stockForRent ?? 0}</span>
+              </div>
+
+              {/* Categories */}
+              <div className="flex justify-between py-1 border-b border-gray-200 last:border-b-0">
+                <span className="font-semibold text-gray-500">Categories:</span>
+                <div className="relative inline-block w-40">
+                  <select
+                    className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white appearance-none pr-8 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 shadow-sm"
+                    value={product.categories.length === 1 ? product.categories[0]?.name ?? "" : ""}
+                    onChange={(e) => e.preventDefault()}
+                    disabled={product.categories.length <= 1} // zablokowane jeśli 0 lub 1
+                  >
+                    {product.categories.length === 0 && (
+                      <option value="" disabled>-</option>
+                    )}
+                    {product.categories.length > 1 && (
+                      <>
+                        <option value="" disabled hidden>Check Categories</option>
+                        {product.categories.map((c, i) => (
+                          <option key={i} value={c?.name ?? ""}>{c?.name}</option>
+                        ))}
+                      </>
+                    )}
+                    {product.categories.length === 1 && (
+                      <option value={product.categories[0]?.name ?? ""}>{product.categories[0]?.name ?? "-"}</option>
+                    )}
+                  </select>
+
+                  {product.categories.length > 1 && (
+                    <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-sm select-none">
+                      ▼
+                    </span>
+                  )}
                 </div>
               </div>
-            </td>
 
-            <td className="px-4 py-2">
-              <div className="flex flex-col sm:flex-row justify-center items-center gap-2 sm:gap-4">
-                <span className="inline-block bg-gray-100 text-gray-700 text-sm font-semibold px-2 py-1 rounded-full text-center">
-                  Available: {getAvailableStockForProduct(p)}
+              {/* Owner */}
+              <div className="flex justify-between py-1 border-b border-gray-200 last:border-b-0">
+                <span className="font-semibold text-gray-500">Owner:</span>
+                <span className="text-gray-700 truncate">{product.owner?.name ?? product.owner}</span>
+              </div>
+
+              {/* Quantity controls */}
+              <div className="flex border rounded-xl shadow-sm overflow-hidden h-14 w-full">
+                <button
+                  onClick={() =>
+                    handleQuantityChange(product._id, (cartQuantities[product._id] || 0) - 1, product)
+                  }
+                  className="w-1/4 h-full bg-gray-100 hover:bg-gray-200 transition text-gray-700 text-2xl font-bold disabled:opacity-40 disabled:cursor-not-allowed"
+                  disabled={(cartQuantities[product._id] || 0) <= 0}
+                >
+                  −
+                </button>
+
+                <input
+                  type="number"
+                  min="0"
+                  max={getAvailableStockForProduct(product)}
+                  value={cartQuantities[product._id] || 0}
+                  onChange={(e) =>
+                    handleQuantityChange(product._id, e.target.value, product)
+                  }
+                  className="min-w-20 flex-1 h-full text-center text-lg font-semibold outline-none border-x border-gray-200 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+                />
+
+                <button
+                  onClick={() =>
+                    handleQuantityChange(product._id, (cartQuantities[product._id] || 0) + 1, product)
+                  }
+                  className="w-1/4 h-full bg-gray-100 hover:bg-gray-200 transition text-gray-700 text-2xl font-bold disabled:opacity-40 disabled:cursor-not-allowed"
+                  disabled={
+                    (cartQuantities[product._id] || 0) >= getAvailableStockForProduct(product)
+                  }
+                >
+                  +
+                </button>
+              </div>
+
+              {/* In cart / Available */}
+              <div className="flex justify-between items-center mt-1 text-sm text-gray-600">
+                <span className="bg-gray-100 px-2 py-0.5 rounded">
+                  Available: {getAvailableStockForProduct(product)}
                 </span>
-                <span className="inline-block bg-green-100 text-green-800 text-sm font-semibold px-2 py-1 rounded-full text-center">
-                  In cart: {cartQuantities[p._id] || 0}
+                <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded">
+                  In cart: {cartQuantities[product._id] || 0}
                 </span>
               </div>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
 
-  {/* Mobile Cards */}
-  <div className="md:hidden flex flex-col gap-4">
-    {paginatedProducts.map(product => (
-      <div key={product._id} className="border rounded shadow p-4 bg-white flex flex-col gap-2">
-
-        {/* Name */}
-        <div className="flex justify-between py-1 border-b border-gray-200 last:border-b-0">
-          <span className="font-semibold text-gray-500">Name:</span>
-          <span
-            className="text-gray-700 truncate cursor-pointer relative z-10 text-blue-600 hover:underline"
-            onClick={() => handlePreview(product._id)}
-          >
-            {product.name}
-          </span>
-        </div>
-
-        {/* Description */}
-        <div className="flex justify-between py-1 border-b border-gray-200 last:border-b-0">
-          <span className="font-semibold text-gray-500">Description:</span>
-          <span
-            className="text-gray-700 truncate cursor-pointer text-blue-600 hover:underline"
-            onClick={() => handlePreview(product._id)}
-            title={product.description}
-          >
-            {product.description?.length > 50 ? product.description.slice(0, 30) + "…" : product.description}
-          </span>
-        </div>
-
-        {/* Stock Total */}
-        <div className="flex justify-between py-1 border-b border-gray-200 last:border-b-0">
-          <span className="font-semibold text-gray-500">In stock:</span>
-          <span className="text-gray-700 truncate">{product.stockTotal ?? 0}</span>
-        </div>
-
-        {/* Stock For Rent */}
-        <div className="flex justify-between py-1 border-b border-gray-200 last:border-b-0">
-          <span className="font-semibold text-gray-500">For rent:</span>
-          <span className="text-gray-700 truncate">{product.stockForRent ?? 0}</span>
-        </div>
-
-     {/* Categories */}
-<div className="flex justify-between py-1 border-b border-gray-200 last:border-b-0">
-  <span className="font-semibold text-gray-500">Categories:</span>
-  <div className="relative inline-block w-40">
-    <select
-      className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white appearance-none pr-8 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 shadow-sm"
-      value={product.categories.length === 1 ? product.categories[0]?.name ?? "" : ""}
-      onChange={(e) => e.preventDefault()}
-      disabled={product.categories.length <= 1} // zablokowane jeśli 0 lub 1
-    >
-      {product.categories.length === 0 && (
-        <option value="" disabled>-</option>
-      )}
-      {product.categories.length > 1 && (
-        <>
-          <option value="" disabled hidden>Check Categories</option>
-          {product.categories.map((c, i) => (
-            <option key={i} value={c?.name ?? ""}>{c?.name}</option>
+              {/* Action buttons */}
+              <div className="flex flex-wrap gap-2 justify-center mt-2">
+                <button
+                  onClick={() => handleEdit(product)}
+                  disabled={user.id !== product.owner._id && !isAdmin}
+                  className="flex-1 min-w-[80px] px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed text-center"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handlePreview(product._id)}
+                  className="flex-1 min-w-[80px] px-3 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition text-center"
+                >
+                  Preview
+                </button>
+                <button
+                  onClick={() => handleDelete(product._id)}
+                  disabled={user.id !== product.owner._id && !isAdmin}
+                  className="flex-1 min-w-[80px] px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed text-center"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
           ))}
-        </>
-      )}
-      {product.categories.length === 1 && (
-        <option value={product.categories[0]?.name ?? ""}>{product.categories[0]?.name ?? "-"}</option>
-      )}
-    </select>
-
-    {product.categories.length > 1 && (
-      <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-sm select-none">
-        ▼
-      </span>
-    )}
-  </div>
-</div>
-
-        {/* Owner */}
-        <div className="flex justify-between py-1 border-b border-gray-200 last:border-b-0">
-          <span className="font-semibold text-gray-500">Owner:</span>
-          <span className="text-gray-700 truncate">{product.owner?.name ?? product.owner}</span>
-        </div>
-
-        {/* Quantity controls */}
-        <div className="flex border rounded-xl shadow-sm overflow-hidden h-14 w-full">
-          <button
-            onClick={() =>
-              handleQuantityChange(product._id, (cartQuantities[product._id] || 0) - 1, product)
-            }
-            className="w-1/4 h-full bg-gray-100 hover:bg-gray-200 transition text-gray-700 text-2xl font-bold disabled:opacity-40 disabled:cursor-not-allowed"
-            disabled={(cartQuantities[product._id] || 0) <= 0}
-          >
-            −
-          </button>
-
-          <input
-            type="number"
-            min="0"
-            max={getAvailableStockForProduct(product)}
-            value={cartQuantities[product._id] || 0}
-            onChange={(e) =>
-              handleQuantityChange(product._id, e.target.value, product)
-            }
-            className="min-w-20 flex-1 h-full text-center text-lg font-semibold outline-none border-x border-gray-200 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
-          />
-
-          <button
-            onClick={() =>
-              handleQuantityChange(product._id, (cartQuantities[product._id] || 0) + 1, product)
-            }
-            className="w-1/4 h-full bg-gray-100 hover:bg-gray-200 transition text-gray-700 text-2xl font-bold disabled:opacity-40 disabled:cursor-not-allowed"
-            disabled={
-              (cartQuantities[product._id] || 0) >= getAvailableStockForProduct(product)
-            }
-          >
-            +
-          </button>
-        </div>
-
-        {/* In cart / Available */}
-        <div className="flex justify-between items-center mt-1 text-sm text-gray-600">
-          <span className="bg-gray-100 px-2 py-0.5 rounded">
-            Available: {getAvailableStockForProduct(product)}
-          </span>
-          <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded">
-            In cart: {cartQuantities[product._id] || 0}
-          </span>
-        </div>
-
-        {/* Action buttons */}
-        <div className="flex flex-wrap gap-2 justify-center mt-2">
-          <button
-            onClick={() => handleEdit(product)}
-            disabled={user.id !== product.owner._id && !isAdmin}
-            className="flex-1 min-w-[80px] px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed text-center"
-          >
-            Edit
-          </button>
-          <button
-            onClick={() => handlePreview(product._id)}
-            className="flex-1 min-w-[80px] px-3 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition text-center"
-          >
-            Preview
-          </button>
-          <button
-            onClick={() => handleDelete(product._id)}
-            disabled={user.id !== product.owner._id && !isAdmin}
-            className="flex-1 min-w-[80px] px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed text-center"
-          >
-            Delete
-          </button>
         </div>
       </div>
-    ))}
-  </div>
-</div>
 
 
       {/* Paginate */}
@@ -1352,7 +1352,7 @@ const generatePDF = () => {
                   </div>
                 )}
               </div>
-              
+
 
               {/* File Upload */}
               <div>

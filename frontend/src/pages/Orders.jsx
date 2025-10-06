@@ -135,14 +135,16 @@ const Orders = () => {
   const rejectableStatuses = ["pending", "approved", "prepared"];
   const nonRejectableStatuses = ["rented", "late", "returned"];
   const returnableStatuses = ["rented", "late"];
+  const printableStatuses = ["prepared", "rented"];
 
-  const hasStatus = (items, statuses) => items.some(item => statuses.includes(item.status));
+  const hasStatus = (status, statuses) => statuses.includes(status);
 
-  const canProcessOrder = (order) => hasStatus(order.items, processableStatuses); // window
-  const canRejectOrder = (order) => hasStatus(order.items, rejectableStatuses) && !hasStatus(order.items, nonRejectableStatuses); // automatic
-  const canPrepareOrder = (order) => hasStatus(order.items, ["approved"]) && !hasStatus(order.items, ["pending"]);
-  const canRentOrder = (order) => hasStatus(order.items, ["prepared"]) && !hasStatus(order.items, ["pending"]); // automatic + pdf
-  const canReturnOrder = (order) => hasStatus(order.items, returnableStatuses) && !hasStatus(order.items, ["pending"]); // window
+  const canProcessOrder = (status) => hasStatus(status, processableStatuses); // window
+  const canRejectOrder = (status) => hasStatus(status, rejectableStatuses) && !hasStatus(status, nonRejectableStatuses); // automatic
+  const canPrepareOrder = (status) => hasStatus(status, ["approved"]) && !hasStatus(status, ["pending"]);
+  const canRentOrder = (status) => hasStatus(status, ["prepared"]) && !hasStatus(status, ["pending"]); // automatic + pdf
+  const canReturnOrder = (status) => hasStatus(status, returnableStatuses) && !hasStatus(status, ["pending"]); // window
+  const canPrintOrder = (status) => hasStatus(status, printableStatuses);
 
   const prevPage = () => {
     if (currentPage > 1) fetchOrders(currentPage - 1);
@@ -152,25 +154,25 @@ const Orders = () => {
   };
 
   const getStatusColor = (groupStatus) => {
-  switch (groupStatus) {
-    case "changed":
-      return "text-red-800 bg-red-50";
-    case "pending":
-      return "text-yellow-600 bg-yellow-50";
-    case "approved":
-      return "text-lime-600 bg-lime-50";
-    case "prepared":
-      return "text-indigo-600 bg-indigo-50";
-    case "rented":
-      return "text-green-600 bg-green-50";
-    case "returned":
-      return "text-blue-600 bg-blue-50";
-    case "rejected":
-      return "text-gray-600 bg-gray-50";
-    default:
-      return "text-red-700 bg-red-50";
-  }
-};
+    switch (groupStatus) {
+      case "changed":
+        return "text-red-800 bg-red-50";
+      case "pending":
+        return "text-yellow-600 bg-yellow-50";
+      case "approved":
+        return "text-lime-600 bg-lime-50";
+      case "prepared":
+        return "text-indigo-600 bg-indigo-50";
+      case "rented":
+        return "text-green-600 bg-green-50";
+      case "returned":
+        return "text-blue-600 bg-blue-50";
+      case "rejected":
+        return "text-gray-600 bg-gray-50";
+      default:
+        return "text-red-700 bg-red-50";
+    }
+  };
 
   const getAllowedStatusChanges = (status) => {
     if (status === "pending") return ["approved", "rejected"];
@@ -258,7 +260,9 @@ const Orders = () => {
 
     const content = rentalAgreementTemplate({
       customerInfo: customerInfo ?? "Unknown",
-      items: items.map(i => ({
+      items: items
+      .filter(item => printableStatuses.includes(item.status))
+      .map(i => ({
         productName: i.product?.name ?? "Deleted Product",
         quantity: i.assignedQuantity ?? "-"
       })),
@@ -533,25 +537,41 @@ const Orders = () => {
                       <div className="border-t border-gray-200 pt-2">
 
                         {Object.values(itemsByOwner).map((group, idx) => {
-                          const hasActions =
-                            canProcessOrder(group) ||
-                            canRejectOrder(group) ||
-                            canPrepareOrder(group) ||
-                            canRentOrder(group) ||
-                            canReturnOrder(group);
+                          const hasActions = !!group.status &&
+                            (
+                              canProcessOrder(group.status) ||
+                              canRejectOrder(group.status) ||
+                              canPrepareOrder(group.status) ||
+                              canRentOrder(group.status) ||
+                              canReturnOrder(group.status) ||
+                              canPrintOrder(group.status)
+                            );
 
                           return (
                             <div key={idx} className="mb-8 last:mb-2 border border-gray-200 rounded-lg p-4 bg-gray-50">
                               <div className="flex flex-col gap-1 mb-5">
                                 <h4 className="font-semibold text-gray-700">
-                                  Owner: { group.owner?.name || "Nieznany" }
+                                  Owner: {group.owner?.name || "Nieznany"}
                                 </h4>
 
                                 <p className="text-sm text-gray-500">
                                   Status: <span className={`font-medium ${getStatusColor(group.status)}`}>
-                                    { group.status }
+                                    {group.status}
                                   </span>
                                 </p>
+
+                                {group.ownerData?.customerApproval != null && (
+                                  <div>
+                                    <span
+                                      className={`inline-block px-3 py-1 rounded-full text-sm font-medium shadow-sm ${group.ownerData.customerApproval
+                                          ? "bg-green-100 text-green-800"
+                                          : "bg-red-100 text-red-800"
+                                        }`}
+                                    >
+                                      {group.ownerData.customerApproval ? "Customer Approved changes" : "Customer Rejected changes"}
+                                    </span>
+                                  </div>
+                                )}
 
                                 {/* Dates */}
                                 <div className="mt-2 space-y-2">
@@ -562,7 +582,7 @@ const Orders = () => {
                                     </p>
                                   </div>
 
-                                  { group.hasAssignedDates && (
+                                  {group.hasAssignedDates && (
                                     <div className="bg-blue-50 border border-blue-200 rounded-md p-2">
                                       <p className="text-sm font-medium text-blue-700">Assigned</p>
                                       <p className="text-sm text-blue-800">
@@ -574,7 +594,7 @@ const Orders = () => {
                               </div>
 
                               <div className="space-y-4">
-                                { group.items.length > 0 && (
+                                {group.items.length > 0 && (
                                   <>
                                     <p className="font-semibold text-gray-700 text-lg">Items:</p>
 
@@ -599,11 +619,11 @@ const Orders = () => {
                                                 }
                                                 className="inline-block mt-1 px-3 py-1 text-sm font-medium text-blue-600 bg-blue-50 rounded-full hover:bg-blue-100 transition-colors"
                                               >
-                                                { expanded[toggleKey] ? "Hide details" : "Show details"}
+                                                {expanded[toggleKey] ? "Hide details" : "Show details"}
                                               </button>
 
                                               {/* Collapsible details */}
-                                              { expanded[toggleKey] && (
+                                              {expanded[toggleKey] && (
                                                 <div>
                                                   {/* Quantity Section */}
                                                   <div className="space-y-2">
@@ -648,11 +668,11 @@ const Orders = () => {
                                   </>
                                 )}
 
-                                { hasActions && (
+                                {hasActions && (
                                   <div className="mt-4">
                                     <p className="font-semibold text-gray-700 mb-2 text-lg">Actions:</p>
                                     <div className="flex flex-wrap gap-2 mb-4">
-                                      {canProcessOrder(group) && (
+                                      {canProcessOrder(group.status) && (
                                         <button
                                           onClick={() => handleOpenModal(group)}
                                           className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg shadow-md transition-colors duration-200"
@@ -661,7 +681,9 @@ const Orders = () => {
                                         </button>
                                       )}
 
-                                      {canRejectOrder(group) && (
+
+
+                                      {canRejectOrder(group.status) && (
                                         <button
                                           onClick={() => handleRejectOrder(group)}
                                           className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow-md transition-colors duration-200"
@@ -670,7 +692,7 @@ const Orders = () => {
                                         </button>
                                       )}
 
-                                      {canPrepareOrder(group) && (
+                                      {canPrepareOrder(group.status) && (
                                         <button
                                           onClick={() => handlePrepareOrder(group)}
                                           className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-md transition-colors duration-200"
@@ -679,7 +701,7 @@ const Orders = () => {
                                         </button>
                                       )}
 
-                                      {canRentOrder(group) && (
+                                      {canRentOrder(group.status) && (
                                         <button
                                           onClick={() => handleRentOrder(group)}
                                           className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg shadow-md transition-colors duration-200"
@@ -688,7 +710,7 @@ const Orders = () => {
                                         </button>
                                       )}
 
-                                      {canReturnOrder(group) && (
+                                      {canReturnOrder(group.status) && (
                                         <button
                                           onClick={() => handleReturnOrder(group)}
                                           className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md transition-colors duration-200"
@@ -697,7 +719,7 @@ const Orders = () => {
                                         </button>
                                       )}
 
-                                      { group.status === "prepared" || group.status === "rented" && (
+                                      {canPrintOrder(group.status) && (
                                         <button
                                           onClick={() => downloadRentalAgreement(group)}
                                           className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg shadow-md transition-colors duration-200"

@@ -185,63 +185,70 @@ const WelcomePage = () => {
         </div>
       </section>
 
-      <section className="py-20 bg-white text-gray-900">
-        <div className="max-w-6xl mx-auto px-4">
-          <h2 className="text-4xl font-extrabold text-center mb-14 tracking-tight text-blue-900">
+      <section className="py-16 bg-blue-900 text-white px-6 md:px-12">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-4xl font-extrabold mb-10 text-center tracking-wide">
             Explore Collections
           </h2>
 
-          <div className="relative flex items-center">
-            {/* Left arrow */}
-            <button
-              onClick={() => setCollectionIndex(prev => Math.max(prev - 1, 0))}
-              className="bg-blue-600/80 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition disabled:opacity-40"
-              disabled={collectionIndex === 0}
-            >
-              ←
-            </button>
+          {collections.length === 0 ? (
+            <p className="text-center text-lg opacity-80 font-light">
+              No collections available.
+            </p>
+          ) : (
+            <div className="relative flex items-center justify-center">
+              {/* Left arrow */}
+              <button
+                onClick={() => setCollectionIndex(prev => Math.max(prev - 1, 0))}
+                className="absolute left-0 z-10 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-full shadow-md text-white font-bold transition disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={collectionIndex === 0}
+              >
+                ←
+              </button>
 
-            {/* Cards */}
-            <div className="flex gap-6 flex-1 justify-center overflow-hidden px-2">
-              {collections.slice(collectionIndex, collectionIndex + visibleCount).map(collection => (
-                <div
-                  key={collection._id}
-                  onClick={() => handleCollectionClick(collection._id)}
-                  className="snap-center flex-shrink-0 w-[220px] p-8 rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:bg-blue-50 transition cursor-pointer flex flex-col items-center text-center"
-                >
+              {/* Cards */}
+              <div className="flex gap-6 overflow-hidden px-2">
+                {collections.slice(collectionIndex, collectionIndex + visibleCount).map(collection => (
                   <div
-                    className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center text-[clamp(1.2rem,4vw,1.5rem)] mb-3 truncate"
-                    title={collection.logo} // full logo on hover
+                    key={collection._id}
+                    onClick={() => handleCollectionClick(collection._id)}
+                    className="bg-blue-800 rounded-xl p-6 shadow-md hover:shadow-lg transition-transform duration-300 hover:scale-[1.02] flex flex-col items-center text-center flex-shrink-0 w-[220px] cursor-pointer"
                   >
-                    {collection.logo}
+                    <div
+                      className="w-14 h-14 rounded-full text-white bg-blue-700 text-lg leading-relaxed font-medium flex items-center justify-center mb-3 text-[clamp(1.2rem,4vw,1.5rem)] truncate"
+                      title={collection.logo}
+                    >
+                      {collection.logo}
+                    </div>
+
+                    <h3
+                      className="font-semibold text-[clamp(0.75rem,3vw,1rem)] text-blue-200 truncate w-full"
+                      title={collection.name}
+                    >
+                      {collection.name}
+                    </h3>
                   </div>
+                ))}
+              </div>
 
-                  <h3
-                    className="font-semibold text-[clamp(0.75rem,3vw,1rem)] text-blue-800 truncate w-full text-center"
-                    title={collection.name} // full name on hover
-                  >
-                    {collection.name}
-                  </h3>
-                </div>
-
-              ))}
+              {/* Right arrow */}
+              <button
+                onClick={() =>
+                  setCollectionIndex(prev =>
+                    Math.min(prev + 1, collections.length - visibleCount)
+                  )
+                }
+                className="absolute right-0 z-10 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-full shadow-md text-white font-bold transition disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={collectionIndex >= collections.length - visibleCount}
+              >
+                →
+              </button>
             </div>
-
-            {/* Right arrow */}
-            <button
-              onClick={() =>
-                setCollectionIndex(prev =>
-                  Math.min(prev + 1, collections.length - visibleCount)
-                )
-              }
-              className="bg-blue-600/80 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition disabled:opacity-40"
-              disabled={collectionIndex >= collections.length - visibleCount}
-            >
-              →
-            </button>
-          </div>
+          )}
         </div>
       </section>
+
+
 
       {/* MAIN SLIDER */}
       {materials.length > 0 && <MainSlider materials={materials} />}

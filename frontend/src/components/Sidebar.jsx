@@ -19,7 +19,7 @@ const Sidebar = () => {
   ];
 
  const lecturerItems = menuItems.filter(
-  item => item.name !== "Categories" && item.name !== "Slider" && item.name !== "Notes" && item.name !== "Users" && item.name !== "Templates"
+  item => item.name !== "Categories" && item.name !== "Slider" && item.name !== "Components" && item.name !== "Users" && item.name !== "Templates"
 );
 
 const customerItems = [
