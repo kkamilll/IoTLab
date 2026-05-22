@@ -1,10 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
-import axios from "axios";
+import apiClient from "../api/apiClient";
 import { useAuth } from "../context/AuthContext";
-
-import { LocalizationProvider, DateTimePicker } from '@mui/x-date-pickers';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import TextField from '@mui/material/TextField';
+import OrderModal from "../components/orders/OrderModal";
 
 import { rentalAgreementTemplate } from "../templates/rentalAgreementTemplate";
 import jsPDF from "jspdf";
@@ -37,9 +34,7 @@ const Orders = () => {
 
   const fetchStatuses = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders/statuses`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiClient.get('/orders/statuses');
       if (res.data.success) setOrderStatuses(res.data.statuses);
     } catch (error) {
       console.error(error);
@@ -56,9 +51,7 @@ const Orders = () => {
         status: statusFilter,
       });
 
-      const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders?${queryParams.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiClient.get(`/orders?${queryParams.toString()}`);
       if (res.data.success) {
         setOrders(res.data.orders);
         setTotalPages(res.data.totalPages);
@@ -73,12 +66,10 @@ const Orders = () => {
     try {
       if (!productId || !startDate || !endDate) return null;
 
-      const res = await axios.post(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/products/stockStatus`,
-        { productId, startDate, endDate, orderId: editGroup.orderId },
-        { headers: { Authorization: `Bearer ${token}` } });
+      const res = await apiClient.post('/products/stockStatus',
+        { productId, startDate, endDate, orderId: editGroup.orderId });
 
       if (res.data.success) {
-        // console.log(res.data);
         return {
           availableToAssign: res.data.availableToAssign ?? 0,
           inDemand: res.data.inDemand ?? 0,
@@ -92,7 +83,7 @@ const Orders = () => {
       console.error(error)
       alert(error?.response?.data?.message || error.message || "Unknown error");
     }
-  }
+  };
 
   useEffect(() => {
     fetchOrders(1);
@@ -234,12 +225,7 @@ const Orders = () => {
 
       if (!itemUpdates.length) return; // nothing to update
 
-      const config = { headers: { Authorization: `Bearer ${token}` } };
-      const res = await axios.put(
-        `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders/updateOrder/${orderId}`,
-        { itemUpdates },
-        config
-      );
+      const res = await apiClient.put(`/orders/updateOrder/${orderId}`, { itemUpdates });
 
       if (res.data.success) fetchOrders(1);
       else alert(res.data.message || "Operation failed");
@@ -440,13 +426,7 @@ const Orders = () => {
 
       const payload = { itemUpdates, ...dateUpdates };
 
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      };
-
-      const res = await axios.put(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders/updateOrder/${orderId}`, { ...payload }, config);
+      const res = await apiClient.put(`/orders/updateOrder/${orderId}`, payload);
 
       if (res.data.success) {
         fetchOrders(1);
@@ -462,38 +442,46 @@ const Orders = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center p-6">
+    <div className="min-h-screen bg-slate-50/30 flex flex-col items-center p-6 md:p-8">
       <div className="w-full max-w-6xl flex flex-col gap-6">
-        <h1 className="text-3xl font-extrabold text-blue-700 text-center">Order Management</h1>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-slate-200 pb-6 gap-4 w-full">
+          <div>
+            <h1 className="text-2xl font-black text-slate-900">Order Management</h1>
+            <p className="text-slate-500 text-sm mt-0.5">Track, review, approve, and finalize equipment rentals</p>
+          </div>
+        </div>
 
         {/* Filters */}
-        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+        <div className="flex flex-col sm:flex-row gap-3 w-full justify-between items-center bg-white p-3 border border-slate-200 rounded-xl shadow-sm">
           <input
             type="text"
-            placeholder="Filter by email"
+            placeholder="Filter by customer email..."
             value={emailFilter}
             onChange={(e) => setEmailFilter(e.target.value)}
-            className="border border-gray-300 rounded px-3 py-2 w-full md:w-1/3"
+            className="border border-slate-200 rounded-xl px-3.5 py-2 text-sm bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 w-full sm:max-w-xs"
           />
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="border border-gray-300 rounded px-3 py-2 w-full md:w-1/4"
-          >
-            <option value="">All</option>
-            {orderStatuses.map((status, idx) => (
-              <option key={idx} value={status}>
-                {status}
-              </option>
-            ))}
-          </select>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status:</span>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="text-xs border border-slate-200 rounded-lg bg-slate-50 px-2.5 py-1.5 font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 min-w-[120px]"
+            >
+              <option value="">All</option>
+              {orderStatuses.map((status, idx) => (
+                <option key={idx} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {orders.length === 0 ? (
-          <div className="text-center p-6 text-gray-500">No orders found</div>
+          <div className="text-center p-8 bg-white border border-slate-200 rounded-2xl text-slate-400 font-medium shadow-sm">No orders found</div>
         ) : (
           <div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {orders
                 .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
                 .map((order) => {
@@ -528,13 +516,9 @@ const Orders = () => {
                   }, {});
 
                   return (
-                    <div key={order._id} className="bg-white rounded-xl shadow p-4 flex flex-col gap-3 hover:shadow-md transition relative">
-                      {/* {order.isReturned && (
-                        <span className="absolute top-2 right-2 bg-yellow-400 text-white px-2 py-1 rounded text-xs font-bold">ZWROCONO</span>
-                      )} */}
-
-                      <h2 className="text-lg font-semibold text-gray-700">{order?.customer?.email || "Brak maila"}</h2>
-                      <div className="border-t border-gray-200 pt-2">
+                    <div key={order._id} className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 flex flex-col gap-4 hover:shadow-md transition">
+                      <h2 className="text-base font-bold text-slate-800">{order?.customer?.email || "Brak maila"}</h2>
+                      <div className="border-t border-slate-100 pt-4">
 
                         {Object.values(itemsByOwner).map((group, idx) => {
                           const hasActions = !!group.status &&
@@ -548,24 +532,25 @@ const Orders = () => {
                             );
 
                           return (
-                            <div key={idx} className="mb-8 last:mb-2 border border-gray-200 rounded-lg p-4 bg-gray-50">
-                              <div className="flex flex-col gap-1 mb-5">
-                                <h4 className="font-semibold text-gray-700">
+                            <div key={idx} className="mb-6 last:mb-0 border border-slate-100 rounded-xl p-4 bg-slate-50/50">
+                              <div className="flex flex-col gap-1 mb-4">
+                                <h4 className="font-bold text-xs text-slate-400 uppercase tracking-wider">
                                   Owner: {group.owner?.name || "Nieznany"}
                                 </h4>
 
-                                <p className="text-sm text-gray-500">
-                                  Status: <span className={`font-medium ${getStatusColor(group.status)}`}>
+                                <div className="flex items-center gap-2 mt-1.5">
+                                  <span className="text-xs text-slate-500 font-semibold">Status:</span>
+                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${getStatusColor(group.status)} border-current/10`}>
                                     {group.status}
                                   </span>
-                                </p>
+                                </div>
 
                                 {group.ownerData?.customerApproval != null && (
-                                  <div>
+                                  <div className="mt-2">
                                     <span
-                                      className={`inline-block px-3 py-1 rounded-full text-sm font-medium shadow-sm ${group.ownerData.customerApproval
-                                          ? "bg-green-100 text-green-800"
-                                          : "bg-red-100 text-red-800"
+                                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${group.ownerData.customerApproval
+                                          ? "bg-green-50 text-green-700 border-green-200/50"
+                                          : "bg-red-50 text-red-700 border-red-200/50"
                                         }`}
                                     >
                                       {group.ownerData.customerApproval ? "Customer Approved changes" : "Customer Rejected changes"}
@@ -574,18 +559,18 @@ const Orders = () => {
                                 )}
 
                                 {/* Dates */}
-                                <div className="mt-2 space-y-2">
-                                  <div className="bg-white border border-gray-200 rounded-md p-2">
-                                    <p className="text-sm font-medium text-gray-600">Requested</p>
-                                    <p className="text-sm text-gray-700">
+                                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                  <div className="bg-white border border-slate-150 rounded-xl p-3 shadow-sm">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Requested</p>
+                                    <p className="text-xs font-semibold text-slate-700 mt-1">
                                       📅 {new Date(group.dates?.requestedStartDate).toLocaleDateString("pl-PL")} → {new Date(group.dates?.requestedEndDate).toLocaleDateString("pl-PL")}
                                     </p>
                                   </div>
 
                                   {group.hasAssignedDates && (
-                                    <div className="bg-blue-50 border border-blue-200 rounded-md p-2">
-                                      <p className="text-sm font-medium text-blue-700">Assigned</p>
-                                      <p className="text-sm text-blue-800">
+                                    <div className="bg-indigo-50/30 border border-indigo-100/50 rounded-xl p-3 shadow-sm">
+                                      <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">Assigned</p>
+                                      <p className="text-xs font-semibold text-indigo-700 mt-1">
                                         📅 {new Date(group.dates?.assignedStartDate).toLocaleDateString("pl-PL")} → {new Date(group.dates?.assignedEndDate).toLocaleDateString("pl-PL")}
                                       </p>
                                     </div>
@@ -593,13 +578,12 @@ const Orders = () => {
                                 </div>
                               </div>
 
-                              <div className="space-y-4">
+                              <div className="space-y-3">
                                 {group.items.length > 0 && (
                                   <>
-                                    <p className="font-semibold text-gray-700 text-lg">Items:</p>
+                                    <p className="font-bold text-slate-850 text-xs uppercase tracking-wider mt-4 mb-1 text-slate-400">Items:</p>
 
-
-                                    <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
+                                    <div className="bg-white border border-slate-100 rounded-xl p-4 space-y-3 shadow-sm">
                                       <ul className="list-disc list-inside space-y-8">
                                         {group.items.map((item, i) => {
                                           const toggleKey = `${order._id}-${item._id}`;
@@ -661,7 +645,7 @@ const Orders = () => {
                                                 </div>
                                               )}
                                             </li>
-                                          )
+                                          );
                                         })}
                                       </ul>
                                     </div>
@@ -669,24 +653,22 @@ const Orders = () => {
                                 )}
 
                                 {hasActions && (
-                                  <div className="mt-4">
-                                    <p className="font-semibold text-gray-700 mb-2 text-lg">Actions:</p>
-                                    <div className="flex flex-wrap gap-2 mb-4">
+                                  <div className="mt-4 border-t border-slate-100 pt-3">
+                                    <p className="font-bold text-[10px] text-slate-400 uppercase tracking-wider mb-2">Actions:</p>
+                                    <div className="flex flex-wrap gap-2">
                                       {canProcessOrder(group.status) && (
                                         <button
                                           onClick={() => handleOpenModal(group)}
-                                          className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg shadow-md transition-colors duration-200"
+                                          className="px-4 py-2 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-xl shadow-sm transition"
                                         >
                                           Process
                                         </button>
                                       )}
 
-
-
                                       {canRejectOrder(group.status) && (
                                         <button
                                           onClick={() => handleRejectOrder(group)}
-                                          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow-md transition-colors duration-200"
+                                          className="px-4 py-2 text-xs font-bold bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 rounded-xl transition"
                                         >
                                           Reject
                                         </button>
@@ -695,7 +677,7 @@ const Orders = () => {
                                       {canPrepareOrder(group.status) && (
                                         <button
                                           onClick={() => handlePrepareOrder(group)}
-                                          className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-md transition-colors duration-200"
+                                          className="px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-sm transition"
                                         >
                                           Prepare
                                         </button>
@@ -704,7 +686,7 @@ const Orders = () => {
                                       {canRentOrder(group.status) && (
                                         <button
                                           onClick={() => handleRentOrder(group)}
-                                          className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg shadow-md transition-colors duration-200"
+                                          className="px-4 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm transition"
                                         >
                                           Rent
                                         </button>
@@ -713,7 +695,7 @@ const Orders = () => {
                                       {canReturnOrder(group.status) && (
                                         <button
                                           onClick={() => handleReturnOrder(group)}
-                                          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md transition-colors duration-200"
+                                          className="px-4 py-2 text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white rounded-xl shadow-sm transition"
                                         >
                                           Return
                                         </button>
@@ -722,7 +704,7 @@ const Orders = () => {
                                       {canPrintOrder(group.status) && (
                                         <button
                                           onClick={() => downloadRentalAgreement(group)}
-                                          className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg shadow-md transition-colors duration-200"
+                                          className="px-4 py-2 text-xs font-bold bg-slate-800 hover:bg-slate-900 text-white rounded-xl shadow-sm transition"
                                         >
                                           PDF
                                         </button>
@@ -733,222 +715,53 @@ const Orders = () => {
                               </div>
 
                             </div>
-                          )
+                          );
                         })}
                       </div>
                     </div>
-                  )
+                  );
                 })}
             </div>
 
             {/* Pagination */}
-            <div className="flex justify-center items-center gap-4 mt-6">
-              <button onClick={prevPage} disabled={currentPage === 1} className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded disabled:opacity-50">Previous</button>
-              <span className="text-gray-700">Page {currentPage} / {totalPages}</span>
-              <button onClick={nextPage} disabled={currentPage === totalPages} className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded disabled:opacity-50">Next</button>
+            <div className="flex justify-center items-center gap-4 mt-8">
+              <button
+                onClick={prevPage}
+                disabled={currentPage === 1}
+                className="px-4 py-2 text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200/60 rounded-xl hover:bg-slate-200 disabled:opacity-40 disabled:pointer-events-none transition"
+              >
+                Previous
+              </button>
+              <span className="text-slate-500 text-xs font-semibold">Page {currentPage} / {totalPages}</span>
+              <button
+                onClick={nextPage}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200/60 rounded-xl hover:bg-slate-200 disabled:opacity-40 disabled:pointer-events-none transition"
+              >
+                Next
+              </button>
             </div>
           </div>
         )}
       </div>
 
       {openModal && editGroup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm" onClick={handleCloseModal}>
-          <div className="bg-white p-6 rounded shadow-lg w-full max-w-lg md:max-w-xl lg:max-w-2xl mx-auto my-8 max-h-[90vh] overflow-auto relative" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-2xl font-bold text-gray-800 mb-1">Update Order</h2>
-            <p className="text-lg font-semibold text-gray-700 mb-4">
-              Owner: <span className="font-normal text-gray-800">{editGroup.owner?.name}</span>
-            </p>
-
-            {/* Dates */}
-            <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg mb-4">
-              <p className="font-semibold text-gray-700 mb-3">Order Dates</p>
-              <div className="flex flex-col gap-3">
-
-                {/* Date Handler */}
-                <LocalizationProvider dateAdapter={AdapterDateFns}>
-                  {/* Start Date */}
-                  <DateTimePicker
-                    label="Start Date"
-                    value={datesUpdateData.assignedStartDate ? new Date(datesUpdateData.assignedStartDate) : null}
-                    onChange={(newValue) => {
-                      setDatesUpdateData(prev => ({
-                        ...prev,
-                        assignedStartDate: newValue ? newValue.toISOString() : null
-                      }));
-                    }}
-                    ampm={false}
-                    minDateTime={new Date()}
-                    maxDateTime={datesUpdateData.assignedEndDate ? new Date(datesUpdateData.assignedEndDate) : null}
-                    format="dd/MM/yyyy HH:mm"
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        className="w-full"
-                        disabled={!processableStatuses.includes(editGroup.status)}
-                      />
-                    )}
-                  />
-
-                  {/* End Date */}
-                  <DateTimePicker
-                    label="End Date"
-                    value={datesUpdateData.assignedEndDate ? new Date(datesUpdateData.assignedEndDate) : null}
-                    onChange={(newValue) => {
-                      setDatesUpdateData(prev => ({
-                        ...prev,
-                        assignedEndDate: newValue ? newValue.toISOString() : null
-                      }));
-                    }}
-                    ampm={false}
-                    minDateTime={datesUpdateData.assignedStartDate ? new Date(datesUpdateData.assignedStartDate) : new Date()}
-                    format="dd/MM/yyyy HH:mm"
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        className="w-full"
-                        disabled={!processableStatuses.includes(editGroup.status)}
-                      />
-                    )}
-                  />
-                </LocalizationProvider>
-
-              </div>
-            </div>
-
-            {/* Item selector */}
-            <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
-              {editGroup.items.map((item) => (
-                <button
-                  key={item._id}
-                  onClick={() => setCurrentItemId(item._id)}
-                  className={`px-4 py-2 rounded-lg border text-sm whitespace-nowrap transition-colors
-                    ${currentItemId === item._id
-                      ? "border-blue-500 bg-blue-50 text-blue-700 font-medium"
-                      : "border-gray-300 bg-white hover:bg-gray-50"}`}
-                >
-                  {item.product?.name || "Deleted Product"}
-                </button>
-              ))}
-            </div>
-
-            {/* Current item form */}
-            {currentItemId && itemsUpdateData[currentItemId] && (
-              <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
-                {(() => {
-                  const itemData = itemsUpdateData[currentItemId];
-                  // const requested = itemData?.requested;
-                  // const assigned = itemData?.assigned;
-
-                  return (
-                    <>
-                      {/* <h2>tags: {itemData.product?.tag}</h2> */}
-                      <div className="flex flex-col gap-1">
-                        {/* Product Name */}
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-gray-500 text-sm font-medium">Name:</span>
-                          <span className="font-medium text-gray-800">{itemData?.product?.name || "Deleted Product"}</span>
-                        </div>
-
-                        {/* Tags */}
-                        {itemData?.product?.tags?.length > 0 && (
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-gray-500 text-sm font-medium">Tags:</span>
-                            <div className="flex flex-wrap gap-1">
-                              {itemData.product.tags.map((tag, i) => (
-                                <span key={i} className="bg-gray-200 text-gray-700 text-xs px-2 py-0.5 rounded-full">
-                                  {tag}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-
-                      <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg mb-4">
-                        <p className="font-semibold text-gray-700 mb-3">Requested Info</p>
-                        <div className="grid grid-cols-2 gap-y-2 text-sm">
-                          <p className="text-gray-500">Quantity</p>
-                          <p className="text-gray-800 font-medium">{itemData.requestedQuantity}</p>
-
-                          <p className="text-gray-500">Start</p>
-                          <p className="text-gray-800 font-medium">
-                            {new Date(datesUpdateData.requestedStartDate).toLocaleString("pl-PL")}
-                          </p>
-
-                          <p className="text-gray-500">End</p>
-                          <p className="text-gray-800 font-medium">
-                            {new Date(datesUpdateData.requestedEndDate).toLocaleString("pl-PL")}
-                          </p>
-                        </div>
-                      </div>
-
-                      {stockStatus && processableStatuses.includes(itemData.prevStatus) && stockStatus[currentItemId] && (
-                        <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg mb-4">
-                          <p className="font-semibold text-yellow-800 mb-3">Stock Overview</p>
-                          <div className="grid grid-cols-2 gap-y-2 text-sm">
-                            <p className="text-gray-600">Available to Assign</p>
-                            <p className="text-gray-900 font-medium">{stockStatus[currentItemId].availableToAssign}</p>
-
-                            <p className="text-gray-600">Total Available Stock</p>
-                            <p className="text-gray-900 font-medium">{stockStatus[currentItemId].availableTotal}</p>
-
-                            <p className="text-gray-600">Currently Rented Out</p>
-                            <p className="text-gray-900 font-medium">{stockStatus[currentItemId].rentedQuantity}</p>
-
-                            <p className="text-gray-600">Total Requested Quantity</p>
-                            <p className="text-gray-900 font-medium">{stockStatus[currentItemId].inDemand}</p>
-
-                            <p className="text-gray-600">Number of Requesters</p>
-                            <p className="text-gray-900 font-medium">{stockStatus[currentItemId].requestsQuantity}</p>
-                          </div>
-                        </div>
-                      )}
-
-
-                      {/* Quantity */}
-                      <div>
-                        <label className="font-medium text-gray-700">Quantity</label>
-                        <input
-                          type="number" name="assignedQuantity"
-                          value={itemData.assignedQuantity || 0}
-                          min={1}
-                          onChange={(e) => handleEditChange(currentItemId, e)}
-                          className="border p-2 rounded w-full disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
-                          disabled={!processableStatuses.includes(itemData.prevStatus) || (itemData.prevStatus !== highestPriorityGroupStatus) || itemData.newStatus === "rejected" || !itemData?.product}
-                        />
-                      </div>
-
-                      {/* Status */}
-                      <div>
-                        <label className="font-medium text-gray-700">Status</label>
-                        <select
-                          name="newStatus"
-                          value={itemData.newStatus}
-                          onChange={(e) => handleStatusChange(currentItemId, e)}
-                          className="border p-2 rounded w-full disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
-                          disabled={!processableStatuses.includes(itemData.prevStatus) || (itemData.prevStatus !== highestPriorityGroupStatus) || !itemData?.product}
-                        >
-                          <option key={itemData.prevStatus} disabled={true}>{itemData.prevStatus}</option>
-                          {getAllowedStatusChanges(itemData.prevStatus).map((status) => (
-                            <option key={status} value={status}>
-                              {status}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </>
-                  );
-                })()}
-
-                <div className="flex justify-end gap-3 mt-4">
-                  <button type="button" onClick={handleCloseModal} className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">Cancel</button>
-                  <button type="submit" className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Save</button>
-                </div>
-              </form>
-            )}
-          </div>
-        </div>
+        <OrderModal
+          handleCloseModal={handleCloseModal}
+          editGroup={editGroup}
+          datesUpdateData={datesUpdateData}
+          setDatesUpdateData={setDatesUpdateData}
+          processableStatuses={processableStatuses}
+          currentItemId={currentItemId}
+          setCurrentItemId={setCurrentItemId}
+          itemsUpdateData={itemsUpdateData}
+          handleSubmit={handleSubmit}
+          handleEditChange={handleEditChange}
+          handleStatusChange={handleStatusChange}
+          stockStatus={stockStatus}
+          highestPriorityGroupStatus={highestPriorityGroupStatus}
+          getAllowedStatusChanges={getAllowedStatusChanges}
+        />
       )}
 
     </div>

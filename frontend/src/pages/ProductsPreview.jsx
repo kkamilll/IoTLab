@@ -1,8 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import axios from "axios";
+import apiClient from "../api/apiClient";
 import { useAuth } from "../context/AuthContext";
-import { FaFilePdf, FaFileWord, FaFileExcel, FaFileImage, FaFileAlt, FaFile, FaShoppingCart } from "react-icons/fa";
+import {
+  FaFilePdf,
+  FaFileWord,
+  FaFileExcel,
+  FaFileImage,
+  FaFileAlt,
+  FaFile,
+  FaShoppingCart,
+} from "react-icons/fa";
 
 const ProductPreview = () => {
   const location = useLocation();
@@ -17,7 +25,13 @@ const ProductPreview = () => {
   const [cartQuantities, setCartQuantities] = useState({});
 
   useEffect(() => setCurrentImageIndex(0), [productId]);
-  const getAvailableStockForProduct = (product) => (Math.max(0, Number(product.stockForRent || 0) - Number(product.stockRentedOut || 0) - Number(product.stockReserved || 0)));
+  const getAvailableStockForProduct = (product) =>
+    Math.max(
+      0,
+      Number(product.stockForRent || 0) -
+        Number(product.stockRentedOut || 0) -
+        Number(product.stockReserved || 0),
+    );
 
   useEffect(() => {
     if (!productId) {
@@ -27,19 +41,19 @@ const ProductPreview = () => {
 
     const fetchProduct = async () => {
       try {
-        const API_URL = `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}`;
         const url = token
-          ? `${API_URL}/products/privateId/${productId}`
-          : `${API_URL}/products/publicId/${productId}`;
+          ? `/products/privateId/${productId}`
+          : `/products/publicId/${productId}`;
 
-        const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
-        const res = await axios.get(url, config);
+        const res = await apiClient.get(url);
 
         if (res.data.success) setProduct(res.data.product);
         else setError("Product not found");
       } catch (err) {
         console.error(err);
-        setError(`Error fetching product: ${err.response?.data?.message || err.message}`);
+        setError(
+          `Error fetching product: ${err.response?.data?.message || err.message}`,
+        );
       }
     };
 
@@ -48,21 +62,23 @@ const ProductPreview = () => {
 
   useEffect(() => {
     if (!product) return;
-    setCategoryNames((product.categories || []).map(cat => cat?.name));
+    setCategoryNames((product.categories || []).map((cat) => cat?.name));
   }, [product]);
 
   useEffect(() => {
-      setCartQuantities(prev => {
-        const cart = JSON.parse(localStorage.getItem("cart")) || [];
-        const newQuantities = {};
-        cart.forEach(cartItem => newQuantities[cartItem._id] = cartItem.quantity);
-        return newQuantities;
-      })
-    }, []);
+    setCartQuantities((prev) => {
+      const cart = JSON.parse(localStorage.getItem("cart")) || [];
+      const newQuantities = {};
+      cart.forEach(
+        (cartItem) => (newQuantities[cartItem._id] = cartItem.quantity),
+      );
+      return newQuantities;
+    });
+  }, []);
 
   const handleAddToCart = (product) => {
     const cart = JSON.parse(localStorage.getItem("cart")) || [];
-    const existingIndex = cart.findIndex(p => p._id === product._id);
+    const existingIndex = cart.findIndex((p) => p._id === product._id);
 
     if (existingIndex !== -1) cart[existingIndex].quantity += 1;
     else cart.push({ ...product, quantity: 1 });
@@ -73,25 +89,34 @@ const ProductPreview = () => {
 
   const showPrevImage = () => {
     if (!product?.images?.length) return;
-    setCurrentImageIndex(prev => (prev > 0 ? prev - 1 : product.images.length - 1));
+    setCurrentImageIndex((prev) =>
+      prev > 0 ? prev - 1 : product.images.length - 1,
+    );
   };
 
   const showNextImage = () => {
     if (!product?.images?.length) return;
-    setCurrentImageIndex(prev => (prev < product.images.length - 1 ? prev + 1 : 0));
+    setCurrentImageIndex((prev) =>
+      prev < product.images.length - 1 ? prev + 1 : 0,
+    );
   };
 
   // Funkcja pomocnicza do wyświetlania ikony w zależności od typu pliku
   const getFileIcon = (filename) => {
     const ext = filename.split(".").pop()?.toLowerCase();
     switch (ext) {
-      case "pdf": return <FaFilePdf className="inline-block mr-2 text-red-500" />;
+      case "pdf":
+        return <FaFilePdf className="inline-block mr-2 text-red-500" />;
       case "doc":
-      case "docx": return <FaFileWord className="inline-block mr-2 text-blue-600" />;
+      case "docx":
+        return <FaFileWord className="inline-block mr-2 text-blue-600" />;
       case "xls":
-      case "xlsx": return <FaFileExcel className="inline-block mr-2 text-green-600" />;
-      case "txt": return <FaFileAlt className="inline-block mr-2 text-gray-600" />;
-      default: return <FaFile className="inline-block mr-2 text-gray-400" />;
+      case "xlsx":
+        return <FaFileExcel className="inline-block mr-2 text-green-600" />;
+      case "txt":
+        return <FaFileAlt className="inline-block mr-2 text-gray-600" />;
+      default:
+        return <FaFile className="inline-block mr-2 text-gray-400" />;
     }
   };
 
@@ -114,14 +139,15 @@ const ProductPreview = () => {
 
     // minimalna ilość 0, maksymalna = dostępny stock
     if (isNaN(qty) || qty < 0) qty = 0;
-    if (qty > getAvailableStockForProduct(product)) qty = getAvailableStockForProduct(product);
+    if (qty > getAvailableStockForProduct(product))
+      qty = getAvailableStockForProduct(product);
 
     // aktualizacja stanu koszyka
-    setCartQuantities(prev => ({ ...prev, [productId]: qty }));
+    setCartQuantities((prev) => ({ ...prev, [productId]: qty }));
 
     // aktualizacja localStorage
     const cart = JSON.parse(localStorage.getItem("cart")) || [];
-    const existingIndex = cart.findIndex(p => p._id === productId);
+    const existingIndex = cart.findIndex((p) => p._id === productId);
 
     if (qty === 0) {
       if (existingIndex !== -1) cart.splice(existingIndex, 1);
@@ -137,184 +163,223 @@ const ProductPreview = () => {
     // setCartQuantitiesInCart(cart.reduce((acc, item) => ({ ...acc, [item._id]: item.quantity }), {}));
   };
 
-  if (!product) return <div className="p-6 text-center">Loading product...</div>;
+  if (!product)
+    return <div className="p-6 text-center">Loading product...</div>;
 
   const API_URL = `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}`;
 
   return (
-    <div className="max-w-5xl mx-auto p-6 flex flex-col gap-6 bg-white rounded-xl shadow-md">
-      <button
-        onClick={() => navigate(-1)}
-        className="self-start px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition"
-      >
-        ← Back
-      </button>
+    <div className="min-h-screen bg-slate-100 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-5xl rounded-3xl bg-white p-6 shadow-2xl border border-slate-200">
+        <button
+          onClick={() => navigate(-1)}
+          className="mb-6 inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-200 transition"
+        >
+          ← Back
+        </button>
 
-      <h1 className="text-3xl font-bold text-gray-800">{product.name}</h1>
+        <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+          <div>
+            <h1 className="text-4xl font-black text-slate-900">
+              {product.name}
+            </h1>
+            <p className="mt-2 text-sm text-slate-500">
+              Detailed product preview and rental options.
+            </p>
+          </div>
+          <div className="rounded-3xl bg-slate-50 p-5 shadow-sm border border-slate-200">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm uppercase tracking-[0.3em] text-slate-500">
+                Available
+              </p>
+              <span className="rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-700">
+                {getAvailableStockForProduct(product)}
+              </span>
+            </div>
+            <div className="mt-4 space-y-3 text-sm text-slate-600">
+              <p>
+                <span className="font-semibold text-slate-900">Category:</span>{" "}
+                {categoryNames.join(", ") || "Uncategorized"}
+              </p>
+              <p>
+                <span className="font-semibold text-slate-900">In cart:</span>{" "}
+                {cartQuantities[product._id] || 0}
+              </p>
+              <p>
+                <span className="font-semibold text-slate-900">Owner:</span>{" "}
+                {product.owner?.name || "Unknown"}
+              </p>
+            </div>
+            <button
+              onClick={() => navigate("/cart")}
+              className="mt-6 w-full rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-lg hover:bg-blue-700 transition"
+            >
+              View Cart
+            </button>
+          </div>
+        </div>
 
-      {/* Image gallery */}
-      {product.images?.length > 0 ? (
-        <div className="relative flex flex-col items-center">
-          <div className="relative w-full max-w-lg">
+        {product.images?.length > 0 ? (
+          <div className="relative mt-6 overflow-hidden rounded-3xl border border-slate-200 shadow-lg">
             <img
               src={`${API_URL}/uploads/products/${product.images[currentImageIndex].filename}`}
               alt={`${product.name} ${currentImageIndex + 1}`}
-              className="w-full max-h-96 object-contain rounded-lg shadow-lg"
+              className="h-[28rem] w-full object-cover"
             />
             {product.images.length > 1 && (
               <>
                 <button
                   onClick={showPrevImage}
-                  className="absolute top-1/2 left-0 -translate-y-1/2 bg-black bg-opacity-40 text-white px-3 py-2 rounded-l hover:bg-opacity-70 transition"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/80 px-4 py-3 text-xl text-slate-900 shadow hover:bg-white"
                 >
                   ‹
                 </button>
                 <button
                   onClick={showNextImage}
-                  className="absolute top-1/2 right-0 -translate-y-1/2 bg-black bg-opacity-40 text-white px-3 py-2 rounded-r hover:bg-opacity-70 transition"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/80 px-4 py-3 text-xl text-slate-900 shadow hover:bg-white"
                 >
                   ›
                 </button>
               </>
             )}
+            <div className="absolute bottom-4 left-4 rounded-full bg-slate-900/80 px-4 py-2 text-sm text-slate-100">
+              {currentImageIndex + 1} / {product.images.length}
+            </div>
           </div>
-          <p className="text-gray-500 mt-2">
-            {currentImageIndex + 1} / {product.images.length}
-          </p>
-        </div>
-      ) : (
-        <p className="text-gray-400">No images</p>
-      )}
+        ) : (
+          <div className="mt-6 rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-12 text-center text-slate-500">
+            No images available for this product.
+          </div>
+        )}
 
-      {/* Product details (bubble layout) */}
-      <div className="space-y-4 mt-4">
-        {/* Description */}
-        <div className="flex flex-wrap gap-2">
-          <div className="flex-auto min-w-[200px] px-4 py-3 bg-gray-100 rounded-lg">
-            <p className="text-sm font-semibold text-gray-600">Description</p>
-            <p className="text-center text-gray-800 break-words">
-              {product.description || "—"}
+        <div className="mt-8 grid gap-4 md:grid-cols-2">
+          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
+            <h2 className="text-xl font-semibold text-slate-900 mb-3">
+              Description
+            </h2>
+            <p className="text-slate-700 whitespace-pre-line">
+              {product.description || "No description provided."}
             </p>
           </div>
-        </div>
-
-        {/* Available */}
-        <div className="flex flex-wrap gap-2">
-          <div className="flex-auto min-w-[200px] px-4 py-3 bg-green-100 rounded-lg">
-            <p className="text-sm font-semibold text-gray-600">Available</p>
-            <p className="text-center text-green-800">{getAvailableStockForProduct(product)}</p>
+          <div className="space-y-4">
+            {categoryNames.length > 0 && (
+              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
+                <h2 className="text-xl font-semibold text-slate-900 mb-3">
+                  Categories
+                </h2>
+                <p className="text-slate-700">{categoryNames.join(", ")}</p>
+              </div>
+            )}
+            {product.tags && (
+              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
+                <h2 className="text-xl font-semibold text-slate-900 mb-3">
+                  Tags
+                </h2>
+                <p className="text-slate-700">{product.tags.join(", ")}</p>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Categories */}
-        {categoryNames.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            <div className="flex-auto min-w-[200px] px-4 py-3 bg-blue-100 rounded-lg">
-              <p className="text-sm font-semibold text-gray-600">Categories</p>
-              <p className="text-center text-blue-800 break-words">
-                {categoryNames.join(", ")}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Tags */}
-        {product.tags && (
-          <div className="flex flex-wrap gap-2">
-            <div className="flex-auto min-w-[200px] px-4 py-3 bg-purple-100 rounded-lg">
-              <p className="text-sm font-semibold text-gray-600">Tags</p>
-              <p className="text-center text-purple-800">{product.tags.join(", ")}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Extra fields */}
         {product.extraFields &&
-          Object.entries(product.extraFields).map(([key, val]) => (
-            <div key={key} className="flex flex-wrap gap-2">
-              <div className="flex-auto min-w-[200px] px-4 py-3 bg-yellow-100 rounded-lg">
-                <p className="text-sm font-semibold text-gray-600">{key}</p>
-                <p className="text-center text-yellow-800 break-words">{val}</p>
+          Object.entries(product.extraFields).length > 0 && (
+            <div className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+              <h2 className="text-xl font-semibold text-slate-900 mb-4">
+                Additional Data
+              </h2>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {Object.entries(product.extraFields).map(([key, val]) => (
+                  <div key={key} className="rounded-3xl bg-slate-50 p-4">
+                    <p className="text-sm uppercase tracking-[0.2em] text-slate-500">
+                      {key}
+                    </p>
+                    <p className="mt-2 text-slate-700">{val || "—"}</p>
+                  </div>
+                ))}
               </div>
             </div>
-          ))}
+          )}
 
-        {/* Attachments with icons */}
         {product.attachments?.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            <div className="flex-auto min-w-[200px] px-4 py-3 bg-pink-100 rounded-lg">
-              <p className="text-sm font-semibold text-gray-600">Attachments</p>
-              {product.attachments.map(att => (
+          <div className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="text-xl font-semibold text-slate-900 mb-4">
+              Attachments
+            </h2>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {product.attachments.map((att) => (
                 <a
                   key={att.uniqueKey}
                   href={`${API_URL}/uploads/products/${att.filename}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-pink-800 hover:underline flex items-center gap-2 break-words justify-center"
+                  className="rounded-3xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-800 hover:border-blue-300 hover:bg-blue-50 transition"
                 >
-                  {getFileIcon(att.originalName)}
-                  <span>{att.originalName}</span>
+                  {getFileIcon(att.originalName)} {att.originalName}
                 </a>
               ))}
             </div>
           </div>
         )}
-      </div>
 
-      {/* Action buttons */}
-      <div className="flex flex-col sm:flex-row sm:gap-6 mt-6 items-stretch sm:items-stretch">
-        <div className="flex flex-1 sm:flex-none items-center gap-0 justify-center sm:justify-start">
-          <span className="bg-gray-100 text-gray-700 px-3 rounded-l-xl font-medium border border-r-0 border-gray-300 flex items-center h-14">
-            In cart:
-          </span>
-
-          {/* Quantity Selector */}
-          <div className="flex border rounded-r-xl shadow-sm overflow-hidden h-14 flex-shrink-0">
-            <button
-              onClick={() =>
-                handleQuantityChange(product._id, (cartQuantities[product._id] || 0) - 1, product)
-              }
-              className="w-14 h-full bg-gray-100 hover:bg-gray-200 transition text-gray-700 text-2xl font-bold disabled:opacity-40 disabled:cursor-not-allowed"
-              disabled={(cartQuantities[product._id] || 0) <= 0}
-            >
-              −
-            </button>
-
-            <input
-              type="number"
-              min="0"
-              max={getAvailableStockForProduct(product)}
-              value={cartQuantities[product._id] || 0}
-              onChange={(e) =>
-                handleQuantityChange(product._id, e.target.value, product)
-              }
-              className="w-20 h-full text-center text-lg font-semibold outline-none border-x border-gray-200 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
-            />
-
-            <button
-              onClick={() =>
-                handleQuantityChange(product._id, (cartQuantities[product._id] || 0) + 1, product)
-              }
-              className="w-14 h-full bg-gray-100 hover:bg-gray-200 transition text-gray-700 text-2xl font-bold disabled:opacity-40 disabled:cursor-not-allowed"
-              disabled={
-                (cartQuantities[product._id] || 0) >= getAvailableStockForProduct(product)
-              }
-            >
-              +
-            </button>
+        <div className="mt-8 grid gap-4 sm:grid-cols-[1fr_220px] items-end">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h3 className="text-lg font-semibold text-slate-900 mb-3">
+              Add to cart
+            </h3>
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() =>
+                  handleQuantityChange(
+                    product._id,
+                    (cartQuantities[product._id] || 0) - 1,
+                    product,
+                  )
+                }
+                disabled={(cartQuantities[product._id] || 0) <= 0}
+                className="rounded-2xl bg-slate-100 px-4 py-3 text-xl font-bold text-slate-700 hover:bg-slate-200 disabled:opacity-40"
+              >
+                −
+              </button>
+              <input
+                type="number"
+                min="0"
+                max={getAvailableStockForProduct(product)}
+                value={cartQuantities[product._id] || 0}
+                onChange={(e) =>
+                  handleQuantityChange(product._id, e.target.value, product)
+                }
+                className="w-24 rounded-2xl border border-slate-200 px-3 py-3 text-center text-lg text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              />
+              <button
+                onClick={() =>
+                  handleQuantityChange(
+                    product._id,
+                    (cartQuantities[product._id] || 0) + 1,
+                    product,
+                  )
+                }
+                disabled={
+                  (cartQuantities[product._id] || 0) >=
+                  getAvailableStockForProduct(product)
+                }
+                className="rounded-2xl bg-slate-100 px-4 py-3 text-xl font-bold text-slate-700 hover:bg-slate-200 disabled:opacity-40"
+              >
+                +
+              </button>
+            </div>
+            <p className="mt-4 text-sm text-slate-500">
+              Quantity will be stored in the cart automatically.
+            </p>
           </div>
+
+          <button
+            onClick={() => navigate("/cart")}
+            className="rounded-3xl bg-blue-600 px-5 py-4 text-sm font-semibold text-white shadow-lg hover:bg-blue-700 transition"
+          >
+            View Cart & Checkout
+          </button>
         </div>
-
-        {/* Cart Button */}
-        <button
-          onClick={() => navigate("/cart")}
-          className="flex-1 px-8 py-4 bg-blue-500 text-white text-lg font-semibold rounded-xl hover:bg-blue-600 transition mt-4 sm:mt-0 h-14 sm:h-14"
-        >
-          Go to Cart
-        </button>
       </div>
-
-
     </div>
   );
 };

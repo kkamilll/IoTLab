@@ -1,17 +1,14 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import { FiEye, FiEyeOff } from "react-icons/fi";
-import { FaCube, FaCubes, FaHandshake, FaEye, FaEyeSlash } from "react-icons/fa";
-import { FaUserShield, FaUserLock } from "react-icons/fa6";
-
-import CategorySelector from "../components/CategorySelector";
-import autoTable from "jspdf-autotable";
-import { jsPDF } from "jspdf";
+import apiClient from "../api/apiClient";
+import ProductModal from "../components/products/ProductModal";
+import ProductsTable from "../components/products/ProductsTable";
+import ProductsMobileCards from "../components/products/ProductsMobileCards";
+import { generateProductsPDF } from "../utils/pdfGenerator";
 import { useAuth } from "../context/AuthContext";
 import { buildTree } from "../utils/categoryUtils";
-import CategoryTree from "../components/CategoryTree";
+import CategoryTree from "../components/categories/CategoryTree";
 
 const MEGA_BYTE = 1024 * 1024;
 const MAX_FILE_SIZE = 50 * MEGA_BYTE;
@@ -164,9 +161,7 @@ const Products = () => {
 
   const fetchCategories = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/categories/private`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiClient.get("/categories/private");
       if (res.data.success) {
         setCategories(res.data.categories);
       }
@@ -177,9 +172,7 @@ const Products = () => {
   // Pobieranie produktów
   const fetchProducts = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/products/private`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiClient.get("/products/private");
 
       if (!res.data.success) return alert(res.data.message || "Error fetching products");
 
@@ -208,9 +201,7 @@ const Products = () => {
 
   const fetchUsers = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/users`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiClient.get("/users");
       if (!res.data.success) return alert(res.data.message || "Error fetching products");
 
       const fetchedUsers = res.data.users;
@@ -222,10 +213,7 @@ const Products = () => {
   }
 
   const deleteProduct = async (id) => {
-    const res = await axios.delete(
-      `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/products/${id}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    const res = await apiClient.delete(`/products/${id}`);
     return res.data;
   };
 
@@ -432,9 +420,7 @@ const Products = () => {
     if (!window.confirm(`Delete column "${key}" from all products?`)) return;
 
     try {
-      const res = await axios.delete(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/products/extraField/${key}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiClient.delete(`/products/extraField/${key}`);
 
       if (res.data.success) {
         // Usuń kolumnę z widoku
@@ -456,7 +442,7 @@ const Products = () => {
       }
     } catch (err) {
       console.error(err);
-      alert(`${error.response.data.message}`);
+      alert(`${err.response.data.message}`);
     }
   };
 
@@ -538,14 +524,13 @@ const Products = () => {
 
       const config = {
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
         },
       };
 
       const res = editProduct
-        ? await axios.put(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/products/${editProduct}`, form, config)
-        : await axios.post(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/products/create`, form, config);
+        ? await apiClient.put(`/products/${editProduct}`, form, config)
+        : await apiClient.post('/products/create', form, config);
       // console.log(res);
 
       if (res.data.success) {
@@ -572,51 +557,7 @@ const Products = () => {
   };
 
   const generatePDF = () => {
-    if (filteredProducts.length === 0) return alert("No products to export.");
-
-    // Landscape (poziomo)
-    const doc = new jsPDF({ orientation: "landscape" });
-    doc.text("Product List", 14, 15);
-
-    const visibleColumns = allColumns.filter(col => !hiddenColumns.includes(col));
-    const headers = ["#", ...visibleColumns];
-
-    const rows = filteredProducts.map((p, i) =>
-      visibleColumns.map(col => {
-        switch (col) {
-          case "total": return p.stockTotal ?? 0;
-          case "for rent": return p.stockForRent ?? 0;
-          case "categories": return p.categories?.map(c => c?.name ?? "").join(", ") ?? "";
-          case "owner": return p.owner?.name ?? p.owner ?? "";
-          case "description": return p.description ?? "";
-          case "name": return p.name ?? "";
-          default: return p[col] ?? p.extraFields?.[col] ?? "";
-        }
-      })
-    );
-
-    const numberedRows = rows.map((row, idx) => [idx + 1, ...row]);
-
-    // Automatyczne dopasowanie kolumn i zawijanie tekstu
-    const columnStyles = {};
-    headers.forEach((h, i) => {
-      if (h === "name") columnStyles[i] = { cellWidth: 50 };
-      else if (h === "description") columnStyles[i] = { cellWidth: 70 };
-      else if (h === "#") columnStyles[i] = { cellWidth: 10 };
-      else columnStyles[i] = { cellWidth: 'auto' };
-    });
-
-    autoTable(doc, {
-      head: [headers],
-      body: numberedRows,
-      startY: 20,
-      styles: { fontSize: 8, overflow: 'linebreak', cellPadding: 2 },
-      headStyles: { fillColor: [22, 160, 133] },
-      columnStyles,
-      margin: { left: 10, right: 10 },
-    });
-
-    doc.save("products.pdf");
+    generateProductsPDF(filteredProducts, allColumns, hiddenColumns);
   };
   const handlePreview = (productId) => {
     if (!productId) return alert("No product to preview");
@@ -635,36 +576,23 @@ const Products = () => {
     );
   };
   return (
-    <div className="w-full h-full flex flex-col gap-4 p-6 bg-gray-50">
-      <h1 className="text-3xl font-extrabold text-blue-700">Objects Management</h1>
+    <div className="w-full h-full flex flex-col gap-6 p-6 md:p-8 bg-slate-50/30">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-slate-200 pb-6 gap-4">
+        <div>
+          <h1 className="text-2xl font-black text-slate-900">Objects Management</h1>
+          <p className="text-slate-500 text-sm mt-0.5">Manage and organize laboratory objects, items, and inventory</p>
+        </div>
 
-      {/* Kontrolki */}
-      <div className="flex flex-col sm:flex-row justify-between gap-3">
-        <input
-          type="text"
-          placeholder="Search"
-          className="border border-gray-300 p-2 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 flex-1"
-          onChange={handleSearch}
-        />
-
-        {/* Buttons */}
-        <div className="flex flex-col sm:flex-row flex-wrap gap-3 mt-3 sm:mt-0 w-full">
+        <div className="flex flex-col sm:flex-row flex-wrap gap-2.5 items-center w-full md:w-auto">
           <button
-            className="flex-1 min-w-[120px] px-4 py-2.5 h-10 text-sm font-medium bg-green-500 text-white rounded shadow hover:bg-green-600 transition w-full sm:w-auto"
+            className="w-full sm:w-auto px-4 py-2 text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200/60 rounded-xl shadow-sm hover:bg-slate-200 transition"
             onClick={generatePDF}
           >
             Export PDF
           </button>
 
           <button
-            className="flex-1 min-w-[120px] px-4 py-2.5 h-10 text-sm font-medium bg-blue-500 text-white rounded shadow hover:bg-blue-600 transition w-full sm:w-auto"
-            onClick={() => { setEditProduct(null); setOpenModal(true); }}
-          >
-            Add Object
-          </button>
-
-          <button
-            className="flex-1 min-w-[120px] px-4 py-2.5 h-10 text-sm font-medium bg-gray-500 text-white rounded shadow hover:bg-gray-600 transition w-full sm:w-auto"
+            className="w-full sm:w-auto px-4 py-2 text-xs font-bold bg-slate-800 text-white rounded-xl shadow-sm hover:bg-slate-900 transition"
             onClick={addExtraField}
           >
             Add Column
@@ -672,788 +600,202 @@ const Products = () => {
 
           <button
             onClick={() => navigate("/cart")}
-            className="flex-1 min-w-[120px] px-5 py-2.5 h-10 text-sm font-medium bg-purple-500 text-white rounded shadow hover:bg-purple-600 transition w-full sm:w-auto"
+            className="w-full sm:w-auto px-4 py-2 text-xs font-bold bg-emerald-600 text-white rounded-xl shadow-sm hover:bg-emerald-700 transition"
           >
             Go to Cart
           </button>
+
+          <button
+            className="w-full sm:w-auto px-4 py-2 text-xs font-bold bg-indigo-600 text-white rounded-xl shadow-sm hover:bg-indigo-700 transition"
+            onClick={() => { setEditProduct(null); setOpenModal(true); }}
+          >
+            Add Object
+          </button>
         </div>
-
-
       </div>
 
-      <div className="flex flex-wrap items-center gap-4 mb-4">
-        {/* Filter by Category */}
-        <div className="relative inline-block text-left w-64">
-          <button
-            type="button"
-            onClick={() => setCategoriesDropdownOpen(prev => !prev)}
-            className="inline-flex justify-between w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
-          >
-            Filter by Category
-            <svg
-              className="-mr-1 ml-2 h-5 w-5"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.293l3.71-4.06a.75.75 0 111.08 1.04l-4.25 4.65a.75.75 0 01-1.08 0L5.25 8.27a.75.75 0 01-.02-1.06z" clipRule="evenodd" />
-            </svg>
-          </button>
+      {/* Search & Filters */}
+      <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
+        <input
+          type="text"
+          placeholder="Search objects..."
+          className="border border-slate-200 px-4 py-2 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm w-full lg:max-w-md"
+          onChange={handleSearch}
+        />
 
-          {categoriesDropdownOpen && (
-            <div
-              className="absolute mt-2 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10 overflow-y-auto"
-              style={{
-                maxHeight: allCategories.length > 5 ? '8rem' : 'auto',
-              }}
+        <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+          {/* Filter by Category */}
+          <div className="relative inline-block text-left w-full sm:w-60">
+            <button
+              type="button"
+              onClick={() => setCategoriesDropdownOpen(prev => !prev)}
+              className="inline-flex justify-between items-center w-full rounded-xl border border-slate-200 shadow-sm px-4 py-2 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 focus:outline-none transition"
             >
-              <ul className="py-1">
-                {allCategories.map(category => (
-                  <li key={category._id}>
-                    <label className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
+              <span>Filter by Category</span>
+              <svg
+                className="ml-2 h-4 w-4 text-slate-400"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.293l3.71-4.06a.75.75 0 111.08 1.04l-4.25 4.65a.75.75 0 01-1.08 0L5.25 8.27a.75.75 0 01-.02-1.06z" clipRule="evenodd" />
+              </svg>
+            </button>
+
+            {categoriesDropdownOpen && (
+              <div
+                className="absolute mt-2 w-full rounded-xl shadow-lg bg-white border border-slate-100 z-30 overflow-y-auto max-h-48 py-1.5"
+              >
+                <ul className="py-1">
+                  {allCategories.map(category => (
+                    <li key={category._id}>
+                      <label className="flex items-center gap-2.5 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 cursor-pointer transition">
+                        <input
+                          type="checkbox"
+                          value={category._id}
+                          checked={activeCategories.includes(category._id)}
+                          onChange={e => {
+                            const { checked } = e.target;
+                            setActiveCategories(prev =>
+                              checked
+                                ? [...prev, category._id]
+                                : prev.filter(id => id !== category._id)
+                            );
+                          }}
+                          className="accent-indigo-600 w-4 h-4 rounded"
+                        />
+                        <span>{category.name}</span>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          {/* Show Columns */}
+          <div className="relative inline-block text-left w-full sm:w-60">
+            <button
+              type="button"
+              onClick={() => setColumnsDropdownOpen(prev => !prev)}
+              className="inline-flex justify-between items-center w-full rounded-xl border border-slate-200 shadow-sm px-4 py-2 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 focus:outline-none transition"
+            >
+              <span>{columnsDropdownOpen ? "Hide Columns" : "Show Columns"}</span>
+              <svg
+                className={`ml-2 h-4 w-4 text-slate-400 transform transition-transform duration-200 ${columnsDropdownOpen ? "rotate-180" : ""}`}
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.293l3.71-4.06a.75.75 0 111.08 1.04l-4.25 4.65a.75.75 0 01-1.08 0L5.25 8.27a.75.75 0 01-.02-1.06z" clipRule="evenodd" />
+              </svg>
+            </button>
+
+            {columnsDropdownOpen && (
+              <ul
+                className="absolute mt-2 w-full rounded-xl shadow-lg bg-white border border-slate-100 z-30 overflow-y-auto max-h-60 py-1.5"
+              >
+                {allColumns.map(col => (
+                  <li key={col}>
+                    <label className="flex items-center gap-2.5 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 cursor-pointer transition">
                       <input
                         type="checkbox"
-                        value={category._id}
-                        checked={activeCategories.includes(category._id)}
-                        onChange={e => {
-                          const { checked } = e.target;
-                          setActiveCategories(prev =>
-                            checked
-                              ? [...prev, category._id]
-                              : prev.filter(id => id !== category._id)
-                          );
-                        }}
-                        className="accent-blue-500 w-4 h-4"
+                        checked={!hiddenColumns.includes(col)}
+                        onChange={() => toggleColumn(col)}
+                        className="accent-indigo-600 w-4 h-4 rounded"
                       />
-                      <span>{category.name}</span>
+                      <span>{col}</span>
                     </label>
                   </li>
                 ))}
               </ul>
-            </div>
-          )}
-        </div>
-
-        {/* Show Columns */}
-        <div className="relative inline-block text-left w-64">
-          <button
-            type="button"
-            onClick={() => setColumnsDropdownOpen(prev => !prev)}
-            className="inline-flex justify-between w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
-          >
-            {columnsDropdownOpen ? "Hide Columns" : "Show Columns"}
-            <svg
-              className={`-mr-1 ml-2 h-5 w-5 transform transition-transform ${columnsDropdownOpen ? "rotate-180" : ""}`}
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.293l3.71-4.06a.75.75 0 111.08 1.04l-4.25 4.65a.75.75 0 01-1.08 0L5.25 8.27a.75.75 0 01-.02-1.06z" clipRule="evenodd" />
-            </svg>
-          </button>
-
-          {columnsDropdownOpen && (
-            <ul
-              className="absolute mt-2 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10 overflow-y-auto max-h-60 py-1"
-            >
-              {allColumns.map(col => (
-                <li key={col}>
-                  <label className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={!hiddenColumns.includes(col)}
-                      onChange={() => toggleColumn(col)}
-                      className="accent-blue-500 w-4 h-4"
-                    />
-                    <span>{col}</span>
-                  </label>
-                </li>
-              ))}
-            </ul>
-          )}
+            )}
+          </div>
         </div>
       </div>
-
 
       {/* Tabela */}
       <div className="w-full">
-        {/* Desktop Table */}
-        <div className="hidden md:block overflow-x-auto w-full shadow rounded border border-gray-200">
-          <table className="table-auto w-full min-w-max divide-y divide-gray-200">
-            <thead className="bg-gray-100">
-              <tr>
-                {allColumns.filter(col => !hiddenColumns.includes(col)).map((col, idx) => (
-                  <th
-                    key={idx}
-                    className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer whitespace-nowrap"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span
-                        onClick={() => handleSort(col)}
-                        className="truncate cursor-pointer select-none"
-                      >
-                        {col}{" "}
-                        {sortConfig.key === col
-                          ? sortConfig.direction === "asc"
-                            ? "↑"
-                            : sortConfig.direction === "desc"
-                              ? "↓"
-                              : ""
-                          : ""}
-                      </span>
+        <ProductsTable
+          paginatedProducts={paginatedProducts}
+          allColumns={allColumns}
+          hiddenColumns={hiddenColumns}
+          sortConfig={sortConfig}
+          handleSort={handleSort}
+          isAdmin={isAdmin}
+          user={user}
+          extraColumns={extraColumns}
+          removeExtraField={removeExtraField}
+          handlePreview={handlePreview}
+          handleEdit={handleEdit}
+          handleDelete={handleDelete}
+          handleQuantityChange={handleQuantityChange}
+          cartQuantities={cartQuantities}
+          getAvailableStockForProduct={getAvailableStockForProduct}
+        />
 
-                      {isAdmin && extraColumns.includes(col) && (
-                        <button
-                          onClick={() => removeExtraField(col)}
-                          className="ml-2 px-1 py-0.5 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
-                        >
-                          X
-                        </button>
-                      )}
-                    </div>
-                  </th>
-                ))}
-                {isAdmin && <th className="px-4 py-2 whitespace-nowrap">Actions</th>}
-              </tr>
-            </thead>
-
-            <tbody className="bg-white divide-y divide-gray-200">
-              {paginatedProducts.map((p) => (
-                <tr key={p._id}>
-                  {allColumns
-                    .filter((col) => !hiddenColumns.includes(col))
-                    .map((col, idx) => {
-                      let value;
-                      switch (col) {
-                        case "total":
-                          value = <p className="min-w-20">{p.stockTotal ?? 0}</p>;
-                          break;
-
-                        case "for rent":
-                          value = <p className="min-w-20">{p.stockForRent ?? 0}</p>;
-                          break;
-
-                        case "categories":
-                          value = (
-                            <div className="relative inline-block w-40">
-                              <select
-                                className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white appearance-none pr-8 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 shadow-sm"
-                                value={p.categories.length === 1 ? p.categories[0]?.name ?? "" : ""}
-                                onChange={(e) => e.preventDefault()}
-                                disabled={p.categories.length <= 1} // blokada przy 0 i 1
-                              >
-                                {p.categories.length === 0 && <option value="" disabled>-</option>}
-                                {p.categories.length === 1 && (
-                                  <option value={p.categories[0]?.name ?? ""}>
-                                    {p.categories[0]?.name ?? "-"}
-                                  </option>
-                                )}
-                                {p.categories.length > 1 && (
-                                  <>
-                                    <option value="" disabled hidden>Check Categories</option>
-                                    {p.categories.map((c, i) => (
-                                      <option key={i} value={c?.name ?? ""}>{c?.name}</option>
-                                    ))}
-                                  </>
-                                )}
-                              </select>
-
-                              {p.categories.length > 1 && (
-                                <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-sm select-none">
-                                  ▼
-                                </span>
-                              )}
-                            </div>
-                          );
-                          break;
-
-
-                        case "owner":
-                          value = p.owner?.name ?? p.owner;
-                          break;
-
-                        case "description":
-                        case "name":
-                          value = p[col];
-                          break;
-
-                        default:
-                          value = p[col] ?? p.extraFields?.[col] ?? "";
-                      }
-
-                      const isString = typeof value === "string";
-                      const maxLength = 25;
-                      const truncated = isString && value.length > maxLength ? value.slice(0, maxLength) + "…" : value;
-
-                      return (
-                        <td key={idx} className="px-4 py-2 text-sm text-gray-700 whitespace-nowrap">
-                          {col === "categories" ? (
-                            value
-                          ) : isString ? (
-                            <span
-                              className="truncate cursor-pointer"
-                              title={value}
-                              onClick={col === "name" || col === "description" ? () => handlePreview(p._id) : undefined}
-                            >
-                              {truncated}
-                            </span>
-
-                          ) : (
-                            value
-                          )}
-                        </td>
-                      );
-                    })}
-
-                  <td className="px-4 py-2 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => handleEdit(p)} disabled={(user.id !== p.owner._id && !isAdmin)} className="h-10 px-4 bg-blue-500 text-white rounded hover:bg-blue-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
-                        Edit
-                      </button>
-                      <button onClick={() => handlePreview(p._id)} className="h-10 px-4 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition">
-                        Preview
-                      </button>
-                      <button onClick={() => handleDelete(p._id)} disabled={(user.id !== p.owner._id && !isAdmin)} className="h-10 px-4 bg-red-500 text-white rounded hover:bg-red-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
-                        Delete
-                      </button>
-
-                      <div className="flex items-center overflow-hidden h-10">
-                        <button
-                          onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) - 1, p)}
-                          className="px-3 bg-gray-200 hover:bg-gray-300 h-full"
-                          disabled={(cartQuantities[p._id] || 0) <= 0}
-                        >-</button>
-                        <input
-                          type="number"
-                          min="0"
-                          max={getAvailableStockForProduct(p)}
-                          value={cartQuantities[p._id] || 0}
-                          onChange={(e) => handleQuantityChange(p._id, e.target.value, p)}
-                          className="w-16 text-center outline-none"
-                        />
-                        <button
-                          onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) + 1, p)}
-                          className="px-3 bg-gray-200 hover:bg-gray-300 h-full"
-                          disabled={(cartQuantities[p._id] || 0) >= getAvailableStockForProduct(p)}
-                        >+</button>
-                      </div>
-                    </div>
-                  </td>
-
-                  <td className="px-4 py-2">
-                    <div className="flex flex-col sm:flex-row justify-center items-center gap-2 sm:gap-4">
-                      <span className="inline-block bg-gray-100 text-gray-700 text-sm font-semibold px-2 py-1 rounded-full text-center">
-                        Available: {getAvailableStockForProduct(p)}
-                      </span>
-                      <span className="inline-block bg-green-100 text-green-800 text-sm font-semibold px-2 py-1 rounded-full text-center">
-                        In cart: {cartQuantities[p._id] || 0}
-                      </span>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Mobile Cards */}
-        <div className="md:hidden flex flex-col gap-4">
-          {paginatedProducts.map(product => (
-            <div key={product._id} className="border rounded shadow p-4 bg-white flex flex-col gap-2">
-
-              {/* Name */}
-              <div className="flex justify-between py-1 border-b border-gray-200 last:border-b-0">
-                <span className="font-semibold text-gray-500">Name:</span>
-                <span
-                  className="text-gray-700 truncate cursor-pointer relative z-10 text-blue-600 hover:underline"
-                  onClick={() => handlePreview(product._id)}
-                >
-                  {product.name}
-                </span>
-              </div>
-
-              {/* Description */}
-              <div className="flex justify-between py-1 border-b border-gray-200 last:border-b-0">
-                <span className="font-semibold text-gray-500">Description:</span>
-                <span
-                  className="text-gray-700 truncate cursor-pointer text-blue-600 hover:underline"
-                  onClick={() => handlePreview(product._id)}
-                  title={product.description}
-                >
-                  {product.description?.length > 50 ? product.description.slice(0, 30) + "…" : product.description}
-                </span>
-              </div>
-
-              {/* Stock Total */}
-              <div className="flex justify-between py-1 border-b border-gray-200 last:border-b-0">
-                <span className="font-semibold text-gray-500">Total:</span>
-                <span className="text-gray-700 truncate">{product.stockTotal ?? 0}</span>
-              </div>
-
-              {/* Stock For Rent */}
-              <div className="flex justify-between py-1 border-b border-gray-200 last:border-b-0">
-                <span className="font-semibold text-gray-500">For rent:</span>
-                <span className="text-gray-700 truncate">{product.stockForRent ?? 0}</span>
-              </div>
-
-              {/* Categories */}
-              <div className="flex justify-between py-1 border-b border-gray-200 last:border-b-0">
-                <span className="font-semibold text-gray-500">Categories:</span>
-                <div className="relative inline-block w-40">
-                  <select
-                    className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white appearance-none pr-8 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 shadow-sm"
-                    value={product.categories.length === 1 ? product.categories[0]?.name ?? "" : ""}
-                    onChange={(e) => e.preventDefault()}
-                    disabled={product.categories.length <= 1} // zablokowane jeśli 0 lub 1
-                  >
-                    {product.categories.length === 0 && (
-                      <option value="" disabled>-</option>
-                    )}
-                    {product.categories.length > 1 && (
-                      <>
-                        <option value="" disabled hidden>Check Categories</option>
-                        {product.categories.map((c, i) => (
-                          <option key={i} value={c?.name ?? ""}>{c?.name}</option>
-                        ))}
-                      </>
-                    )}
-                    {product.categories.length === 1 && (
-                      <option value={product.categories[0]?.name ?? ""}>{product.categories[0]?.name ?? "-"}</option>
-                    )}
-                  </select>
-
-                  {product.categories.length > 1 && (
-                    <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-sm select-none">
-                      ▼
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Owner */}
-              <div className="flex justify-between py-1 border-b border-gray-200 last:border-b-0">
-                <span className="font-semibold text-gray-500">Owner:</span>
-                <span className="text-gray-700 truncate">{product.owner?.name ?? product.owner}</span>
-              </div>
-
-              {/* Quantity controls */}
-              <div className="flex border rounded-xl shadow-sm overflow-hidden h-14 w-full">
-                <button
-                  onClick={() =>
-                    handleQuantityChange(product._id, (cartQuantities[product._id] || 0) - 1, product)
-                  }
-                  className="w-1/4 h-full bg-gray-100 hover:bg-gray-200 transition text-gray-700 text-2xl font-bold disabled:opacity-40 disabled:cursor-not-allowed"
-                  disabled={(cartQuantities[product._id] || 0) <= 0}
-                >
-                  −
-                </button>
-
-                <input
-                  type="number"
-                  min="0"
-                  max={getAvailableStockForProduct(product)}
-                  value={cartQuantities[product._id] || 0}
-                  onChange={(e) =>
-                    handleQuantityChange(product._id, e.target.value, product)
-                  }
-                  className="min-w-20 flex-1 h-full text-center text-lg font-semibold outline-none border-x border-gray-200 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
-                />
-
-                <button
-                  onClick={() =>
-                    handleQuantityChange(product._id, (cartQuantities[product._id] || 0) + 1, product)
-                  }
-                  className="w-1/4 h-full bg-gray-100 hover:bg-gray-200 transition text-gray-700 text-2xl font-bold disabled:opacity-40 disabled:cursor-not-allowed"
-                  disabled={
-                    (cartQuantities[product._id] || 0) >= getAvailableStockForProduct(product)
-                  }
-                >
-                  +
-                </button>
-              </div>
-
-              {/* In cart / Available */}
-              <div className="flex justify-between items-center mt-1 text-sm text-gray-600">
-                <span className="bg-gray-100 px-2 py-0.5 rounded">
-                  Available: {getAvailableStockForProduct(product)}
-                </span>
-                <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded">
-                  In cart: {cartQuantities[product._id] || 0}
-                </span>
-              </div>
-
-              {/* Action buttons */}
-              <div className="flex flex-wrap gap-2 justify-center mt-2">
-                <button
-                  onClick={() => handleEdit(product)}
-                  disabled={user.id !== product.owner._id && !isAdmin}
-                  className="flex-1 min-w-[80px] px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed text-center"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handlePreview(product._id)}
-                  className="flex-1 min-w-[80px] px-3 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition text-center"
-                >
-                  Preview
-                </button>
-                <button
-                  onClick={() => handleDelete(product._id)}
-                  disabled={user.id !== product.owner._id && !isAdmin}
-                  className="flex-1 min-w-[80px] px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed text-center"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+        <ProductsMobileCards
+          paginatedProducts={paginatedProducts}
+          cartQuantities={cartQuantities}
+          handleQuantityChange={handleQuantityChange}
+          getAvailableStockForProduct={getAvailableStockForProduct}
+          handleEdit={handleEdit}
+          handlePreview={handlePreview}
+          handleDelete={handleDelete}
+          user={user}
+          isAdmin={isAdmin}
+        />
       </div>
 
-
       {/* Paginate */}
-      < div className="flex justify-center items-center gap-4 mt-4" >
+      <div className="flex justify-center items-center gap-4 mt-6">
         <button
           disabled={currentPage === 1}
           onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-          className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50"
+          className="px-4 py-2 text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200/60 rounded-xl hover:bg-slate-200 disabled:opacity-40 disabled:pointer-events-none transition"
         >
           Prev
         </button>
 
-        <span className="text-gray-700 font-medium">
+        <span className="text-slate-500 text-xs font-semibold">
           Page {currentPage} of {totalPages}
         </span>
 
         <button
           disabled={currentPage === totalPages}
           onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-          className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50"
+          className="px-4 py-2 text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200/60 rounded-xl hover:bg-slate-200 disabled:opacity-40 disabled:pointer-events-none transition"
         >
           Next
         </button>
-      </div >
+      </div>
 
       {openModal && (
-        <div className="fixed inset-0 backdrop-blur-md z-50 overflow-y-auto flex items-center justify-center p-4" onClick={closeModal} role="dialog" aria-modal="true">
-          <div className="bg-white p-6 rounded shadow-lg w-full max-w-lg md:max-w-xl lg:max-w-2xl mx-auto my-8 max-h-[90vh] overflow-auto relative" onClick={(e) => e.stopPropagation()}>
-            <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold">
-                  {editProduct ? "Edit Object" : "Add Object"}
-                </h2>
-
-                <div className="flex gap-2">
-                  {/* Toggles */}
-                  <button
-                    type="button"
-                    onClick={() => setFormData(prev => ({
-                      ...prev,
-                      isSerialized: !prev.isSerialized,
-                      stockTotal: !prev.isSerialized ? 1 : prev.stockTotal,
-                      stockForRent: !prev.isSerialized ? (prev.isRentable ? 1 : 0) : prev.stockForRent
-                    }))}
-                    className="p-2 rounded-full hover:bg-gray-200 text-3xl"
-                    title="Serializable (Track individually vs grouped)"
-                  >
-                    {formData.isSerialized ? <FaCube className="text-blue-500 text-3xl" /> : <FaCubes className="text-gray-500" />}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, isRentable: !prev.isRentable, stockForRent: !prev.isRentable ? prev.isSerialized ? "1" : prev.stockForRent : "0" }))}
-                    className="p-2 rounded-full hover:bg-gray-200 text-3xl"
-                    title="Rentable (allow item for rent)"
-                  >
-                    <FaHandshake className={formData.isRentable ? "text-green-500" : "text-gray-500"} />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, isVisible: !formData.isVisible, isShared: !prev.isVisible ? true : prev.isShared }))}
-                    className="p-2 rounded-full hover:bg-gray-200 text-3xl"
-                    title="Visible (allow item to be visible for everyone)"
-                  >
-                    {formData.isVisible ? <FaEye className="text-indigo-500" /> : <FaEyeSlash className="text-gray-500" />}
-                  </button>
-
-                  <button
-                    type="button"
-                    name="isShared"
-                    onClick={() => setFormData(prev => ({ ...prev, isShared: !formData.isShared, isVisible: prev.isShared ? false : prev.isVisible }))}
-                    className="p-2 rounded-full hover:bg-gray-200 text-3xl"
-                    title="Shared (allow item to be visible for other users)"
-                  >
-                    {formData.isShared ? <FaUserShield className="text-indigo-500" /> : <FaUserLock className="text-gray-500" />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Name */}
-              <div>
-                <label htmlFor="name" className="font-semibold">Name</label>
-                <input
-                  id="name"
-                  type="text"
-                  name="name"
-                  placeholder="Name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  maxLength={100}
-                  required
-                  className="border p-2 rounded w-full"
-                />
-                <p className="text-sm text-gray-500">{formData.name.length}/100</p>
-              </div>
-
-              {/* Description */}
-              <div>
-                <label htmlFor="description" className="font-semibold">Description</label>
-                <textarea
-                  id="description"
-                  name="description"
-                  placeholder="Description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  rows={4} // liczba widocznych wierszy
-                  maxLength={1000} // limit znaków
-                  className="border p-2 rounded w-full resize-y"
-                />
-                <p className="text-sm text-gray-500">{formData.description.length}/1000</p>
-              </div>
-
-              {/* Stock Total */}
-              <div>
-                <label htmlFor="stockTotal" className="font-semibold">Stock Total</label>
-                <input
-                  id="stockTotal"
-                  type="number"
-                  name="stockTotal"
-                  placeholder="Stock Total"
-                  value={formData.stockTotal}
-                  onChange={handleChange}
-                  min={1}
-                  required
-                  disabled={formData.isSerialized}
-                  className="border p-2 rounded w-full disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
-                />
-              </div>
-
-              {/* Stock For Rent */}
-              <div>
-                <label htmlFor="stockForRent" className="font-semibold">Stock For Rent</label>
-                <input
-                  id="stockForRent"
-                  type="number"
-                  name="stockForRent"
-                  placeholder="Stock For Rent"
-                  value={formData.stockForRent}
-                  onChange={handleChange}
-                  min={0}
-                  max={formData.stockTotal}
-                  required
-                  disabled={formData.isSerialized || !formData.isRentable}
-                  className="border p-2 rounded w-full disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
-                />
-              </div>
-
-              {/* Extra Columns */}
-              {extraColumns.map((col, idx) => (
-                <div key={idx} className="flex flex-col gap-1 mb-2">
-                  <label
-                    htmlFor={`extra-${col}`}
-                    className="font-semibold"
-                    title={col} // pokazuje pełną nazwę przy najechaniu
-                  >
-                    {col.length > 30 ? col.slice(0, 27) + "…" : col}
-                  </label>
-
-                  <textarea
-                    id={`extra-${col}`}
-                    name={col}
-                    placeholder={col}
-                    value={formData.extraFields?.[col] || ""}
-                    onChange={(e) => handleExtraFieldChange(col, e.target.value)}
-                    rows={1} // początkowo jedna linijka
-                    maxLength={1000} // limit znaków
-                    className="border p-2 rounded w-full resize-y"
-                  />
-
-                  <p className="text-sm text-gray-500">
-                    {(formData.extraFields?.[col]?.length || 0)}/1000
-                  </p>
-                </div>
-              ))}
-
-              {/* Categories */}
-              <div>
-                <label className="font-semibold">Categories</label>
-                <CategorySelector
-                  categoryTree={categoryTree}
-                  flatCategories={normalizedCategories}
-                  formData={formData}
-                  setFormData={setFormData}
-                />
-              </div>
-
-              {/* Tags */}
-              <div className="flex flex-col gap-2">
-                <label htmlFor="tags" className="font-semibold text-gray-700">Tags</label>
-                <div className="flex gap-2">
-                  <input
-                    id="tags"
-                    type="text"
-                    value={newTag}
-                    onChange={e => setNewTag(e.target.value)}
-                    maxLength={100}
-                    placeholder="Enter a tag"
-                    className="border p-2 rounded w-full disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        handleAddTag();
-                      }
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddTag}
-                    className="px-3 py-1 bg-gray-500 text-white rounded-xl hover:bg-gray-600"
-                  >
-                    Add
-                  </button>
-                </div>
-                <p className="text-sm text-gray-500 mt-1">{newTag.length}/100</p>
-                {formData.tags?.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {formData.tags.map((tag, index) => {
-                      const name = tag.toString();
-                      const displayName = truncateFileName(name, MAX_FILE_NAME_LENGTH);
-
-                      return (
-                        <span
-                          key={index}
-                          className="bg-blue-200 px-2 py-1 rounded flex items-center gap-1"
-                          title={name}
-                        >
-                          {displayName}
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveTag(tag)}
-                            className="text-red-600 font-bold hover:text-red-700"
-                          >
-                            x
-                          </button>
-                        </span>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-
-
-              {/* File Upload */}
-              <div>
-                <label htmlFor="files" className="font-semibold">Upload Files</label>
-                <input
-                  id="files"
-                  type="file"
-                  accept="*"
-                  multiple
-                  onChange={handleFilesChange}
-                  className="border p-2 rounded w-full"
-                />
-              </div>
-
-              {/* Images Display */}
-              {formData.images?.length > 0 && (
-                <div>
-                  <p className="font-semibold text-gray-700 mb-2">Images:</p>
-                  <div className="flex flex-wrap gap-3">
-                    {formData.images.map((imageObj) => {
-                      const name = imageObj.originalName;
-                      const displayName = truncateFileName(name, MAX_FILE_NAME_LENGTH);
-                      return (
-                        <span key={imageObj.uniqueKey} className="bg-blue-200 px-2 py-1 rounded flex items-center gap-1" title={name}>
-                          {displayName}
-                          <button type="button" onClick={() => setFormData(prev => ({ ...prev, images: prev.images.map(file => file === imageObj ? { ...file, isVisible: !imageObj.isVisible } : file) }))} className="text-gray-700 hover:text-blue-500">
-                            {imageObj.isVisible ? <FiEye className="w-5 h-5" /> : <FiEyeOff className="w-5 h-5" />}
-                          </button>
-                          <button type="button" onClick={() => setFormData(prev => ({ ...prev, images: prev.images.filter(file => file !== imageObj) }))} className="text-red-600 font-bold hover:text-red-700">x</button>
-                        </span>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Attachments Display */}
-              {formData.attachments?.length > 0 && (
-                <div>
-                  <p className="font-semibold text-gray-700 mb-2">Attachments:</p>
-                  <div className="flex flex-wrap gap-3">
-                    {formData.attachments.map((attachmentObj) => {
-                      const name = attachmentObj.originalName;
-                      const displayName = truncateFileName(name, MAX_FILE_NAME_LENGTH);
-                      return (
-                        <span key={attachmentObj.uniqueKey} className="bg-blue-200 px-2 py-1 rounded flex items-center gap-1" title={name}>
-                          {displayName}
-                          <button type="button" onClick={() => setFormData(prev => ({ ...prev, attachments: prev.attachments.map(file => file === attachmentObj ? { ...file, isVisible: !attachmentObj.isVisible } : file) }))} className="text-gray-700 hover:text-blue-500">
-                            {attachmentObj.isVisible ? <FiEye className="w-5 h-5" /> : <FiEyeOff className="w-5 h-5" />}
-                          </button>
-                          <button type="button" onClick={() => setFormData(prev => ({ ...prev, attachments: prev.attachments.filter(file => file !== attachmentObj) }))} className="text-red-600 font-bold">x</button>
-                        </span>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Lab Room */}
-              <div>
-                <label htmlFor="labRoom" className="font-semibold">Lab Room</label>
-                <select
-                  id="labRoom"
-                  name="labRoom"
-                  value={formData.labRoom}
-                  onChange={handleChange}
-                  className="border p-2 rounded w-full disabled:bg-gray-100 disabled:text-gray-400"
-                >
-                  <option value="">None</option>
-                  {labRooms?.map((room) => (
-                    <option key={room} value={room}>{room}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Owner */}
-              <div>
-                <label htmlFor="owner" className="font-semibold">Owner</label>
-                <select
-                  id="owner"
-                  name="owner"
-                  value={formData.owner}
-                  onChange={handleOwnerChange}
-                  className="border p-2 rounded w-full disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
-                  disabled={!isAdmin}
-                >
-                  {users.map((user) => (
-                    <option key={user._id} value={user._id}>{user.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Buttons */}
-              <div className="flex justify-end gap-2 mt-3">
-                <button type="button" onClick={closeModal} className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">Cancel</button>
-                <button type="submit" className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Save</button>
-              </div>
-            </form>
-
-          </div>
-        </div>
+        <ProductModal
+          closeModal={closeModal}
+          editProduct={editProduct}
+          formData={formData}
+          setFormData={setFormData}
+          handleChange={handleChange}
+          handleSubmit={handleSubmit}
+          extraColumns={extraColumns}
+          handleExtraFieldChange={handleExtraFieldChange}
+          categoryTree={categoryTree}
+          normalizedCategories={normalizedCategories}
+          newTag={newTag}
+          setNewTag={setNewTag}
+          handleAddTag={handleAddTag}
+          handleRemoveTag={handleRemoveTag}
+          handleFilesChange={handleFilesChange}
+          labRooms={labRooms}
+          users={users}
+          isAdmin={isAdmin}
+          handleOwnerChange={handleOwnerChange}
+          truncateFileName={truncateFileName}
+          MAX_FILE_NAME_LENGTH={MAX_FILE_NAME_LENGTH}
+        />
       )}
 
     </div >

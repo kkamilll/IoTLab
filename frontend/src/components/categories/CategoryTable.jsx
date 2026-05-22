@@ -58,43 +58,45 @@ export default function CategoryCards({
 
   const flatCategories = flattenTreeNonRecursive(categoryTree);
 
-  // Strongly different colors per level
   const levelColors = [
-    "bg-blue-50",   // niemal biały niebieski
-    "bg-blue-200",  // jasny niebieski
-    "bg-blue-300",  // średni jasny
-    "bg-blue-400",  // średni
-    "bg-blue-500",  // wyraźny
-    "bg-blue-600",  // ciemny
-    "bg-blue-700",  // bardzo ciemny
+    "bg-white border border-slate-200",
+    "bg-slate-50/60 border border-slate-200/80",
+    "bg-slate-50 border border-slate-200/60",
+    "bg-slate-100/50 border border-slate-200/40"
   ];
-
 
   if (!categoryTree || categoryTree.length === 0) {
     return (
-      <div className="text-gray-500 text-center p-6 italic">No categories</div>
+      <div className="text-slate-400 text-center p-8 font-medium">No categories created yet.</div>
     );
   }
 
   return (
-    <div className="w-full max-w-3xl mx-auto px-2 flex flex-col gap-4">
+    <div className="w-full max-w-4xl mx-auto flex flex-col gap-3">
       {flatCategories.map((category) => {
         const hasChildren = category.children && category.children.length > 0;
         const isExpanded = expandedIds.has(category._id);
         const showDescription = showDescriptionIds.has(category._id);
-        const colorClass = levelColors[category.level % levelColors.length];
+        const colorClass = levelColors[Math.min(category.level, levelColors.length - 1)];
 
         return (
           <div
             key={category._id}
-            className={`w-full p-3 sm:p-4 rounded-xl shadow-md flex flex-col transition-transform transform hover:scale-105 hover:shadow-lg ${colorClass}`}
+            style={{ marginLeft: `${category.level * 20}px` }}
+            className={`p-4 rounded-xl flex flex-col transition hover:shadow-md ${colorClass}`}
           >
             <div className="flex justify-between items-center w-full">
-              <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                <FaFolder size={16} className="text-blue-700 flex-shrink-0" />
-                <span className="font-medium text-sm sm:text-base truncate">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <FaFolder size={16} className="text-indigo-500 flex-shrink-0" />
+                <span className="font-semibold text-slate-800 text-sm sm:text-base truncate">
                   {category.name}
                 </span>
+                
+                {category.isVisible ? (
+                  <FaEye className="text-emerald-500 flex-shrink-0" title="Visible" size={14} />
+                ) : (
+                  <FaEyeSlash className="text-slate-400 flex-shrink-0" title="Hidden" size={14} />
+                )}
               </div>
 
               <div className="flex items-center gap-2 ml-2">
@@ -102,17 +104,17 @@ export default function CategoryCards({
                 {category.description && (
                   <button
                     onClick={() => toggleDescription(category._id)}
-                    className="px-2 py-1 rounded-full bg-gray-600 text-white hover:bg-gray-700 transition-colors flex items-center justify-center"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 transition-colors flex items-center justify-center"
                     title="Show description"
                   >
-                    <FaInfoCircle size={14} />
+                    <FaInfoCircle size={15} />
                   </button>
                 )}
 
                 {/* Przycisk rozwijania dzieci */}
                 {hasChildren && (
                   <button
-                    className="px-3 py-1 rounded-full bg-white text-blue-700 hover:bg-blue-100 transition-colors font-bold flex-shrink-0 text-sm sm:text-base"
+                    className="w-6 h-6 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors font-bold flex items-center justify-center text-sm"
                     onClick={() => toggleExpand(category._id)}
                   >
                     {isExpanded ? "−" : "+"}
@@ -121,36 +123,29 @@ export default function CategoryCards({
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2 mt-2 items-center">
-              {category.isVisible ? (
-                <FaEye className="text-green-600" title="Visible" size={16} />
-              ) : (
-                <FaEyeSlash className="text-gray-400" title="Hidden" size={16} />
-              )}
-
+            <div className="flex flex-wrap gap-2 mt-3 items-center">
               <ActionButton
-                icon={<FaPlus size={16} />}
-                label="Add"
-                color="green"
+                icon={<FaPlus size={12} />}
+                label="Add Subcategory"
+                color="indigo"
                 onClick={() => handleAdd(category)}
               />
               <ActionButton
-                icon={<FaEdit size={16} />}
+                icon={<FaEdit size={12} />}
                 label="Edit"
-                color="blue"
+                color="slate"
                 onClick={() => handleEdit(category)}
               />
               <ActionButton
-                icon={<FaTrash size={16} />}
+                icon={<FaTrash size={12} />}
                 label="Delete"
                 color="red"
                 onClick={() => handleDelete(category._id)}
               />
-              
             </div>
 
             {showDescription && category.description && (
-              <div className="mt-2 p-2 bg-white rounded-md shadow-inner text-gray-700 text-sm sm:text-base">
+              <div className="mt-3 p-3 bg-slate-50 border border-slate-100 rounded-lg text-slate-600 text-xs sm:text-sm leading-relaxed">
                 {category.description}
               </div>
             )}
@@ -163,15 +158,15 @@ export default function CategoryCards({
 
 const ActionButton = ({ icon, label, color, onClick }) => {
   const colors = {
-    green: "bg-green-500 hover:bg-green-600",
-    blue: "bg-blue-500 hover:bg-blue-600",
-    red: "bg-red-600 hover:bg-red-700",
+    indigo: "bg-indigo-50 text-indigo-600 hover:bg-indigo-100/80",
+    slate: "bg-slate-100 text-slate-700 hover:bg-slate-200",
+    red: "bg-red-50 text-red-600 border border-red-100 hover:bg-red-100",
   };
 
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-1 px-2.5 py-1 text-white rounded-lg text-xs sm:text-sm transition ${colors[color]}`}
+      className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-bold transition ${colors[color]}`}
     >
       {icon} {label}
     </button>

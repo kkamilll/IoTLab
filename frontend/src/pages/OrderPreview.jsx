@@ -1,7 +1,7 @@
 // OrderPreview.jsx
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import axios from "axios";
+import apiClient from "../api/apiClient";
 
 export default function OrderPreview() {
   const { orderUUID } = useParams();
@@ -14,10 +14,9 @@ export default function OrderPreview() {
   const fetchOrder = async (secret) => {
     try {
       setLoading(true);
-      const res = await axios.get(
-        `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders/customerOrder/${orderUUID}`,
-        { headers: { "x-order-secret": secret } }
-      );
+      const res = await apiClient.get(`/orders/customerOrder/${orderUUID}`, {
+        headers: { "x-order-secret": secret },
+      });
       setOrder(res.data.order);
       setIsAuthed(true);
       localStorage.setItem(`order-secret-${orderUUID}`, secret);
@@ -44,24 +43,40 @@ export default function OrderPreview() {
     fetchOrder(password);
   };
 
-  if (loading) return <div className="text-center mt-10">Loading...</div>;
+  if (loading)
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4 py-10">
+        <div className="rounded-3xl border border-slate-200 bg-white px-8 py-6 text-slate-600 shadow-lg">
+          Loading order details…
+        </div>
+      </div>
+    );
 
   if (!isAuthed) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-100">
-        <form onSubmit={handleLogin} className="bg-white shadow-md rounded-xl p-6 w-80">
-          <h2 className="text-xl font-semibold mb-4 text-center">Enter Access Code</h2>
-          {error && <p className="text-red-600 mb-2">{error}</p>}
+      <div className="min-h-screen bg-gradient-to-br from-slate-100 via-slate-200 to-slate-100 flex items-center justify-center px-4 py-10">
+        <form
+          onSubmit={handleLogin}
+          className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl border border-slate-200"
+        >
+          <h2 className="text-2xl font-bold mb-4 text-slate-900 text-center">
+            Enter Order Access Code
+          </h2>
+          {error && (
+            <p className="mb-4 rounded-2xl bg-red-100 px-4 py-3 text-sm text-red-700">
+              {error}
+            </p>
+          )}
           <input
             type="text"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="border rounded w-full p-2 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
             placeholder="Secret code"
           />
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
+            className="mt-6 w-full rounded-2xl bg-blue-600 px-4 py-3 text-white font-semibold shadow-lg hover:bg-blue-700 transition"
           >
             Access Order
           </button>
@@ -70,13 +85,21 @@ export default function OrderPreview() {
     );
   }
 
-  if (!order) return <div className="text-center p-6 text-gray-500">No order data</div>;
+  if (!order)
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4 py-10">
+        <div className="rounded-3xl border border-slate-200 bg-white px-8 py-6 text-slate-600 shadow-lg">
+          No order data available.
+        </div>
+      </div>
+    );
 
-  // Group items by owner
   const itemsByOwner = (order.items || []).reduce((acc, item) => {
     const ownerId = item?.responsibleOwner?._id?.toString() || "unknown";
     if (!acc[ownerId]) {
-      const ownerData = (order.ownersData || []).find(od => od.owner?.toString() === ownerId);
+      const ownerData = (order.ownersData || []).find(
+        (od) => od.owner?.toString() === ownerId,
+      );
       acc[ownerId] = {
         orderId: order._id,
         owner: item.responsibleOwner || { name: "Unknown" },
@@ -89,7 +112,9 @@ export default function OrderPreview() {
           assignedStartDate: ownerData?.assignedStartDate,
           assignedEndDate: ownerData?.assignedEndDate,
         },
-        hasAssignedDates: !!(ownerData?.assignedStartDate && ownerData?.assignedEndDate),
+        hasAssignedDates: !!(
+          ownerData?.assignedStartDate && ownerData?.assignedEndDate
+        ),
       };
     }
     acc[ownerId].items.push(item);
@@ -98,10 +123,14 @@ export default function OrderPreview() {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case "pending": return "text-yellow-600";
-      case "approved": return "text-green-600";
-      case "rejected": return "text-red-600";
-      default: return "text-gray-700";
+      case "pending":
+        return "text-yellow-600";
+      case "approved":
+        return "text-green-600";
+      case "rejected":
+        return "text-red-600";
+      default:
+        return "text-slate-700";
     }
   };
 
@@ -110,79 +139,173 @@ export default function OrderPreview() {
       const secret = localStorage.getItem(`order-secret-${orderUUID}`);
       const customerUpdate = {
         ownerId: ownerGroup.owner?._id,
-        customerApproval: approval, // true = Approve, false = Reject
+        customerApproval: approval,
       };
 
-      await axios.post(
-        `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders/customerUpdate/${ownerGroup.orderId}`,
+      await apiClient.post(
+        `/orders/customerUpdate/${ownerGroup.orderId}`,
         customerUpdate,
-        { headers: { "x-order-secret": secret } }
+        { headers: { "x-order-secret": secret } },
       );
 
-      fetchOrder(secret); // refresh
+      fetchOrder(secret);
     } catch (err) {
       alert(err.response?.data?.message || "Action failed");
     }
   };
 
   return (
-    <div className="max-w-3xl mx-auto my-8 bg-white shadow-lg rounded-xl p-6">
-      <h1 className="text-2xl font-bold mb-4">Order Preview</h1>
-
-      <section className="mb-6">
-        <h2 className="font-semibold text-gray-700 mb-2">Customer Info:</h2>
-        <p>{order.customer.firstName} {order.customer.lastName}</p>
-        <p>Email: {order.customer.email}</p>
-        <p>Phone: {order.customer.phoneNumber}</p>
-        <p>Index: {order.customer.index}</p>
-        <p>Field: {order.customer.fieldOfStudy}</p>
-        <p>Semester: {order.customer.semester}, Year: {order.customer.yearOfStudy}</p>
-      </section>
-
-      <section className="mb-6">
-        {Object.values(itemsByOwner).map((group, idx) => (
-          <div key={idx} className="mb-6 border border-gray-200 rounded-lg p-4 bg-gray-50">
-            <h3 className="font-semibold text-gray-700 mb-1">Owner: {group.owner.name}</h3>
-            <p className="text-sm text-gray-500 mb-2">
-              Status: <span className={getStatusColor(group.status)}>{group.status}</span>
-            </p>
-            <p className="text-sm text-gray-500 mb-2">
-              Requested: {new Date(group.dates.requestedStartDate).toLocaleDateString()} → {new Date(group.dates.requestedEndDate).toLocaleDateString()}
-            </p>
-            {group.hasAssignedDates && (
-              <p className="text-sm text-blue-600 mb-2">
-                Assigned: {new Date(group.dates.assignedStartDate).toLocaleDateString()} → {new Date(group.dates.assignedEndDate).toLocaleDateString()}
+    <div className="min-h-screen bg-slate-100 py-10 px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-5xl">
+        <div className="mb-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-3xl font-black text-slate-900">
+                Order Preview
+              </h1>
+              <p className="mt-2 text-sm text-slate-500">
+                Review your order and confirm each owner group.
               </p>
-            )}
-
-            <ul className="list-disc list-inside mb-2">
-              {group.items.map((item, i) => (
-                <li key={i}>
-                  {item.product?.name || "Unknown"} — Qty: {item.requestedQuantity} — Status: {item.status}
-                </li>
-              ))}
-            </ul>
-
-            {group.status === "approved" && group.ownerData.customerApproval == null && (
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleOwnerAction(group, true)}
-                  className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
-                >
-                  Approve
-                </button>
-                <button
-                  onClick={() => handleOwnerAction(group, false)}
-                  className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
-                >
-                  Reject
-                </button>
-              </div>
-            )}
-
+            </div>
+            <button
+              onClick={() => navigate(-1)}
+              className="self-start rounded-2xl border border-slate-200 bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-200 transition"
+            >
+              Back
+            </button>
           </div>
-        ))}
-      </section>
+
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+              <h2 className="text-lg font-semibold text-slate-900 mb-3">
+                Customer
+              </h2>
+              <p className="text-sm text-slate-600">
+                {order.customer.firstName} {order.customer.lastName}
+              </p>
+              <p className="text-sm text-slate-600">
+                Email: {order.customer.email}
+              </p>
+              <p className="text-sm text-slate-600">
+                Phone: {order.customer.phoneNumber}
+              </p>
+            </div>
+            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+              <h2 className="text-lg font-semibold text-slate-900 mb-3">
+                Rental Dates
+              </h2>
+              <p className="text-sm text-slate-600">
+                Requested:{" "}
+                {new Date(order.requestedStartDate).toLocaleDateString()} →{" "}
+                {new Date(order.requestedEndDate).toLocaleDateString()}
+              </p>
+              {order.ownersData?.some(
+                (owner) => owner.assignedStartDate && owner.assignedEndDate,
+              ) && (
+                <p className="mt-2 text-sm text-slate-600">
+                  Assigned dates may vary per owner.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          {Object.values(itemsByOwner).map((group, idx) => (
+            <div
+              key={idx}
+              className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
+            >
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900">
+                    {group.owner.name}
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Group status:{" "}
+                    <span className={getStatusColor(group.status)}>
+                      {group.status}
+                    </span>
+                  </p>
+                </div>
+                <div className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700">
+                  {group.items.length} item{group.items.length !== 1 ? "s" : ""}
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    Requested
+                  </p>
+                  <p className="mt-2 text-sm text-slate-700">
+                    {new Date(
+                      group.dates.requestedStartDate,
+                    ).toLocaleDateString()}{" "}
+                    →{" "}
+                    {new Date(
+                      group.dates.requestedEndDate,
+                    ).toLocaleDateString()}
+                  </p>
+                </div>
+                {group.hasAssignedDates && (
+                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+                      Assigned
+                    </p>
+                    <p className="mt-2 text-sm text-slate-700">
+                      {new Date(
+                        group.dates.assignedStartDate,
+                      ).toLocaleDateString()}{" "}
+                      →{" "}
+                      {new Date(
+                        group.dates.assignedEndDate,
+                      ).toLocaleDateString()}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-5 space-y-3">
+                {group.items.map((item, i) => (
+                  <div
+                    key={i}
+                    className="rounded-3xl border border-slate-200 bg-slate-50 p-4"
+                  >
+                    <p className="font-semibold text-slate-900">
+                      {item.product?.name || "Unknown product"}
+                    </p>
+                    <p className="text-sm text-slate-600">
+                      Quantity: {item.requestedQuantity}
+                    </p>
+                    <p className="text-sm text-slate-600">
+                      Status: {item.status}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {group.status === "approved" &&
+                group.ownerData.customerApproval == null && (
+                  <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                    <button
+                      onClick={() => handleOwnerAction(group, true)}
+                      className="w-full rounded-2xl bg-green-600 px-5 py-3 text-sm font-semibold text-white hover:bg-green-700 transition"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => handleOwnerAction(group, false)}
+                      className="w-full rounded-2xl bg-red-600 px-5 py-3 text-sm font-semibold text-white hover:bg-red-700 transition"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                )}
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

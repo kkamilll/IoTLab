@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import ReactDOM from "react-dom";
-import axios from "axios";
-import Sidebar from "../components/Sidebar";
+import apiClient from "../api/apiClient";
+import Sidebar from "../components/layout/Sidebar";
 
 const Users = () => {
   const [formData, setFormData] = useState({
@@ -26,9 +26,7 @@ const Users = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/users`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("pos-token")}` },
-      });
+      const res = await apiClient.get('/users');
       setUsers(res.data.users || []);
       setFilteredUsers(res.data.users || []);
     } catch (err) {
@@ -107,11 +105,7 @@ const Users = () => {
           setSubmitLoading(false);
           return;
         }
-        const res = await axios.post(
-          `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/users/create`,
-          formData,
-          { headers: { Authorization: `Bearer ${localStorage.getItem("pos-token")}` } }
-        );
+        const res = await apiClient.post('/users/create', formData);
         if (res.data.success) {
           alert("User added successfully!");
           resetForm();
@@ -128,12 +122,7 @@ const Users = () => {
         if (!dataToSend.password?.trim()) delete dataToSend.password;
         if (dataToSend.email === "admin@gmail.com") dataToSend.isActive = true;
 
-        const res = await axios.put(
-          `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/users/${editingUserId}`,
-          dataToSend, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("pos-token")}` }
-        }
-        );
+        const res = await apiClient.put(`/users/${editingUserId}`, dataToSend);
 
         if (res.data.success) {
           alert("User updated successfully!");
@@ -153,9 +142,7 @@ const Users = () => {
     if (!window.confirm("Are you sure you want to delete this user?")) return;
     setDeleteLoadingId(id);
     try {
-      const res = await axios.delete(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/users/${id}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("pos-token")}` },
-      });
+      const res = await apiClient.delete(`/users/${id}`);
       if (res.data.success) {
         fetchUsers();
         alert("User deleted successfully!");
@@ -292,79 +279,105 @@ const Users = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-blue-50">
+    <div className="flex min-h-screen bg-slate-50/30">
 
-      <main className="flex-1 p-4 md:p-6 lg:p-10 overflow-x-auto">
-        <h1 className="text-3xl font-extrabold text-center text-blue-700 mb-6">User Management</h1>
+      <main className="flex-1 p-6 md:p-8 overflow-x-auto">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-slate-200 pb-6 mb-6 gap-4">
+          <div>
+            <h1 className="text-2xl font-black text-slate-900">User Management</h1>
+            <p className="text-slate-500 text-sm mt-0.5">Create, edit, activate, or assign permissions to system users</p>
+          </div>
+        </div>
 
         {/* Filters and add */}
-        <div className="flex flex-col md:flex-row gap-4 mb-4">
-          <input type="text" placeholder="Search users..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="flex-1 p-2 border rounded-xl" />
-          <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)} className="p-2 border rounded-xl">
-            <option value="">All Roles</option>
-            <option value="admin">Admin</option>
-            <option value="lecturer">Lecturer</option>
-          </select>
-          {!showForm && (
-            <button onClick={handleAddUserClick} className="bg-green-600 hover:bg-green-700 text-white rounded-xl px-4 py-2">
-              ➕ Add User
-            </button>
-          )}
-          {showForm && (
-            <button onClick={handleCancel} className="bg-red-600 hover:bg-red-700 text-white rounded-xl px-4 py-2">
-              ❌ Cancel
-            </button>
-          )}
+        <div className="flex flex-col sm:flex-row gap-3 w-full justify-between items-center bg-white p-3 border border-slate-200 rounded-xl shadow-sm mb-6">
+          <input
+            type="text"
+            placeholder="Search users by name..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="border border-slate-200 rounded-xl px-3.5 py-2 text-sm bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 w-full sm:max-w-xs"
+          />
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Role:</span>
+            <select
+              value={roleFilter}
+              onChange={e => setRoleFilter(e.target.value)}
+              className="text-xs border border-slate-200 rounded-lg bg-slate-50 px-2.5 py-1.5 font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 min-w-[120px]"
+            >
+              <option value="">All Roles</option>
+              <option value="admin">Admin</option>
+              <option value="lecturer">Lecturer</option>
+            </select>
+            {!showForm ? (
+              <button
+                onClick={handleAddUserClick}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-1.5 rounded-xl shadow-sm transition whitespace-nowrap ml-auto"
+              >
+                ➕ Add User
+              </button>
+            ) : (
+              <button
+                onClick={handleCancel}
+                className="bg-red-50 text-red-650 border border-red-155 hover:bg-red-100 text-xs font-bold px-4 py-1.5 rounded-xl transition whitespace-nowrap ml-auto"
+              >
+                ❌ Cancel
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Add/Edit Form */}
         {showForm && (
-          <form onSubmit={handleSubmit} className="flex flex-col space-y-4 bg-gray-50 p-6 rounded-2xl shadow-lg mb-6">
+          <form onSubmit={handleSubmit} className="flex flex-col space-y-4 bg-white border border-slate-200 p-6 rounded-2xl shadow-sm mb-6">
+            <h3 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-2">
+              {editingUserId ? "Edit User Account Details" : "Create New User Account"}
+            </h3>
 
             <div className="flex flex-col">
-              <label htmlFor="name" className="text-gray-700 font-medium mb-1">Name</label>
+              <label htmlFor="name" className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Name</label>
               <input
                 id="name"
                 type="text"
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                className="p-3 border rounded-xl"
+                className="border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               />
             </div>
 
             <div className="flex flex-col">
-              <label htmlFor="email" className="text-gray-700 font-medium mb-1">Email</label>
+              <label htmlFor="email" className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Email</label>
               <input
                 id="email"
                 type="email"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className="p-3 border rounded-xl"
+                className="border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               />
             </div>
 
             <div className="flex flex-col">
-              <label htmlFor="password" className="text-gray-700 font-medium mb-1">Password</label>
+              <label htmlFor="password" className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Password</label>
               <input
                 id="password"
                 type="password"
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                className="p-3 border rounded-xl"
+                className="border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               />
             </div>
 
             <div className="flex flex-col">
-              <label htmlFor="role" className="text-gray-700 font-medium mb-1">Role</label>
+              <label htmlFor="role" className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Role</label>
               <select
                 id="role"
                 name="role"
                 value={formData.role}
                 onChange={handleChange}
-                className="p-3 border rounded-xl"
+                className="border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               >
                 <option value="">Select Role</option>
                 <option value="admin">Admin</option>
@@ -372,33 +385,33 @@ const Users = () => {
               </select>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5 py-1">
               <input
                 type="checkbox"
                 id="isActive"
                 name="isActive"
                 checked={formData.isActive}
                 onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
-                className="w-5 h-5"
+                className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
                 disabled={formData.name === "admin" && formData.email === "admin@gmail.com"}
               />
               <label
                 htmlFor="isActive"
-                className={`text-gray-700 font-medium ${formData.name === "Admin" && formData.email === "admin@gmail.com" ? "opacity-50" : ""}`}
+                className={`text-xs font-bold text-slate-600 uppercase tracking-wider select-none ${formData.name === "admin" && formData.email === "admin@gmail.com" ? "opacity-50" : ""}`}
               >
                 Active Account
               </label>
             </div>
 
             <div className="flex flex-col gap-2">
-              <label htmlFor="labRoom" className="text-gray-700 font-medium">Add lab room</label>
+              <label htmlFor="labRoom" className="text-xs font-bold text-slate-400 uppercase tracking-wider">Add lab room</label>
               <div className="flex gap-2">
                 <input
                   id="labRoom"
                   type="text"
                   value={newLabRoom}
                   onChange={e => setNewLabRoom(e.target.value)}
-                  className="border p-2 rounded-xl flex-1"
+                  className="border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 flex-1"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
@@ -409,7 +422,7 @@ const Users = () => {
                 <button
                   type="button"
                   onClick={handleAddLabRoom}
-                  className="px-3 py-1 bg-gray-500 text-white rounded-xl hover:bg-gray-600"
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl text-xs shadow-sm transition"
                 >
                   Add
                 </button>
@@ -420,13 +433,13 @@ const Users = () => {
                   {formData.labRooms.map((room, i) => (
                     <span
                       key={i}
-                      className="bg-blue-200 px-3 py-1 rounded-2xl text-sm font-semibold flex items-center gap-1"
+                      className="bg-indigo-50 text-indigo-750 border border-indigo-100/50 px-3 py-1 rounded-2xl text-xs font-semibold flex items-center gap-1.5 shadow-sm"
                     >
                       {room}
                       <button
                         type="button"
                         onClick={() => handleRemoveLabRoom(room)}
-                        className="text-red-600 font-bold hover:text-red-700"
+                        className="text-red-500 font-bold hover:text-red-700 transition"
                       >
                         ×
                       </button>
@@ -439,51 +452,78 @@ const Users = () => {
             <button
               type="submit"
               disabled={submitLoading}
-              className={`p-3 rounded-xl text-white font-semibold ${submitLoading ? "bg-green-300" : "bg-green-600 hover:bg-green-700"}`}
+              className={`p-3 rounded-xl text-xs font-bold text-white transition ${submitLoading ? "bg-indigo-300" : "bg-indigo-600 hover:bg-indigo-700 shadow-sm"}`}
             >
               {submitLoading ? (editingUserId ? "Saving..." : "Adding...") : (editingUserId ? "💾 Save Changes" : "➕ Add User")}
             </button>
           </form>
-
         )}
 
         {/* Users Table */}
-        <div className="bg-white rounded-2xl shadow-lg overflow-x-auto">
-          <table className="min-w-full table-auto text-left">
-            <thead className="bg-blue-50 text-blue-700">
-              <tr>
-                <th className="p-3 hidden md:table-cell">#</th>
-                <th className="p-3">Name</th>
-                <th className="p-3 hidden lg:table-cell">Email</th>
-                <th className="p-3">Role</th>
-                <th className="p-3">Status</th>
-                <th className="p-3 hidden lg:table-cell">Lab Rooms</th>
-                <th className="p-3 text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedUsers.map((user, idx) => (
-                <tr key={user._id} className="bg-gray-50 hover:bg-blue-50 transition">
-                  <td className="p-3 hidden md:table-cell">{(currentPage - 1) * USERS_PER_PAGE + idx + 1}</td>
-                  <td className="p-3">{user.name}</td>
-                  <td className="p-3 hidden lg:table-cell">{user.email}</td>
-                  <td className="p-3">{user.role}</td>
-                  <td className="p-3">{user.isActive ? "Active" : "Inactive"}</td>
-                  <td className="p-3 hidden lg:table-cell">{user.labRooms?.length > 0 ? <LabRoomsDropdown rooms={user.labRooms} /> : "—"}</td>
-                  <td className="p-3 text-center"><ActionMenu user={user} onEdit={startEdit} onDelete={handleDelete} loadingId={deleteLoadingId} /></td>
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full table-auto text-left border-collapse">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-705 text-slate-500 text-xs font-bold uppercase tracking-wider">
+                <tr>
+                  <th className="p-4 hidden md:table-cell">#</th>
+                  <th className="p-4">Name</th>
+                  <th className="p-4 hidden lg:table-cell">Email</th>
+                  <th className="p-4">Role</th>
+                  <th className="p-4">Status</th>
+                  <th className="p-4 hidden lg:table-cell">Lab Rooms</th>
+                  <th className="p-4 text-center">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {paginatedUsers.map((user, idx) => (
+                  <tr key={user._id} className="hover:bg-slate-50/60 transition">
+                    <td className="p-4 text-xs text-slate-550 hidden md:table-cell">{(currentPage - 1) * USERS_PER_PAGE + idx + 1}</td>
+                    <td className="p-4 text-xs font-bold text-slate-800">{user.name}</td>
+                    <td className="p-4 text-xs text-slate-600 hidden lg:table-cell">{user.email}</td>
+                    <td className="p-4 text-xs">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${user.role === 'admin' ? 'bg-indigo-50 text-indigo-700 border-indigo-200/50' : 'bg-slate-50 text-slate-700 border-slate-200'}`}>
+                        {user.role}
+                      </span>
+                    </td>
+                    <td className="p-4 text-xs">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${user.isActive ? 'bg-emerald-50 text-emerald-705 text-emerald-700 border-emerald-200/50' : 'bg-red-50 text-red-700 border-red-200/50'}`}>
+                        {user.isActive ? "Active" : "Inactive"}
+                      </span>
+                    </td>
+                    <td className="p-4 text-xs hidden lg:table-cell">{user.labRooms?.length > 0 ? <LabRoomsDropdown rooms={user.labRooms} /> : "—"}</td>
+                    <td className="p-4 text-center text-xs"><ActionMenu user={user} onEdit={startEdit} onDelete={handleDelete} loadingId={deleteLoadingId} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex justify-center gap-2 py-3">
-              <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1} className="px-3 py-1 bg-blue-200 rounded-xl hover:bg-blue-300">Prev</button>
+            <div className="flex justify-center items-center gap-2 py-4 border-t border-slate-150 bg-slate-50/20">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200/60 rounded-xl hover:bg-slate-200 disabled:opacity-40 disabled:pointer-events-none transition"
+              >
+                Prev
+              </button>
               {Array.from({ length: totalPages }, (_, i) => (
-                <button key={i} onClick={() => setCurrentPage(i + 1)} className={`px-3 py-1 rounded-xl ${currentPage === i + 1 ? "bg-blue-600 text-white" : "bg-blue-200 hover:bg-blue-300"}`}>{i + 1}</button>
+                <button
+                  key={i}
+                  onClick={() => setCurrentPage(i + 1)}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition ${currentPage === i + 1 ? "bg-indigo-600 border-indigo-600 text-white shadow-sm" : "bg-white border-slate-200/80 text-slate-600 hover:bg-slate-50"}`}
+                >
+                  {i + 1}
+                </button>
               ))}
-              <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages} className="px-3 py-1 bg-blue-200 rounded-xl hover:bg-blue-300">Next</button>
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1.5 text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200/60 rounded-xl hover:bg-slate-200 disabled:opacity-40 disabled:pointer-events-none transition"
+              >
+                Next
+              </button>
             </div>
           )}
         </div>

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import apiClient from '../api/apiClient';
 import { useAuth } from '../context/AuthContext';
-import MainSlider from '../components/MainSlider';
+import MainSlider from '../components/layout/MainSlider';
 
 const WelcomePage = () => {
   const navigate = useNavigate();
@@ -31,8 +31,7 @@ const WelcomePage = () => {
   useEffect(() => {
     (async () => {
       try {
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/materials`, { headers });
+        const res = await apiClient.get('/materials');
         if (res.data.success) setMaterials(res.data.data);
       } catch (err) {
         console.error("Error fetching materials:", err);
@@ -46,8 +45,7 @@ const WelcomePage = () => {
       setNotesLoading(true);
       setNotesError(null);
       try {
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/notes`, { headers });
+        const res = await apiClient.get('/notes');
         if (res.data.success && Array.isArray(res.data.data)) setNotes(res.data.data);
         else setNotesError('Invalid server response');
       } catch (err) {
@@ -63,9 +61,7 @@ const WelcomePage = () => {
   useEffect(() => {
     (async () => {
       try {
-        const res = await axios.get(
-          `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/components`
-        );
+        const res = await apiClient.get('/components');
         if (res.data.success) setCollections(res.data.data);
       } catch (err) {
         console.error("Error fetching collections:", err);
@@ -107,76 +103,70 @@ const WelcomePage = () => {
   const handleBackToSidebar = () => {
     if (['admin', 'lecturer'].includes(user?.role)) navigate('/admin-dashboard');
     else navigate('/');
-  };
-
-  return (
-    <div className="w-full min-h-screen font-sans bg-gradient-to-b from-blue-900 to-blue-700 text-gray-900">
+  };  return (
+    <div className="w-full min-h-screen font-sans bg-slate-900 text-slate-100 flex flex-col justify-between">
 
       {/* TOPBAR */}
-      <div className="w-full py-2 px-4 text-white text-sm font-semibold tracking-wide flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-        <span>
+      <div className="w-full py-3.5 px-6 text-slate-300 text-xs font-semibold tracking-wide flex flex-col md:flex-row md:items-center md:justify-between gap-3 border-b border-slate-800 bg-slate-950/20 backdrop-blur-sm">
+        <span className="text-slate-400 font-mono">
           {`${currentTime.getDate().toString().padStart(2, '0')}.${(currentTime.getMonth() + 1).toString().padStart(2, '0')}.${currentTime.getFullYear()} ${currentTime.getHours().toString().padStart(2, '0')}:${currentTime.getMinutes().toString().padStart(2, '0')}:${currentTime.getSeconds().toString().padStart(2, '0')}`}
         </span>
 
         {user && (
-          <div className="flex flex-col sm:flex-row items-center gap-3 text-white text-sm font-semibold w-full sm:w-auto">
-            <span className="truncate max-w-[140px] sm:max-w-none">{user.name}</span>
+          <div className="flex flex-col sm:flex-row items-center gap-3 text-slate-200 text-xs font-semibold w-full sm:w-auto">
+            <span className="truncate max-w-[140px] sm:max-w-none text-slate-300 bg-slate-850 px-2.5 py-1 rounded-lg border border-slate-800">{user.name}</span>
 
-            {/* Back button - outline */}
+            {/* Back button */}
             <button
               onClick={handleBackToSidebar}
-              className="flex items-center justify-center gap-2 border border-green-500 text-green-500 
-                 hover:bg-green-500 hover:text-white transition-colors rounded-full 
-                 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400 w-full sm:w-auto"
+              className="flex items-center justify-center gap-1.5 border border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white transition-colors rounded-xl px-4 py-1.5 text-xs font-bold w-full sm:w-auto shadow-sm"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
               </svg>
               Back
             </button>
 
-            {/* Logout button - filled */}
+            {/* Logout button */}
             <button
               onClick={handleLogout}
-              className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 active:bg-red-800 
-                 transition-colors text-white rounded-full px-4 py-2 shadow-sm 
-                 focus:outline-none focus:ring-2 focus:ring-red-400 w-full sm:w-auto"
+              className="flex items-center justify-center gap-1.5 bg-red-600 hover:bg-red-700 active:bg-red-800 transition-colors text-white rounded-xl px-4 py-1.5 text-xs font-bold w-full sm:w-auto shadow-sm"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7" />
               </svg>
               Logout
             </button>
           </div>
         )}
-
       </div>
 
-      <section className="relative py-20 flex justify-center items-center overflow-hidden shadow-1xl">
+      <section className="relative py-28 flex justify-center items-center overflow-hidden border-b border-slate-800">
         <div
-          className="absolute inset-0 bg-[url('/uploadsWelcome/aa.jpg')] bg-cover bg-center bg-no-repeat"
-          style={{ filter: 'brightness(0.8)' }}
+          className="absolute inset-0 bg-[url('/uploadsWelcome/aa.jpg')] bg-cover bg-center bg-no-repeat opacity-40"
+          style={{ filter: 'brightness(0.7) contrast(1.1)' }}
         ></div>
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/50"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/40 via-slate-900/60 to-slate-900"></div>
         <div className="relative z-10 max-w-3xl text-center px-6">
-          <h1 className="text-5xl md:text-6xl font-extrabold mb-4 leading-tight text-white drop-shadow-xl">
+          <span className="text-xs font-extrabold uppercase tracking-widest text-indigo-400 px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full">System rezerwacji</span>
+          <h1 className="text-5xl md:text-7xl font-black mb-3 mt-4 leading-tight text-white tracking-tight">
             IoTLab
           </h1>
-          <p className="text-lg md:text-2xl mb-8 font-light text-blue-200 drop-shadow-md">
-            Laboratory Room Management System
+          <p className="text-base md:text-xl mb-8 font-medium text-slate-300 max-w-xl mx-auto">
+            Laboratory Room & Equipment Management System
           </p>
 
           {!user && (
-            <div className="flex flex-col sm:flex-row justify-center gap-6 mt-6">
+            <div className="flex flex-col sm:flex-row justify-center gap-4 mt-6">
               <button
                 onClick={handleLoginClick}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-10 py-3 rounded-full shadow-lg transition duration-300 transform hover:-translate-y-1"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 py-3 rounded-xl shadow-lg transition-transform hover:-translate-y-0.5 text-sm"
               >
-                Login
+                Login to Account
               </button>
               <button
                 onClick={() => navigate('/mainguest')}
-                className="bg-green-600 hover:bg-green-700 text-white font-semibold px-10 py-3 rounded-full shadow-lg transition duration-300 transform hover:-translate-y-1"
+                className="bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold px-8 py-3 rounded-xl shadow-lg transition-transform hover:-translate-y-0.5 border border-slate-700 text-sm"
               >
                 Order as Guest
               </button>
@@ -185,14 +175,15 @@ const WelcomePage = () => {
         </div>
       </section>
 
-      <section className="py-16 bg-blue-900 text-white px-6 md:px-12">
+      <section className="py-16 bg-slate-900/50 border-b border-slate-800 text-white px-6 md:px-12">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-4xl font-extrabold mb-10 text-center tracking-wide">
+          <h2 className="text-2xl font-black mb-1.5 text-center tracking-tight text-white">
             Explore Collections
           </h2>
+          <p className="text-slate-400 text-xs text-center mb-8">Select a collection category to view documents and links</p>
 
           {collections.length === 0 ? (
-            <p className="text-center text-lg opacity-80 font-light">
+            <p className="text-center text-sm opacity-80 font-semibold text-slate-500">
               No collections available.
             </p>
           ) : (
@@ -200,7 +191,7 @@ const WelcomePage = () => {
               {/* Left arrow */}
               <button
                 onClick={() => setCollectionIndex(prev => Math.max(prev - 1, 0))}
-                className="absolute left-0 z-10 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-full shadow-md text-white font-bold transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="absolute left-0 z-10 w-9 h-9 flex items-center justify-center bg-slate-800 border border-slate-700 hover:bg-slate-750 rounded-full shadow-md text-white font-bold transition disabled:opacity-30 disabled:pointer-events-none"
                 disabled={collectionIndex === 0}
               >
                 ←
@@ -212,17 +203,17 @@ const WelcomePage = () => {
                   <div
                     key={collection._id}
                     onClick={() => handleCollectionClick(collection._id)}
-                    className="bg-blue-800 rounded-xl p-6 shadow-md hover:shadow-lg transition-transform duration-300 hover:scale-[1.02] flex flex-col items-center text-center flex-shrink-0 w-[220px] cursor-pointer"
+                    className="bg-slate-800/45 border border-slate-700/50 hover:border-indigo-500/30 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-[1.02] flex flex-col items-center text-center flex-shrink-0 w-[220px] cursor-pointer"
                   >
                     <div
-                      className="w-14 h-14 rounded-full text-white bg-blue-700 text-lg leading-relaxed font-medium flex items-center justify-center mb-3 text-[clamp(1.2rem,4vw,1.5rem)] truncate"
+                      className="w-14 h-14 rounded-xl text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 text-lg font-medium flex items-center justify-center mb-4 truncate"
                       title={collection.logo}
                     >
                       {collection.logo}
                     </div>
 
                     <h3
-                      className="font-semibold text-[clamp(0.75rem,3vw,1rem)] text-blue-200 truncate w-full"
+                      className="font-bold text-sm text-slate-200 truncate w-full"
                       title={collection.name}
                     >
                       {collection.name}
@@ -238,7 +229,7 @@ const WelcomePage = () => {
                     Math.min(prev + 1, collections.length - visibleCount)
                   )
                 }
-                className="absolute right-0 z-10 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-full shadow-md text-white font-bold transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="absolute right-0 z-10 w-9 h-9 flex items-center justify-center bg-slate-800 border border-slate-700 hover:bg-slate-750 rounded-full shadow-md text-white font-bold transition disabled:opacity-30 disabled:pointer-events-none"
                 disabled={collectionIndex >= collections.length - visibleCount}
               >
                 →
@@ -248,54 +239,53 @@ const WelcomePage = () => {
         </div>
       </section>
 
-
-
       {/* MAIN SLIDER */}
       {materials.length > 0 && <MainSlider materials={materials} />}
 
       {/* NOTES & ANNOUNCEMENTS */}
-      <section className="py-16 bg-blue-900 text-white px-6 md:px-12">
+      <section className="py-16 bg-slate-900 text-white px-6 md:px-12">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-4xl font-extrabold mb-10 text-center tracking-wide">Announcements & Notes</h2>
+          <h2 className="text-2xl font-black mb-1.5 text-center tracking-tight text-white">Announcements & Notes</h2>
+          <p className="text-slate-400 text-xs text-center mb-8">Latest updates and notifications from the administration</p>
 
-          {notesLoading && <p className="text-center text-lg opacity-90">Loading announcements and notes...</p>}
+          {notesLoading && <p className="text-center text-sm text-slate-400 font-semibold">Loading announcements and notes...</p>}
           {notesError && <p className="text-center text-red-400 font-semibold">{notesError}</p>}
           {!notesLoading && !notesError && notes.length === 0 && (
-            <p className="text-center text-lg opacity-80 font-light">No current announcements or notes to display.</p>
+            <p className="text-center text-sm text-slate-500 font-semibold">No current announcements or notes to display.</p>
           )}
 
           {!notesLoading && !notesError && notes.length > 0 && (
             <>
               <ul className="grid gap-6 sm:grid-cols-2">
                 {paginatedNotes.map(note => (
-                  <li key={note._id} className="bg-blue-800 rounded-xl p-6 shadow-md hover:shadow-lg transition-transform duration-300 hover:scale-[1.02] flex flex-col">
-                    <p className="text-white text-lg leading-relaxed font-medium whitespace-pre-wrap break-words break-all">
+                  <li key={note._id} className="bg-slate-800/40 border border-slate-850 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-[1.02] flex flex-col justify-between">
+                    <p className="text-slate-200 text-sm leading-relaxed font-semibold whitespace-pre-wrap break-words break-all">
                       {note.text}
                     </p>
-                    <div className="mt-3 text-blue-200 text-sm font-light italic">
-                      Added by <strong>{note.author?.name || 'Anonymous'}</strong> •{' '}
-                      {`${new Date(note.createdAt).getDate().toString().padStart(2, '0')}.${(new Date(note.createdAt).getMonth() + 1).toString().padStart(2, '0')}.${new Date(note.createdAt).getFullYear()} ${new Date(note.createdAt).getHours().toString().padStart(2, '0')}:${new Date(note.createdAt).getMinutes().toString().padStart(2, '0')}:${new Date(note.createdAt).getSeconds().toString().padStart(2, '0')}`}
+                    <div className="mt-4 text-slate-400 text-xs font-semibold italic border-t border-slate-800 pt-3">
+                      Added by <strong className="text-indigo-400">{note.author?.name || 'Anonymous'}</strong> •{' '}
+                      {`${new Date(note.createdAt).getDate().toString().padStart(2, '0')}.${(new Date(note.createdAt).getMonth() + 1).toString().padStart(2, '0')}.${new Date(note.createdAt).getFullYear()} ${new Date(note.createdAt).getHours().toString().padStart(2, '0')}:${new Date(note.createdAt).getMinutes().toString().padStart(2, '0')}`}
                     </div>
                   </li>
                 ))}
               </ul>
 
               {/* Pagination */}
-              <div className="flex justify-center gap-4 mt-6">
+              <div className="flex justify-center items-center gap-4 mt-8">
                 <button
                   onClick={() => setNotesPage(prev => Math.max(prev - 1, 1))}
                   disabled={notesPage === 1}
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-full shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 disabled:opacity-40 disabled:pointer-events-none transition"
                 >
                   Previous
                 </button>
-                <span className="px-4 py-2 bg-blue-800 text-white font-semibold rounded-full shadow-inner">
+                <span className="px-3.5 py-1.5 bg-slate-950 text-slate-400 text-xs font-bold rounded-xl border border-slate-850">
                   {notesPage} / {totalPages}
                 </span>
                 <button
                   onClick={() => setNotesPage(prev => Math.min(prev + 1, totalPages))}
                   disabled={notesPage === totalPages}
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-full shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 disabled:opacity-40 disabled:pointer-events-none transition"
                 >
                   Next
                 </button>
@@ -306,7 +296,7 @@ const WelcomePage = () => {
       </section>
 
       {/* FOOTER */}
-      <footer className="bg-blue-900/70 text-center py-6 text-sm text-blue-200 font-light tracking-wide">
+      <footer className="bg-slate-950/40 border-t border-slate-900 text-center py-6 text-xs text-slate-500 font-semibold tracking-wide">
         © {new Date().getFullYear()} Laboratory Room Management System. All rights reserved.
       </footer>
     </div>

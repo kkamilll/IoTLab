@@ -1,8 +1,13 @@
-import react, { useState, useEffect, useRef } from "react";
-import { findParentChain, findDescendants } from "../utils/categoryUtils"
+import React, { useState, useEffect, useRef } from "react";
+import { findParentChain, findDescendants } from "../../utils/categoryUtils";
 import CategoryTree from "./CategoryTree";
 
-export default function CategorySelector({ categoryTree, flatCategories, formData, setFormData }) {
+export default function CategorySelector({
+  categoryTree,
+  flatCategories,
+  formData,
+  setFormData,
+}) {
   const [expandedIds, setExpandedIds] = useState([]);
   const [autoCollapse, setAutoCollapse] = useState(true);
   const deselectedIdRef = useRef(null);
@@ -10,9 +15,15 @@ export default function CategorySelector({ categoryTree, flatCategories, formDat
   // Handle collapsing descendants after deselection
   useEffect(() => {
     if (autoCollapse && deselectedIdRef.current) {
-      const descendants = findDescendants(deselectedIdRef.current, flatCategories);
-      setExpandedIds(prev =>
-        prev.filter(eid => eid !== deselectedIdRef.current && !descendants.includes(eid))
+      const descendants = findDescendants(
+        deselectedIdRef.current,
+        flatCategories,
+      );
+      setExpandedIds((prev) =>
+        prev.filter(
+          (eid) =>
+            eid !== deselectedIdRef.current && !descendants.includes(eid),
+        ),
       );
       deselectedIdRef.current = null;
     }
@@ -22,35 +33,35 @@ export default function CategorySelector({ categoryTree, flatCategories, formDat
     const isSelected = formData.categories.includes(id);
     const descendants = findDescendants(id, flatCategories);
 
-    setFormData(prev => {
+    setFormData((prev) => {
       if (isSelected) {
         // Deselect self + descendants
         return {
           ...prev,
           categories: prev.categories.filter(
-            cid => cid !== id && !descendants.includes(cid)
-          )
+            (cid) => cid !== id && !descendants.includes(cid),
+          ),
         };
       } else {
         // Select self + all parents
         const parentChain = findParentChain(id, flatCategories);
         return {
           ...prev,
-          categories: [...new Set([...prev.categories, id, ...parentChain])]
+          categories: [...new Set([...prev.categories, id, ...parentChain])],
         };
       }
     });
 
     if (isSelected && autoCollapse) {
-      setExpandedIds(prev =>
-        prev.filter(eid => eid !== id && !descendants.includes(eid))
+      setExpandedIds((prev) =>
+        prev.filter((eid) => eid !== id && !descendants.includes(eid)),
       );
     }
   };
 
   const handleExpand = (id) => {
-    setExpandedIds(prev =>
-      prev.includes(id) ? prev.filter(eid => eid !== id) : [...prev, id]
+    setExpandedIds((prev) =>
+      prev.includes(id) ? prev.filter((eid) => eid !== id) : [...prev, id],
     );
   };
 

@@ -1,11 +1,8 @@
 import Product from "../models/Product.js";
-
 import mongoose from "mongoose";
-import { AppError, ValidationError, BadRequestError, DuplicateKeyError, PermissionError, ResourceNotFoundError, ConflictError, ServerError } from '../errors/CustomErrors.js'
-// import { validateRequiredFields } from '../utils/validateRequiredFields.js'
-
+import { AppError, ValidationError, BadRequestError, DuplicateKeyError, PermissionError, ResourceNotFoundError, ConflictError, ServerError } from '../errors/CustomErrors.js';
 import Order from "../models/Order.js";
-import { createTagHelper, hardDeleteTagHelper } from '../utils/tagHelpers.js'; // check for tags uniqueness, no longer valid i guess, but might be interesting grouping option with some changes, but not necessary
+import asyncHandler from "../middleware/asyncHandler.js";
 
 const mapUploadedFiles = (filesArray = [], additionalData = []) => {
   if (!filesArray.length || filesArray.length !== additionalData.length) return [];
@@ -18,105 +15,98 @@ const mapUploadedFiles = (filesArray = [], additionalData = []) => {
     size: file.size || 0,
     path: file.path,
   }));
-}
+};
 
 const initProduct = (req) => {
-  try {
-    const { name, description } = req.body;
-    const tags = req.body.tags ? JSON.parse(req.body.tags) : [];
+  const { name, description } = req.body;
+  const tags = req.body.tags ? JSON.parse(req.body.tags) : [];
 
-    const stockTotal = req.body.stockTotal !== undefined ? Number(req.body.stockTotal) : undefined;
-    const stockForRent = req.body.stockForRent !== undefined ? Number(req.body.stockForRent) : undefined;
-    const categories = req.body.categories ? JSON.parse(req.body.categories) : undefined;
-    const extraFields = req.body.extraFields ? JSON.parse(req.body.extraFields) : undefined;
+  const stockTotal = req.body.stockTotal !== undefined ? Number(req.body.stockTotal) : undefined;
+  const stockForRent = req.body.stockForRent !== undefined ? Number(req.body.stockForRent) : undefined;
+  const categories = req.body.categories ? JSON.parse(req.body.categories) : undefined;
+  const extraFields = req.body.extraFields ? JSON.parse(req.body.extraFields) : undefined;
 
-    const newImageFiles = req.files?.images;
-    const newImagesData = req.body.newImagesData ? JSON.parse(req.body.newImagesData) : [];
-    const images = mapUploadedFiles(newImageFiles, newImagesData);
+  const newImageFiles = req.files?.images;
+  const newImagesData = req.body.newImagesData ? JSON.parse(req.body.newImagesData) : [];
+  const images = mapUploadedFiles(newImageFiles, newImagesData);
 
-    const oldImages = req.body.oldImages ? JSON.parse(req.body.oldImages) : [];
-    // const images = [...oldImages, ...newImages];
+  const oldImages = req.body.oldImages ? JSON.parse(req.body.oldImages) : [];
 
-    const newAttachmentsFiles = req.files?.attachments;
-    const newAttachmentsData = req.body.newAttachmentsData ? JSON.parse(req.body.newAttachmentsData) : [];
-    const attachments = mapUploadedFiles(newAttachmentsFiles, newAttachmentsData);
+  const newAttachmentsFiles = req.files?.attachments;
+  const newAttachmentsData = req.body.newAttachmentsData ? JSON.parse(req.body.newAttachmentsData) : [];
+  const attachments = mapUploadedFiles(newAttachmentsFiles, newAttachmentsData);
 
-    const oldAttachments = req.body.oldAttachments ? JSON.parse(req.body.oldAttachments) : [];
-    // const attachments = [...oldAttachments, ...newAttachments];
+  const oldAttachments = req.body.oldAttachments ? JSON.parse(req.body.oldAttachments) : [];
 
-    const labRoom = req.body.labRoom;
-    const owner = req.body.owner;
+  const labRoom = req.body.labRoom;
+  const owner = req.body.owner;
 
-    const parseBoolean = (val) => val === true || val === 'true';
-    const isSerialized = parseBoolean(req.body.isSerialized);
-    const isRentable = parseBoolean(req.body.isRentable);
-    const isVisible = parseBoolean(req.body.isVisible);
-    const isShared = parseBoolean(req.body.isShared);
-    const version = Number(req.body.version);
+  const parseBoolean = (val) => val === true || val === 'true';
+  const isSerialized = parseBoolean(req.body.isSerialized);
+  const isRentable = parseBoolean(req.body.isRentable);
+  const isVisible = parseBoolean(req.body.isVisible);
+  const isShared = parseBoolean(req.body.isShared);
+  const version = Number(req.body.version);
 
-    const setData = {};
-    const unsetData = {};
+  const setData = {};
+  const unsetData = {};
 
-    if (name?.trim()) setData.name = name; else unsetData.name = "";
-    if (description?.trim()) setData.description = description; else unsetData.description = "";
+  if (name?.trim()) setData.name = name; else unsetData.name = "";
+  if (description?.trim()) setData.description = description; else unsetData.description = "";
 
-    // Validate stockTotal value
-    if (stockTotal !== undefined) {
-      if (isNaN(stockTotal) || stockTotal < 0) throw new BadRequestError('stockTotal must be a non-negative number');
-      setData.stockTotal = stockTotal;
-    } else unsetData.stockTotal = "";
+  // Validate stockTotal value
+  if (stockTotal !== undefined) {
+    if (isNaN(stockTotal) || stockTotal < 0) throw new BadRequestError('stockTotal must be a non-negative number');
+    setData.stockTotal = stockTotal;
+  } else unsetData.stockTotal = "";
 
-    // Validate stockForRent value
-    if (stockForRent !== undefined) {
-      if (isNaN(stockForRent) || stockForRent < 0) throw new BadRequestError('stockForRent must be a non-negative number');
-      if (stockForRent > stockTotal) throw new BadRequestError('stockForRent cannot be bigger than stockTotal');
-      setData.stockForRent = stockForRent;
-    } else unsetData.stockForRent = "";
+  // Validate stockForRent value
+  if (stockForRent !== undefined) {
+    if (isNaN(stockForRent) || stockForRent < 0) throw new BadRequestError('stockForRent must be a non-negative number');
+    if (stockForRent > stockTotal) throw new BadRequestError('stockForRent cannot be bigger than stockTotal');
+    setData.stockForRent = stockForRent;
+  } else unsetData.stockForRent = "";
 
-    if (tags) {
-      let tagsArr = tags;
-      if (!Array.isArray(tags))
-        tagsArr = [tags];
-      setData.tags = tagsArr.map(tag => tag.trim().toLowerCase());
-    } else unsetData.tags = "";
+  if (tags) {
+    let tagsArr = tags;
+    if (!Array.isArray(tags))
+      tagsArr = [tags];
+    setData.tags = tagsArr.map(tag => tag.trim().toLowerCase());
+  } else unsetData.tags = "";
 
-    if (Array.isArray(categories)) {
-      categories.forEach((category) => {
-        if (!mongoose.Types.ObjectId.isValid(category)) {
-          throw new ValidationError("Invalid category ID");
-        }
-      })
-      setData.categories = categories;
-    } else unsetData.categories = "";
-
-    if (extraFields !== undefined && typeof extraFields === 'object') setData.extraFields = extraFields; else unsetData.extraFields = "";
-
-    if (images && images.length) setData.images = images; else unsetData.images = "";
-    if (oldImages && oldImages.length) setData.oldImages = oldImages; else unsetData.oldImages = "";
-
-    if (attachments && attachments.length) setData.attachments = attachments; else unsetData.attachments = "";
-    if (oldAttachments && oldAttachments.length) setData.oldAttachments = oldAttachments; else unsetData.oldAttachments = "";
-
-    if (labRoom?.trim() && labRoom !== "undefined" && labRoom !== "null") setData.labRoom = labRoom; else unsetData.labRoom = "";
-    if (owner?.trim() && owner !== "undefined" && owner !== "null") {
-      if (!mongoose.Types.ObjectId.isValid(owner)) {
-        throw new ValidationError("Invalid user ID");
+  if (Array.isArray(categories)) {
+    categories.forEach((category) => {
+      if (!mongoose.Types.ObjectId.isValid(category)) {
+        throw new ValidationError("Invalid category ID");
       }
-      setData.owner = new mongoose.Types.ObjectId(String(owner));
-    } else unsetData.owner = "";
+    });
+    setData.categories = categories;
+  } else unsetData.categories = "";
 
-    if (typeof isSerialized === 'boolean') setData.isSerialized = isSerialized; else unsetData.isSerialized = "";
-    if (typeof isRentable === 'boolean') setData.isRentable = isRentable; else unsetData.isRentable = "";
-    if (typeof isVisible === 'boolean') setData.isVisible = isVisible; else unsetData.isVisible = "";
-    if (typeof isShared === 'boolean') setData.isShared = isShared; else unsetData.isShared = "";
-    if (!isNaN(version)) setData.__v = version; else throw new ValidationError("Missing version number");
+  if (extraFields !== undefined && typeof extraFields === 'object') setData.extraFields = extraFields; else unsetData.extraFields = "";
 
-    return { $set: setData, $unset: unsetData };
-  } catch (error) {
-    if (error instanceof AppError) throw error;
-    throw new ServerError(error);
-  }
-}
+  if (images && images.length) setData.images = images; else unsetData.images = "";
+  if (oldImages && oldImages.length) setData.oldImages = oldImages; else unsetData.oldImages = "";
+
+  if (attachments && attachments.length) setData.attachments = attachments; else unsetData.attachments = "";
+  if (oldAttachments && oldAttachments.length) setData.oldAttachments = oldAttachments; else unsetData.oldAttachments = "";
+
+  if (labRoom?.trim() && labRoom !== "undefined" && labRoom !== "null") setData.labRoom = labRoom; else unsetData.labRoom = "";
+  if (owner?.trim() && owner !== "undefined" && owner !== "null") {
+    if (!mongoose.Types.ObjectId.isValid(owner)) {
+      throw new ValidationError("Invalid user ID");
+    }
+    setData.owner = new mongoose.Types.ObjectId(String(owner));
+  } else unsetData.owner = "";
+
+  if (typeof isSerialized === 'boolean') setData.isSerialized = isSerialized; else unsetData.isSerialized = "";
+  if (typeof isRentable === 'boolean') setData.isRentable = isRentable; else unsetData.isRentable = "";
+  if (typeof isVisible === 'boolean') setData.isVisible = isVisible; else unsetData.isVisible = "";
+  if (typeof isShared === 'boolean') setData.isShared = isShared; else unsetData.isShared = "";
+  if (!isNaN(version)) setData.__v = version; else throw new ValidationError("Missing version number");
+
+  return { $set: setData, $unset: unsetData };
+};
 
 const getOrderQuantity = async ({ productId, ownerId, field, end, start, status }) => {
   status = Array.isArray(status) ? status : [status];
@@ -162,187 +152,128 @@ const getOrderQuantity = async ({ productId, ownerId, field, end, start, status 
   const requestsQuantity = result[0]?.requestsQuantity || 0;
 
   return { orderQuantity, requestsQuantity };
-}
-
-export const getProductsPublic = async (req, res, next) => {
-  try {
-    const products = await Product.find({ isVisible: true, isDeleted: false }).select('-__v -isDeleted').sort({ name: 1 }).populate([{ path: "categories", select: "name" }, { path: "owner", select: "name" }]).lean();
-    const productsImagesFiltered = products?.map(product => ({ ...product, images: product.images?.filter(img => img.isVisible) || [] })) || [];
-
-    res.json({ success: true, products: productsImagesFiltered });
-  } catch (err) {
-    return next(new ServerError({ message: error.message }));
-  }
-}
-
-export const getProductsPrivate = async (req, res, next) => {
-  try {
-    const role = req.user.role;
-    const user = req.user.id;
-    if (!mongoose.Types.ObjectId.isValid(user)) {
-      return next(new ValidationError("Invalid user ID"));
-    }
-
-    let filter = { isDeleted: false }
-    // Find all products
-    if (role !== "admin") {
-      filter = { isDeleted: false, $or: [{ owner: user }, { isShared: true }, { isVisible: true }] }
-    }
-    const products = await Product.find(filter).select('-isDeleted').sort({ name: 1 }).populate([{ path: "categories", select: "name" }, { path: "owner", select: "name" }]).lean();
-
-    // Send response
-    return res.status(200).json({ success: true, products });
-  } catch (error) {
-    return next(new ServerError({ message: error.message }));
-  }
 };
 
-export const getProductByIdPublic = async (req, res, next) => {
-  try {
-    // Extract route params
-    const { productId } = req.params;
-    // Validate productId has ObjectId structure
-    if (!mongoose.Types.ObjectId.isValid(productId)) {
-      return next(new ValidationError("Invalid product ID"));
-    }
+export const getProductsPublic = asyncHandler(async (req, res, next) => {
+  const products = await Product.find({ isVisible: true, isDeleted: false }).select('-__v -isDeleted').sort({ name: 1 }).populate([{ path: "categories", select: "name" }, { path: "owner", select: "name" }]).lean();
+  const productsImagesFiltered = products?.map(product => ({ ...product, images: product.images?.filter(img => img.isVisible) || [] })) || [];
 
-    // Find products for users
-    const product = await Product.findOne({ _id: productId, isVisible: true, isDeleted: false }).select('-__v -isDeleted').sort({ name: 1 }).populate([{ path: "categories", select: "name" }, { path: "owner", select: "name" }]).lean();
+  res.json({ success: true, products: productsImagesFiltered });
+});
+
+export const getProductsPrivate = asyncHandler(async (req, res, next) => {
+  const role = req.user.role;
+  const user = req.user.id;
+  if (!mongoose.Types.ObjectId.isValid(user)) {
+    return next(new ValidationError("Invalid user ID"));
+  }
+
+  let filter = { isDeleted: false };
+  if (role !== "admin") {
+    filter = { isDeleted: false, $or: [{ owner: user }, { isShared: true }, { isVisible: true }] };
+  }
+  const products = await Product.find(filter).select('-isDeleted').sort({ name: 1 }).populate([{ path: "categories", select: "name" }, { path: "owner", select: "name" }]).lean();
+
+  return res.status(200).json({ success: true, products });
+});
+
+export const getProductByIdPublic = asyncHandler(async (req, res, next) => {
+  const { productId } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(productId)) {
+    return next(new ValidationError("Invalid product ID"));
+  }
+
+  const product = await Product.findOne({ _id: productId, isVisible: true, isDeleted: false }).select('-__v -isDeleted').sort({ name: 1 }).populate([{ path: "categories", select: "name" }, { path: "owner", select: "name" }]).lean();
+  if (product) {
     product.images = product.images?.filter(image => (image.isVisible)) || [];
     product.attachments = product.attachments?.filter(attachment => (attachment.isVisible)) || [];
-    // product.images = product.images?.filter(image => (image.isVisible)).map(img => {
-    //   const { path, ...rest } = img;
-    //   return rest;
-    // }) || [];
-    // product.attachments = product.attachments?.filter(attachment => (attachment.isVisible))
-    // .map(att => {
-    //   const { path, ...rest } = att;
-    //   return rest;
-    // }) || [];
-
-    // Send response
-    return res.status(200).json({ success: true, product });
-  } catch (error) {
-    // Handle unexpected server error
-    return next(new ServerError({ message: error.message }));
   }
-};
 
-export const getProductByIdPrivate = async (req, res, next) => {
-  try {
-    // Extract route params
-    const { productId } = req.params;
-    // Validate productId has ObjectId structure
-    if (!mongoose.Types.ObjectId.isValid(productId)) {
-      return next(new ValidationError("Invalid product ID"));
-    }
+  return res.status(200).json({ success: true, product });
+});
 
-    const role = req.user.role;
-    const user = req.user.id;
-    if (!mongoose.Types.ObjectId.isValid(user)) {
-      return next(new ValidationError("Invalid user ID"));
-    }
-
-    let filter = { _id: productId, isDeleted: false }
-    // Find all products
-    if (role !== "admin") {
-      filter = { _id: productId, isDeleted: false, $or: [{ owner: user }, { isShared: true }, { isVisible: true }] }
-    }
-
-    const product = await Product.findOne(filter).populate([{ path: "categories", select: "name" }, { path: "owner", select: "name" }]);
-    if (!product) {
-      return res.status(404).json({ success: false, message: "Product not found" });
-    }
-
-    return res.status(200).json({ success: true, product });
-  } catch (error) {
-    console.error("Error fetching product:", error);
-    return res.status(500).json({ success: false, message: "Server error" });
+export const getProductByIdPrivate = asyncHandler(async (req, res, next) => {
+  const { productId } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(productId)) {
+    return next(new ValidationError("Invalid product ID"));
   }
-};
 
-export const createProduct = async (req, res, next) => {
+  const role = req.user.role;
+  const user = req.user.id;
+  if (!mongoose.Types.ObjectId.isValid(user)) {
+    return next(new ValidationError("Invalid user ID"));
+  }
+
+  let filter = { _id: productId, isDeleted: false };
+  if (role !== "admin") {
+    filter = { _id: productId, isDeleted: false, $or: [{ owner: user }, { isShared: true }, { isVisible: true }] };
+  }
+
+  const product = await Product.findOne(filter).populate([{ path: "categories", select: "name" }, { path: "owner", select: "name" }]);
+  if (!product) {
+    return next(new ResourceNotFoundError("Product"));
+  }
+
+  return res.status(200).json({ success: true, product });
+});
+
+export const createProduct = asyncHandler(async (req, res, next) => {
+  if (!req.body) {
+    return next(new BadRequestError("Request body is missing"));
+  }
+
   const session = await mongoose.startSession();
   session.startTransaction();
-  try {
-    // Ensure request body exists
-    if (!req.body) {
-      return next(new BadRequestError("Request body is missing"));
-    }
 
-    // Extract incoming data
-    const updateData = initProduct(req, next);
+  try {
+    const updateData = initProduct(req);
     const createData = updateData.$set;
 
-    // const newTags = updateData.$set.tags || [];
-    // const tagRefs = [];
-    // for (const tag of newTags) {
-    //   const newTag = await createTagHelper(tag);
-    //   tagRefs.push(new mongoose.Types.ObjectId(String(newTag._id)));
-    // }
-
-    // if (tagRefs.length > 0)
-    //   createData.tagRefs = tagRefs;
-
-    // Validate required fields
-    // validateRequiredFields(Product, createData);
-
-    // create new product
     const newProduct = new Product(createData);
     await newProduct.save({ session });
 
     await session.commitTransaction();
     session.endSession();
 
-    // Send response
     return res.status(201).json({ success: true, product: newProduct.toObject() });
   } catch (error) {
     await session.abortTransaction();
     session.endSession();
-
-    next(error);
+    throw error;
   }
-};
+});
 
-export const updateProduct = async (req, res, next) => {
+export const updateProduct = asyncHandler(async (req, res, next) => {
+  if (!req.body) {
+    return next(new BadRequestError("Request body is missing"));
+  }
+
+  const role = req.user.role;
+  const user = req.user.id;
+  if (!mongoose.Types.ObjectId.isValid(user)) {
+    return next(new ValidationError("Invalid user ID"));
+  }
+
+  const { productId } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(productId)) {
+    return next(new ValidationError("Invalid product ID"));
+  }
+
+  const updateData = initProduct(req);
+
+  if (!Object.keys(updateData).length) {
+    return next(new BadRequestError('No valid fields to update'));
+  }
+
+  let filterProducts = { _id: productId, isDeleted: false };
+  if (role !== "admin") {
+    filterProducts = { _id: productId, isDeleted: false, owner: user };
+  }
+
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    // Ensure request body exists
-    if (!req.body) {
-      return next(new BadRequestError("Request body is missing"));
-    }
-
-    const role = req.user.role;
-    const user = req.user.id;
-    if (!mongoose.Types.ObjectId.isValid(user)) {
-      return next(new ValidationError("Invalid user ID"));
-    }
-
-    const { productId } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(productId)) {
-      return next(new ValidationError("Invalid product ID"));
-    }
-
-    const updateData = initProduct(req, next);
-
-    if (!Object.keys(updateData).length) {
-      return next(new BadRequestError('No valid fields to update'));
-    }
-
-    let filterProducts = { _id: productId, isDeleted: false };
-    if (role !== "admin") {
-      filterProducts = { _id: productId, isDeleted: false, owner: user }
-    }
-
-    // const updatedProduct = await Product.findOneAndUpdate(filter, updateData, { new: true, runValidators: true }).select('-__v -isDeleted').populate("categories", "name").lean();
-    // if (!updatedProduct) {
-    //   return next(new ResourceNotFoundError("Missing permission or Product"));
-    // }
-
-    // return res.status(200).json({ success: true, product: updatedProduct });
-
     const product = await Product.findOne(filterProducts).session(session);
     if (!product) return next(new ResourceNotFoundError("Missing permission or Product"));
 
@@ -354,16 +285,14 @@ export const updateProduct = async (req, res, next) => {
       const unsetOldFiles = updateData?.$unset[filterFields];
       if (unsetOldFiles != null) continue;
 
-      // const productFilesFiltered = product[productField].filter(file => filterSetFiles.some(filterFile => file._id.toString() === filterFile.fileId.toString()));
       const productFilesFiltered = setOldFiles.map(setFile => {
         const productFile = product[productField].find(productFile =>
           productFile._id.toString() === setFile.fileId.toString()
         );
 
         if (!productFile) return null;
-        return { ...(productFile?.toObject() ?? productFile), isVisible: setFile.isVisible }
+        return { ...(productFile?.toObject() ?? productFile), isVisible: setFile.isVisible };
       }).filter(Boolean);
-
 
       if (!updateData.$set[productField]) updateData.$set[productField] = productFilesFiltered;
       else updateData.$set[productField].push(...productFilesFiltered);
@@ -377,7 +306,7 @@ export const updateProduct = async (req, res, next) => {
 
     const blockingStatuses = ["approved", "prepared", "rented"];
 
-    if (originalOwner != newOwner) {
+    if (originalOwner !== newOwner) {
       const filterOrders = {};
       filterOrders.items = { $elemMatch: { product: productId, status: { $in: blockingStatuses } } };
       const blockingOrder = await Order.findOne(filterOrders).select("_id").lean().session(session);
@@ -395,12 +324,11 @@ export const updateProduct = async (req, res, next) => {
       Object.keys(updateData.$unset).forEach(key => product.set(key, undefined));
     }
 
-    // validateRequiredFields(Product, product);
     const updatedProduct = await product.save({ session }); // optimistic concurrency enforced
 
     // update orders
-    if (originalOwner != newOwner) {
-      const filterOrders = {}
+    if (originalOwner !== newOwner) {
+      const filterOrders = {};
       filterOrders.items = { $elemMatch: { product: product._id, status: "pending" } };
       const pendingOrders = await Order.find(filterOrders).session(session);
       for (const pendingOrder of pendingOrders) {
@@ -425,145 +353,109 @@ export const updateProduct = async (req, res, next) => {
     if (error.name === "VersionError") {
       return next(new ConflictError("Product was modified by someone else"));
     }
-
-    return next(new ServerError({ success: false, message: error.message }));
+    throw error;
   }
-};
+});
 
-export const archiveProduct = async (req, res, next) => {
-  try {
-    const { productId } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(productId)) {
-      return next(new ValidationError("Invalid product ID"));
-    }
-
-    const product = await Product.findById(productId);
-    if (!product) {
-      return next(new ResourceNotFoundError('Product'));
-    }
-
-    if (product.isDeleted) {
-      return next(new BadRequestError("Product is already archived"));
-    }
-
-    product.isDeleted = true;
-    await product.save();
-
-    return res.status(200).json({ success: true, message: "Product archived" });
-  } catch (error) {
-    return next(new ServerError({ message: error.message }));
+export const archiveProduct = asyncHandler(async (req, res, next) => {
+  const { productId } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(productId)) {
+    return next(new ValidationError("Invalid product ID"));
   }
-};
 
-export const hardDeleteProduct = async (req, res, next) => {
-  try {
-    const { productId } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(productId)) {
-      return next(new ValidationError("Invalid product ID"));
-    }
-
-    const product = await Product.findById(productId);
-    if (!product) {
-      return next(new ResourceNotFoundError('Product'));
-    }
-
-    await product.deleteOne();
-
-    return res.status(200).json({ success: true, message: "Product deleted" });
-  } catch (error) {
-    return next(new ServerError({ message: error.message }));
+  const product = await Product.findById(productId);
+  if (!product) {
+    return next(new ResourceNotFoundError('Product'));
   }
-};
 
-export const deleteExtraField = async (req, res, next) => {
-  try {
-    const { key } = req.params;
-    // Ustawiamy key na undefined dla wszystkich produktów
-    await Product.updateMany(
-      {},
-      { $unset: { [`extraFields.${key}`]: "" } }
-    );
-
-    return res.status(200).json({ success: true, message: `Field '${key}' deleted` });
-  } catch (error) {
-    console.error("Error deleting extra field:", error);
-    return res.status(500).json({ success: false, message: "Server error" });
+  if (product.isDeleted) {
+    return next(new BadRequestError("Product is already archived"));
   }
-};
 
-export const getProductAvailability = async (req, res, next) => {
-  try {
-    const { productId, startDate, endDate } = req.body;
+  product.isDeleted = true;
+  await product.save();
 
-    if (!productId || !startDate || !endDate) {
-      return res.status(400).json({ success: false, message: "Brak danych" });
-    }
+  return res.status(200).json({ success: true, message: "Product archived" });
+});
 
-    const product = await Product.findById(productId);
-    if (!product || product.isDeleted) {
-      return res.status(404).json({ success: false, message: "Produkt nie znaleziony" });
-    }
-
-    const ownerId = product.owner?._id ? product.owner._id?.toString() : product.owner?.toString();
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-
-    const { orderQuantity } = await getOrderQuantity({ productId, ownerId, field: "assigned", end, start, status: ["approved", "prepared", "rented"] });
-
-    // Available stock is stockForRent minus reservedQuantity
-    const available = Math.max(0, Number(product.stockForRent) - orderQuantity);
-
-    return res.json({ success: true, available });
-  } catch (err) {
-    console.error("Błąd w /products/available:", err);
-    return res.status(500).json({ success: false, message: "Błąd serwera" });
+export const hardDeleteProduct = asyncHandler(async (req, res, next) => {
+  const { productId } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(productId)) {
+    return next(new ValidationError("Invalid product ID"));
   }
-};
 
-export const getProductStockStatus = async (req, res, next) => {
-  try {
-    const { productId, startDate, endDate, orderId } = req.body;
-    if (!productId || !startDate || !endDate || !orderId) {
-      return res.status(400).json({ success: false, message: "Missing data" });
-    }
-
-    const product = await Product.findById(productId).lean();
-    if (!product || product.isDeleted) {
-      return res.status(404).json({ success: false, message: "Produkt nie znaleziony" });
-    }
-
-    const ownerId = product.owner?._id ? product.owner._id?.toString() : product.owner?.toString();
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-
-    const order = await Order.findById(orderId).lean();
-    if (!order) return next(new ResourceNotFoundError("Order"));
-    const currProduct = order.items?.find(item => item.product?.toString() === productId);
-
-    const { orderQuantity: inDemand, requestsQuantity } = await getOrderQuantity({ productId, ownerId, field: "requested", start, end, status: "pending" });
-    const { orderQuantity: confirmedQuantityReserved } = await getOrderQuantity({ productId, ownerId, field: "assigned", start, end, status: ["approved", "prepared"] });
-    const { orderQuantity: rentedQuantity } = await getOrderQuantity({ productId, ownerId, field: "assigned", start, end, status: ["rented"] });
-    // is better to add also agregation for rented? 
-    // the plus is will stop counting objects that are supposed to be returned before checking start date, so system will allow to allocate more objects technically, 
-    // the minus is kinda bigger vulnerability to late returns, but it won't prevent those situations completely, where reserved object cannot be rented because any of them weren't returned
-    
-    // will this work?:
-    // const { orderQuantity: lateQuantity } = await getOrderQuantity({ productId, ownerId, field: "assigned", start: -inf, end: today, status: ["rented"] });
-    // so orders that started already and were supposed to be returned at this moment already
-
-    // const confirmedQuantityReserved = Number(product.stockReserved) || 0;
-    // const rentedQuantity = Number(product.stockRentedOut) || 0;
-    const currQuantityAssigned = currProduct?.assignedQuantity || 0;
-
-    const availableTotal = Number(product.stockForRent) - rentedQuantity - confirmedQuantityReserved;
-    
-    let availableToAssign = availableTotal;
-    // if (currProduct.status !== "pending")
-      availableToAssign = availableTotal + currQuantityAssigned;
-
-    return res.json({ success: true, inDemand, requestsQuantity, availableToAssign, availableTotal, rentedQuantity });
-  } catch (err) {
-    console.error("Błąd w getProductStockStatus:", err);
-    return res.status(500).json({ success: false, message: "Błąd serwera" });
+  const product = await Product.findById(productId);
+  if (!product) {
+    return next(new ResourceNotFoundError('Product'));
   }
-};
+
+  await product.deleteOne();
+
+  return res.status(200).json({ success: true, message: "Product deleted" });
+});
+
+export const deleteExtraField = asyncHandler(async (req, res, next) => {
+  const { key } = req.params;
+  await Product.updateMany(
+    {},
+    { $unset: { [`extraFields.${key}`]: "" } }
+  );
+
+  return res.status(200).json({ success: true, message: `Field '${key}' deleted` });
+});
+
+export const getProductAvailability = asyncHandler(async (req, res, next) => {
+  const { productId, startDate, endDate } = req.body;
+
+  if (!productId || !startDate || !endDate) {
+    return next(new BadRequestError("Missing required parameters"));
+  }
+
+  const product = await Product.findById(productId);
+  if (!product || product.isDeleted) {
+    return next(new ResourceNotFoundError("Product"));
+  }
+
+  const ownerId = product.owner?._id ? product.owner._id?.toString() : product.owner?.toString();
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  const { orderQuantity } = await getOrderQuantity({ productId, ownerId, field: "assigned", end, start, status: ["approved", "prepared", "rented"] });
+
+  const available = Math.max(0, Number(product.stockForRent) - orderQuantity);
+
+  return res.json({ success: true, available });
+});
+
+export const getProductStockStatus = asyncHandler(async (req, res, next) => {
+  const { productId, startDate, endDate, orderId } = req.body;
+  if (!productId || !startDate || !endDate || !orderId) {
+    return next(new BadRequestError("Missing data"));
+  }
+
+  const product = await Product.findById(productId).lean();
+  if (!product || product.isDeleted) {
+    return next(new ResourceNotFoundError("Product"));
+  }
+
+  const ownerId = product.owner?._id ? product.owner._id?.toString() : product.owner?.toString();
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  const order = await Order.findById(orderId).lean();
+  if (!order) return next(new ResourceNotFoundError("Order"));
+  const currProduct = order.items?.find(item => item.product?.toString() === productId);
+
+  const { orderQuantity: inDemand, requestsQuantity } = await getOrderQuantity({ productId, ownerId, field: "requested", start, end, status: "pending" });
+  const { orderQuantity: confirmedQuantityReserved } = await getOrderQuantity({ productId, ownerId, field: "assigned", start, end, status: ["approved", "prepared"] });
+  const { orderQuantity: rentedQuantity } = await getOrderQuantity({ productId, ownerId, field: "assigned", start, end, status: ["rented"] });
+
+  const currQuantityAssigned = currProduct?.assignedQuantity || 0;
+
+  const availableTotal = Number(product.stockForRent) - rentedQuantity - confirmedQuantityReserved;
+
+  let availableToAssign = availableTotal;
+  availableToAssign = availableTotal + currQuantityAssigned;
+
+  return res.json({ success: true, inDemand, requestsQuantity, availableToAssign, availableTotal, rentedQuantity });
+});

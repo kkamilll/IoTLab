@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import ForgotPassword from '../components/ForgotPassword';
-import ResetPassword from '../components/ResetPassword';
+import ForgotPassword from '../components/auth/ForgotPassword';
+import ResetPassword from '../components/auth/ResetPassword';
 
 export default function PasswordResetFlow() {
   const [email, setEmail] = useState(null);

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react"; 
 import { NavLink } from 'react-router-dom';
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../../context/AuthContext";
 
 const Sidebar = () => {
   const menuItems = [
@@ -48,7 +48,7 @@ const customerItems = [
     <>
       {/* Hamburger button */}
       <button
-        className="fixed top-4 left-4 z-50 md:hidden flex flex-col justify-center items-center w-10 h-10 bg-blue-800 text-white rounded-md shadow-md gap-1 p-2"
+        className="fixed top-4 left-4 z-50 md:hidden flex flex-col justify-center items-center w-10 h-10 bg-slate-900 border border-slate-800 text-white rounded-lg shadow-md gap-1 p-2 hover:bg-slate-800 transition"
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Toggle sidebar"
       >
@@ -71,30 +71,32 @@ const customerItems = [
 
       {/* Sidebar */}
       <div
-        className={`fixed top-0 left-0 h-full w-64 md:w-64 bg-gradient-to-b from-blue-900 via-blue-800 to-blue-950 text-white shadow-lg z-40 flex flex-col transform transition-transform duration-300 ease-in-out
+        className={`fixed top-0 left-0 h-full w-64 md:w-64 bg-slate-900 border-r border-slate-800 text-slate-100 shadow-xl z-40 flex flex-col transform transition-transform duration-300 ease-in-out
         ${isOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}
       >
-        <div className="h-16 flex items-center justify-center border-b border-blue-700">
-          <span className="text-2xl font-extrabold tracking-wide drop-shadow-lg">
+        <div className="h-16 flex items-center justify-center border-b border-slate-800">
+          <span className="text-2xl font-black tracking-wider text-white bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">
             IOTLAB
           </span>
         </div>
 
-        <nav className="flex-grow overflow-y-auto mt-4">
-          <ul className="space-y-2 px-4">
+        <nav className="flex-grow overflow-y-auto mt-6">
+          <ul className="space-y-1.5 px-4">
             {menuLinks.map((item) => (
               <li key={item.name}>
                 <NavLink
                   end={item.isParent}
                   to={item.path}
                   className={({ isActive }) =>
-                    `flex items-center p-3 rounded-lg transition-colors duration-200 ${
-                      isActive ? "bg-blue-700 font-semibold shadow-md" : "hover:bg-blue-700/70"
+                    `flex items-center px-4 py-2.5 rounded-xl transition-all duration-200 text-sm ${
+                      isActive 
+                        ? "bg-indigo-600/90 text-white font-semibold shadow-lg shadow-indigo-900/30" 
+                        : "text-slate-400 hover:text-white hover:bg-slate-800/60"
                     }`
                   }
                   onClick={() => setIsOpen(false)}
                 >
-                  <span className="ml-2 text-lg">{item.name}</span>
+                  <span className="font-medium">{item.name}</span>
                 </NavLink>
               </li>
             ))}
@@ -104,21 +106,21 @@ const customerItems = [
         <div className="mt-auto p-4">
           <NavLink
             to="/logout"
-            className="flex items-center justify-center p-3 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold transition"
+            className="flex items-center justify-center px-4 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white text-sm font-semibold transition-all duration-200"
             onClick={() => setIsOpen(false)}
           >
             Logout
           </NavLink>
         </div>
 
-        <div className="border-t border-blue-700 p-4 text-center text-sm bg-blue-950/80">
+        <div className="border-t border-slate-800 p-4 text-center text-xs bg-slate-950/40">
           {user ? (
             <>
-              <p className="font-semibold truncate">{user.name || user.email}</p>
-              <p className="text-blue-300 capitalize">{user.role}</p>
+              <p className="font-semibold text-slate-200 truncate">{user.name || user.email}</p>
+              <p className="text-slate-500 capitalize mt-0.5">{user.role}</p>
             </>
           ) : (
-            <p>Not logged in</p>
+            <p className="text-slate-500">Not logged in</p>
           )}
         </div>
       </div>
@@ -126,7 +128,7 @@ const customerItems = [
       {/* Overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 backdrop-blur-md bg-opacity-50 z-30 md:hidden"
+          className="fixed inset-0 backdrop-blur-sm bg-black/40 z-30 md:hidden"
           onClick={() => setIsOpen(false)}
           aria-hidden="true"
         />

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
+import apiClient from "../api/apiClient";
 import { useAuth } from "../context/AuthContext";
 
 const CollectionFiles = () => {
@@ -15,11 +15,7 @@ const CollectionFiles = () => {
   useEffect(() => {
     const fetchCollection = async () => {
       try {
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const res = await axios.get(
-          `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/components/${collectionId}`,
-          { headers }
-        );
+        const res = await apiClient.get(`/components/${collectionId}`);
         if (res.data.success) setCollection(res.data.data);
       } catch (err) {
         console.error("Error fetching collection:", err);
@@ -28,16 +24,14 @@ const CollectionFiles = () => {
       }
     };
     fetchCollection();
-  }, [collectionId, token]);
+  }, [collectionId]);
 
   // Fetch file preview
   const handlePreview = async (fileId) => {
     try {
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
-      const res = await axios.get(
-        `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/files/component/${collectionId}/${fileId}`,
-        { headers, responseType: "blob" }
+      const res = await apiClient.get(
+        `/files/component/${collectionId}/${fileId}`,
+        { responseType: "blob" }
       );
 
       const fileURL = URL.createObjectURL(res.data);
@@ -51,11 +45,9 @@ const CollectionFiles = () => {
   // Download file
   const handleDownload = async (fileId, fileName) => {
     try {
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
-      const res = await axios.get(
-        `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/files/component/${collectionId}/${fileId}`,
-        { headers, responseType: "blob" }
+      const res = await apiClient.get(
+        `/files/component/${collectionId}/${fileId}`,
+        { responseType: "blob" }
       );
 
       const downloadURL = URL.createObjectURL(res.data);

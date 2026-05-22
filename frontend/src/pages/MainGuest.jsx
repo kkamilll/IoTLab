@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import apiClient from "../api/apiClient";
 import { FaFolder, FaInfoCircle } from "react-icons/fa";
 import { buildTree } from "../utils/categoryUtils";
 
@@ -13,9 +13,7 @@ const MainGuest = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await axios.get(
-          `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/categories/public`
-        );
+        const res = await apiClient.get("/categories/public");
         setCategories(res.data.categories || []);
       } catch (err) {
         console.error("Error fetching categories:", err);
