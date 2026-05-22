@@ -31,7 +31,12 @@ import ComponentPreview from "./pages/ComponentPreview";
 import Templates from "./pages/Templates";
 
 // Components
+<<<<<<< HEAD
 import Logout from "./components/auth/Logout";
+=======
+import Users from './components/Users';
+import Logout from './components/Logout';
+>>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
 // import ReturnedOrders from './components/ReturnedOrders';
 
 // Utils
@@ -78,12 +83,15 @@ function App() {
         />
         <Route path="/mainguest" element={<MainGuest />} />
         <Route path="/preview" element={<ProductPreview />} />
+<<<<<<< HEAD
         <Route path="/orderPreview/:orderUUID" element={<OrderPreview />} />
         <Route
           path="/components/:collectionId"
           element={<ComponentPreview />}
         />
 
+=======
+>>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
         {/* Admin Dashboard - Protected Routes */}
         <Route
           path="/admin-dashboard"
@@ -99,6 +107,7 @@ function App() {
           <Route path="profile" element={<Profile />} />
           <Route path="preview" element={<ProductPreview />} />
           <Route path="notes" element={<Notes />} />
+<<<<<<< HEAD
 
           <Route element={<ProtectedRoutes requireRole={["admin"]} />}>
             <Route path="users" element={<Users />} />
@@ -107,6 +116,18 @@ function App() {
             <Route path="categories" element={<Categories />} />
             <Route path="templates" element={<Templates />} />
           </Route>
+=======
+          <Route path="materials" element={<Materials />} />
+          <Route
+            path="categories"
+            element={
+              <ProtectedRoutes requireRole={['admin']}>
+                <Categories />
+              </ProtectedRoutes>
+            }
+          />
+          {/* <Route path="ReturnedOrders" element={<ReturnedOrders />} /> */}
+>>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
         </Route>
       </Routes>
     </Router>

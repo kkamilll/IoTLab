@@ -388,6 +388,7 @@ export const createOrder = asyncHandler(async (req, res, next) => {
       };
     });
 
+<<<<<<< HEAD
     if (new Date(requestedStartDate) > new Date(requestedEndDate))
       throw new ValidationError(`Start date cannot be after end date`);
 
@@ -396,12 +397,18 @@ export const createOrder = asyncHandler(async (req, res, next) => {
 
     const order = new Order({
       customerKey: encryptedCustomerKey,
+=======
+    const order = await Order.create({
+>>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
       customer,
       items: enrichedItems,
       requestedStartDate,
       requestedEndDate,
       status: "pending",
+<<<<<<< HEAD
       isNew: true,
+=======
+>>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
     });
 
     let successSave = false;

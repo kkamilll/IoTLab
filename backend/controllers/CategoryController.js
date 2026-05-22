@@ -48,7 +48,11 @@ export const createCategory = async (req, res, next) => {
         }
         const { name, description, parent, isVisible } = req.body;
         const updateData = { name, description, parent, isVisible };
+<<<<<<< HEAD
         // validateRequiredFields(Category, updateData);
+=======
+        validateRequiredFields(Category, updateData);
+>>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
 
         if (parent) {
             if (!mongoose.Types.ObjectId.isValid(parent)) {

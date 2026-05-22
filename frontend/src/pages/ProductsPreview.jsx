@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import apiClient from "../api/apiClient";
 import { useAuth } from "../context/AuthContext";
+<<<<<<< HEAD
 import {
   FaFilePdf,
   FaFileWord,
@@ -11,6 +12,9 @@ import {
   FaFile,
   FaShoppingCart,
 } from "react-icons/fa";
+=======
+import { FaFilePdf, FaFileWord, FaFileExcel, FaFileImage, FaFileAlt, FaFile } from "react-icons/fa";
+>>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
 
 const ProductPreview = () => {
   const location = useLocation();
@@ -41,11 +45,21 @@ const ProductPreview = () => {
 
     const fetchProduct = async () => {
       try {
+<<<<<<< HEAD
         const url = token
           ? `/products/privateId/${productId}`
           : `/products/publicId/${productId}`;
 
         const res = await apiClient.get(url);
+=======
+        const API_URL = `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}`;
+        const url = token
+          ? `${API_URL}/products/privateId/${productId}`
+          : `${API_URL}/products/publicId/${productId}`;
+
+        const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+        const res = await axios.get(url, config);
+>>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
 
         if (res.data.success) setProduct(res.data.product);
         else setError("Product not found");
@@ -120,6 +134,20 @@ const ProductPreview = () => {
     }
   };
 
+  // Funkcja pomocnicza do wyświetlania ikony w zależności od typu pliku
+  const getFileIcon = (filename) => {
+    const ext = filename.split(".").pop()?.toLowerCase();
+    switch (ext) {
+      case "pdf": return <FaFilePdf className="inline-block mr-2 text-red-500" />;
+      case "doc":
+      case "docx": return <FaFileWord className="inline-block mr-2 text-blue-600" />;
+      case "xls":
+      case "xlsx": return <FaFileExcel className="inline-block mr-2 text-green-600" />;
+      case "txt": return <FaFileAlt className="inline-block mr-2 text-gray-600" />;
+      default: return <FaFile className="inline-block mr-2 text-gray-400" />;
+    }
+  };
+
   if (error) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-red-500">
@@ -168,7 +196,10 @@ const ProductPreview = () => {
 
   const API_URL = `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}`;
 
+  const API_URL = `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}`;
+
   return (
+<<<<<<< HEAD
     <div className="min-h-screen bg-slate-100 py-8 px-4 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-5xl rounded-3xl bg-white p-6 shadow-2xl border border-slate-200">
         <button
@@ -177,6 +208,15 @@ const ProductPreview = () => {
         >
           ← Back
         </button>
+=======
+    <div className="max-w-5xl mx-auto p-6 flex flex-col gap-6 bg-white rounded-xl shadow-md">
+      <button
+        onClick={() => navigate(-1)}
+        className="self-start px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition"
+      >
+        ← Back
+      </button>
+>>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
 
         <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
           <div>
@@ -246,6 +286,7 @@ const ProductPreview = () => {
               {currentImageIndex + 1} / {product.images.length}
             </div>
           </div>
+<<<<<<< HEAD
         ) : (
           <div className="mt-6 rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-12 text-center text-slate-500">
             No images available for this product.
@@ -379,6 +420,102 @@ const ProductPreview = () => {
             View Cart & Checkout
           </button>
         </div>
+=======
+          <p className="text-gray-500 mt-2">
+            {currentImageIndex + 1} / {product.images.length}
+          </p>
+        </div>
+      ) : (
+        <p className="text-gray-400">No images</p>
+      )}
+
+      {/* Product details (bubble layout) */}
+      <div className="space-y-4 mt-4">
+        {/* Description */}
+        <div className="flex flex-wrap gap-2">
+          <div className="flex-auto min-w-[200px] px-4 py-3 bg-gray-100 rounded-lg">
+            <p className="text-sm font-semibold text-gray-600">Description</p>
+            <p className="text-center text-gray-800 break-words">
+              {product.description || "—"}
+            </p>
+          </div>
+        </div>
+
+        {/* Available */}
+        <div className="flex flex-wrap gap-2">
+          <div className="flex-auto min-w-[200px] px-4 py-3 bg-green-100 rounded-lg">
+            <p className="text-sm font-semibold text-gray-600">Available</p>
+            <p className="text-center text-green-800">{product.stockForRent}</p>
+          </div>
+        </div>
+
+        {/* Categories */}
+        {categoryNames.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            <div className="flex-auto min-w-[200px] px-4 py-3 bg-blue-100 rounded-lg">
+              <p className="text-sm font-semibold text-gray-600">Categories</p>
+              <p className="text-center text-blue-800 break-words">
+                {categoryNames.join(", ")}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Tag */}
+        {product.tag && (
+          <div className="flex flex-wrap gap-2">
+            <div className="flex-auto min-w-[200px] px-4 py-3 bg-purple-100 rounded-lg">
+              <p className="text-sm font-semibold text-gray-600">Tag</p>
+              <p className="text-center text-purple-800">{product.tag}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Extra fields */}
+        {product.extraFields &&
+          Object.entries(product.extraFields).map(([key, val]) => (
+            <div key={key} className="flex flex-wrap gap-2">
+              <div className="flex-auto min-w-[200px] px-4 py-3 bg-yellow-100 rounded-lg">
+                <p className="text-sm font-semibold text-gray-600">{key}</p>
+                <p className="text-center text-yellow-800 break-words">{val}</p>
+              </div>
+            </div>
+          ))}
+
+        {/* Attachments with icons */}
+{product.attachments?.length > 0 && (
+   <div className="flex flex-wrap gap-2">
+            <div className="flex-auto min-w-[200px] px-4 py-3 bg-pink-100 rounded-lg">
+              <p className="text-sm font-semibold text-gray-600">Attachments</p>
+      {product.attachments.map(att => (
+        <a
+          key={att.uniqueKey}
+          href={`${API_URL}/uploads/products/${att.filename}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-pink-800 hover:underline flex items-center gap-2 break-words justify-center"
+        >
+          {getFileIcon(att.originalName)}
+          <span>{att.originalName}</span>
+        </a>
+      ))}
+    </div>
+  </div>
+)}
+
+
+      </div>
+
+      {/* Action buttons */}
+      <div className="flex flex-col sm:flex-row sm:gap-4 mt-6">
+        
+        <button
+          onClick={() => navigate("/cart")}
+          className="flex-1 px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition mt-2 sm:mt-0"
+        >
+          Go to Cart
+        </button>
+>>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
       </div>
     </div>
   );

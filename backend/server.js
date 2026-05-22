@@ -37,14 +37,18 @@ app.use(morgan('combined', { stream: accessLogStream }));
 
 const allowedOrigins = [
   'http://localhost:5173',
+<<<<<<< HEAD
   'http://localhost:3500',
   'http://127.0.0.1:5173',
   'http://127.0.0.1:3500',
+=======
+>>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
   'http://150.254.30.162',
   'http://iotlab.cs.put.poznan.pl'
 ];
 
 app.use(cors({
+<<<<<<< HEAD
   // origin: function (origin, callback) {
   //   // allow requests with no origin (like mobile apps or curl)
   //   if (!origin) return callback(null, true);
@@ -57,6 +61,12 @@ app.use(cors({
   // },
   // methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   // allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+=======
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  credentials: true
+>>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
 }));
 
 app.use(express.json());
@@ -85,8 +95,11 @@ app.use('/products', productRoutes);
 app.use('/orders', orderRoutes);
 app.use('/notes', noteRoutes);
 app.use('/materials', materialRoutes);
+<<<<<<< HEAD
 app.use('/components', componentRoutes);
 app.use('/templates', templateRoutes);
+=======
+>>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
 
 
 app.use(errorHandler);

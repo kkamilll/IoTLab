@@ -187,6 +187,15 @@ export const getProductByIdPublic = asyncHandler(async (req, res, next) => {
   if (product) {
     product.images = product.images?.filter(image => (image.isVisible)) || [];
     product.attachments = product.attachments?.filter(attachment => (attachment.isVisible)) || [];
+<<<<<<< HEAD
+=======
+    
+    // Send response
+    return res.status(200).json({ success: true, product });
+  } catch (error) {
+    // Handle unexpected server error
+    return next(new ServerError({ message: error.message }));
+>>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
   }
 
   return res.status(200).json({ success: true, product });
@@ -274,7 +283,45 @@ export const updateProduct = asyncHandler(async (req, res, next) => {
   session.startTransaction();
 
   try {
+<<<<<<< HEAD
     const product = await Product.findOne(filterProducts).session(session);
+=======
+    // Ensure request body exists
+    if (!req.body) {
+      return next(new BadRequestError("Request body is missing"));
+    }
+
+    const role = req.user.role;
+    const user = req.user.id;
+    if (!mongoose.Types.ObjectId.isValid(user)) {
+      return next(new ValidationError("Invalid user ID"));
+    }
+
+    const { productId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return next(new ValidationError("Invalid product ID"));
+    }
+
+    const updateData = initProduct(req, next);
+
+    if (!Object.keys(updateData).length) {
+      return next(new BadRequestError('No valid fields to update'));
+    }
+
+    let filter = { _id: productId, isDeleted: false };
+    if (role !== "admin") {
+      filter = { _id: productId, isDeleted: false, owner: user }
+    }
+
+    // const updatedProduct = await Product.findOneAndUpdate(filter, updateData, { new: true, runValidators: true }).select('-__v -isDeleted').populate("categories", "name").lean();
+    // if (!updatedProduct) {
+    //   return next(new ResourceNotFoundError("Missing permission or Product"));
+    // }
+
+    // return res.status(200).json({ success: true, product: updatedProduct });
+
+    const product = await Product.findOne(filter);
+>>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
     if (!product) return next(new ResourceNotFoundError("Missing permission or Product"));
 
     // Handle files (images & attachments)

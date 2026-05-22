@@ -42,7 +42,11 @@ const GuestProducts = () => {
   const fetchProducts = async () => {
     setLoading(true);
     try {
+<<<<<<< HEAD
       const res = await apiClient.get("/products/public");
+=======
+      const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/products/public`);
+>>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
       const allExtraKeys = new Set(extraColumns);
 
       res.data.products.forEach((p) => {
@@ -70,7 +74,11 @@ const GuestProducts = () => {
 
   const fetchCategories = async () => {
     try {
+<<<<<<< HEAD
       const res = await apiClient.get("/categories/public");
+=======
+      const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/categories/public`);
+>>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
       setCategories(res.data.categories || []);
     } catch (err) {
       console.error("Error fetching categories:", err);
@@ -215,6 +223,7 @@ const GuestProducts = () => {
             </div>
           </div>
 
+<<<<<<< HEAD
           <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
             <div className="flex flex-col gap-4">
               <div className="grid gap-3 sm:grid-cols-[1fr_220px]">
@@ -519,6 +528,99 @@ const GuestProducts = () => {
               </button>
             </div>
           </div>
+=======
+      {/* Search & Category Filter */}
+      <div className="flex flex-col sm:flex-row justify-between gap-3 items-center mb-4">
+        <input
+          type="text"
+          placeholder="Search"
+          className="border border-gray-300 p-2 rounded shadow-sm flex-1 focus:ring-2 focus:ring-blue-400"
+          onChange={(e) => setSearchTerm(e.target.value.toLowerCase())}
+        />
+        <div className="flex gap-2 sm:gap-4 mt-2 sm:mt-0 flex-wrap">
+          <select
+            value={activeCategory}
+            onChange={(e) => setActiveCategory(e.target.value)}
+            className="border p-2 rounded focus:ring-2 focus:ring-blue-400"
+          >
+            <option value="">All Categories</option>
+            {categories.map((cat) => (
+              <option key={cat._id} value={cat._id}>{cat.name}</option>
+            ))}
+          </select>
+          <button
+            onClick={() => navigate("/cart")}
+            className="px-4 py-2 bg-blue-500 text-white rounded shadow hover:bg-blue-600 transition"
+          >
+            Go to Cart
+          </button>
+        </div>
+      </div>
+
+      {/* Table for desktop */}
+      <div className="overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto shadow-lg rounded-lg border border-gray-200">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-blue-100">
+              <tr>
+                {allColumns.map((col, idx) => (
+                  <th
+                    key={idx}
+                    className="px-4 py-3 text-left text-sm font-semibold text-gray-700 uppercase cursor-pointer select-none hover:bg-blue-200 transition"
+                    onClick={() => handleSort(col)}
+                  >
+                    {col} {sortConfig.key === col ? (sortConfig.direction === "asc" ? "↑" : "↓") : ""}
+                  </th>
+                ))}
+                <th className="px-4 py-3 text-sm font-semibold text-gray-700">Quantity</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {paginatedProducts.map(p => (
+                <tr key={p._id} className="hover:bg-gray-50 transition">
+                  {allColumns.map((col, idx) => (
+                    <td key={idx} className="px-4 py-2 text-sm text-gray-700">
+                      {col === "name" ? (
+                        <span
+                          className="text-blue-600 hover:underline cursor-pointer"
+                          onClick={() => handlePreview(p._id)}
+                        >
+                          {p.name}
+                        </span>
+                      ) : col === "stockForRent"
+                      ? p.stockForRent
+                      : col === "categories"
+                      ? p.categories?.map(c => c.name).join(", ")
+                      : p[col] ?? p.extraFields?.[col] ?? ""}
+                    </td>
+                  ))}
+                  <td className="px-4 py-2">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) - 1, p)}
+                        disabled={(cartQuantities[p._id] || 0) <= 0}
+                        className="px-3 bg-gray-200 hover:bg-gray-300"
+                      >-</button>
+                      <input
+                        type="number"
+                        min="0"
+                        max={p.stockForRent || 0}
+                        value={cartQuantities[p._id] || 0}
+                        onChange={(e) => handleQuantityChange(p._id, e.target.value, p)}
+                        className="w-16 text-center outline-none"
+                      />
+                      <button
+                        onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) + 1, p)}
+                        disabled={(cartQuantities[p._id] || 0) >= (p.stockForRent || 0)}
+                        className="px-3 bg-gray-200 hover:bg-gray-300"
+                      >+</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+>>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
         </div>
       </div>
     </div>

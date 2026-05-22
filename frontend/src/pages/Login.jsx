@@ -17,7 +17,11 @@ const Login = () => {
     setLoading(true);
     setError(null);
     try {
+<<<<<<< HEAD
       const response = await apiClient.post("/auth/login", {
+=======
+      const response = await axios.post(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/auth/login`, {
+>>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
         email,
         password,
       });
@@ -45,6 +49,7 @@ const Login = () => {
   };
 
   return (
+<<<<<<< HEAD
     <div className="min-h-screen bg-slate-50 px-4 py-12">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 lg:flex-row lg:items-stretch">
         <div className="flex-1 overflow-hidden rounded-[2rem] bg-slate-950 text-white shadow-2xl">
@@ -60,6 +65,12 @@ const Login = () => {
               Log in to manage rooms, reservations and laboratory components.
               Your admin dashboard is secure and mobile-friendly.
             </p>
+=======
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-blue-900 to-blue-700 px-4">
+      <h2 className="text-4xl font-extrabold mb-8 text-white drop-shadow-lg">
+        IoTLab
+      </h2>
+>>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
 
             <div className="mt-12 grid gap-4 text-sm text-slate-400">
               <div className="rounded-3xl bg-slate-900/80 p-5 border border-slate-800">
