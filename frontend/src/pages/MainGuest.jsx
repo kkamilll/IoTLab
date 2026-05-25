@@ -13,11 +13,7 @@ const MainGuest = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-<<<<<<< HEAD
         const res = await apiClient.get("/categories/public");
-=======
-        const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/categories/public`);
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
         setCategories(res.data.categories || []);
       } catch (err) {
         console.error("Error fetching categories:", err);
@@ -34,12 +30,12 @@ const MainGuest = () => {
         description: c.description,
         parent: c.parent?._id?.toString() || null,
       })),
-    [categories]
+    [categories],
   );
 
   const categoryTree = useMemo(
     () => buildTree(normalizedCategories),
-    [normalizedCategories]
+    [normalizedCategories],
   );
 
   const toggleExpand = (id) => {
@@ -104,11 +100,7 @@ const MainGuest = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex justify-center py-10 px-4">
-<<<<<<< HEAD
       <div className="w-full max-w-3xl">
-=======
-      <div className="w-full max-w-4xl">
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
         {/* Back button */}
         <div className="mb-6 text-left">
           <button
@@ -119,14 +111,12 @@ const MainGuest = () => {
           </button>
         </div>
 
-<<<<<<< HEAD
         <h1 className="text-3xl font-extrabold mb-8 text-blue-900 text-center">
           Categories
         </h1>
 
         {categoriesWithAll.length > 0 ? (
           <div className="w-full flex flex-col gap-4">
-            
             {categoriesWithAll.map((category) => {
               const hasChildren =
                 category.children && category.children.length > 0;
@@ -162,7 +152,7 @@ const MainGuest = () => {
                           className="flex items-center gap-1 px-2 py-1 text-xs sm:text-sm text-white bg-gray-600 hover:bg-gray-700 rounded-lg"
                           onClick={() => toggleDescription(category._id)}
                         >
-                          <FaInfoCircle size={14} /> 
+                          <FaInfoCircle size={14} />
                         </button>
                       )}
                       {hasChildren && (
@@ -184,12 +174,6 @@ const MainGuest = () => {
                 </div>
               );
             })}
-=======
-        <h1 className="text-3xl font-extrabold mb-8 text-blue-900 text-center">Categories</h1>
-        {categoryTree.length > 0 ? (
-          <div className="flex flex-col gap-3 w-full">
-            {Object.values(categoryTree).flat().map((category) => renderCategory(category))}
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
           </div>
         ) : (
           <p className="text-blue-700 text-center">Loading categories...</p>

@@ -90,22 +90,11 @@ const CartPage = () => {
     await Promise.all(
       cart.map(async (item) => {
         try {
-<<<<<<< HEAD
           const res = await apiClient.post("/products/available", {
             productId: item._id,
             startDate: orderDates.startDate,
             endDate: orderDates.endDate,
           });
-=======
-          const res = await axios.post(
-            `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/products/available`,
-            {
-              productId: item._id,
-              startDate: item.startDate,
-              endDate: item.endDate,
-            }
-          );
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
           newAvailability[item._id] = res.data.available;
         } catch {
           newAvailability[item._id] = 0;
@@ -123,7 +112,6 @@ const CartPage = () => {
     setLoading(true);
 
     try {
-<<<<<<< HEAD
       // Check if cart is empty
       if (!cart.length) return alert("Your cart is empty!");
 
@@ -182,18 +170,6 @@ const CartPage = () => {
         requestedStartDate: orderDates.startDate,
         requestedEndDate: orderDates.endDate,
       });
-=======
-      const res = await axios.post(
-        `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders/create`,
-        { customer: orderCustomer, items }
-      );
-
-      const orderId = res.data.order._id;
-      await axios.post(
-        `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders/send-order-email`,
-        { orderId }
-      );
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
 
       alert("Order submitted and emailed!");
       setCart([]);
@@ -240,7 +216,6 @@ const CartPage = () => {
   };
 
   return (
-<<<<<<< HEAD
     <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl">
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -269,51 +244,6 @@ const CartPage = () => {
                   <h2 className="text-2xl font-bold text-slate-900">
                     {totalItems} item{totalItems !== 1 ? "s" : ""}
                   </h2>
-=======
-    <div className="p-6 max-w-4xl mx-auto flex flex-col gap-6">
-      <div className="p-6 text-center">
-        <button
-          onClick={() => navigate("/")}
-          className="px-6 py-3 bg-blue-500 text-white rounded hover:bg-blue-600"
-        >
-          Back
-        </button>
-      </div>
-
-      <h2 className="text-3xl font-bold mb-6">Your Cart</h2>
-
-      {Object.entries(groupedCart).map(([owner, products]) => (
-        <div key={owner} className="mb-6">
-          <h3 className="text-2xl font-semibold mb-2">Owner: {owner}</h3>
-          <div className="space-y-4">
-            {products.map((item) => (
-              <div
-                key={item._id}
-                className="flex flex-col md:flex-row items-start justify-between p-4 border rounded gap-4"
-              >
-                <div className="flex items-center gap-4">
-                  {item.images?.length ? (
-                    <img
-                      src={`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/uploads/products/${item.images[0].filename}`}
-                      alt={item.name}
-                      className="w-20 h-20 object-contain rounded"
-                    />
-                  ) : (
-                    <div className="w-20 h-20 bg-gray-200 flex items-center justify-center rounded text-gray-500">
-                      No Image
-                    </div>
-                  )}
-                  <div>
-                    <h3 className="font-semibold">{item.name}</h3>
-                    <p className="text-sm text-red-600">
-                      {availability[item._id] === undefined
-                        ? "Select dates"
-                        : availability[item._id] === 0
-                        ? "Product unavailable"
-                        : `Available: ${availability[item._id]}`}
-                    </p>
-                  </div>
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
                 </div>
                 <div className="flex flex-wrap gap-3 text-sm text-slate-600">
                   <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">

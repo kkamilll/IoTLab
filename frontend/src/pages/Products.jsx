@@ -1,4 +1,3 @@
-
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import apiClient from "../api/apiClient";
@@ -8,11 +7,7 @@ import ProductsMobileCards from "../components/products/ProductsMobileCards";
 import { generateProductsPDF } from "../utils/pdfGenerator";
 import { useAuth } from "../context/AuthContext";
 import { buildTree } from "../utils/categoryUtils";
-<<<<<<< HEAD
 import CategoryTree from "../components/categories/CategoryTree";
-=======
-import CategoryTree from "../components/CategoryTree";
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
 
 const MEGA_BYTE = 1024 * 1024;
 const MAX_FILE_SIZE = 50 * MEGA_BYTE;
@@ -38,11 +33,7 @@ const Products = () => {
     stockForRent: "0",
     extraFields: {},
     categories: [],
-<<<<<<< HEAD
     tags: [],
-=======
-    tag: "",
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
     labRoom: "",
     images: [],
     attachments: [],
@@ -51,7 +42,7 @@ const Products = () => {
     isRentable: false,
     isVisible: false,
     isShared: false,
-    version: ""
+    version: "",
   });
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -59,18 +50,11 @@ const Products = () => {
   const [activeCategories, setActiveCategories] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [hiddenColumns, setHiddenColumns] = useState([]);
-<<<<<<< HEAD
   const [columnsDropdownOpen, setColumnsDropdownOpen] = useState(false);
   const [categoriesDropdownOpen, setCategoriesDropdownOpen] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState([]);
 
   const [newTag, setNewTag] = useState("");
-=======
-const [columnsDropdownOpen, setColumnsDropdownOpen] = useState(false);
-const [categoriesDropdownOpen, setCategoriesDropdownOpen] = useState(false);
-const [expandedCategories, setExpandedCategories] = useState([]);
-  // const [newTag, setNewTag] = useState("");
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
   // const [previewImage, setPreviewImage] = useState(null);
 
   const [cartQuantities, setCartQuantities] = useState({});
@@ -81,138 +65,129 @@ const [expandedCategories, setExpandedCategories] = useState([]);
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
   const paginatedProducts = filteredProducts.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    currentPage * itemsPerPage,
   );
 
-  const selectedUser = users.find(user => user._id === formData.owner);
+  const selectedUser = users.find((user) => user._id === formData.owner);
   const labRooms = selectedUser?.labRooms || [];
 
   const toggleColumn = (col) => {
-    setHiddenColumns(prev =>
-      prev.includes(col) ? prev.filter(c => c !== col) : [...prev, col]
+    setHiddenColumns((prev) =>
+      prev.includes(col) ? prev.filter((c) => c !== col) : [...prev, col],
     );
   };
 
   // const allColumns = ["name", "description", "Owned", "tag", ...extraColumns];
-  const allColumns = ["name", "description", "total", "for rent", "categories", "owner", ...extraColumns];
+  const allColumns = [
+    "name",
+    "description",
+    "total",
+    "for rent",
+    "categories",
+    "owner",
+    ...extraColumns,
+  ];
   // const allColumns = ["name", "description", "stock", "hiddenStock", "category", "owner", ...extraColumns];
 
-  const allCategories = Object.values( // create an array of objects from object of objects
-    products.flatMap(p => p.categories || []) // flatten array products into array of all categories
-      .reduce((acc, cat) => { acc[cat._id] = cat; return acc; }, {}) // create object of objects from array, without duplicates with same field _id 
+  const allCategories = Object.values(
+    // create an array of objects from object of objects
+    products
+      .flatMap((p) => p.categories || []) // flatten array products into array of all categories
+      .reduce((acc, cat) => {
+        acc[cat._id] = cat;
+        return acc;
+      }, {}), // create object of objects from array, without duplicates with same field _id
   );
 
   // category tree
   const normalizedCategories = useMemo(
-    () => categories.map(c => ({
-      _id: c._id.toString(),
-      name: c.name,
-      parent: c.parent?._id?.toString() || null
-    })),
-    [categories]
+    () =>
+      categories.map((c) => ({
+        _id: c._id.toString(),
+        name: c.name,
+        parent: c.parent?._id?.toString() || null,
+      })),
+    [categories],
   );
-  const categoryTree = useMemo(() => buildTree(normalizedCategories), [normalizedCategories]);
+  const categoryTree = useMemo(
+    () => buildTree(normalizedCategories),
+    [normalizedCategories],
+  );
 
   useEffect(() => {
     fetchCategories();
     fetchProducts();
     fetchUsers();
 
-    setCartQuantities(prev => {
+    setCartQuantities((prev) => {
       const cart = JSON.parse(localStorage.getItem("cart")) || [];
       const newQuantities = {};
-      cart.forEach(cartItem => newQuantities[cartItem._id] = cartItem.quantity);
+      cart.forEach(
+        (cartItem) => (newQuantities[cartItem._id] = cartItem.quantity),
+      );
       return newQuantities;
-    })
+    });
   }, []);
 
   useEffect(() => {
-    setCartQuantities(prev => {
+    setCartQuantities((prev) => {
       const newQuantities = { ...prev };
-      products.forEach(p => { if (p._id && newQuantities[p._id] === undefined) newQuantities[p._id] = 0; });
+      products.forEach((p) => {
+        if (p._id && newQuantities[p._id] === undefined)
+          newQuantities[p._id] = 0;
+      });
       return newQuantities;
     });
   }, [products]);
 
-useEffect(() => {
-  let filtered = products.filter(p => {
-    const searchLower = searchTerm.toLowerCase();
+  useEffect(() => {
+    let filtered = products.filter((p) => {
+      const searchLower = searchTerm.toLowerCase();
 
-<<<<<<< HEAD
       if (
         p.name.toLowerCase().includes(searchLower) ||
         (p.description && p.description.toLowerCase().includes(searchLower))
-      ) return true;
-
-      if (p.tags?.some(tag => tag.toLowerCase().includes(searchLower))) return true;
-=======
-    if (
-      p.name.toLowerCase().includes(searchLower) ||
-      (p.description && p.description.toLowerCase().includes(searchLower))
-    ) return true;
-
-    if (p.tag?.some(tag => tag.toLowerCase().includes(searchLower))) return true;
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
-
-    if (Object.values(p.extraFields || {}).some(val =>
-      val.toString().toLowerCase().includes(searchLower)
-    )) return true;
-
-    return false;
-  });
-
-  // AND filter dla wielu kategorii
-  if (activeCategories.length > 0) {
-    filtered = filtered.filter(p =>
-      activeCategories.every(selectedCatId =>
-        p.categories?.some(cat => cat._id === selectedCatId)
       )
-    );
-  }
+        return true;
 
-  if (sortConfig.key) {
-    filtered.sort((a, b) => {
-      let valA = a[sortConfig.key] ?? a.extraFields?.[sortConfig.key] ?? "";
-      let valB = b[sortConfig.key] ?? b.extraFields?.[sortConfig.key] ?? "";
-      if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
-      if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
-      return 0;
+      if (p.tags?.some((tag) => tag.toLowerCase().includes(searchLower)))
+        return true;
+
+      if (
+        Object.values(p.extraFields || {}).some((val) =>
+          val.toString().toLowerCase().includes(searchLower),
+        )
+      )
+        return true;
+
+      return false;
     });
-  }
 
-  setFilteredProducts(filtered);
-}, [products, searchTerm, sortConfig, activeCategories]);
-
-
-
-<<<<<<< HEAD
     // AND filter dla wielu kategorii
     if (activeCategories.length > 0) {
-      filtered = filtered.filter(p =>
-        activeCategories.every(selectedCatId =>
-          p.categories?.some(cat => cat._id === selectedCatId)
-        )
+      filtered = filtered.filter((p) =>
+        activeCategories.every((selectedCatId) =>
+          p.categories?.some((cat) => cat._id === selectedCatId),
+        ),
       );
     }
-=======
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
 
+    if (sortConfig.key) {
+      filtered.sort((a, b) => {
+        let valA = a[sortConfig.key] ?? a.extraFields?.[sortConfig.key] ?? "";
+        let valB = b[sortConfig.key] ?? b.extraFields?.[sortConfig.key] ?? "";
+        if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
+        if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
+        return 0;
+      });
+    }
 
-<<<<<<< HEAD
     setFilteredProducts(filtered);
   }, [products, searchTerm, sortConfig, activeCategories]);
 
   const fetchCategories = async () => {
     try {
       const res = await apiClient.get("/categories/private");
-=======
-
-  const fetchCategories = async () => {
-    try {
-      const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/categories/private`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
       if (res.data.success) {
         setCategories(res.data.categories);
       }
@@ -220,28 +195,24 @@ useEffect(() => {
       console.error("Error fetching categories:", err);
     }
   };
+
   // Pobieranie produktów
   const fetchProducts = async () => {
     try {
-<<<<<<< HEAD
       const res = await apiClient.get("/products/private");
-=======
-      const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/products/private`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
 
-      if (!res.data.success) return alert(res.data.message || "Error fetching products");
-
+      if (!res.data.success)
+        return alert(res.data.message || "Error fetching products");
 
       const allExtraKeys = new Set(extraColumns);
-      res.data.products.forEach(p => {
-        if (p.extraFields) Object.keys(p.extraFields).forEach(k => allExtraKeys.add(k));
+      res.data.products.forEach((p) => {
+        if (p.extraFields)
+          Object.keys(p.extraFields).forEach((k) => allExtraKeys.add(k));
       });
 
-      const updatedProducts = res.data.products.map(p => {
+      const updatedProducts = res.data.products.map((p) => {
         const newExtraFields = {};
-        [...allExtraKeys].forEach(col => {
+        [...allExtraKeys].forEach((col) => {
           newExtraFields[col] = p.extraFields?.[col] || "";
         });
         return { ...p, extraFields: newExtraFields };
@@ -258,14 +229,9 @@ useEffect(() => {
 
   const fetchUsers = async () => {
     try {
-<<<<<<< HEAD
       const res = await apiClient.get("/users");
-=======
-      const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/users`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
-      if (!res.data.success) return alert(res.data.message || "Error fetching products");
+      if (!res.data.success)
+        return alert(res.data.message || "Error fetching products");
 
       const fetchedUsers = res.data.users;
       setUsers(fetchedUsers);
@@ -273,22 +239,20 @@ useEffect(() => {
       console.error(error);
       alert(`${error.response.data.message}`);
     }
-  }
+  };
 
   const deleteProduct = async (id) => {
-<<<<<<< HEAD
     const res = await apiClient.delete(`/products/${id}`);
-=======
-    const res = await axios.delete(
-      `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/products/${id}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
     return res.data;
   };
 
-
-  const getAvailableStockForProduct = (product) => (Math.max(0, Number(product.stockForRent || 0) - Number(product.stockRentedOut || 0) - Number(product.stockReserved || 0)));
+  const getAvailableStockForProduct = (product) =>
+    Math.max(
+      0,
+      Number(product.stockForRent || 0) -
+        Number(product.stockRentedOut || 0) -
+        Number(product.stockReserved || 0),
+    );
 
   const truncateFileName = (name, maxLength) => {
     if (!name) return "";
@@ -296,7 +260,9 @@ useEffect(() => {
     const lastDotIndex = name.lastIndexOf(".");
     if (lastDotIndex === -1) {
       // No extension
-      return name.length > maxLength ? name.slice(0, maxLength - 3) + "..." : name;
+      return name.length > maxLength
+        ? name.slice(0, maxLength - 3) + "..."
+        : name;
     }
 
     const baseName = name.slice(0, lastDotIndex);
@@ -304,39 +270,45 @@ useEffect(() => {
     const truncation = "...-";
 
     if (baseName.length > maxLength) {
-      return baseName.slice(0, maxLength - truncation.length) + truncation + extension;
+      return (
+        baseName.slice(0, maxLength - truncation.length) +
+        truncation +
+        extension
+      );
     }
 
     return name;
   };
 
   const filesChange = (newFiles, oldFiles) => {
-    const validFiles = newFiles.filter(file => {
+    const validFiles = newFiles.filter((file) => {
       if (file.size > MAX_FILE_SIZE) {
-        alert(`${file.name} is too large (max ${MAX_FILE_SIZE / MEGA_BYTE}MB).`);
+        alert(
+          `${file.name} is too large (max ${MAX_FILE_SIZE / MEGA_BYTE}MB).`,
+        );
         return false;
       }
       return true;
     });
 
-    const newFilesMapped = validFiles.map(file => ({
+    const newFilesMapped = validFiles.map((file) => ({
       file: file,
       originalName: file.name,
       uniqueKey: `${file.name}-${file.lastModified}`,
       isVisible: false,
-      source: "client"
-    }))
+      source: "client",
+    }));
 
     const files = [...oldFiles, ...newFilesMapped];
     // check if file was already added
     const uniqueFiles = Array.from(
       new Map(
-        files.map(fileObj => [`${fileObj.uniqueKey}`, fileObj])
-      ).values()
+        files.map((fileObj) => [`${fileObj.uniqueKey}`, fileObj]),
+      ).values(),
     );
 
     return uniqueFiles;
-  }
+  };
 
   // Handlery
   const handleEdit = (product) => {
@@ -348,37 +320,62 @@ useEffect(() => {
       stockTotal: product.stockTotal?.toString() || "",
       stockForRent: product.stockForRent?.toString() || "",
       extraFields: { ...product.extraFields } || {},
-      categories: (product?.categories || []).map(cat => cat._id.toString()) || [],
+      categories:
+        (product?.categories || []).map((cat) => cat._id.toString()) || [],
       tags: product?.tags || [],
       labRoom: product?.labRoom || "",
-      images: product?.images?.map(imageObj => ({ ...imageObj, source: "server" })) || [],
-      attachments: product?.attachments?.map(attachmentObj => ({ ...attachmentObj, source: "server" })) || [],
+      images:
+        product?.images?.map((imageObj) => ({
+          ...imageObj,
+          source: "server",
+        })) || [],
+      attachments:
+        product?.attachments?.map((attachmentObj) => ({
+          ...attachmentObj,
+          source: "server",
+        })) || [],
       owner: product.owner?._id || user.id,
       isSerialized: product?.isSerialized || false,
       isRentable: product?.isRentable || false,
       isVisible: product?.isVisible || false,
       isShared: product?.isShared || false,
-      version: product.__v?.toString() || ""
+      version: product.__v?.toString() || "",
     });
   };
-
 
   const closeModal = () => {
     setOpenModal(false);
     setEditProduct(null);
-    setFormData({ name: "", description: "", stockTotal: "", stockForRent: "0", extraFields: {}, categories: [], tags: [], labRoom: "", images: [], attachments: [], owner: user.id, isSerialized: false, isRentable: false, isVisible: false, isShared: false, version: "" });
+    setFormData({
+      name: "",
+      description: "",
+      stockTotal: "",
+      stockForRent: "0",
+      extraFields: {},
+      categories: [],
+      tags: [],
+      labRoom: "",
+      images: [],
+      attachments: [],
+      owner: user.id,
+      isSerialized: false,
+      isRentable: false,
+      isVisible: false,
+      isShared: false,
+      version: "",
+    });
     setNewTag("");
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleExtraFieldChange = (key, value) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      extraFields: { ...prev.extraFields, [key]: value }
+      extraFields: { ...prev.extraFields, [key]: value },
     }));
   };
 
@@ -387,7 +384,7 @@ useEffect(() => {
 
     const tagLower = newTag.trim().toLowerCase();
     if (!formData.tags.includes(tagLower)) {
-      setFormData(prev => ({ ...prev, tags: [...prev.tags, tagLower] }));
+      setFormData((prev) => ({ ...prev, tags: [...prev.tags, tagLower] }));
       setNewTag("");
     } else {
       alert("This tag is already added.");
@@ -395,28 +392,28 @@ useEffect(() => {
   };
 
   const handleRemoveTag = (tagToRemove) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove)
+      tags: prev.tags.filter((tag) => tag !== tagToRemove),
     }));
   };
 
   const handleOwnerChange = (e) => {
     const newOwner = e.target.value;
-    const selectedUser = users.find(user => user._id === newOwner);
+    const selectedUser = users.find((user) => user._id === newOwner);
     const newLabRooms = selectedUser?.labRooms || [];
 
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       owner: newOwner,
-      labRoom: newLabRooms.includes(prev.labRoom) ? prev.labRoom : ""
+      labRoom: newLabRooms.includes(prev.labRoom) ? prev.labRoom : "",
     }));
-  }
+  };
 
   const handleFilesChange = (e) => {
     const newFiles = Array.from(e.target.files);
     const oldImages = formData.images || [];
-    const newImages = newFiles.filter(file => file.type.startsWith("image/"));
+    const newImages = newFiles.filter((file) => file.type.startsWith("image/"));
     // console.log(oldImages);
 
     // if (newFiles.length !== newImages.length) {
@@ -425,30 +422,33 @@ useEffect(() => {
 
     const uniqueImages = filesChange(newImages, oldImages);
 
-    const newAttachments = newFiles.filter(file => !file.type.startsWith("image/"));
+    const newAttachments = newFiles.filter(
+      (file) => !file.type.startsWith("image/"),
+    );
     const oldAttachments = formData.attachments || [];
     const uniqueAttachments = filesChange(newAttachments, oldAttachments);
 
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       images: uniqueImages,
-      attachments: uniqueAttachments
+      attachments: uniqueAttachments,
     }));
-  }
+  };
 
   const handleQuantityChange = (productId, value, product) => {
     let qty = parseInt(value, 10);
 
     // minimalna ilość 0, maksymalna = dostępny stock
     if (isNaN(qty) || qty < 0) qty = 0;
-    if (qty > getAvailableStockForProduct(product)) qty = getAvailableStockForProduct(product);
+    if (qty > getAvailableStockForProduct(product))
+      qty = getAvailableStockForProduct(product);
 
     // aktualizacja stanu koszyka
-    setCartQuantities(prev => ({ ...prev, [productId]: qty }));
+    setCartQuantities((prev) => ({ ...prev, [productId]: qty }));
 
     // aktualizacja localStorage
     const cart = JSON.parse(localStorage.getItem("cart")) || [];
-    const existingIndex = cart.findIndex(p => p._id === productId);
+    const existingIndex = cart.findIndex((p) => p._id === productId);
 
     if (qty === 0) {
       if (existingIndex !== -1) cart.splice(existingIndex, 1);
@@ -464,9 +464,10 @@ useEffect(() => {
     // setCartQuantitiesInCart(cart.reduce((acc, item) => ({ ...acc, [item._id]: item.quantity }), {}));
   };
 
-<<<<<<< HEAD
   const addExtraField = () => {
-    const key = prompt("Enter the name of the new column (max 30 characters):")?.trim()?.toLowerCase();
+    const key = prompt("Enter the name of the new column (max 30 characters):")
+      ?.trim()
+      ?.toLowerCase();
     if (!key) return; // użytkownik anulował
     if (key.length > 30) {
       alert("Column name cannot be longer than 30 characters.");
@@ -474,88 +475,39 @@ useEffect(() => {
     }
 
     if (!extraColumns.includes(key)) {
-      setExtraColumns(prev => [...prev, key]);
-      setProducts(prev =>
-        prev.map(p => ({ ...p, extraFields: { ...p.extraFields, [key]: "" } }))
+      setExtraColumns((prev) => [...prev, key]);
+      setProducts((prev) =>
+        prev.map((p) => ({
+          ...p,
+          extraFields: { ...p.extraFields, [key]: "" },
+        })),
       );
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        extraFields: { ...prev.extraFields, [key]: "" }
+        extraFields: { ...prev.extraFields, [key]: "" },
       }));
     } else {
       alert("A column with this name already exists.");
     }
   };
-=======
-
-  // const handleAddToCart = (product) => {
-  //   const cart = JSON.parse(localStorage.getItem("cart")) || [];
-  //   const qtyToAdd = cartQuantities[product._id] || 1;
-  //   const existingIndex = cart.findIndex(p => p._id === product._id);
-  //   const availableStock = product.stockForRent;
-
-  //   if (existingIndex !== -1) {
-  //     cart[existingIndex].quantity = Math.min(cart[existingIndex].quantity + qtyToAdd, availableStock);
-  //   } else {
-  //     cart.push({ ...product, quantity: Math.min(qtyToAdd, availableStock) });
-  //   }
-
-  //   localStorage.setItem("cart", JSON.stringify(cart));
-  //   const quantities = {};
-  //   cart.forEach(item => quantities[item._id] = item.quantity);
-  //   setCartQuantitiesInCart(quantities);
-
-  //   const inCart = quantities[product._id] || 0;
-  //   const remaining = availableStock - inCart;
-  //   setCartQuantities(prev => ({ ...prev, [product._id]: remaining > 0 ? 1 : 0 }));
-  // };
-
-const addExtraField = () => {
-  const key = prompt("Podaj nazwę nowej kolumny (max 30 znaków):");
-  if (!key) return; // użytkownik anulował
-  if (key.length > 30) {
-    alert("Nazwa kolumny nie może mieć więcej niż 30 znaków.");
-    return;
-  }
-  if (!extraColumns.includes(key)) {
-    setExtraColumns(prev => [...prev, key]);
-    setProducts(prev =>
-      prev.map(p => ({ ...p, extraFields: { ...p.extraFields, [key]: "" } }))
-    );
-    setFormData(prev => ({
-      ...prev,
-      extraFields: { ...prev.extraFields, [key]: "" }
-    }));
-  } else {
-    alert("Kolumna o takiej nazwie już istnieje.");
-  }
-};
-
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
 
   const removeExtraField = async (key) => {
     if (!window.confirm(`Delete column "${key}" from all products?`)) return;
 
     try {
-<<<<<<< HEAD
       const res = await apiClient.delete(`/products/extraField/${key}`);
-=======
-      const res = await axios.delete(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/products/extraField/${key}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
 
       if (res.data.success) {
         // Usuń kolumnę z widoku
-        setExtraColumns(prev => prev.filter(col => col !== key));
-        setProducts(prev =>
-          prev.map(p => {
+        setExtraColumns((prev) => prev.filter((col) => col !== key));
+        setProducts((prev) =>
+          prev.map((p) => {
             const newExtra = { ...p.extraFields };
             delete newExtra[key];
             return { ...p, extraFields: newExtra };
-          })
+          }),
         );
-        setFormData(prev => {
+        setFormData((prev) => {
           const newExtra = { ...prev.extraFields };
           delete newExtra[key];
           return { ...prev, extraFields: newExtra };
@@ -568,7 +520,6 @@ const addExtraField = () => {
       alert(`${err.response.data.message}`);
     }
   };
-
 
   const handleSearch = (e) => setSearchTerm(e.target.value.toLowerCase());
 
@@ -586,14 +537,15 @@ const addExtraField = () => {
     }
   };
 
-
   // Dodanie obsługi plików w handleSubmit
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       // Remove empty extraFields
       const cleanedExtraFields = Object.fromEntries(
-        Object.entries(formData.extraFields).filter(([key, value]) => value != null && value !== "")
+        Object.entries(formData.extraFields).filter(
+          ([key, value]) => value != null && value !== "",
+        ),
       );
 
       const form = new FormData();
@@ -613,36 +565,72 @@ const addExtraField = () => {
       form.append("isShared", JSON.stringify(formData.isShared));
       form.append("version", formData.version);
 
-      const clientImages = formData.images && formData.images.length ? formData.images.filter(img => img.source === "client") : [];
-      const serverImages = formData.images && formData.images.length ? formData.images.filter(img => img.source === "server") : [];
+      const clientImages =
+        formData.images && formData.images.length
+          ? formData.images.filter((img) => img.source === "client")
+          : [];
+      const serverImages =
+        formData.images && formData.images.length
+          ? formData.images.filter((img) => img.source === "server")
+          : [];
 
       if (clientImages && clientImages.length) {
-        clientImages.forEach(imgObj => {
-          form.append("images", imgObj.file)
+        clientImages.forEach((imgObj) => {
+          form.append("images", imgObj.file);
         });
 
-        const imagesData = clientImages.map(imgObj => ({ originalName: imgObj.originalName, uniqueKey: imgObj.uniqueKey, isVisible: imgObj.isVisible }));
+        const imagesData = clientImages.map((imgObj) => ({
+          originalName: imgObj.originalName,
+          uniqueKey: imgObj.uniqueKey,
+          isVisible: imgObj.isVisible,
+        }));
         form.append("newImagesData", JSON.stringify(imagesData));
       }
       if (serverImages && serverImages.length) {
-        const imagesData = serverImages.map(imgObj => ({ fileId: imgObj._id, filename: imgObj.filename, originalName: imgObj.originalName, uniqueKey: imgObj.uniqueKey, isVisible: imgObj.isVisible }))
-        form.append("oldImages", JSON.stringify(imagesData))
+        const imagesData = serverImages.map((imgObj) => ({
+          fileId: imgObj._id,
+          filename: imgObj.filename,
+          originalName: imgObj.originalName,
+          uniqueKey: imgObj.uniqueKey,
+          isVisible: imgObj.isVisible,
+        }));
+        form.append("oldImages", JSON.stringify(imagesData));
       }
 
-      const clientAttachments = formData.attachments && formData.attachments.length ? formData.attachments.filter(attachment => attachment.source === "client") : [];
-      const serverAttachments = formData.attachments && formData.attachments.length ? formData.attachments.filter(attachment => attachment.source === "server") : [];
+      const clientAttachments =
+        formData.attachments && formData.attachments.length
+          ? formData.attachments.filter(
+              (attachment) => attachment.source === "client",
+            )
+          : [];
+      const serverAttachments =
+        formData.attachments && formData.attachments.length
+          ? formData.attachments.filter(
+              (attachment) => attachment.source === "server",
+            )
+          : [];
 
       if (clientAttachments && clientAttachments.length) {
-        clientAttachments.forEach(attachmentObj => {
-          form.append("attachments", attachmentObj.file)
+        clientAttachments.forEach((attachmentObj) => {
+          form.append("attachments", attachmentObj.file);
         });
 
-        const attachmentsData = clientAttachments.map(attachmentObj => ({ originalName: attachmentObj.originalName, uniqueKey: attachmentObj.uniqueKey, isVisible: attachmentObj.isVisible }));
+        const attachmentsData = clientAttachments.map((attachmentObj) => ({
+          originalName: attachmentObj.originalName,
+          uniqueKey: attachmentObj.uniqueKey,
+          isVisible: attachmentObj.isVisible,
+        }));
         form.append("newAttachmentsData", JSON.stringify(attachmentsData));
       }
       if (serverAttachments && serverAttachments.length) {
-        const attachmentsData = serverAttachments.map(attachmentObj => ({ fileId: attachmentObj._id, filename: attachmentObj.filename, originalName: attachmentObj.originalName, uniqueKey: attachmentObj.uniqueKey, isVisible: attachmentObj.isVisible }))
-        form.append("oldAttachments", JSON.stringify(attachmentsData))
+        const attachmentsData = serverAttachments.map((attachmentObj) => ({
+          fileId: attachmentObj._id,
+          filename: attachmentObj.filename,
+          originalName: attachmentObj.originalName,
+          uniqueKey: attachmentObj.uniqueKey,
+          isVisible: attachmentObj.isVisible,
+        }));
+        form.append("oldAttachments", JSON.stringify(attachmentsData));
       }
 
       const config = {
@@ -652,15 +640,9 @@ const addExtraField = () => {
       };
 
       const res = editProduct
-<<<<<<< HEAD
         ? await apiClient.put(`/products/${editProduct}`, form, config)
-        : await apiClient.post('/products/create', form, config);
+        : await apiClient.post("/products/create", form, config);
       // console.log(res);
-=======
-        ? await axios.put(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/products/${editProduct}`, form, config)
-        : await axios.post(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/products/create`, form, config);
-
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
 
       if (res.data.success) {
         fetchProducts();
@@ -673,7 +655,6 @@ const addExtraField = () => {
       alert(`${error.response.data.message}`);
     }
   };
-
 
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this product?")) return;
@@ -692,25 +673,32 @@ const addExtraField = () => {
     if (!productId) return alert("No product to preview");
     navigate("/admin-dashboard/preview", { state: { productId } });
   };
-<<<<<<< HEAD
   const handleCategorySelect = (catId) => {
-    setActiveCategories(prev =>
-      prev.includes(catId) ? prev.filter(id => id !== catId) : [...prev, catId]
+    setActiveCategories((prev) =>
+      prev.includes(catId)
+        ? prev.filter((id) => id !== catId)
+        : [...prev, catId],
     );
   };
 
   // handler dla rozwoju kategorii
   const handleCategoryExpand = (catId) => {
-    setExpandedCategories(prev =>
-      prev.includes(catId) ? prev.filter(id => id !== catId) : [...prev, catId]
+    setExpandedCategories((prev) =>
+      prev.includes(catId)
+        ? prev.filter((id) => id !== catId)
+        : [...prev, catId],
     );
   };
   return (
     <div className="w-full h-full flex flex-col gap-6 p-6 md:p-8 bg-slate-50/30">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-slate-200 pb-6 gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-900">Objects Management</h1>
-          <p className="text-slate-500 text-sm mt-0.5">Manage and organize laboratory objects, items, and inventory</p>
+          <h1 className="text-2xl font-black text-slate-900">
+            Objects Management
+          </h1>
+          <p className="text-slate-500 text-sm mt-0.5">
+            Manage and organize laboratory objects, items, and inventory
+          </p>
         </div>
 
         <div className="flex flex-col sm:flex-row flex-wrap gap-2.5 items-center w-full md:w-auto">
@@ -721,124 +709,6 @@ const addExtraField = () => {
             Export PDF
           </button>
 
-=======
-const handleCategorySelect = (catId) => {
-  setActiveCategories(prev =>
-    prev.includes(catId) ? prev.filter(id => id !== catId) : [...prev, catId]
-  );
-};
-
-// handler dla rozwoju kategorii
-const handleCategoryExpand = (catId) => {
-  setExpandedCategories(prev =>
-    prev.includes(catId) ? prev.filter(id => id !== catId) : [...prev, catId]
-  );
-};
-  return (
-    <div className=" overflow-hidden w-full h-full flex flex-col gap-4 p-6 bg-gray-50">
-      <h1 className=" overflow-hidden text-3xl font-extrabold text-gray-700">Object Management</h1>
-
-{/* Kontrolki */}
-{/* Kontrolki */}
-<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-  {/* Search */}
-  <input
-    type="text"
-    placeholder="Search"
-    className="border border-gray-300 p-3 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 flex-1 min-w-0 text-base"
-    onChange={handleSearch}
-  />
-
-  {/* Przyciskowa grupa */}
-  <div className="flex flex-wrap gap-3 mt-3 sm:mt-0">
-    <button
-      className="px-5 py-3 h-12 text-base font-medium bg-green-500 text-white rounded shadow hover:bg-green-600 transition"
-      onClick={generatePDF}
-    >
-      Export PDF
-    </button>
-
-    <button
-      className="px-5 py-3 h-12 text-base font-medium bg-blue-500 text-white rounded shadow hover:bg-blue-600 transition"
-      onClick={() => { setEditProduct(null); setOpenModal(true); }}
-    >
-      Add Product
-    </button>
-
-    <button
-      className="px-5 py-3 h-12 text-base font-medium bg-gray-500 text-white rounded shadow hover:bg-gray-600 transition"
-      onClick={addExtraField}
-    >
-      Add Column
-    </button>
-
-    <button
-      onClick={() => navigate("/cart")}
-      className="px-6 py-3 h-12 text-base font-medium bg-purple-500 text-white rounded shadow hover:bg-purple-600 transition"
-    >
-      Go to Cart
-    </button>
-  </div>
-</div>
-
-
-
-
-      <div className="flex flex-wrap items-center gap-4 mb-4">
-<div className="relative inline-block text-left">
-  <button
-    type="button"
-    onClick={() => setCategoriesDropdownOpen(prev => !prev)}
-    className="inline-flex justify-between w-64 rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
-  >
-    Filter by category
-    <svg
-      className="-mr-1 ml-2 h-5 w-5"
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 20 20"
-      fill="currentColor"
-      aria-hidden="true"
-    >
-      <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.293l3.71-4.06a.75.75 0 111.08 1.04l-4.25 4.65a.75.75 0 01-1.08 0L5.25 8.27a.75.75 0 01-.02-1.06z" clipRule="evenodd" />
-    </svg>
-  </button>
-
- {categoriesDropdownOpen && (
-  <div className="absolute mt-2 w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10 max-h-60 overflow-y-auto">
-    <ul className="py-1">
-      {allCategories.map(category => (
-        <li key={category._id}>
-          <label className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
-            <input
-              type="checkbox"
-              value={category._id}
-              checked={activeCategories.includes(category._id)}
-              onChange={e => {
-                const { checked } = e.target;
-                setActiveCategories(prev =>
-                  checked
-                    ? [...prev, category._id]
-                    : prev.filter(id => id !== category._id)
-                );
-              }}
-              className="accent-blue-500 w-4 h-4"
-            />
-            <span>{category.name}</span>
-          </label>
-        </li>
-      ))}
-    </ul>
-  </div>
-)}
-
-</div>
-
-
-
-
-        {/* Columns dropdown */}
-        <div className="relative">
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
           <button
             className="w-full sm:w-auto px-4 py-2 text-xs font-bold bg-slate-800 text-white rounded-xl shadow-sm hover:bg-slate-900 transition"
             onClick={addExtraField}
@@ -855,7 +725,10 @@ const handleCategoryExpand = (catId) => {
 
           <button
             className="w-full sm:w-auto px-4 py-2 text-xs font-bold bg-indigo-600 text-white rounded-xl shadow-sm hover:bg-indigo-700 transition"
-            onClick={() => { setEditProduct(null); setOpenModal(true); }}
+            onClick={() => {
+              setEditProduct(null);
+              setOpenModal(true);
+            }}
           >
             Add Object
           </button>
@@ -876,7 +749,7 @@ const handleCategoryExpand = (catId) => {
           <div className="relative inline-block text-left w-full sm:w-60">
             <button
               type="button"
-              onClick={() => setCategoriesDropdownOpen(prev => !prev)}
+              onClick={() => setCategoriesDropdownOpen((prev) => !prev)}
               className="inline-flex justify-between items-center w-full rounded-xl border border-slate-200 shadow-sm px-4 py-2 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 focus:outline-none transition"
             >
               <span>Filter by Category</span>
@@ -887,28 +760,30 @@ const handleCategoryExpand = (catId) => {
                 fill="currentColor"
                 aria-hidden="true"
               >
-                <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.293l3.71-4.06a.75.75 0 111.08 1.04l-4.25 4.65a.75.75 0 01-1.08 0L5.25 8.27a.75.75 0 01-.02-1.06z" clipRule="evenodd" />
+                <path
+                  fillRule="evenodd"
+                  d="M5.23 7.21a.75.75 0 011.06.02L10 11.293l3.71-4.06a.75.75 0 111.08 1.04l-4.25 4.65a.75.75 0 01-1.08 0L5.25 8.27a.75.75 0 01-.02-1.06z"
+                  clipRule="evenodd"
+                />
               </svg>
             </button>
 
             {categoriesDropdownOpen && (
-              <div
-                className="absolute mt-2 w-full rounded-xl shadow-lg bg-white border border-slate-100 z-30 overflow-y-auto max-h-48 py-1.5"
-              >
+              <div className="absolute mt-2 w-full rounded-xl shadow-lg bg-white border border-slate-100 z-30 overflow-y-auto max-h-48 py-1.5">
                 <ul className="py-1">
-                  {allCategories.map(category => (
+                  {allCategories.map((category) => (
                     <li key={category._id}>
                       <label className="flex items-center gap-2.5 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 cursor-pointer transition">
                         <input
                           type="checkbox"
                           value={category._id}
                           checked={activeCategories.includes(category._id)}
-                          onChange={e => {
+                          onChange={(e) => {
                             const { checked } = e.target;
-                            setActiveCategories(prev =>
+                            setActiveCategories((prev) =>
                               checked
                                 ? [...prev, category._id]
-                                : prev.filter(id => id !== category._id)
+                                : prev.filter((id) => id !== category._id),
                             );
                           }}
                           className="accent-indigo-600 w-4 h-4 rounded"
@@ -926,10 +801,12 @@ const handleCategoryExpand = (catId) => {
           <div className="relative inline-block text-left w-full sm:w-60">
             <button
               type="button"
-              onClick={() => setColumnsDropdownOpen(prev => !prev)}
+              onClick={() => setColumnsDropdownOpen((prev) => !prev)}
               className="inline-flex justify-between items-center w-full rounded-xl border border-slate-200 shadow-sm px-4 py-2 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 focus:outline-none transition"
             >
-              <span>{columnsDropdownOpen ? "Hide Columns" : "Show Columns"}</span>
+              <span>
+                {columnsDropdownOpen ? "Hide Columns" : "Show Columns"}
+              </span>
               <svg
                 className={`ml-2 h-4 w-4 text-slate-400 transform transition-transform duration-200 ${columnsDropdownOpen ? "rotate-180" : ""}`}
                 xmlns="http://www.w3.org/2000/svg"
@@ -937,15 +814,17 @@ const handleCategoryExpand = (catId) => {
                 fill="currentColor"
                 aria-hidden="true"
               >
-                <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.293l3.71-4.06a.75.75 0 111.08 1.04l-4.25 4.65a.75.75 0 01-1.08 0L5.25 8.27a.75.75 0 01-.02-1.06z" clipRule="evenodd" />
+                <path
+                  fillRule="evenodd"
+                  d="M5.23 7.21a.75.75 0 011.06.02L10 11.293l3.71-4.06a.75.75 0 111.08 1.04l-4.25 4.65a.75.75 0 01-1.08 0L5.25 8.27a.75.75 0 01-.02-1.06z"
+                  clipRule="evenodd"
+                />
               </svg>
             </button>
 
             {columnsDropdownOpen && (
-              <ul
-                className="absolute mt-2 w-full rounded-xl shadow-lg bg-white border border-slate-100 z-30 overflow-y-auto max-h-60 py-1.5"
-              >
-                {allColumns.map(col => (
+              <ul className="absolute mt-2 w-full rounded-xl shadow-lg bg-white border border-slate-100 z-30 overflow-y-auto max-h-60 py-1.5">
+                {allColumns.map((col) => (
                   <li key={col}>
                     <label className="flex items-center gap-2.5 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 cursor-pointer transition">
                       <input
@@ -984,7 +863,6 @@ const handleCategoryExpand = (catId) => {
           getAvailableStockForProduct={getAvailableStockForProduct}
         />
 
-<<<<<<< HEAD
         <ProductsMobileCards
           paginatedProducts={paginatedProducts}
           cartQuantities={cartQuantities}
@@ -997,297 +875,12 @@ const handleCategoryExpand = (catId) => {
           isAdmin={isAdmin}
         />
       </div>
-=======
-   <div className="w-full">
-  {/* Desktop Table */}
-  <div className="hidden md:block overflow-x-auto w-full shadow rounded border border-gray-200">
-    <table className="table-auto w-full min-w-max divide-y divide-gray-200">
-    <thead className="bg-gray-100">
-  <tr>
-    {allColumns.filter(col => !hiddenColumns.includes(col)).map((col, idx) => (
-      <th
-        key={idx}
-        className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer whitespace-nowrap"
-      >
-        <div className="flex items-center justify-between">
-          <span onClick={() => handleSort(col)} className="truncate">
-            {col} {sortConfig.key === col ? (sortConfig.direction === "asc" ? "↑" : "↓") : ""}
-          </span>
-          {isAdmin && extraColumns.includes(col) && (
-            <button
-              onClick={() => removeExtraField(col)}
-              className="ml-2 px-1 py-0.5 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
-            >
-              X
-            </button>
-          )}
-        </div>
-      </th>
-    ))}
-
-    {/* Actions przed In cart */}
-    {isAdmin && <th className="px-4 py-2 whitespace-nowrap">Actions</th>}
-
-    {/* In cart jako ostatnia kolumna */}
-    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-      In cart
-    </th>
-  </tr>
-</thead>
-
-<tbody className="bg-white divide-y divide-gray-200">
-  {paginatedProducts.map(p => (
-    <tr key={p._id}>
-      {allColumns.filter(col => !hiddenColumns.includes(col)).map((col, idx) => (
-        <td key={idx} className="px-4 py-2 text-sm text-gray-700 whitespace-nowrap">
-          {/* Twoja logika kolumn */}
-          {col === "stockTotal"
-            ? p.stockTotal ?? 0
-            : col === "stockForRent"
-            ? getAvailableStockForProduct(p) ?? 0
-            : col === "categories"
-            ? p.categories?.length > 0
-              ? p.categories.length === 1
-                ? <span>{p.categories[0].name}</span>
-                : (
-                  <div className="relative inline-block w-40">
-                    <select
-                      className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white appearance-none pr-8 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 shadow-sm"
-                      value=""
-                      onChange={(e) => e.preventDefault()}
-                    >
-                      <option value="" disabled hidden>Check Categories</option>
-                      {p.categories.map((c, i) => (
-                        <option key={i} value={c?.name ?? ""}>{c?.name}</option>
-                      ))}
-                    </select>
-                    <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-sm select-none">▼</span>
-                  </div>
-                )
-              : <span className="text-gray-400">—</span>
-            : col === "owner"
-            ? p.owner?.name ?? p.owner
-            : col === "description"
-            ? <span className="truncate cursor-pointer" onClick={() => handlePreview(p._id)} title={p.description}>
-                {p.description?.length > 30 ? p.description.slice(0, 30) + "…" : p.description}
-              </span>
-            : col === "name"
-            ? <span className="truncate cursor-pointer" onClick={() => handlePreview(p._id)} title={p.name}>
-                {p.name}
-              </span>
-            : <span className="truncate" title={p.extraFields?.[col] ?? p[col]}>
-                {(p.extraFields?.[col] ?? p[col])?.toString().length > 30
-                  ? (p.extraFields?.[col] ?? p[col])?.toString().slice(0, 30) + "…"
-                  : p.extraFields?.[col] ?? p[col]}
-              </span>
-          }
-        </td>
-      ))}
-
-      {/* Kolumna Actions */}
-      <td className="px-4 py-2 whitespace-nowrap">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => handleEdit(p)}
-            disabled={user.id !== p.owner._id && !isAdmin}
-            className="h-10 px-4 bg-blue-500 text-white rounded hover:bg-blue-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
-          >
-            Edit
-          </button>
-          <button
-            onClick={() => handlePreview(p._id)}
-            className="h-10 px-4 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition"
-          >
-            Preview
-          </button>
-          <button
-            onClick={() => handleDelete(p._id)}
-            disabled={user.id !== p.owner._id && !isAdmin}
-            className="h-10 px-4 bg-red-500 text-white rounded hover:bg-red-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
-          >
-            Delete
-          </button>
-
-          {/* Quantity controls */}
-          <div className="flex items-center overflow-hidden h-10">
-            <button
-              onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) - 1, p)}
-              className="w-10 h-full bg-gray-200 hover:bg-gray-300 transition"
-              disabled={(cartQuantities[p._id] || 0) <= 0}
-            >
-              -
-            </button>
-            <input
-              type="text"
-              min="0"
-              max={getAvailableStockForProduct(p)}
-              value={cartQuantities[p._id] || 0}
-              onChange={(e) => handleQuantityChange(p._id, Number(e.target.value), p)}
-              className="w-20 text-center outline-none text-1xl h-full p-0 border-none"
-            />
-            <button
-              onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) + 1, p)}
-              className="w-10 h-full bg-gray-200 hover:bg-gray-300 transition"
-              disabled={(cartQuantities[p._id] || 0) >= getAvailableStockForProduct(p)}
-            >
-              +
-            </button>
-          </div>
-        </div>
-      </td>
-
-      {/* In cart jako ostatnia kolumna */}
-      <td className="px-4 py-2 text-center">
-        {cartQuantities[p._id] > 0 ? (
-          <span
-            className="inline-flex items-center justify-center h-10 text-white font-semibold text-base bg-blue-500 rounded-full px-2"
-            style={{ minWidth: '2.5rem' }}
-          >
-            {cartQuantities[p._id]}
-          </span>
-        ) : (
-          <span className="text-gray-400">—</span>
-        )}
-      </td>
-    </tr>
-  ))}
-</tbody>
-
-    </table>
-  </div>
-
-{/* Mobile Cards */}
-<div className="md:hidden flex flex-col gap-4">
-  {paginatedProducts.map(p => (
-    <div key={p._id} className="border rounded shadow p-4 bg-white flex flex-col divide-y divide-gray-200">
-      
-      {/* Data Columns */}
-      {allColumns.filter(col => !hiddenColumns.includes(col)).map((col, idx) => (
-        <div key={idx} className="flex justify-between py-2 items-center">
-          <span className="font-semibold text-gray-500">{col}:</span>
-          <span className="text-gray-700 truncate max-w-[60%] text-right">
-            {col === "stockTotal" ? p.stockTotal ?? 0
-              : col === "stockForRent" ? getAvailableStockForProduct(p) ?? 0
-              : col === "categories" ? (
-                  p.categories?.length > 0 ? (
-                    p.categories.length === 1 ? (
-                      <span>{p.categories[0].name}</span>
-                    ) : (
-                      <div className="relative inline-block w-40">
-                        <select
-                          className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white appearance-none pr-8 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 shadow-sm"
-                          value=""
-                          onChange={(e) => e.preventDefault()}
-                        >
-                          <option value="" disabled hidden>
-                            Check Categories
-                          </option>
-                          {p.categories.map((c, i) => (
-                            <option key={i} value={c?.name ?? ""}>{c?.name}</option>
-                          ))}
-                        </select>
-                        <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-sm select-none">
-                          ▼
-                        </span>
-                      </div>
-                    )
-                  ) : (
-                    <span className="text-gray-400">—</span>
-                  )
-                )
-              : col === "owner" ? p.owner?.name ?? p.owner
-              : col === "description" ? (
-                  <span className="truncate cursor-pointer" onClick={() => handlePreview(p._id)} title={p.description}>
-                    {p.description?.length > 50 ? p.description.slice(0, 50) + "…" : p.description}
-                  </span>
-                )
-              : col === "name" ? (
-                  <span className="truncate cursor-pointer" onClick={() => handlePreview(p._id)} title={p.name}>
-                    {p.name}
-                  </span>
-                )
-              : p[col] ?? p.extraFields?.[col] ?? ""}
-          </span>
-        </div>
-      ))}
-
-      {/* Action buttons */}
-      <div className="flex flex-wrap gap-2 justify-center mt-2">
-        <button
-          onClick={() => handleEdit(p)}
-          disabled={user.id !== p.owner._id && !isAdmin}
-          className="flex-1 min-w-[80px] px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed text-center"
-        >
-          Edit
-        </button>
-        <button
-          onClick={() => handlePreview(p._id)}
-          className="flex-1 min-w-[80px] px-3 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition text-center"
-        >
-          Preview
-        </button>
-        <button
-          onClick={() => handleDelete(p._id)}
-          disabled={user.id !== p.owner._id && !isAdmin}
-          className="flex-1 min-w-[80px] px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed text-center"
-        >
-          Delete
-        </button>
-      </div>
-
-      {/* Quantity selector - moved below buttons */}
-      <div className="flex justify-center items-center border rounded-lg overflow-hidden h-10 mt-2 shadow-sm">
-        <button
-          onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) - 1, p)}
-          className="px-4 bg-gray-100 hover:bg-gray-200 transition text-gray-700 font-bold"
-          disabled={(cartQuantities[p._id] || 0) <= 0}
-        >
-          -
-        </button>
-        <input
-          type="number"
-          min="0"
-          max={getAvailableStockForProduct(p)}
-          value={cartQuantities[p._id] || 0}
-          onChange={(e) => handleQuantityChange(p._id, Number(e.target.value), p)}
-          className="w-16 text-center outline-none border-x border-gray-200 focus:ring-1 focus:ring-blue-400 focus:border-blue-400 transition"
-        />
-        <button
-          onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) + 1, p)}
-          className="px-4 bg-gray-100 hover:bg-gray-200 transition text-gray-700 font-bold"
-          disabled={(cartQuantities[p._id] || 0) >= getAvailableStockForProduct(p)}
-        >
-          +
-        </button>
-      </div>
-
-      {/* Mobile In cart */}
-      <div className="flex justify-center py-2">
-        {cartQuantities[p._id] > 0 ? (
-          <span className="inline-flex items-center justify-center h-10 text-white font-semibold text-base bg-blue-500 rounded-full px-4">
-            In cart: {cartQuantities[p._id]}
-          </span>
-        ) : (
-          <span className="text-gray-400">—</span>
-        )}
-      </div>
-
-    </div>
-  ))}
-</div>
-
-
-</div>
-
-
-
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
 
       {/* Paginate */}
       <div className="flex justify-center items-center gap-4 mt-6">
         <button
           disabled={currentPage === 1}
-          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
           className="px-4 py-2 text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200/60 rounded-xl hover:bg-slate-200 disabled:opacity-40 disabled:pointer-events-none transition"
         >
           Prev
@@ -1299,13 +892,12 @@ const handleCategoryExpand = (catId) => {
 
         <button
           disabled={currentPage === totalPages}
-          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+          onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
           className="px-4 py-2 text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200/60 rounded-xl hover:bg-slate-200 disabled:opacity-40 disabled:pointer-events-none transition"
         >
           Next
         </button>
       </div>
-<<<<<<< HEAD
 
       {openModal && (
         <ProductModal
@@ -1332,314 +924,7 @@ const handleCategoryExpand = (catId) => {
           MAX_FILE_NAME_LENGTH={MAX_FILE_NAME_LENGTH}
         />
       )}
-=======
- {openModal && (
-
-  <div
-    className="fixed inset-0 backdrop-blur-md flex items-center justify-center z-50 p-4"
-    onClick={closeModal} // kliknięcie w overlay zamyka modal
-  >
-    <div
-      className="bg-white p-6 rounded shadow-lg w-full max-w-lg md:max-w-xl lg:max-w-2xl relative max-h-[90vh] overflow-auto"
-      onClick={(e) => e.stopPropagation()} // zatrzymuje propagację kliknięcia
-    >
-      <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
-  <div className="flex items-center justify-between mb-4">
-    <h2 className="text-2xl font-bold">
-      {editProduct ? "Edit Product" : "Add Product"}
-    </h2>
-
-    <div className="flex gap-2">
-      {/* Toggles */}
-      <button
-        type="button"
-        onClick={() => setFormData(prev => ({
-          ...prev,
-          isSerialized: !prev.isSerialized,
-          stockTotal: !prev.isSerialized ? 1 : prev.stockTotal,
-          stockForRent: !prev.isSerialized ? (prev.isRentable ? 1 : 0) : prev.stockForRent
-        }))}
-        className="p-2 rounded-full hover:bg-gray-200 text-3xl"
-        title="Serializable (Track individually vs grouped)"
-      >
-        {formData.isSerialized ? <FaCube className="text-blue-500 text-3xl" /> : <FaCubes className="text-gray-500" />}
-      </button>
-
-      <button
-        type="button"
-        onClick={() => setFormData(prev => ({ ...prev, isRentable: !prev.isRentable, stockForRent: !prev.isRentable ? prev.isSerialized ? "1" : prev.stockForRent : "0" }))}
-        className="p-2 rounded-full hover:bg-gray-200 text-3xl"
-        title="Rentable (allow item for rent)"
-      >
-        <FaHandshake className={formData.isRentable ? "text-green-500" : "text-gray-500"} />
-      </button>
-
-      <button
-        type="button"
-        onClick={() => setFormData(prev => ({ ...prev, isVisible: !formData.isVisible, isShared: !prev.isVisible ? true : prev.isShared }))}
-        className="p-2 rounded-full hover:bg-gray-200 text-3xl"
-        title="Visible (allow item to be visible for everyone)"
-      >
-        {formData.isVisible ? <FaEye className="text-indigo-500" /> : <FaEyeSlash className="text-gray-500" />}
-      </button>
-
-      <button
-        type="button"
-        name="isShared"
-        onClick={() => setFormData(prev => ({ ...prev, isShared: !formData.isShared, isVisible: prev.isShared ? false : prev.isVisible }))}
-        className="p-2 rounded-full hover:bg-gray-200 text-3xl"
-        title="Shared (allow item to be visible for other users)"
-      >
-        {formData.isShared ? <FaUserShield className="text-indigo-500" /> : <FaUserLock className="text-gray-500" />}
-      </button>
     </div>
-  </div>
-
-  {/* Name */}
-  <div>
-    <label htmlFor="name" className="font-semibold">Name</label>
-    <input
-      id="name"
-      type="text"
-      name="name"
-      placeholder="Name"
-      value={formData.name}
-      onChange={handleChange}
-      required
-      className="border p-2 rounded w-full"
-    />
-  </div>
-
-  {/* Description */}
-<div>
-  <label htmlFor="description" className="font-semibold">Description</label>
-  <textarea
-    id="description"
-    name="description"
-    placeholder="Description"
-    value={formData.description}
-    onChange={handleChange}
-    rows={4} // liczba widocznych wierszy
-    maxLength={1000} // limit znaków
-    className="border p-2 rounded w-full resize-y"
-  />
-  <p className="text-sm text-gray-500">{formData.description.length}/1000</p>
-</div>
-
-
-
-  {/* Stock Total */}
-  <div>
-    <label htmlFor="stockTotal" className="font-semibold">Stock Total</label>
-    <input
-      id="stockTotal"
-      type="number"
-      name="stockTotal"
-      placeholder="Stock Total"
-      value={formData.stockTotal}
-      onChange={handleChange}
-      min={1}
-      required
-      disabled={formData.isSerialized}
-      className="border p-2 rounded w-full disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
-    />
-  </div>
-
-  {/* Stock For Rent */}
-  <div>
-    <label htmlFor="stockForRent" className="font-semibold">Stock For Rent</label>
-    <input
-      id="stockForRent"
-      type="number"
-      name="stockForRent"
-      placeholder="Stock For Rent"
-      value={formData.stockForRent}
-      onChange={handleChange}
-      min={0}
-      max={formData.stockTotal}
-      required
-      disabled={formData.isSerialized || !formData.isRentable}
-      className="border p-2 rounded w-full disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
-    />
-  </div>
-
-  {/* Extra Columns */}
-{extraColumns.map((col, idx) => (
-  <div key={idx} className="flex flex-col gap-1 mb-2">
-    <label
-      htmlFor={`extra-${col}`}
-      className="font-semibold"
-      title={col} // pokazuje pełną nazwę przy najechaniu
-    >
-      {col.length > 30 ? col.slice(0, 27) + "…" : col}
-    </label>
-
-    <textarea
-      id={`extra-${col}`}
-      name={col}
-      placeholder={col}
-      value={formData.extraFields?.[col] || ""}
-      onChange={(e) => handleExtraFieldChange(col, e.target.value)}
-      rows={1} // początkowo jedna linijka
-      maxLength={1000} // limit znaków
-      className="border p-2 rounded w-full resize-y"
-    />
-
-    <p className="text-sm text-gray-500">
-      {(formData.extraFields?.[col]?.length || 0)}/1000
-    </p>
-
-    {isAdmin && (
-      <button
-        type="button"
-        onClick={() => removeExtraField(col)}
-        className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 mt-1"
-      >
-        X
-      </button>
-    )}
-  </div>
-))}
-
-
-
-
-  {/* Categories */}
-  <div>
-    <label className="font-semibold">Categories</label>
-    <CategorySelector
-      categoryTree={categoryTree}
-      flatCategories={normalizedCategories}
-      formData={formData}
-      setFormData={setFormData}
-    />
-  </div>
-
-  {/* Tags */}
-  <div>
-    <label htmlFor="tag" className="font-semibold">Tag</label>
-    <div className="flex gap-2">
-      <input
-        id="tag"
-        type="text"
-        name="tag"
-        placeholder="Add tag"
-        value={formData.tag}
-        onChange={handleChange}
-        className="border p-2 rounded flex-1"
-      />
-    </div>
-  </div>
-
-  {/* File Upload */}
-  <div>
-    <label htmlFor="files" className="font-semibold">Upload Files</label>
-    <input
-      id="files"
-      type="file"
-      accept="*"
-      multiple
-      onChange={handleFilesChange}
-      className="border p-2 rounded w-full"
-    />
-  </div>
-
-  {/* Images Display */}
-  {formData.images?.length > 0 && (
-    <div>
-      <p className="font-semibold text-gray-700 mb-2">Images:</p>
-      <div className="flex flex-wrap gap-3">
-        {formData.images.map((imageObj) => {
-          const name = imageObj.originalName;
-          const displayName = truncateFileName(name, MAX_FILE_NAME_LENGTH);
-          return (
-            <span key={imageObj.uniqueKey} className="bg-blue-200 px-2 py-1 rounded flex items-center gap-1" title={name}>
-              {displayName}
-              <button type="button" onClick={() => setFormData(prev => ({ ...prev, images: prev.images.map(file => file === imageObj ? { ...file, isVisible: !imageObj.isVisible } : file) }))} className="text-gray-700 hover:text-blue-500">
-                {imageObj.isVisible ? <FiEye className="w-5 h-5" /> : <FiEyeOff className="w-5 h-5" />}
-              </button>
-              <button type="button" onClick={() => setFormData(prev => ({ ...prev, images: prev.images.filter(file => file !== imageObj) }))} className="text-red-600 font-bold">x</button>
-            </span>
-          );
-        })}
-      </div>
-    </div>
-  )}
-
-  {/* Attachments Display */}
-  {formData.attachments?.length > 0 && (
-    <div>
-      <p className="font-semibold text-gray-700 mb-2">Attachments:</p>
-      <div className="flex flex-wrap gap-3">
-        {formData.attachments.map((attachmentObj) => {
-          const name = attachmentObj.originalName;
-          const displayName = truncateFileName(name, MAX_FILE_NAME_LENGTH);
-          return (
-            <span key={attachmentObj.uniqueKey} className="bg-blue-200 px-2 py-1 rounded flex items-center gap-1" title={name}>
-              {displayName}
-              <button type="button" onClick={() => setFormData(prev => ({ ...prev, attachments: prev.attachments.map(file => file === attachmentObj ? { ...file, isVisible: !attachmentObj.isVisible } : file) }))} className="text-gray-700 hover:text-blue-500">
-                {attachmentObj.isVisible ? <FiEye className="w-5 h-5" /> : <FiEyeOff className="w-5 h-5" />}
-              </button>
-              <button type="button" onClick={() => setFormData(prev => ({ ...prev, attachments: prev.attachments.filter(file => file !== attachmentObj) }))} className="text-red-600 font-bold">x</button>
-            </span>
-          );
-        })}
-      </div>
-    </div>
-  )}
-
-  {/* Lab Room */}
-  <div>
-    <label htmlFor="labRoom" className="font-semibold">Lab Room</label>
-    <select
-      id="labRoom"
-      name="labRoom"
-      value={formData.labRoom}
-      onChange={handleChange}
-      className="border p-2 rounded w-full disabled:bg-gray-100 disabled:text-gray-400"
-    >
-      <option value="">None</option>
-      {labRooms?.map((room) => (
-        <option key={room} value={room}>{room}</option>
-      ))}
-    </select>
-  </div>
-
-  {/* Owner */}
-  <div>
-    <label htmlFor="owner" className="font-semibold">Owner</label>
-    <select
-      id="owner"
-      name="owner"
-      value={formData.owner}
-      onChange={handleOwnerChange}
-      className="border p-2 rounded w-full disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
-      disabled={!isAdmin}
-    >
-      {users.map((user) => (
-        <option key={user._id} value={user._id}>{user.name}</option>
-      ))}
-    </select>
-  </div>
-
-  {/* Buttons */}
-  <div className="flex justify-end gap-2 mt-3">
-    <button type="button" onClick={closeModal} className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">Cancel</button>
-    <button type="submit" className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Save</button>
-  </div>
-      </form> 
-    </div>
-
-
-
-
-
-  </div>
-)}
-
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
-
-    </div >
   );
 };
 

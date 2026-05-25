@@ -34,19 +34,10 @@ const Orders = () => {
 
   const fetchStatuses = async () => {
     try {
-<<<<<<< HEAD
       const res = await apiClient.get('/orders/statuses');
       if (res.data.success) setOrderStatuses(res.data.statuses);
     } catch (error) {
       console.error(error);
-=======
-      const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders/statuses`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.data.success) setStatuses(res.data.statuses);
-    } catch (err) {
-      console.error(err);
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
     }
   };
 
@@ -60,13 +51,7 @@ const Orders = () => {
         status: statusFilter,
       });
 
-<<<<<<< HEAD
       const res = await apiClient.get(`/orders?${queryParams.toString()}`);
-=======
-      const res = await axios.get(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders?${queryParams.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
       if (res.data.success) {
         setOrders(res.data.orders);
         setTotalPages(res.data.totalPages);
@@ -81,14 +66,8 @@ const Orders = () => {
     try {
       if (!productId || !startDate || !endDate) return null;
 
-<<<<<<< HEAD
       const res = await apiClient.post('/products/stockStatus',
         { productId, startDate, endDate, orderId: editGroup.orderId });
-=======
-      const res = await axios.post(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/products/stockStatus`,
-        { productId, startDate, endDate },
-        { headers: { Authorization: `Bearer ${token}` } });
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
 
       if (res.data.success) {
         return {
@@ -137,7 +116,6 @@ const Orders = () => {
       return;
     }
 
-<<<<<<< HEAD
     editGroup.items
       .filter(item => processableStatuses.includes(item.status))
       .forEach(fetchStockForItem);
@@ -159,31 +137,6 @@ const Orders = () => {
   const canReturnOrder = (status) => hasStatus(status, returnableStatuses) && !hasStatus(status, ["pending"]); // window
   const canPrintOrder = (status) => hasStatus(status, printableStatuses);
 
-=======
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
-  const prevPage = () => {
-    if (currentPage > 1) fetchOrders(currentPage - 1);
-  };
-  const nextPage = () => {
-    if (currentPage < totalPages) fetchOrders(currentPage + 1);
-  };
-
-<<<<<<< HEAD
-=======
-  const processableStatuses = ["pending", "approved", "prepared"];
-  const rejectableStatuses = ["pending", "approved", "prepared"];
-  const nonRejectableStatuses = ["rented", "late", "returned"];
-  const returnableStatuses = ["rented", "late"];
-
-  const hasStatus = (items, statuses) => items.some(item => statuses.includes(item.status));
-
-  const canProcessOrder = (order) => hasStatus(order.items, processableStatuses); // window
-  const canRejectOrder = (order) => hasStatus(order.items, rejectableStatuses) && !hasStatus(order.items, nonRejectableStatuses); // automatic
-  const canPrepareOrder = (order) => hasStatus(order.items, ["approved"]) && !hasStatus(order.items, ["pending"]);
-  const canRentOrder = (order) => hasStatus(order.items, ["prepared"]) && !hasStatus(order.items, ["pending"]); // automatic + pdf
-  const canReturnOrder = (order) => hasStatus(order.items, returnableStatuses) && !hasStatus(order.items, ["pending"]); // window
-
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
   const getStatusColor = (groupStatus) => {
     switch (groupStatus) {
       case "changed":
@@ -305,18 +258,9 @@ const Orders = () => {
     container.style.left = "-9999px";
     document.body.appendChild(container);
 
-<<<<<<< HEAD
     // Render HTML to canvas
     const canvas = await html2canvas(container, { scale: 2 });
     const imgData = canvas.toDataURL("image/png");
-=======
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      };
-      const res = await axios.put(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders/updateOrder/${orderId}`, itemsToReject, config);
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
 
     // Add to PDF
     const pdf = new jsPDF("p", "pt", "a4");
@@ -326,104 +270,9 @@ const Orders = () => {
 
     pdf.save(`RentalAgreement_${owner?.name ?? "Unknown"}.pdf`);
 
-<<<<<<< HEAD
     // Cleanup
     document.body.removeChild(container);
   };
-=======
-      const itemsToPrepare = group.items
-        .filter(item => item.status === "approved")
-        .map(item => ({
-          itemId: item._id,
-          newStatus: "prepared"
-        }));
-
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      };
-      const res = await axios.put(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders/updateOrder/${orderId}`, itemsToPrepare, config);
-
-      if (res.data.success) {
-        fetchOrders(1);
-      } else {
-        alert(res.data.message || "Operation failed");
-      }
-    } catch (error) {
-      console.error(error)
-      alert(error?.response?.data?.message || error.message || "Unknown error");
-    }
-  }
-
-  const handleRentOrder = async (group) => {
-    try {
-      const orderId = group?.orderId;
-      if (!orderId) {
-        console.error("Missing orderId for group:", group);
-        alert("Missing Order ID.");
-        return;
-      }
-
-      const itemsToRent = group.items
-        .filter(item => item.status === "prepared")
-        .map(item => ({
-          itemId: item._id,
-          newStatus: "rented"
-        }));
-
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      };
-      const res = await axios.put(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders/updateOrder/${orderId}`, itemsToRent, config);
-
-      if (res.data.success) {
-        fetchOrders(1);
-      } else {
-        alert(res.data.message || "Operation failed");
-      }
-    } catch (error) {
-      console.error(error)
-      alert(error?.response?.data?.message || error.message || "Unknown error");
-    }
-  }
-
-  const handleReturnOrder = async (group) => {
-    try {
-      const orderId = group?.orderId;
-      if (!orderId) {
-        console.error("Missing orderId for group:", group);
-        alert("Missing Order ID.");
-        return;
-      }
-
-      const itemsToReturn = group.items
-        .filter(item => returnableStatuses.includes(item.status))
-        .map(item => ({
-          itemId: item._id,
-          newStatus: "returned"
-        }));
-
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      };
-      const res = await axios.put(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders/updateOrder/${orderId}`, itemsToReturn, config);
-
-      if (res.data.success) {
-        fetchOrders(1);
-      } else {
-        alert(res.data.message || "Operation failed");
-      }
-    } catch (error) {
-      console.error(error)
-      alert(error?.response?.data?.message || error.message || "Unknown error");
-    }
-  }
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
 
   const handleOpenModal = (group) => {
     setEditGroup(group); // store the owner group being edited
@@ -568,13 +417,9 @@ const Orders = () => {
 
       const dateUpdates = Object.fromEntries(Object.entries(datesUpdateData || {}).filter(([key]) => key === "assignedStartDate" || key === "assignedEndDate").map(([key, value]) => [key, new Date(value)]));
 
-<<<<<<< HEAD
       const payload = { itemUpdates, ...dateUpdates };
 
       const res = await apiClient.put(`/orders/updateOrder/${orderId}`, payload);
-=======
-      const res = await axios.put(`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/orders/updateOrder/${orderId}`, itemUpdates, config);
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
 
       if (res.data.success) {
         fetchOrders(1);
@@ -592,31 +437,22 @@ const Orders = () => {
   return (
     <div className="min-h-screen bg-slate-50/30 flex flex-col items-center p-6 md:p-8">
       <div className="w-full max-w-6xl flex flex-col gap-6">
-<<<<<<< HEAD
         <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-slate-200 pb-6 gap-4 w-full">
           <div>
             <h1 className="text-2xl font-black text-slate-900">Order Management</h1>
             <p className="text-slate-500 text-sm mt-0.5">Track, review, approve, and finalize equipment rentals</p>
           </div>
         </div>
-=======
-        <h1 className="text-3xl font-extrabold text-gray-800 text-center">Orders Management</h1>
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
 
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-3 w-full justify-between items-center bg-white p-3 border border-slate-200 rounded-xl shadow-sm">
           <input
             type="text"
-<<<<<<< HEAD
             placeholder="Filter by customer email..."
-=======
-            placeholder="Search by email"
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
             value={emailFilter}
             onChange={(e) => setEmailFilter(e.target.value)}
             className="border border-slate-200 rounded-xl px-3.5 py-2 text-sm bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 w-full sm:max-w-xs"
           />
-<<<<<<< HEAD
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status:</span>
             <select
@@ -636,24 +472,6 @@ const Orders = () => {
 
         {orders.length === 0 ? (
           <div className="text-center p-8 bg-white border border-slate-200 rounded-2xl text-slate-400 font-medium shadow-sm">No orders found</div>
-=======
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="border border-gray-300 rounded px-3 py-2 w-full md:w-1/4"
-          >
-            <option value="">All statuses</option>
-            {statuses.map((status, idx) => (
-              <option key={idx} value={status}>
-                {status}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {orders.length === 0 ? (
-          <div className="text-center p-6 text-gray-500">No rentals</div>
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
         ) : (
           <div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -667,7 +485,6 @@ const Orders = () => {
                     if (!acc[ownerId]) {
                       acc[ownerId] = {
                         orderId: order._id,
-<<<<<<< HEAD
                         items: [],
 
                         customerInfo: order.customer,
@@ -684,11 +501,6 @@ const Orders = () => {
                         },
 
                         hasAssignedDates: !!(ownerData?.assignedStartDate && ownerData?.assignedEndDate),
-=======
-                        owner: item?.responsibleOwner || { name: "Unknown owner" },
-                        status: order.ownerStatuses.find(ownerStatus => ownerStatus.owner === ownerId)?.status,
-                        items: []
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
                       };
                     }
 
@@ -697,7 +509,6 @@ const Orders = () => {
                   }, {});
 
                   return (
-<<<<<<< HEAD
                     <div key={order._id} className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 flex flex-col gap-4 hover:shadow-md transition">
                       <h2 className="text-base font-bold text-slate-800">{order?.customer?.email || "Brak maila"}</h2>
                       <div className="border-t border-slate-100 pt-4">
@@ -718,23 +529,6 @@ const Orders = () => {
                               <div className="flex flex-col gap-1 mb-4">
                                 <h4 className="font-bold text-xs text-slate-400 uppercase tracking-wider">
                                   Owner: {group.owner?.name || "Nieznany"}
-=======
-                    <div key={order._id} className="bg-white rounded-xl shadow p-4 flex flex-col gap-3 hover:shadow-md transition relative">
-                      {order.isReturned && (
-                        <span className="absolute top-2 right-2 bg-yellow-400 text-white px-2 py-1 rounded text-xs font-bold">RETURNED</span>
-                      )}
-
-                      <h2 className="text-lg font-semibold text-gray-700">{order?.customer?.email || "Brak maila"}</h2>
-
-                      <div className="border-t border-gray-200 pt-2">
-
-                        {Object.values(itemsByOwner).map((group, idx) => {
-                          return (
-                            <div key={idx} className="mb-8 last:mb-2 border border-gray-200 rounded-lg p-4 bg-gray-50">
-                              <div className="flex flex-col gap-1 mb-5">
-                                <h4 className="font-semibold text-gray-700">
-                                  Owner: {group.owner?.name || "Unknown"}
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
                                 </h4>
 
                                 <div className="flex items-center gap-2 mt-1.5">
@@ -742,73 +536,9 @@ const Orders = () => {
                                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${getStatusColor(group.status)} border-current/10`}>
                                     {group.status}
                                   </span>
-<<<<<<< HEAD
-=======
-                                </p>
+                                </div>
                               </div>
 
-                              <ul className="list-disc list-inside space-y-2">
-                                {group.items.map((item, i) => {
-                                  const toggleKey = `${order._id}-${item._id}`;
-
-                                  return (
-                                    <li key={i} className="text-gray-700 flex flex-col gap-1">
-                                      <div className={`flex items-center gap-2 ${getStatusColor(item.status)}`}>
-                                        {`${item?.product?.name || "Deleted product"} (${item?.product?.tag})`}
-                                      </div>
-
-
-                                      <button
-                                        onClick={() =>
-                                          setExpanded((prev) => ({ ...prev, [toggleKey]: !prev[toggleKey] }))
-                                        }
-                                        className="text-blue-600 hover:underline text-sm self-start"
-                                      >
-                                        {expanded[toggleKey] ? "Hide details" : "Show details"}
-                                      </button>
-
-                                      {/* Collapsible details */}
-                                      {expanded[toggleKey] && (
-                                        <div className="mt-2 space-y-2 p-2 border rounded-lg border-gray-300 bg-gray-50">
-
-                                          {/* Quantity */}
-                                          <div>
-                                            <p>
-                                              Requested: {item?.requested?.quantity ?? "-"}
-                                            </p>
-                                            {item?.assigned?.quantity && item.status !== "pending" && (
-                                              <p>
-                                                Assigned: {item?.assigned?.quantity}
-                                              </p>
-                                            )}
-                                          </div>
-
-                                          {/* Dates */}
-                                          <div>
-                                            <p className="font-medium text-gray-700">Period:</p>
-                                            <p>
-                                              Requested: 📅 Start: {new Date(item.requested?.startDate).toLocaleDateString("pl-PL")} - End: {new Date(item?.requested?.endDate).toLocaleDateString("pl-PL")}
-                                            </p>
-                                            {item?.assigned?.startDate && item?.assigned?.endDate && item.status !== "pending" && (
-                                              <p>
-                                                Assigned: 📅 Start: {new Date(item?.assigned?.startDate).toLocaleDateString("pl-PL")} - End: {new Date(item?.assigned?.endDate).toLocaleDateString("pl-PL")}
-                                              </p>
-                                            )}
-                                          </div>
-
-                                          {/* Status */}
-                                          <div>
-                                            <p className="font-medium text-gray-700">
-                                              Status: {item?.status || "unknown"}
-                                            </p>
-                                          </div>
-
-                                        </div>
-                                      )}
-
-                                    </li>
-                                  )
-                                })}
                                 <div className="flex flex-wrap gap-2 mb-4">
                                   {canProcessOrder(group) && (
                                     <button
@@ -850,7 +580,6 @@ const Orders = () => {
                                       Return
                                     </button>
                                   )}
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
                                 </div>
 
                                 {group.ownerData?.customerApproval != null && (
@@ -884,7 +613,6 @@ const Orders = () => {
                                     </div>
                                   )}
                                 </div>
-                              </div>
 
                               <div className="space-y-3">
                                 {group.items.length > 0 && (
@@ -1032,7 +760,6 @@ const Orders = () => {
             </div>
 
             {/* Pagination */}
-<<<<<<< HEAD
             <div className="flex justify-center items-center gap-4 mt-8">
               <button
                 onClick={prevPage}
@@ -1049,12 +776,6 @@ const Orders = () => {
               >
                 Next
               </button>
-=======
-            <div className="flex justify-center items-center gap-4 mt-6">
-              <button onClick={prevPage} disabled={currentPage === 1} className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded disabled:opacity-50">Previous</button>
-              <span className="text-gray-700">Strona {currentPage} z {totalPages}</span>
-              <button onClick={nextPage} disabled={currentPage === totalPages} className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded disabled:opacity-50">Next</button>
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
             </div>
           </div>
         )}

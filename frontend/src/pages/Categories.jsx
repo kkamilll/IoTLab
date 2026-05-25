@@ -48,16 +48,7 @@ const Categories = () => {
 
   const fetchCategories = async () => {
     try {
-<<<<<<< HEAD
       const res = await apiClient.get('/categories/private');
-=======
-      const res = await axios.get(
-        `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/categories/private`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
       setCategories(res.data.categories || []);
     } catch (err) {
       console.error("Error fetching categories:", err);
@@ -101,24 +92,9 @@ const Categories = () => {
     }
 
     try {
-<<<<<<< HEAD
       const res = editCategory
         ? await apiClient.patch(`/categories/${editCategory}`, categoryData)
         : await apiClient.post('/categories/create', categoryData);
-=======
-      const config = { headers: { Authorization: `Bearer ${token}` } };
-      const res = editCategory
-        ? await axios.patch(
-            `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/categories/${editCategory}`,
-            categoryData,
-            config
-          )
-        : await axios.post(
-            `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/categories/create`,
-            categoryData,
-            config
-          );
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
 
       if (res.data.success) {
         alert(editCategory ? "Category updated" : "Category added");
@@ -134,14 +110,7 @@ const Categories = () => {
   const handleDeleteCategory = async (id) => {
     if (!window.confirm("Are you sure you want to delete this category?")) return;
     try {
-<<<<<<< HEAD
       const res = await apiClient.delete(`/categories/${id}`);
-=======
-      const res = await axios.delete(
-        `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/categories/${id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
       if (res.data.success) {
         alert("Category deleted");
         fetchCategories();
@@ -161,17 +130,9 @@ const Categories = () => {
             <p className="text-slate-500 text-sm mt-0.5">Manage hierarchical categorization of laboratory resources</p>
           </div>
 
-<<<<<<< HEAD
           <button
             onClick={() => { setEditCategory(null); setModalOpen(true); }}
             className="px-4 py-2 text-xs font-bold bg-indigo-600 text-white rounded-xl shadow-sm hover:bg-indigo-700 transition"
-=======
-        {/* Add Category po prawej */}
-        <div className="flex justify-end">
-          <button
-            onClick={() => { setEditCategory(null); setModalOpen(true); }}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded shadow transition transform hover:scale-105"
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
           >
             Add Category
           </button>
@@ -189,19 +150,11 @@ const Categories = () => {
       {/* Category Modal */}
       {modalOpen && (
         <div
-<<<<<<< HEAD
           className="fixed inset-0 flex justify-center items-center z-50 backdrop-blur-md bg-slate-950/40"
           onClick={closeModal}
         >
           <div
             className="bg-white rounded-2xl border border-slate-100 shadow-xl w-full max-w-lg p-6 relative"
-=======
-          className="fixed inset-0 flex justify-center items-center z-50 backdrop-blur-lg bg-opacity-70 "
-          onClick={closeModal}
-        >
-          <div
-            className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 relative"
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
             onClick={(e) => e.stopPropagation()}
           >
             <form onSubmit={handleSubmitCategory}>
@@ -214,11 +167,7 @@ const Categories = () => {
                   onClick={() =>
                     setCategoryData((prev) => ({ ...prev, isVisible: !prev.isVisible }))
                   }
-<<<<<<< HEAD
                   className="p-2 rounded-xl hover:bg-slate-100 transition text-2xl"
-=======
-                  className="p-2 rounded-full hover:bg-gray-200 text-3xl"
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
                   title="Visible (allow category to be visible to everyone)"
                 >
                   {categoryData.isVisible ? (
@@ -229,7 +178,6 @@ const Categories = () => {
                 </button>
               </div>
 
-<<<<<<< HEAD
               <div className="mb-4">
                 <label className="block mb-1 text-xs font-semibold text-slate-400 uppercase tracking-wider">Name:</label>
                 <input
@@ -246,28 +194,6 @@ const Categories = () => {
                   {categoryData.name.length} / {MAX_LENGTH}
                 </p>
               </div>
-=======
-            
-
-<div className="mb-4">
-  <label className="block mb-1 font-semibold">Name:</label>
-  <input
-    type="text"
-    value={categoryData.name}
-    onChange={(e) =>
-      setCategoryData((prev) => ({ ...prev, name: e.target.value.slice(0, MAX_LENGTH) }))
-    }
-    maxLength={MAX_LENGTH}
-    className="w-full border rounded p-2"
-    placeholder="e.g., Electronics"
-  />
-  <p className="text-sm text-gray-500 mt-1">
-    {categoryData.name.length} / {MAX_LENGTH}
-  </p>
-</div>
-
-
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
 
               <div className="mb-6">
                 <label className="block mb-1 text-xs font-semibold text-slate-400 uppercase tracking-wider">Description:</label>
@@ -276,11 +202,7 @@ const Categories = () => {
                   onChange={(e) =>
                     setCategoryData((prev) => ({ ...prev, description: e.target.value }))
                   }
-<<<<<<< HEAD
                   className="w-full border border-slate-200 rounded-xl px-3.5 py-2 text-sm bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 min-h-[100px]"
-=======
-                  className="w-full border rounded p-2"
->>>>>>> 0805072fd15dde93ec5d23aecb48b0fa9e058f21
                   placeholder="e.g., Phones, Laptops..."
                 />
               </div>
