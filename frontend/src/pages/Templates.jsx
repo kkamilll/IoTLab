@@ -158,7 +158,7 @@ function TemplatesApp() {
 
   return (
     <div className="min-h-screen bg-slate-50/30 flex flex-col items-center p-6 md:p-8">
-      <div className="w-full max-w-6xl flex flex-col gap-6">
+      <div className="w-full h-full flex flex-col gap-6 p-6 md:p-8 bg-slate-50/30">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-slate-200 pb-6 gap-4 w-full">
           <div>
             <h1 className="text-2xl font-black text-slate-900">

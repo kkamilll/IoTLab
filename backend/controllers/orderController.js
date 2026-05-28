@@ -361,14 +361,10 @@ export const createOrder = asyncHandler(async (req, res, next) => {
     throw new BadRequestError("Index must be only 6 digits");
   }
 
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
     const productIds = items.map((i) => i.product);
     const products = await Product.find({ _id: { $in: productIds } })
-      .lean()
-      .session(session);
+      .lean();
     const productMap = {};
     products.forEach((p) => (productMap[p._id.toString()] = p));
 
@@ -409,7 +405,7 @@ export const createOrder = asyncHandler(async (req, res, next) => {
     while (!successSave && attempt < maxAttempts) {
       try {
         order.uuid = uuidv4();
-        await order.save({ session });
+        await order.save();
         successSave = true;
       } catch (error) {
         if (error.code === 11000 && error.keyPattern?.uuid) {
@@ -429,15 +425,10 @@ export const createOrder = asyncHandler(async (req, res, next) => {
 
     await sendOrderEmail(order, customerKey, order.uuid);
 
-    await session.commitTransaction();
-    session.endSession();
-
     return res
       .status(201)
       .json({ success: true, message: "Order created", order });
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
     throw error;
   }
 });
@@ -459,11 +450,8 @@ export const updateOrder = asyncHandler(async (req, res, next) => {
     itemUpdates = [itemUpdates];
   }
 
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
-    const order = await Order.findById(orderId).session(session);
+    const order = await Order.findById(orderId);
     if (!order) throw new ResourceNotFoundError("Order");
     order._isUpdate = true;
 
@@ -569,9 +557,7 @@ export const updateOrder = asyncHandler(async (req, res, next) => {
     );
 
     if (productIds.length > 0) {
-      const products = await Product.find({ _id: { $in: productIds } }).session(
-        session,
-      );
+      const products = await Product.find({ _id: { $in: productIds } });
 
       for (const product of products) {
         const rentedDelta =
@@ -595,21 +581,16 @@ export const updateOrder = asyncHandler(async (req, res, next) => {
           label: "Stock rented",
         });
 
-        await product.save({ session });
+        await product.save();
       }
     }
 
-    await order.save({ session });
+    await order.save();
 
     await sendOrderEmail(order);
 
-    await session.commitTransaction();
-    session.endSession();
-
     return res.status(200).json({ success: true, order });
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
     throw error;
   }
 });

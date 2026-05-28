@@ -8,6 +8,9 @@ import { generateProductsPDF } from "../utils/pdfGenerator";
 import { useAuth } from "../context/AuthContext";
 import { buildTree } from "../utils/categoryUtils";
 import CategoryTree from "../components/categories/CategoryTree";
+import PageHeader from "../components/layout/PageHeader";
+import Btn from "../components/layout/Btn";
+import Pagination from "../components/layout/Pagination";
 
 const MEGA_BYTE = 1024 * 1024;
 const MAX_FILE_SIZE = 50 * MEGA_BYTE;
@@ -691,49 +694,15 @@ const Products = () => {
   };
   return (
     <div className="w-full h-full flex flex-col gap-6 p-6 md:p-8 bg-slate-50/30">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-slate-200 pb-6 gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900">
-            Objects Management
-          </h1>
-          <p className="text-slate-500 text-sm mt-0.5">
-            Manage and organize laboratory objects, items, and inventory
-          </p>
-        </div>
-
-        <div className="flex flex-col sm:flex-row flex-wrap gap-2.5 items-center w-full md:w-auto">
-          <button
-            className="w-full sm:w-auto px-4 py-2 text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200/60 rounded-xl shadow-sm hover:bg-slate-200 transition"
-            onClick={generatePDF}
-          >
-            Export PDF
-          </button>
-
-          <button
-            className="w-full sm:w-auto px-4 py-2 text-xs font-bold bg-slate-800 text-white rounded-xl shadow-sm hover:bg-slate-900 transition"
-            onClick={addExtraField}
-          >
-            Add Column
-          </button>
-
-          <button
-            onClick={() => navigate("/cart")}
-            className="w-full sm:w-auto px-4 py-2 text-xs font-bold bg-emerald-600 text-white rounded-xl shadow-sm hover:bg-emerald-700 transition"
-          >
-            Go to Cart
-          </button>
-
-          <button
-            className="w-full sm:w-auto px-4 py-2 text-xs font-bold bg-indigo-600 text-white rounded-xl shadow-sm hover:bg-indigo-700 transition"
-            onClick={() => {
-              setEditProduct(null);
-              setOpenModal(true);
-            }}
-          >
-            Add Object
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Objects Management"
+        subtitle="Manage and organize laboratory objects, items, and inventory"
+      >
+        <Btn variant="secondary" onClick={generatePDF}>Export PDF</Btn>
+        <Btn variant="dark" onClick={addExtraField}>Add Column</Btn>
+        <Btn variant="success" onClick={() => navigate("/cart")}>Go to Cart</Btn>
+        <Btn variant="primary" onClick={() => { setEditProduct(null); setOpenModal(true); }}>Add Object</Btn>
+      </PageHeader>
 
       {/* Search & Filters */}
       <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
@@ -876,28 +845,12 @@ const Products = () => {
         />
       </div>
 
-      {/* Paginate */}
-      <div className="flex justify-center items-center gap-4 mt-6">
-        <button
-          disabled={currentPage === 1}
-          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-          className="px-4 py-2 text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200/60 rounded-xl hover:bg-slate-200 disabled:opacity-40 disabled:pointer-events-none transition"
-        >
-          Prev
-        </button>
-
-        <span className="text-slate-500 text-xs font-semibold">
-          Page {currentPage} of {totalPages}
-        </span>
-
-        <button
-          disabled={currentPage === totalPages}
-          onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-          className="px-4 py-2 text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200/60 rounded-xl hover:bg-slate-200 disabled:opacity-40 disabled:pointer-events-none transition"
-        >
-          Next
-        </button>
-      </div>
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPrev={() => setCurrentPage((p) => Math.max(1, p - 1))}
+        onNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+      />
 
       {openModal && (
         <ProductModal

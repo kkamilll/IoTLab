@@ -328,25 +328,17 @@ export const createProduct = asyncHandler(async (req, res, next) => {
     return next(new BadRequestError("Request body is missing"));
   }
 
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
     const updateData = initProduct(req);
     const createData = updateData.$set;
 
     const newProduct = new Product(createData);
-    await newProduct.save({ session });
-
-    await session.commitTransaction();
-    session.endSession();
+    await newProduct.save();
 
     return res
       .status(201)
       .json({ success: true, product: newProduct.toObject() });
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
     throw error;
   }
 });
@@ -378,11 +370,8 @@ export const updateProduct = asyncHandler(async (req, res, next) => {
     filterProducts = { _id: productId, isDeleted: false, owner: user };
   }
 
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
-    const product = await Product.findOne(filterProducts).session(session);
+    const product = await Product.findOne(filterProducts);
     if (!product)
       return next(new ResourceNotFoundError("Missing permission or Product"));
 
@@ -432,8 +421,7 @@ export const updateProduct = asyncHandler(async (req, res, next) => {
       };
       const blockingOrder = await Order.findOne(filterOrders)
         .select("_id")
-        .lean()
-        .session(session);
+        .lean();
 
       if (blockingOrder) {
         return next(
@@ -456,7 +444,7 @@ export const updateProduct = asyncHandler(async (req, res, next) => {
       );
     }
 
-    const updatedProduct = await product.save({ session }); // optimistic concurrency enforced
+    const updatedProduct = await product.save(); // optimistic concurrency enforced
 
     // update orders
     if (originalOwner !== newOwner) {
@@ -464,7 +452,7 @@ export const updateProduct = asyncHandler(async (req, res, next) => {
       filterOrders.items = {
         $elemMatch: { product: product._id, status: "pending" },
       };
-      const pendingOrders = await Order.find(filterOrders).session(session);
+      const pendingOrders = await Order.find(filterOrders);
       for (const pendingOrder of pendingOrders) {
         pendingOrder.items.forEach((item) => {
           if (
@@ -475,18 +463,12 @@ export const updateProduct = asyncHandler(async (req, res, next) => {
           }
         });
         pendingOrder._updatedProducts = [product];
-        await pendingOrder.save({ session });
+        await pendingOrder.save();
       }
     }
 
-    await session.commitTransaction();
-    session.endSession();
-
     return res.status(200).json({ success: true, product: updatedProduct });
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
-
     if (error.name === "VersionError") {
       return next(new ConflictError("Product was modified by someone else"));
     }

@@ -4,6 +4,8 @@ import { useAuth } from "../context/AuthContext";
 import CategoryTable from "../components/categories/CategoryTable";
 import { buildTree, findDescendants } from "../utils/categoryUtils";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import PageHeader from "../components/layout/PageHeader";
+import Btn from "../components/layout/Btn";
 
 const Categories = () => {
   const { token } = useAuth();
@@ -11,44 +13,34 @@ const Categories = () => {
   const [editCategory, setEditCategory] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [categoryData, setCategoryData] = useState({
-    name: "",
-    description: "",
-    parent: null,
-    isVisible: false,
+    name: "", description: "", parent: null, isVisible: false,
   });
 
   const MAX_LENGTH = 20;
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
+  useEffect(() => { fetchCategories(); }, []);
 
   const normalizedCategories = useMemo(
-    () =>
-      categories.map((c) => ({
-        _id: c._id.toString(),
-        name: c.name,
-        description: c.description,
-        parent: c.parent?._id?.toString() || null,
-        isVisible: c.isVisible || false,
-      })),
+    () => categories.map((c) => ({
+      _id: c._id.toString(),
+      name: c.name,
+      description: c.description,
+      parent: c.parent?._id?.toString() || null,
+      isVisible: c.isVisible || false,
+    })),
     [categories]
   );
 
-  const categoryTree = useMemo(
-    () => buildTree(normalizedCategories),
-    [normalizedCategories]
-  );
+  const categoryTree = useMemo(() => buildTree(normalizedCategories), [normalizedCategories]);
 
-  const excludedIds = useMemo(() => {
-    return editCategory
-      ? [editCategory, ...findDescendants(editCategory, normalizedCategories)]
-      : [];
-  }, [editCategory, normalizedCategories]);
+  const excludedIds = useMemo(() =>
+    editCategory ? [editCategory, ...findDescendants(editCategory, normalizedCategories)] : [],
+    [editCategory, normalizedCategories]
+  );
 
   const fetchCategories = async () => {
     try {
-      const res = await apiClient.get('/categories/private');
+      const res = await apiClient.get("/categories/private");
       setCategories(res.data.categories || []);
     } catch (err) {
       console.error("Error fetching categories:", err);
@@ -57,12 +49,7 @@ const Categories = () => {
   };
 
   const handleAdd = (selectedCategory) => {
-    setCategoryData({
-      name: "",
-      description: "",
-      parent: selectedCategory?._id?.toString() || null,
-      isVisible: false,
-    });
+    setCategoryData({ name: "", description: "", parent: selectedCategory?._id?.toString() || null, isVisible: false });
     setEditCategory(null);
     setModalOpen(true);
   };
@@ -86,20 +73,14 @@ const Categories = () => {
 
   const handleSubmitCategory = async (e) => {
     e.preventDefault();
-    if (!categoryData.name.trim()) {
-      alert("Category name is required");
-      return;
-    }
-
+    if (!categoryData.name.trim()) { alert("Category name is required"); return; }
     try {
       const res = editCategory
         ? await apiClient.patch(`/categories/${editCategory}`, categoryData)
-        : await apiClient.post('/categories/create', categoryData);
-
+        : await apiClient.post("/categories/create", categoryData);
       if (res.data.success) {
         alert(editCategory ? "Category updated" : "Category added");
-        closeModal();
-        fetchCategories();
+        closeModal(); fetchCategories();
       }
     } catch (err) {
       console.error("Error saving category:", err);
@@ -111,10 +92,7 @@ const Categories = () => {
     if (!window.confirm("Are you sure you want to delete this category?")) return;
     try {
       const res = await apiClient.delete(`/categories/${id}`);
-      if (res.data.success) {
-        alert("Category deleted");
-        fetchCategories();
-      }
+      if (res.data.success) { alert("Category deleted"); fetchCategories(); }
     } catch (err) {
       console.error("Error deleting category:", err);
       alert("Failed to delete category");
@@ -122,30 +100,19 @@ const Categories = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/30 flex flex-col items-center p-6 md:p-8">
-      <div className="w-full max-w-6xl bg-white border border-slate-200 rounded-2xl shadow-sm p-6 md:p-8 flex flex-col gap-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-slate-200 pb-6 gap-4">
-          <div>
-            <h1 className="text-2xl font-black text-slate-900">Category Management</h1>
-            <p className="text-slate-500 text-sm mt-0.5">Manage hierarchical categorization of laboratory resources</p>
-          </div>
+    <div className="w-full h-full flex flex-col gap-6 p-6 md:p-8 bg-slate-50/30">
+      <PageHeader title="Category Management" subtitle="Manage hierarchical categorization of laboratory resources">
+        <Btn variant="primary" onClick={() => { setEditCategory(null); setModalOpen(true); }}>
+          + Add Category
+        </Btn>
+      </PageHeader>
 
-          <button
-            onClick={() => { setEditCategory(null); setModalOpen(true); }}
-            className="px-4 py-2 text-xs font-bold bg-indigo-600 text-white rounded-xl shadow-sm hover:bg-indigo-700 transition"
-          >
-            Add Category
-          </button>
-        </div>
-
-        {/* Category table */}
-        <CategoryTable
-          categoryTree={categoryTree}
-          handleEdit={handleEdit}
-          handleDelete={handleDeleteCategory}
-          handleAdd={handleAdd}
-        />
-      </div>
+      <CategoryTable
+        categoryTree={categoryTree}
+        handleEdit={handleEdit}
+        handleDelete={handleDeleteCategory}
+        handleAdd={handleAdd}
+      />
 
       {/* Category Modal */}
       {modalOpen && (
@@ -164,11 +131,9 @@ const Categories = () => {
                 </h2>
                 <button
                   type="button"
-                  onClick={() =>
-                    setCategoryData((prev) => ({ ...prev, isVisible: !prev.isVisible }))
-                  }
+                  onClick={() => setCategoryData((prev) => ({ ...prev, isVisible: !prev.isVisible }))}
                   className="p-2 rounded-xl hover:bg-slate-100 transition text-2xl"
-                  title="Visible (allow category to be visible to everyone)"
+                  title="Toggle visibility to all users"
                 >
                   {categoryData.isVisible ? (
                     <FaEye className="text-indigo-600" />
@@ -183,9 +148,7 @@ const Categories = () => {
                 <input
                   type="text"
                   value={categoryData.name}
-                  onChange={(e) =>
-                    setCategoryData((prev) => ({ ...prev, name: e.target.value.slice(0, MAX_LENGTH) }))
-                  }
+                  onChange={(e) => setCategoryData((prev) => ({ ...prev, name: e.target.value.slice(0, MAX_LENGTH) }))}
                   maxLength={MAX_LENGTH}
                   className="w-full border border-slate-200 rounded-xl px-3.5 py-2 text-sm bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                   placeholder="e.g., Electronics"
@@ -199,28 +162,15 @@ const Categories = () => {
                 <label className="block mb-1 text-xs font-semibold text-slate-400 uppercase tracking-wider">Description:</label>
                 <textarea
                   value={categoryData.description}
-                  onChange={(e) =>
-                    setCategoryData((prev) => ({ ...prev, description: e.target.value }))
-                  }
+                  onChange={(e) => setCategoryData((prev) => ({ ...prev, description: e.target.value }))}
                   className="w-full border border-slate-200 rounded-xl px-3.5 py-2 text-sm bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 min-h-[100px]"
                   placeholder="e.g., Phones, Laptops..."
                 />
               </div>
 
               <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
-                <button
-                  onClick={closeModal}
-                  className="px-5 py-2 text-xs font-bold text-slate-700 bg-slate-100 rounded-xl hover:bg-slate-200 transition"
-                  type="button"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 text-xs font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition"
-                >
-                  {editCategory ? "Save" : "Add"}
-                </button>
+                <Btn type="button" variant="secondary" onClick={closeModal}>Cancel</Btn>
+                <Btn type="submit" variant="primary">{editCategory ? "Save" : "Add"}</Btn>
               </div>
             </form>
           </div>

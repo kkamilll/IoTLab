@@ -2,7 +2,7 @@ import User from './models/User.js'
 import connectDB from './config/db.js';
 
 const register = async () => {
-    try{
+    try {
         await connectDB();
         const newUser = new User({
             name: "admin",
@@ -14,7 +14,7 @@ const register = async () => {
         await newUser.save();
         console.log("Admin user created succesfully");
     }
-    catch(error){
+    catch (error) {
         console.warn(error);
     }
 }
