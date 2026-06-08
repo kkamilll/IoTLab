@@ -118,13 +118,12 @@ const CartPage = () => {
       // Validate required customer fields
       const requiredFields = [
         "firstName",
-        //"lastName",
-        //"index",
-        //"semester",
-        //"yearOfStudy",
-        //"fieldOfStudy",
-        //"specialization",
-        //"phoneNumber",
+        "lastName",
+        "index",
+        "semester",
+        "yearOfStudy",
+        "fieldOfStudy",
+        "phoneNumber",
         "email",
         "purpose",
       ];
@@ -144,10 +143,13 @@ const CartPage = () => {
         return;
       }
 
-      if (phoneRegex) {
-        if (!phoneRegex.test(orderCustomer.phoneNumber)) {
-          return alert("Phone number must be 9–10 digits");
-        }
+      if (orderCustomer.phoneNumber && !phoneRegex.test(orderCustomer.phoneNumber)) {
+        return alert("Phone number must be 9–10 digits");
+      }
+
+      const indexRegex = /^\d{6}$/;
+      if (orderCustomer.index && !indexRegex.test(orderCustomer.index)) {
+        return alert("Index must be exactly 6 digits");
       }
 
       // Date validation
@@ -178,7 +180,7 @@ const CartPage = () => {
       console.error(error);
       alert(error.response?.data?.message || error.message || "Order error");
     } finally {
-      recaptchaRef.current.reset();
+      if (recaptchaRef.current) recaptchaRef.current.reset();
       setLoading(false);
     }
   };
@@ -413,6 +415,61 @@ const CartPage = () => {
                       name="email"
                       type="email"
                       value={orderCustomer.email}
+                      onChange={handleCustomerChange}
+                      className="rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    />
+                  </label>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="flex flex-col gap-2 text-sm text-slate-700">
+                    <span>Student Index Number</span>
+                    <input
+                      name="index"
+                      value={orderCustomer.index}
+                      onChange={handleCustomerChange}
+                      className="rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-2 text-sm text-slate-700">
+                    <span>Field of Study</span>
+                    <input
+                      name="fieldOfStudy"
+                      value={orderCustomer.fieldOfStudy}
+                      onChange={handleCustomerChange}
+                      className="rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    />
+                  </label>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <label className="flex flex-col gap-2 text-sm text-slate-700">
+                    <span>Year of Study</span>
+                    <input
+                      name="yearOfStudy"
+                      type="number"
+                      min="1"
+                      max="7"
+                      value={orderCustomer.yearOfStudy}
+                      onChange={handleCustomerChange}
+                      className="rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-2 text-sm text-slate-700">
+                    <span>Semester</span>
+                    <input
+                      name="semester"
+                      type="number"
+                      min="1"
+                      max="14"
+                      value={orderCustomer.semester}
+                      onChange={handleCustomerChange}
+                      className="rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-2 text-sm text-slate-700">
+                    <span>Specialization (Optional)</span>
+                    <input
+                      name="specialization"
+                      value={orderCustomer.specialization}
                       onChange={handleCustomerChange}
                       className="rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                     />

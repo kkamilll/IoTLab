@@ -35,7 +35,7 @@ const SortableItem = ({
       Object.assign(document.createElement("div"), {
         innerText: "NO IMAGE",
         className:
-          "w-full h-48 flex items-center justify-center bg-gray-200 text-red-600 font-bold rounded-none mt-4",
+          "w-full h-48 flex items-center justify-center bg-slate-100 text-red-600 font-bold rounded-xl mt-4",
       }),
     );
   };
@@ -44,22 +44,22 @@ const SortableItem = ({
     <div
       ref={setNodeRef}
       style={style}
-      className="relative group overflow-hidden rounded-none shadow-lg p-2 flex flex-col"
+      className="relative group overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col"
     >
       <div
         {...listeners}
         {...attributes}
-        className="absolute top-2 left-2 bg-gray-300 w-10 h-10 rounded-full cursor-grab flex items-center justify-center z-10 hover:bg-gray-400 transition"
+        className="absolute top-4 left-4 bg-slate-800/80 hover:bg-slate-800 text-white w-9 h-9 rounded-full cursor-grab flex items-center justify-center z-10 transition shadow-sm"
       >
         ☰
       </div>
       <button
         onClick={() => deleteMaterial(mat._id)}
-        className="absolute top-2 right-2 bg-red-600 text-white w-6 h-6 rounded-full flex items-center justify-center z-10 opacity-0 group-hover:opacity-100 hover:bg-red-700 transition"
+        className="absolute top-4 right-4 bg-red-500 text-white w-7 h-7 rounded-full flex items-center justify-center z-10 opacity-0 group-hover:opacity-100 hover:bg-red-600 transition shadow-sm"
       >
         ✕
       </button>
-      <div className="absolute top-2 left-10 bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold z-10">
+      <div className="absolute top-4 left-16 bg-indigo-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold z-10">
         {index + 1}
       </div>
 
@@ -67,8 +67,7 @@ const SortableItem = ({
         <img
           src={`${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/${mat.path}`}
           alt={mat.filename || "material"}
-          className="w-full h-48 object-contain cursor-pointer select-none mt-4"
-          style={{ borderRadius: 0 }}
+          className="w-full h-48 object-cover rounded-xl cursor-pointer select-none mt-6"
           onClick={() =>
             setPreviewImage(
               `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}/${mat.path}`,
@@ -79,7 +78,7 @@ const SortableItem = ({
           draggable={false}
         />
       ) : (
-        <div className="w-full h-48 flex items-center justify-center bg-gray-200 text-red-600 font-bold rounded-none mt-4">
+        <div className="w-full h-48 flex items-center justify-center bg-slate-100 text-red-600 font-bold rounded-xl mt-6">
           NO IMAGE
         </div>
       )}
@@ -95,7 +94,7 @@ const SortableItem = ({
           )
         }
         placeholder="Enter link (e.g., https://example.com)"
-        className="mt-2 w-full border border-gray-300 rounded-none px-2 py-1 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-400 truncate overflow-x-auto"
+        className="mt-4 w-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-gray-900 rounded-xl focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 truncate overflow-x-auto"
         style={{ whiteSpace: "nowrap" }}
       />
 
@@ -112,7 +111,7 @@ const SortableItem = ({
             alert("Error updating link");
           }
         }}
-        className="mt-2 w-full bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-none shadow-md transition"
+        className="mt-3 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-2 rounded-xl shadow-sm transition"
       >
         Save
       </button>
@@ -231,12 +230,12 @@ const Materials = () => {
           </div>
         </div>
 
-        <div className="space-y-6">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 bg-white p-6 border border-slate-200 rounded-3xl shadow-sm">
           {/* File Input */}
-          <div className="flex flex-col w-full sm:w-1/3">
+          <div className="flex flex-col w-full">
             <label
               htmlFor="image-upload"
-              className="text-sm font-medium text-gray-700 mb-1"
+              className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2"
             >
               Upload Image
             </label>
@@ -263,16 +262,16 @@ const Materials = () => {
                   URL.revokeObjectURL(img.src);
                 };
               }}
-              className="border border-gray-300 rounded-md px-4 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition disabled:opacity-50"
+              className="border border-slate-200 bg-slate-50/50 rounded-2xl px-4 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition disabled:opacity-50"
               disabled={loading}
             />
           </div>
 
           {/* Link Input */}
-          <div className="flex flex-col w-full sm:w-1/3">
+          <div className="flex flex-col w-full">
             <label
               htmlFor="material-link"
-              className="text-sm font-medium text-gray-700 mb-1"
+              className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2"
             >
               Slider Link
             </label>
@@ -282,17 +281,17 @@ const Materials = () => {
               placeholder="e.g. https://example.com"
               value={link}
               onChange={(e) => setLink(e.target.value)}
-              className="border border-gray-300 rounded-md px-4 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 transition disabled:opacity-50"
+              className="border border-slate-200 bg-slate-50/50 rounded-2xl px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition disabled:opacity-50"
               disabled={loading}
             />
           </div>
 
           {/* Add Button */}
-          <div className="flex items-end w-full sm:w-auto">
+          <div className="flex items-end w-full">
             <button
               onClick={addMaterial}
               disabled={loading}
-              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md shadow-md transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-2xl shadow-lg transition-transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold"
             >
               {loading ? "Adding..." : "Add Image"}
             </button>
@@ -301,8 +300,8 @@ const Materials = () => {
 
         {/* Gallery */}
         {materials.length === 0 ? (
-          <div className="text-center text-gray-400 py-16 select-none italic">
-            No images!
+          <div className="text-center text-slate-400 py-16 select-none italic font-medium">
+            No images in slider.
           </div>
         ) : (
           <DndContext
@@ -314,7 +313,7 @@ const Materials = () => {
               items={materials.map((m) => m._id)}
               strategy={rectSortingStrategy}
             >
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {materials.map((mat, index) => (
                   <SortableItem
                     key={mat._id}
@@ -334,14 +333,16 @@ const Materials = () => {
         {/* Preview Modal */}
         {previewImage && (
           <div
-            className="fixed inset-0 backdrop-blur-md bg-black/50 flex items-center justify-center z-50"
+            className="fixed inset-0 backdrop-blur-md bg-slate-950/50 flex items-center justify-center z-50 p-4"
             onClick={() => setPreviewImage(null)}
           >
-            <img
-              src={previewImage}
-              alt="Preview"
-              className="max-h-[90vh] max-w-[90vw] object-contain rounded-none shadow-lg"
-            />
+            <div className="bg-white p-2 rounded-3xl border border-slate-100 shadow-2xl max-w-4xl max-h-[90vh] overflow-hidden flex items-center justify-center">
+              <img
+                src={previewImage}
+                alt="Preview"
+                className="max-h-[85vh] max-w-[85vw] object-contain rounded-2xl"
+              />
+            </div>
           </div>
         )}
       </div>

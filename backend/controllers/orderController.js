@@ -606,22 +606,49 @@ export const hardDeleteOrder = asyncHandler(async (req, res, next) => {
     return next(new ResourceNotFoundError("Order"));
   }
 
-  const updatedProduct = await Product.findOneAndUpdate(
-    { _id: order.product, isDeleted: false },
-    { $inc: { stockTotal: order.quantity } },
-    { new: true, runValidators: true },
-  );
-  if (!updatedProduct) {
-    console.warn(
-      `Product ${order.product} does not exist. Order ${orderId} will still be deleted.`,
-    );
+  // Build per-product stock delta maps based on item statuses
+  const reservedDelta = new Map();   // approved / prepared → stockReserved
+  const rentedDelta   = new Map();   // rented             → stockRentedOut
+
+  for (const item of order.items) {
+    const pid = item.product?.toString();
+    if (!pid) continue;
+    const qty = item.assignedQuantity ?? 0;
+
+    if (["approved", "prepared"].includes(item.status)) {
+      reservedDelta.set(pid, (reservedDelta.get(pid) ?? 0) + qty);
+    } else if (["rented", "late"].includes(item.status)) {
+      rentedDelta.set(pid, (rentedDelta.get(pid) ?? 0) + qty);
+    }
+  }
+
+  const allProductIds = [
+    ...new Set([...reservedDelta.keys(), ...rentedDelta.keys()]),
+  ];
+
+  if (allProductIds.length > 0) {
+    const products = await Product.find({ _id: { $in: allProductIds } });
+    for (const product of products) {
+      const pid = product._id.toString();
+      const rDelta = reservedDelta.get(pid) ?? 0;
+      const oDelta = rentedDelta.get(pid) ?? 0;
+
+      if (rDelta !== 0) {
+        product.stockReserved = Math.max(0, (product.stockReserved || 0) - rDelta);
+      }
+      if (oDelta !== 0) {
+        product.stockRentedOut = Math.max(0, (product.stockRentedOut || 0) - oDelta);
+      }
+
+      if (rDelta !== 0 || oDelta !== 0) await product.save();
+    }
   }
 
   await order.deleteOne();
 
   return res
     .status(200)
-    .json({ success: true, message: "Order deleted and stockTotal updated" });
+    .json({ success: true, message: "Order deleted and stock updated" });
 });
 
 export const getCustomerOrder = asyncHandler(async (req, res, next) => {
@@ -657,9 +684,9 @@ export const getCustomerOrder = asyncHandler(async (req, res, next) => {
 export const customerUpdateOrder = asyncHandler(async (req, res, next) => {
   if (!req.body) return next(new BadRequestError("Request missing body"));
 
-  const { orderID } = req.params;
+  const { orderId } = req.params;
   const secret = req.headers["x-order-secret"];
-  if (!orderID)
+  if (!orderId)
     return res
       .status(400)
       .json({ success: false, message: "Missing order ID" });
@@ -670,7 +697,7 @@ export const customerUpdateOrder = asyncHandler(async (req, res, next) => {
 
   const { ownerId, customerApproval } = req.body;
 
-  const order = await Order.findById(orderID);
+  const order = await Order.findById(orderId);
   if (!order)
     return res
       .status(404)

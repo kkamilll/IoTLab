@@ -7,6 +7,7 @@ import {
   ValidationError,
   BadRequestError,
   DuplicateKeyError,
+  ResourceNotFoundError,
   ServerError,
 } from "../errors/CustomErrors.js";
 // import { validateRequiredFields } from '../utils/validateRequiredFields.js'
