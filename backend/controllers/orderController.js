@@ -351,14 +351,36 @@ export const createOrder = asyncHandler(async (req, res, next) => {
 
   if (!customer) throw new ValidationError("Customer information is required");
 
+  const requiredCustomerFields = [
+    "firstName",
+    "lastName",
+    "index",
+    "semester",
+    "yearOfStudy",
+    "fieldOfStudy",
+    "phoneNumber",
+    "email",
+    "purpose",
+  ];
+  for (const field of requiredCustomerFields) {
+    if (customer[field] == null || (typeof customer[field] === "string" && customer[field].trim() === "")) {
+      throw new ValidationError(`Customer field '${field}' is required`);
+    }
+  }
+
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!customer.email || !emailRegex.test(customer.email)) {
+  if (!emailRegex.test(customer.email)) {
     throw new BadRequestError("Invalid email address");
   }
 
   const indexRegex = /^\d{6}$/;
-  if (customer.index && !indexRegex.test(customer.index)) {
+  if (!indexRegex.test(customer.index)) {
     throw new BadRequestError("Index must be only 6 digits");
+  }
+
+  const phoneRegex = /^\d{9,10}$/;
+  if (!phoneRegex.test(customer.phoneNumber)) {
+    throw new BadRequestError("Phone number must be 9–10 digits");
   }
 
   try {
@@ -382,8 +404,16 @@ export const createOrder = asyncHandler(async (req, res, next) => {
       };
     });
 
-    if (new Date(requestedStartDate) > new Date(requestedEndDate))
-      throw new ValidationError(`Start date cannot be after end date`);
+    const start = new Date(requestedStartDate);
+    const end = new Date(requestedEndDate);
+    const bufferTime = new Date(Date.now() - 60000); // 1-minute buffer
+
+    if (start < bufferTime) {
+      throw new ValidationError(`Start date cannot be in the past`);
+    }
+    if (end <= start) {
+      throw new ValidationError(`Start date must be before end date`);
+    }
 
     const customerKey = randomBytes(8).toString("hex");
     const encryptedCustomerKey = await bcrypt.hash(customerKey, 10);
@@ -506,6 +536,25 @@ export const updateOrder = asyncHandler(async (req, res, next) => {
 
       const prevStatus = item.status;
       if (prevStatus === itemUpdate.newStatus) continue;
+
+      if (["approved", "prepared", "rented"].includes(itemUpdate.newStatus)) {
+        const itemOwnerId = item.responsibleOwner?.toString();
+        const existingOwnerData = order.ownersData?.find(
+          (od) => od.owner?.toString() === itemOwnerId
+        );
+
+        const effStart = assignedStartDate 
+          ? new Date(assignedStartDate) 
+          : (existingOwnerData?.assignedStartDate || order.requestedStartDate);
+        
+        const effEnd = assignedEndDate 
+          ? new Date(assignedEndDate) 
+          : (existingOwnerData?.assignedEndDate || order.requestedEndDate);
+
+        if (new Date(effStart) >= new Date(effEnd)) {
+          throw new ValidationError(`Start date must be before end date`);
+        }
+      }
 
       if (processableStatuses.includes(itemUpdate.newStatus)) {
         if (

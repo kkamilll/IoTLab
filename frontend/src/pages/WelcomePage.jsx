@@ -2,11 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../api/apiClient';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
 import MainSlider from '../components/layout/MainSlider';
 
 const WelcomePage = () => {
   const navigate = useNavigate();
   const { token, user, logout } = useAuth();
+  const { language, setLanguage, t } = useLanguage();
+  const { theme, toggleTheme } = useTheme();
 
   const [materials, setMaterials] = useState([]);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -104,95 +108,154 @@ const WelcomePage = () => {
     if (['admin', 'lecturer'].includes(user?.role)) navigate('/admin-dashboard');
     else navigate('/');
   };
+
   return (
-    <div className="w-full min-h-screen font-sans bg-slate-900 text-slate-100 flex flex-col justify-between">
+    <div className="w-full min-h-screen font-sans bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 flex flex-col justify-between transition-colors duration-300">
 
       {/* TOPBAR */}
-      <div className="w-full py-3.5 px-6 text-slate-300 text-xs font-semibold tracking-wide flex flex-col md:flex-row md:items-center md:justify-between gap-3 border-b border-slate-800 bg-slate-950/20 backdrop-blur-sm">
-        <span className="text-slate-400 font-mono">
+      <div className="w-full py-3.5 px-6 text-slate-600 dark:text-slate-300 text-xs font-semibold tracking-wide flex flex-col md:flex-row md:items-center md:justify-between gap-3 border-b border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-950/20 backdrop-blur-sm transition-colors duration-300">
+        <span className="text-slate-500 dark:text-slate-400 font-mono">
           {`${currentTime.getDate().toString().padStart(2, '0')}.${(currentTime.getMonth() + 1).toString().padStart(2, '0')}.${currentTime.getFullYear()} ${currentTime.getHours().toString().padStart(2, '0')}:${currentTime.getMinutes().toString().padStart(2, '0')}:${currentTime.getSeconds().toString().padStart(2, '0')}`}
         </span>
 
-        {user && (
-          <div className="flex flex-col sm:flex-row items-center gap-3 text-slate-200 text-xs font-semibold w-full sm:w-auto">
-            <span className="truncate max-w-[140px] sm:max-w-none text-slate-300 bg-slate-850 px-2.5 py-1 rounded-lg border border-slate-800">{user.name}</span>
-
-            {/* Back button */}
-            <button
-              onClick={handleBackToSidebar}
-              className="flex items-center justify-center gap-1.5 border border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white transition-colors rounded-xl px-4 py-1.5 text-xs font-bold w-full sm:w-auto shadow-sm"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+        <div className="flex flex-wrap items-center gap-4 w-full md:w-auto md:justify-end">
+          {/* Theme Switcher Toggle */}
+          <button
+            onClick={toggleTheme}
+            className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors bg-white dark:bg-slate-900 cursor-pointer"
+            title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          >
+            {theme === "dark" ? (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4.5 w-4.5 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 9h-1m14.071-5.071l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M14 12a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
-              Back
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4.5 w-4.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+              </svg>
+            )}
+          </button>
+
+          {/* Language Switcher Toggle */}
+          <div className="flex items-center rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden bg-white/50 dark:bg-slate-900/50">
+            <button
+              onClick={() => setLanguage("pl")}
+              className={`px-2.5 py-1 text-[10px] font-bold uppercase transition-colors cursor-pointer ${
+                language === "pl"
+                  ? "bg-indigo-600 text-white"
+                  : "text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+              }`}
+            >
+              PL
             </button>
-
-            {/* Logout button */}
             <button
-              onClick={handleLogout}
-              className="flex items-center justify-center gap-1.5 bg-red-600 hover:bg-red-700 active:bg-red-800 transition-colors text-white rounded-xl px-4 py-1.5 text-xs font-bold w-full sm:w-auto shadow-sm"
+              onClick={() => setLanguage("en")}
+              className={`px-2.5 py-1 text-[10px] font-bold uppercase transition-colors cursor-pointer ${
+                language === "en"
+                  ? "bg-indigo-600 text-white"
+                  : "text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+              }`}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7" />
-              </svg>
-              Logout
+              EN
             </button>
           </div>
-        )}
+
+          {user ? (
+            <div className="flex flex-col sm:flex-row items-center gap-3 text-slate-650 dark:text-slate-200 text-xs font-semibold w-full sm:w-auto">
+              <span className="truncate max-w-[140px] sm:max-w-none text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-850 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-800">
+                {user.name}
+              </span>
+
+              {/* Back button */}
+              <button
+                onClick={handleBackToSidebar}
+                className="flex items-center justify-center gap-1.5 border border-slate-300 dark:border-slate-700 text-slate-650 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors rounded-xl px-4 py-1.5 text-xs font-bold w-full sm:w-auto shadow-sm cursor-pointer"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+                {t("common.back")}
+              </button>
+
+              {/* Logout button */}
+              <button
+                onClick={handleLogout}
+                className="flex items-center justify-center gap-1.5 bg-red-600 hover:bg-red-700 active:bg-red-800 transition-colors text-white rounded-xl px-4 py-1.5 text-xs font-bold w-full sm:w-auto shadow-sm cursor-pointer"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7" />
+                </svg>
+                {t("common.logout")}
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleLoginClick}
+                className="border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold px-3 py-1.5 rounded-lg text-xs transition-colors cursor-pointer"
+              >
+                {t("common.login")}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
-      <section className="relative py-28 flex justify-center items-center overflow-hidden border-b border-slate-800">
+      <section className="relative py-28 flex justify-center items-center overflow-hidden border-b border-slate-200 dark:border-slate-800">
         <div
-          className="absolute inset-0 bg-[url('/uploadsWelcome/aa.jpg')] bg-cover bg-center bg-no-repeat opacity-40"
+          className="absolute inset-0 bg-[url('/uploadsWelcome/aa.jpg')] bg-cover bg-center bg-no-repeat opacity-40 animate-pulse-slow"
           style={{ filter: 'brightness(0.7) contrast(1.1)' }}
         ></div>
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/40 via-slate-900/60 to-slate-900"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-100/40 via-slate-50/60 to-slate-50 dark:from-slate-950/40 dark:via-slate-900/60 dark:to-slate-900"></div>
         <div className="relative z-10 max-w-3xl text-center px-6">
-          <span className="text-xs font-extrabold uppercase tracking-widest text-indigo-400 px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full">System rezerwacji</span>
-          <h1 className="text-5xl md:text-7xl font-black mb-3 mt-4 leading-tight text-white tracking-tight">
+          <span className="text-xs font-extrabold uppercase tracking-widest text-indigo-600 dark:text-indigo-400 px-3 py-1 bg-indigo-100 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 rounded-full">
+            {t("welcome.reservationSystem")}
+          </span>
+          <h1 className="text-5xl md:text-7xl font-black mb-3 mt-4 leading-tight text-slate-900 dark:text-white tracking-tight">
             IoTLab
           </h1>
-          <p className="text-base md:text-xl mb-8 font-medium text-slate-300 max-w-xl mx-auto">
-            Laboratory Room & Equipment Management System
+          <p className="text-base md:text-xl mb-8 font-medium text-slate-600 dark:text-slate-300 max-w-xl mx-auto">
+            {t("welcome.subtitle")}
           </p>
 
           {!user && (
             <div className="flex flex-col sm:flex-row justify-center gap-4 mt-6">
               <button
                 onClick={handleLoginClick}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 py-3 rounded-xl shadow-lg transition-transform hover:-translate-y-0.5 text-sm"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 py-3 rounded-xl shadow-lg hover:shadow-indigo-500/20 transition-all hover:-translate-y-0.5 text-sm cursor-pointer"
               >
-                Login to Account
+                {t("nav.loginAccount")}
               </button>
               <button
                 onClick={() => navigate('/mainguest')}
-                className="bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold px-8 py-3 rounded-xl shadow-lg transition-transform hover:-translate-y-0.5 border border-slate-700 text-sm"
+                className="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-850 dark:text-slate-100 font-bold px-8 py-3 rounded-xl shadow-lg transition-all hover:-translate-y-0.5 border border-slate-200 dark:border-slate-700 text-sm cursor-pointer"
               >
-                Order as Guest
+                {t("nav.orderAsGuest")}
               </button>
             </div>
           )}
         </div>
       </section>
 
-      <section className="py-16 bg-slate-900/50 border-b border-slate-800 text-white px-6 md:px-12">
+      <section className="py-16 bg-slate-100/30 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 px-6 md:px-12">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-2xl font-black mb-1.5 text-center tracking-tight text-white">
-            Explore Collections
+          <h2 className="text-2xl font-black mb-1.5 text-center tracking-tight text-slate-900 dark:text-white">
+            {t("nav.explore")}
           </h2>
-          <p className="text-slate-400 text-xs text-center mb-8">Select a collection category to view documents and links</p>
+          <p className="text-slate-500 dark:text-slate-400 text-xs text-center mb-8">
+            {t("welcome.exploreSubtitle")}
+          </p>
 
           {collections.length === 0 ? (
             <p className="text-center text-sm opacity-80 font-semibold text-slate-500">
-              No collections available.
+              {t("welcome.noCollections")}
             </p>
           ) : (
             <div className="relative flex items-center justify-center">
               {/* Left arrow */}
               <button
                 onClick={() => setCollectionIndex(prev => Math.max(prev - 1, 0))}
-                className="absolute left-0 z-10 w-9 h-9 flex items-center justify-center bg-slate-800 border border-slate-700 hover:bg-slate-750 rounded-full shadow-md text-white font-bold transition disabled:opacity-30 disabled:pointer-events-none"
+                className="absolute left-0 z-10 w-9 h-9 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 rounded-full shadow-md text-slate-800 dark:text-white font-bold transition disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
                 disabled={collectionIndex === 0}
               >
                 ←
@@ -204,17 +267,17 @@ const WelcomePage = () => {
                   <div
                     key={collection._id}
                     onClick={() => handleCollectionClick(collection._id)}
-                    className="bg-slate-800/45 border border-slate-700/50 hover:border-indigo-500/30 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-[1.02] flex flex-col items-center text-center flex-shrink-0 w-[220px] cursor-pointer"
+                    className="bg-white dark:bg-slate-800/45 border border-slate-200 dark:border-slate-700/50 hover:border-indigo-500 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-[1.02] flex flex-col items-center text-center flex-shrink-0 w-[220px] cursor-pointer"
                   >
                     <div
-                      className="w-14 h-14 rounded-xl text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 text-lg font-medium flex items-center justify-center mb-4 truncate"
+                      className="w-14 h-14 rounded-xl text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 text-lg font-medium flex items-center justify-center mb-4 truncate"
                       title={collection.logo}
                     >
                       {collection.logo}
                     </div>
 
                     <h3
-                      className="font-bold text-sm text-slate-200 truncate w-full"
+                      className="font-bold text-sm text-slate-700 dark:text-slate-200 truncate w-full"
                       title={collection.name}
                     >
                       {collection.name}
@@ -230,7 +293,7 @@ const WelcomePage = () => {
                     Math.min(prev + 1, collections.length - visibleCount)
                   )
                 }
-                className="absolute right-0 z-10 w-9 h-9 flex items-center justify-center bg-slate-800 border border-slate-700 hover:bg-slate-750 rounded-full shadow-md text-white font-bold transition disabled:opacity-30 disabled:pointer-events-none"
+                className="absolute right-0 z-10 w-9 h-9 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 rounded-full shadow-md text-slate-800 dark:text-white font-bold transition disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
                 disabled={collectionIndex >= collections.length - visibleCount}
               >
                 →
@@ -240,31 +303,41 @@ const WelcomePage = () => {
         </div>
       </section>
 
-      {/* MAIN SLIDER */}
-      {materials.length > 0 && <MainSlider materials={materials} />}
+      {/* MAIN SLIDER – always shown, falls back to demo slides if no materials */}
+      <MainSlider materials={materials} />
 
       {/* NOTES & ANNOUNCEMENTS */}
-      <section className="py-16 bg-slate-900 text-white px-6 md:px-12">
+      <section className="py-16 bg-white dark:bg-slate-900 px-6 md:px-12">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-2xl font-black mb-1.5 text-center tracking-tight text-white">Announcements & Notes</h2>
-          <p className="text-slate-400 text-xs text-center mb-8">Latest updates and notifications from the administration</p>
+          <h2 className="text-2xl font-black mb-1.5 text-center tracking-tight text-slate-900 dark:text-white">
+            {t("nav.announcements")}
+          </h2>
+          <p className="text-slate-500 dark:text-slate-400 text-xs text-center mb-8">
+            {t("welcome.notesSubtitle")}
+          </p>
 
-          {notesLoading && <p className="text-center text-sm text-slate-400 font-semibold">Loading announcements and notes...</p>}
+          {notesLoading && (
+            <p className="text-center text-sm text-slate-400 font-semibold">
+              {t("welcome.loadingNotes")}
+            </p>
+          )}
           {notesError && <p className="text-center text-red-400 font-semibold">{notesError}</p>}
           {!notesLoading && !notesError && notes.length === 0 && (
-            <p className="text-center text-sm text-slate-500 font-semibold">No current announcements or notes to display.</p>
+            <p className="text-center text-sm text-slate-500 font-semibold">
+              {t("welcome.noNotes")}
+            </p>
           )}
 
           {!notesLoading && !notesError && notes.length > 0 && (
             <>
-              <ul className="grid gap-6 sm:grid-cols-2">
+              <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {paginatedNotes.map(note => (
-                  <li key={note._id} className="bg-slate-800/40 border border-slate-850 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-[1.02] flex flex-col justify-between">
-                    <p className="text-slate-200 text-sm leading-relaxed font-semibold whitespace-pre-wrap break-words break-all">
+                  <li key={note._id} className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-850 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-[1.02] flex flex-col justify-between">
+                    <p className="text-slate-700 dark:text-slate-200 text-sm leading-relaxed font-semibold whitespace-pre-wrap break-words break-all">
                       {note.text}
                     </p>
-                    <div className="mt-4 text-slate-400 text-xs font-semibold italic border-t border-slate-800 pt-3">
-                      Added by <strong className="text-indigo-400">{note.author?.name || 'Anonymous'}</strong> •{' '}
+                    <div className="mt-4 text-slate-500 dark:text-slate-400 text-xs font-semibold italic border-t border-slate-250 dark:border-slate-800 pt-3">
+                      {t("welcome.addedBy")} <strong className="text-indigo-600 dark:text-indigo-400">{note.author?.name || 'Anonymous'}</strong> •{' '}
                       {`${new Date(note.createdAt).getDate().toString().padStart(2, '0')}.${(new Date(note.createdAt).getMonth() + 1).toString().padStart(2, '0')}.${new Date(note.createdAt).getFullYear()} ${new Date(note.createdAt).getHours().toString().padStart(2, '0')}:${new Date(note.createdAt).getMinutes().toString().padStart(2, '0')}`}
                     </div>
                   </li>
@@ -276,19 +349,19 @@ const WelcomePage = () => {
                 <button
                   onClick={() => setNotesPage(prev => Math.max(prev - 1, 1))}
                   disabled={notesPage === 1}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 disabled:opacity-40 disabled:pointer-events-none transition"
+                  className="px-4 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 disabled:opacity-40 disabled:pointer-events-none transition cursor-pointer"
                 >
-                  Previous
+                  {t("welcome.previous")}
                 </button>
-                <span className="px-3.5 py-1.5 bg-slate-950 text-slate-400 text-xs font-bold rounded-xl border border-slate-850">
+                <span className="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-950 text-slate-650 dark:text-slate-400 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-850">
                   {notesPage} / {totalPages}
                 </span>
                 <button
                   onClick={() => setNotesPage(prev => Math.min(prev + 1, totalPages))}
                   disabled={notesPage === totalPages}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 disabled:opacity-40 disabled:pointer-events-none transition"
+                  className="px-4 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 disabled:opacity-40 disabled:pointer-events-none transition cursor-pointer"
                 >
-                  Next
+                  {t("welcome.next")}
                 </button>
               </div>
             </>
@@ -297,8 +370,8 @@ const WelcomePage = () => {
       </section>
 
       {/* FOOTER */}
-      <footer className="bg-slate-950/40 border-t border-slate-900 text-center py-6 text-xs text-slate-500 font-semibold tracking-wide">
-        © {new Date().getFullYear()} Laboratory Room Management System. All rights reserved.
+      <footer className="bg-white/40 dark:bg-slate-950/40 border-t border-slate-200 dark:border-slate-900 text-center py-6 text-xs text-slate-500 font-semibold tracking-wide">
+        © {new Date().getFullYear()} {t("welcome.footerText")}
       </footer>
     </div>
   );

@@ -140,7 +140,7 @@ const Users = () => {
   );
 
   return (
-    <div className="w-full h-full flex flex-col gap-6 p-6 md:p-8 bg-slate-50/30">
+    <div className="w-full h-full flex flex-col gap-6 p-6 md:p-8 bg-slate-50/30 dark:bg-slate-900/10">
       <PageHeader title="User Management" subtitle="Create, edit, activate, or assign permissions to system users">
         {!showForm ? (
           <Btn variant="primary" onClick={handleAddUserClick}>➕ Add User</Btn>
@@ -154,11 +154,11 @@ const Users = () => {
         onSearchChange={(e) => setSearchTerm(e.target.value)}
         searchPlaceholder="Search users by name..."
       >
-        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Role:</span>
+        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Role:</span>
         <select
           value={roleFilter}
           onChange={(e) => setRoleFilter(e.target.value)}
-          className="text-xs border border-slate-200 rounded-lg bg-slate-50 px-2.5 py-1.5 font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 min-w-[120px]"
+          className="text-xs border border-slate-200 dark:border-slate-800 rounded-lg bg-slate-50 dark:bg-slate-950 px-2.5 py-1.5 font-semibold text-slate-700 dark:text-slate-250 outline-none focus:ring-2 focus:ring-indigo-500/20 min-w-[120px]"
         >
           <option value="">All Roles</option>
           <option value="admin">Admin</option>
@@ -182,10 +182,10 @@ const Users = () => {
         />
       )}
 
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full table-auto text-left border-collapse">
-            <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs font-bold uppercase tracking-wider">
+            <thead className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 text-slate-550 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
               <tr>
                 <th className="p-4 hidden md:table-cell">#</th>
                 <th className="p-4">Name</th>
@@ -196,21 +196,21 @@ const Users = () => {
                 <th className="p-4 text-center">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {paginatedUsers.map((user, idx) => (
-                <tr key={user._id} className="hover:bg-slate-50/60 transition">
-                  <td className="p-4 text-xs text-slate-500 hidden md:table-cell">
+                <tr key={user._id} className="hover:bg-slate-50/60 dark:hover:bg-slate-850/40 transition">
+                  <td className="p-4 text-xs text-slate-500 dark:text-slate-450 hidden md:table-cell">
                     {(currentPage - 1) * USERS_PER_PAGE + idx + 1}
                   </td>
-                  <td className="p-4 text-xs font-bold text-slate-800">{user.name}</td>
-                  <td className="p-4 text-xs text-slate-600 hidden lg:table-cell">{user.email}</td>
+                  <td className="p-4 text-xs font-bold text-slate-800 dark:text-slate-200">{user.name}</td>
+                  <td className="p-4 text-xs text-slate-600 dark:text-slate-400 hidden lg:table-cell">{user.email}</td>
                   <td className="p-4 text-xs">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${user.role === "admin" ? "bg-indigo-50 text-indigo-700 border-indigo-200/50" : "bg-slate-50 text-slate-700 border-slate-200"}`}>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${user.role === "admin" ? "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border-indigo-200/50 dark:border-indigo-900/30" : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-350 border-slate-200 dark:border-slate-750"}`}>
                       {user.role}
                     </span>
                   </td>
                   <td className="p-4 text-xs">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${user.isActive ? "bg-emerald-50 text-emerald-700 border-emerald-200/50" : "bg-red-50 text-red-700 border-red-200/50"}`}>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${user.isActive ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200/50 dark:border-emerald-900/30" : "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-200/50 dark:border-red-900/30"}`}>
                       {user.isActive ? "Active" : "Inactive"}
                     </span>
                   </td>

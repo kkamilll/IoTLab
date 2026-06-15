@@ -139,9 +139,10 @@ export const addFile = async (req, res, next) => {
     const collection = await Component.findById(collectionId);
     if (!collection) return next(new ResourceNotFoundError("Collection"));
 
+    const pathNormalized = req.file.path ? req.file.path.replace(/\\/g, "/") : "";
     const newFile = {
       name: req.file.originalname,
-      path: req.file.path,
+      path: pathNormalized,
       mimeType: req.file.mimetype,
     };
 

@@ -4,7 +4,7 @@ import { Outlet } from "react-router-dom";
 
 const Admin = () => {
   return (
-    <div className="flex min-h-screen bg-gray-100 overflow-x-hidden">
+    <div className="flex min-h-screen bg-gray-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 overflow-x-hidden transition-colors duration-300">
       {/* Sidebar */}
       <Sidebar />
 

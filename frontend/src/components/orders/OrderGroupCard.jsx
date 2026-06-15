@@ -1,13 +1,13 @@
-import React from "react";
+import React, { useState } from "react";
 
 const STATUS_COLORS = {
-  changed:  "text-red-800 bg-red-50 border-red-200/50",
-  pending:  "text-yellow-600 bg-yellow-50 border-yellow-200/50",
-  approved: "text-lime-600 bg-lime-50 border-lime-200/50",
-  prepared: "text-indigo-600 bg-indigo-50 border-indigo-200/50",
-  rented:   "text-green-600 bg-green-50 border-green-200/50",
-  returned: "text-blue-600 bg-blue-50 border-blue-200/50",
-  rejected: "text-gray-600 bg-gray-50 border-gray-200/50",
+  changed:  "text-red-800 dark:text-red-300 bg-red-50 dark:bg-red-950/40 border-red-200/50 dark:border-red-900/30",
+  pending:  "text-yellow-700 dark:text-yellow-300 bg-yellow-50 dark:bg-yellow-950/40 border-yellow-200/50 dark:border-yellow-900/30",
+  approved: "text-lime-700 dark:text-lime-300 bg-lime-50 dark:bg-lime-950/40 border-lime-200/50 dark:border-lime-900/30",
+  prepared: "text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200/50 dark:border-indigo-900/30",
+  rented:   "text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-950/40 border-green-200/50 dark:border-green-900/30",
+  returned: "text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 border-blue-200/50 dark:border-blue-900/30",
+  rejected: "text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/40 border-gray-200/50 dark:border-gray-700/50",
 };
 
 export const StatusBadge = ({ status }) => (
@@ -16,48 +16,49 @@ export const StatusBadge = ({ status }) => (
   </span>
 );
 
-const OrderItemDetails = ({ item, getStatusColor, expanded, setExpanded, orderId }) => {
+const OrderItemDetails = ({ item, expanded, setExpanded, orderId }) => {
   const toggleKey = `${orderId}-${item._id}`;
   return (
-    <li className="text-gray-700 flex flex-col gap-1 pb-6 border-dashed border-b border-gray-200 last:border-0">
-      <div className="flex items-center gap-2 flex-wrap text-slate-800 text-sm">
-        <span className="text-slate-500">Name:</span>
-        <span className="font-semibold">{item?.product?.name || "Deleted Product"}</span>
-        {item?.product?.tags?.length > 0 && (
-          <>
-            <span className="text-slate-500">Tags:</span>
-            <span>{item.product.tags.join(", ")}</span>
-          </>
-        )}
+    <li className="flex flex-col gap-1 py-3 border-b border-dashed border-slate-100 dark:border-slate-800 last:border-0">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap text-sm">
+          <span className="font-semibold text-slate-800 dark:text-slate-200">
+            {item?.product?.name || "Deleted Product"}
+          </span>
+          {item?.product?.tags?.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {item.product.tags.map((tag, i) => (
+                <span key={i} className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded-full">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <StatusBadge status={item?.status} />
+          <button
+            onClick={() => setExpanded((prev) => ({ ...prev, [toggleKey]: !prev[toggleKey] }))}
+            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 rounded-full hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition cursor-pointer"
+          >
+            {expanded[toggleKey] ? "▲ Less" : "▼ More"}
+          </button>
+        </div>
       </div>
 
-      <button
-        onClick={() => setExpanded((prev) => ({ ...prev, [toggleKey]: !prev[toggleKey] }))}
-        className="inline-block mt-1 px-3 py-1 text-xs font-semibold text-indigo-600 bg-indigo-50 rounded-full hover:bg-indigo-100 transition w-fit"
-      >
-        {expanded[toggleKey] ? "Hide details" : "Show details"}
-      </button>
-
       {expanded[toggleKey] && (
-        <div className="space-y-3 mt-2 bg-slate-50 rounded-xl p-3 border border-slate-100">
-          <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Quantity</p>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <div className="flex-1 bg-white border border-slate-200 rounded-xl p-3 text-center">
-                <p className="text-xs text-slate-500">Requested</p>
-                <p className="text-slate-800 font-bold text-lg">{item?.requestedQuantity ?? "—"}</p>
-              </div>
-              {item?.assignedQuantity && item.status !== "pending" && (
-                <div className="flex-1 bg-indigo-50 border border-indigo-200 rounded-xl p-3 text-center">
-                  <p className="text-xs text-indigo-500">Assigned</p>
-                  <p className="text-indigo-800 font-bold text-lg">{item.assignedQuantity}</p>
-                </div>
-              )}
+        <div className="mt-2 bg-slate-50 dark:bg-slate-900/80 rounded-xl p-3 border border-slate-100 dark:border-slate-800 space-y-2">
+          <div className="flex gap-2">
+            <div className="flex-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-center">
+              <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider">Requested</p>
+              <p className="text-slate-800 dark:text-slate-200 font-bold text-lg">{item?.requestedQuantity ?? "—"}</p>
             </div>
-          </div>
-          <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Status</p>
-            <StatusBadge status={item?.status} />
+            {item?.assignedQuantity && item.status !== "pending" && (
+              <div className="flex-1 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-900/30 rounded-xl p-3 text-center">
+                <p className="text-xs text-indigo-400 dark:text-indigo-500 uppercase tracking-wider">Assigned</p>
+                <p className="text-indigo-800 dark:text-indigo-200 font-bold text-lg">{item.assignedQuantity}</p>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -83,6 +84,8 @@ const OrderGroupCard = ({
   handleReturnOrder,
   downloadRentalAgreement,
 }) => {
+  const [isCollapsed, setIsCollapsed] = useState(true);
+
   const hasActions =
     !!group.status &&
     (canProcessOrder(group.status) ||
@@ -93,101 +96,115 @@ const OrderGroupCard = ({
       canPrintOrder(group.status));
 
   return (
-    <div className="mb-4 last:mb-0 border border-slate-100 rounded-xl p-4 bg-slate-50/50">
-      <div className="flex flex-col gap-1 mb-4">
-        <h4 className="font-bold text-xs text-slate-400 uppercase tracking-wider">
-          Owner: {group.owner?.name || "Unknown"}
-        </h4>
-        <div className="flex items-center gap-2 mt-1.5">
-          <span className="text-xs text-slate-500 font-semibold">Status:</span>
+    <div className="mb-3 last:mb-0 border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden bg-slate-50/50 dark:bg-slate-950/30">
+      {/* Compact header – always visible */}
+      <button
+        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-100/60 dark:hover:bg-slate-800/40 transition cursor-pointer text-left"
+        onClick={() => setIsCollapsed((v) => !v)}
+        aria-expanded={!isCollapsed}
+      >
+        <div className="flex-1 min-w-0 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider shrink-0">
+            {group.owner?.name || "Unknown"}
+          </span>
           <StatusBadge status={group.status} />
-        </div>
-      </div>
-
-      {/* Dates */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
-        <div className="bg-white border border-slate-150 rounded-xl p-3 shadow-sm">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Requested</p>
-          <p className="text-xs font-semibold text-slate-700 mt-1">
-            📅 {new Date(group.dates?.requestedStartDate).toLocaleDateString("pl-PL")} →{" "}
-            {new Date(group.dates?.requestedEndDate).toLocaleDateString("pl-PL")}
-          </p>
-        </div>
-        {group.hasAssignedDates && (
-          <div className="bg-indigo-50/30 border border-indigo-100/50 rounded-xl p-3 shadow-sm">
-            <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">Assigned</p>
-            <p className="text-xs font-semibold text-indigo-700 mt-1">
-              📅 {new Date(group.dates?.assignedStartDate).toLocaleDateString("pl-PL")} →{" "}
-              {new Date(group.dates?.assignedEndDate).toLocaleDateString("pl-PL")}
-            </p>
-          </div>
-        )}
-      </div>
-
-      {group.ownerData?.customerApproval != null && (
-        <div className="mb-3">
-          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${group.ownerData.customerApproval ? "bg-green-50 text-green-700 border-green-200/50" : "bg-red-50 text-red-700 border-red-200/50"}`}>
-            {group.ownerData.customerApproval ? "Customer Approved changes" : "Customer Rejected changes"}
+          {group.ownerData?.customerApproval != null && (
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${
+              group.ownerData.customerApproval
+                ? "bg-green-50 dark:bg-green-950/25 text-green-700 dark:text-green-400 border-green-200 dark:border-green-900/30"
+                : "bg-red-50 dark:bg-red-950/25 text-red-700 dark:text-red-400 border-red-200 dark:border-red-900/30"
+            }`}>
+              {group.ownerData.customerApproval ? "✓ Approved" : "✗ Rejected"}
+            </span>
+          )}
+          <span className="text-xs text-slate-400 dark:text-slate-500 ml-auto shrink-0">
+            {group.items.length} item{group.items.length !== 1 ? "s" : ""}
           </span>
         </div>
-      )}
+        <span className={`text-slate-400 dark:text-slate-500 text-xs transition-transform duration-200 ${isCollapsed ? "" : "rotate-180"}`}>▼</span>
+      </button>
 
-      {/* Items */}
-      {group.items.length > 0 && (
-        <div className="space-y-2 mb-4">
-          <p className="font-bold text-xs text-slate-400 uppercase tracking-wider">Items:</p>
-          <div className="bg-white border border-slate-100 rounded-xl p-4 shadow-sm">
-            <ul className="space-y-4">
-              {group.items.map((item, i) => (
-                <OrderItemDetails
-                  key={i}
-                  item={item}
-                  expanded={expanded}
-                  setExpanded={setExpanded}
-                  orderId={order._id}
-                />
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
-
-      {/* Actions */}
-      {hasActions && (
-        <div className="border-t border-slate-100 pt-3">
-          <p className="font-bold text-[10px] text-slate-400 uppercase tracking-wider mb-2">Actions:</p>
-          <div className="flex flex-wrap gap-2">
-            {canProcessOrder(group.status) && (
-              <button onClick={() => handleOpenModal(group)} className="px-4 py-2 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-xl shadow-sm transition">
-                Process
-              </button>
-            )}
-            {canRejectOrder(group.status) && (
-              <button onClick={() => handleRejectOrder(group)} className="px-4 py-2 text-xs font-bold bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 rounded-xl transition">
-                Reject
-              </button>
-            )}
-            {canPrepareOrder(group.status) && (
-              <button onClick={() => handlePrepareOrder(group)} className="px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-sm transition">
-                Prepare
-              </button>
-            )}
-            {canRentOrder(group.status) && (
-              <button onClick={() => handleRentOrder(group)} className="px-4 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm transition">
-                Rent
-              </button>
-            )}
-            {canReturnOrder(group.status) && (
-              <button onClick={() => handleReturnOrder(group)} className="px-4 py-2 text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white rounded-xl shadow-sm transition">
-                Return
-              </button>
-            )}
-            {canPrintOrder(group.status) && (
-              <button onClick={() => downloadRentalAgreement(group)} className="px-4 py-2 text-xs font-bold bg-slate-800 hover:bg-slate-900 text-white rounded-xl shadow-sm transition">
-                PDF
-              </button>
+      {/* Expanded body */}
+      {!isCollapsed && (
+        <div className="px-4 pb-4 border-t border-slate-100 dark:border-slate-800">
+          {/* Dates */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3 mb-3">
+            <div className="bg-white dark:bg-slate-950 border border-slate-150 dark:border-slate-850 rounded-xl p-3 shadow-sm">
+              <p className="text-[10px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider">Requested</p>
+              <p className="text-xs font-semibold text-slate-700 dark:text-slate-350 mt-1">
+                📅 {new Date(group.dates?.requestedStartDate).toLocaleDateString("pl-PL")} →{" "}
+                {new Date(group.dates?.requestedEndDate).toLocaleDateString("pl-PL")}
+              </p>
+            </div>
+            {group.hasAssignedDates && (
+              <div className="bg-indigo-50/30 dark:bg-indigo-950/20 border border-indigo-100/50 dark:border-indigo-900/30 rounded-xl p-3 shadow-sm">
+                <p className="text-[10px] font-bold text-indigo-500 dark:text-indigo-400 uppercase tracking-wider">Assigned</p>
+                <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-300 mt-1">
+                  📅 {new Date(group.dates?.assignedStartDate).toLocaleDateString("pl-PL")} →{" "}
+                  {new Date(group.dates?.assignedEndDate).toLocaleDateString("pl-PL")}
+                </p>
+              </div>
             )}
           </div>
+
+          {/* Items */}
+          {group.items.length > 0 && (
+            <div className="mb-3">
+              <p className="font-bold text-xs text-slate-400 dark:text-slate-550 uppercase tracking-wider mb-2">Items</p>
+              <div className="bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl px-4 shadow-sm">
+                <ul>
+                  {group.items.map((item, i) => (
+                    <OrderItemDetails
+                      key={i}
+                      item={item}
+                      expanded={expanded}
+                      setExpanded={setExpanded}
+                      orderId={order._id}
+                    />
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {/* Actions */}
+          {hasActions && (
+            <div className="border-t border-slate-100 dark:border-slate-800 pt-3">
+              <p className="font-bold text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Actions</p>
+              <div className="flex flex-wrap gap-2">
+                {canProcessOrder(group.status) && (
+                  <button onClick={() => handleOpenModal(group)} className="px-3.5 py-1.5 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-xl shadow-sm transition cursor-pointer">
+                    Process
+                  </button>
+                )}
+                {canRejectOrder(group.status) && (
+                  <button onClick={() => handleRejectOrder(group)} className="px-3.5 py-1.5 text-xs font-bold bg-red-50 dark:bg-red-950/20 text-red-650 dark:text-red-400 border border-red-100 dark:border-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-xl transition cursor-pointer">
+                    Reject
+                  </button>
+                )}
+                {canPrepareOrder(group.status) && (
+                  <button onClick={() => handlePrepareOrder(group)} className="px-3.5 py-1.5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-sm transition cursor-pointer">
+                    Prepare
+                  </button>
+                )}
+                {canRentOrder(group.status) && (
+                  <button onClick={() => handleRentOrder(group)} className="px-3.5 py-1.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm transition cursor-pointer">
+                    Rent
+                  </button>
+                )}
+                {canReturnOrder(group.status) && (
+                  <button onClick={() => handleReturnOrder(group)} className="px-3.5 py-1.5 text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white rounded-xl shadow-sm transition cursor-pointer">
+                    Return
+                  </button>
+                )}
+                {canPrintOrder(group.status) && (
+                  <button onClick={() => downloadRentalAgreement(group)} className="px-3.5 py-1.5 text-xs font-bold bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-650 text-white rounded-xl shadow-sm transition cursor-pointer">
+                    PDF
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

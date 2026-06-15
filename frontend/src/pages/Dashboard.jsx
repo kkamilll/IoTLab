@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import apiClient from "../api/apiClient";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
 import {
   PieChart,
   Pie,
@@ -22,6 +23,7 @@ const COLORS = [
 
 const Dashboard = () => {
   const { token } = useAuth();
+  const { showToast } = useToast();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -38,9 +40,10 @@ const Dashboard = () => {
   const fetchProducts = useCallback(async () => {
     try {
       const res = await apiClient.get("/products/private");
-      if (!res.data.success)
-        return alert(res.data.message || "Error fetching products");
-
+      if (!res.data.success) {
+        showToast(res.data.message || "Error fetching products", "error");
+        return;
+      }
       setProducts(res.data.products);
       const uniqueOwners = Array.from(
         new Set(res.data.products.map((p) => p.owner?._id)),
@@ -51,7 +54,7 @@ const Dashboard = () => {
       setOwners(uniqueOwners);
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || err.message);
+      showToast(err.response?.data?.message || err.message || "Error fetching products", "error");
     }
   }, []);
 
@@ -117,28 +120,28 @@ const Dashboard = () => {
     })) || [];
 
   return (
-    <div className="min-h-screen bg-slate-50/30 p-6 md:p-8">
+    <div className="min-h-screen bg-slate-50/30 dark:bg-slate-900/10 p-6 md:p-8 transition-colors duration-300">
       {/* Header & Global Filters */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8 gap-4 border-b border-slate-200 pb-6">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8 gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
         <div>
-          <h1 className="text-2xl font-black text-slate-900">
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white">
             Orders Statistics
           </h1>
-          <p className="text-slate-500 text-sm mt-0.5">
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">
             Real-time overview of laboratory orders, items, and popular
             categories
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 bg-white p-3 border border-slate-200 rounded-xl shadow-sm">
+        <div className="flex flex-wrap items-center gap-3 bg-white dark:bg-slate-900 p-3 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
               Owner:
             </span>
             <select
               value={selectedOwnerId}
               onChange={(e) => setSelectedOwnerId(e.target.value)}
-              className="text-xs border border-slate-200 rounded-lg bg-slate-50 px-2.5 py-1.5 font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20"
+              className="text-xs border border-slate-200 dark:border-slate-800 rounded-lg bg-slate-50 dark:bg-slate-950 px-2.5 py-1.5 font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/20"
             >
               <option value="">All</option>
               {owners.map((owner) => (
@@ -149,16 +152,16 @@ const Dashboard = () => {
             </select>
           </div>
 
-          <div className="h-4 w-px bg-slate-200 hidden sm:block"></div>
+          <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block"></div>
 
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
               Product:
             </span>
             <select
               value={selectedProductId}
               onChange={(e) => setSelectedProductId(e.target.value)}
-              className="text-xs border border-slate-200 rounded-lg bg-slate-50 px-2.5 py-1.5 font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 max-w-[200px]"
+              className="text-xs border border-slate-200 dark:border-slate-800 rounded-lg bg-slate-50 dark:bg-slate-950 px-2.5 py-1.5 font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/20 max-w-[200px]"
             >
               <option value="">All</option>
               {products.map((product) => (
@@ -174,8 +177,8 @@ const Dashboard = () => {
       {/* Charts Grid */}
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Status Pie Chart */}
-        <div className="flex-1 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <h2 className="text-lg font-bold text-slate-800 mb-4 tracking-tight">
+        <div className="flex-1 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-4 tracking-tight">
             Registered Orders by Status
           </h2>
           <div className="h-[350px]">
@@ -205,19 +208,19 @@ const Dashboard = () => {
         </div>
 
         {/* Interactive Category Chart */}
-        <div className="flex-1 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="flex-1 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-bold text-slate-800 tracking-tight">
+            <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 tracking-tight">
               Category Popularity
             </h2>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                 Status:
               </span>
               <select
                 value={selectedCategoryStatus}
                 onChange={(e) => setSelectedCategoryStatus(e.target.value)}
-                className="text-xs border border-slate-200 rounded-lg bg-slate-50 px-2 py-1 font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20"
+                className="text-xs border border-slate-200 dark:border-slate-800 rounded-lg bg-slate-50 dark:bg-slate-950 px-2 py-1 font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/20"
               >
                 {statusOptions.map((status) => (
                   <option key={status} value={status}>
@@ -267,19 +270,19 @@ const Dashboard = () => {
       </div>
 
       {/* Top Products Chart */}
-      <div className="mt-8 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+      <div className="mt-8 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-bold text-slate-800 tracking-tight">
+          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 tracking-tight">
             Top Products by Status
           </h2>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
               Status:
             </span>
             <select
               value={selectedTopProductStatus}
               onChange={(e) => setSelectedTopProductStatus(e.target.value)}
-              className="text-xs border border-slate-200 rounded-lg bg-slate-50 px-2 py-1 font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20"
+              className="text-xs border border-slate-200 dark:border-slate-800 rounded-lg bg-slate-50 dark:bg-slate-950 px-2 py-1 font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/20"
             >
               {topProductStatusOptions.map((status) => (
                 <option key={status} value={status}>

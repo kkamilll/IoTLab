@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import apiClient from "../api/apiClient";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
 import OrderModal from "../components/orders/OrderModal";
 import OrderGroupCard from "../components/orders/OrderGroupCard";
 import PageHeader from "../components/layout/PageHeader";
@@ -13,6 +14,7 @@ import html2canvas from "html2canvas";
 
 const Orders = () => {
   const { user } = useAuth();
+  const { showToast } = useToast();
 
   const [orders, setOrders] = useState([]);
   const [orderStatuses, setOrderStatuses] = useState([]);
@@ -28,6 +30,7 @@ const Orders = () => {
   const [datesUpdateData, setDatesUpdateData] = useState({});
   const [stockStatus, setStockStatus] = useState(null);
   const [openModal, setOpenModal] = useState(false);
+  const [validationError, setValidationError] = useState("");
 
   const processableStatuses = ["pending", "approved", "prepared"];
   const rejectableStatuses = ["pending", "approved", "prepared"];
@@ -70,7 +73,7 @@ const Orders = () => {
       return null;
     } catch (error) {
       console.error(error);
-      alert(error?.response?.data?.message || error.message || "Unknown error");
+      showToast(error?.response?.data?.message || error.message || "Unknown error", "error");
     }
   };
 
@@ -124,21 +127,35 @@ const Orders = () => {
   const handleUpdateOrderItems = async (group, filterFn, newStatus) => {
     try {
       const orderId = group?.orderId;
-      if (!orderId) { alert("Missing Order ID."); return; }
+      if (!orderId) { showToast("Missing Order ID.", "error"); return; }
       const itemUpdates = group.items.filter(filterFn).map((item) => ({ ...item, itemId: item._id, newStatus }));
       if (!itemUpdates.length) return;
       const res = await apiClient.put(`/orders/updateOrder/${orderId}`, { itemUpdates });
       if (res.data.success) fetchOrders(1);
-      else alert(res.data.message || "Operation failed");
+      else showToast(res.data.message || "Operation failed", "error");
     } catch (error) {
       console.error(error);
-      alert(error?.response?.data?.message || error.message || "Unknown error");
+      showToast(error?.response?.data?.message || error.message || "Unknown error", "error");
     }
   };
 
   const handleRejectOrder  = (g) => handleUpdateOrderItems(g, (i) => rejectableStatuses.includes(i.status), "rejected");
-  const handlePrepareOrder = (g) => handleUpdateOrderItems(g, (i) => i.status === "approved", "prepared");
-  const handleRentOrder    = (g) => handleUpdateOrderItems(g, (i) => i.status === "prepared", "rented");
+  const handlePrepareOrder = (g) => {
+    const start = g.dates?.assignedStartDate || g.dates?.requestedStartDate;
+    if (start && new Date(start) < new Date(Date.now() - 60000)) {
+      showToast("Cannot prepare order: Start date is in the past. Please use the 'Process' action to assign valid future dates.", "warning");
+      return;
+    }
+    handleUpdateOrderItems(g, (i) => i.status === "approved", "prepared");
+  };
+  const handleRentOrder    = (g) => {
+    const start = g.dates?.assignedStartDate || g.dates?.requestedStartDate;
+    if (start && new Date(start) < new Date(Date.now() - 60000)) {
+      showToast("Cannot rent order: Start date is in the past. Please use the 'Process' action to assign valid future dates.", "warning");
+      return;
+    }
+    handleUpdateOrderItems(g, (i) => i.status === "prepared", "rented");
+  };
   const handleReturnOrder  = (g) => handleUpdateOrderItems(g, (i) => returnableStatuses.includes(i.status), "returned");
 
   const downloadRentalAgreement = async (orderGroup) => {
@@ -193,44 +210,59 @@ const Orders = () => {
   const handleCloseModal = () => {
     setOpenModal(false); setEditGroup(null);
     setItemsUpdateData({}); setDatesUpdateData({});
+    setValidationError("");
   };
 
   const handleEditChange = (itemId, e) => {
+    setValidationError("");
     const { name, value } = e.target;
     setItemsUpdateData((prev) => ({ ...prev, [itemId]: { ...prev[itemId], [name]: value } }));
   };
 
   const handleStatusChange = (itemId, e) => {
+    setValidationError("");
     const { name, value } = e.target;
     setItemsUpdateData((prev) => ({ ...prev, [itemId]: { ...prev[itemId], [name]: value } }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setValidationError("");
     try {
       const orderId = editGroup?.orderId?.toString();
-      if (!orderId) { alert("Missing Order ID."); return; }
+      if (!orderId) { setValidationError("Missing Order ID."); return; }
 
       for (const item of Object.values(itemsUpdateData)) {
         const isProcessable = processableStatuses.includes(item.newStatus);
         if (isProcessable) {
           if (!item.assignedQuantity || item.assignedQuantity < 1) {
-            alert(`${item?.product?.name}: Quantity must be >= 1`); return;
+            setValidationError(`${item?.product?.name}: Quantity must be >= 1`); return;
           }
           if (item.assignedQuantity > stockStatus?.[item.itemId]?.availableToAssign) {
-            alert(`${item?.product?.name}: Quantity exceeds available`); return;
+            setValidationError(`${item?.product?.name}: Quantity exceeds available stock`); return;
           }
           if (item.prevStatus !== item.newStatus) continue;
           if (highestPriorityGroupStatus === "pending" && item.newStatus === highestPriorityGroupStatus) {
-            alert(`${item?.product?.name}: Status has to be changed.`); return;
+            setValidationError(`${item?.product?.name}: Status has to be changed.`); return;
           }
         }
       }
 
       const startDate = datesUpdateData?.assignedStartDate;
       const endDate = datesUpdateData?.assignedEndDate;
-      if (!startDate || !endDate) { alert("Both start and end dates are required"); return; }
-      if (new Date(startDate) > new Date(endDate)) { alert("Start date cannot be after end date"); return; }
+      if (!startDate || !endDate) { setValidationError("Both start and end dates are required"); return; }
+      if (new Date(startDate) > new Date(endDate)) { setValidationError("Start date cannot be after end date"); return; }
+
+      const hasActiveStatus = Object.values(itemsUpdateData).some((item) =>
+        ["approved", "prepared", "rented"].includes(item.newStatus)
+      );
+      if (hasActiveStatus) {
+        const bufferTime = new Date(Date.now() - 60000);
+        if (new Date(startDate) < bufferTime) {
+          setValidationError("Start date cannot be in the past for active orders!");
+          return;
+        }
+      }
 
       const itemUpdates = Object.values(itemsUpdateData).map((item) => ({
         itemId: item.itemId, assignedQuantity: item.assignedQuantity, newStatus: item.newStatus,
@@ -243,15 +275,15 @@ const Orders = () => {
 
       const res = await apiClient.put(`/orders/updateOrder/${orderId}`, { itemUpdates, ...dateUpdates });
       if (res.data.success) { fetchOrders(1); handleCloseModal(); }
-      else alert(res.data.message || "Operation failed");
+      else setValidationError(res.data.message || "Operation failed");
     } catch (error) {
       console.error(error);
-      alert(error.response?.data?.message);
+      setValidationError(error.response?.data?.message || error.message || "Operation failed");
     }
   };
 
   return (
-    <div className="w-full h-full flex flex-col gap-6 p-6 md:p-8 bg-slate-50/30">
+    <div className="w-full h-full flex flex-col gap-6 p-6 md:p-8 bg-slate-50/30 dark:bg-slate-900/10">
       <PageHeader title="Order Management" subtitle="Track, review, approve, and finalize equipment rentals" />
 
       <FilterBar
@@ -259,11 +291,12 @@ const Orders = () => {
         onSearchChange={(e) => setEmailFilter(e.target.value)}
         searchPlaceholder="Filter by customer email..."
       >
-        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status:</span>
+        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Status:</span>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="text-xs border border-slate-200 rounded-lg bg-slate-50 px-2.5 py-1.5 font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 min-w-[120px]"
+          style={{ textIndent: "8px", paddingLeft: "0px" }}
+          className="text-xs border border-slate-200 dark:border-slate-800 rounded-lg bg-slate-50 dark:bg-slate-950 pr-2.5 py-1.5 font-semibold text-slate-700 dark:text-slate-250 outline-none focus:ring-2 focus:ring-indigo-500/20 min-w-[120px] w-full sm:w-auto"
         >
           <option value="">All</option>
           {orderStatuses.map((status, idx) => (
@@ -273,12 +306,13 @@ const Orders = () => {
       </FilterBar>
 
       {orders.length === 0 ? (
-        <div className="text-center p-8 bg-white border border-slate-200 rounded-2xl text-slate-400 font-medium shadow-sm">
-          No orders found
+        <div className="text-center p-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-400 dark:text-slate-500 font-medium shadow-sm">
+          <div className="text-4xl mb-3">📋</div>
+          <p>No orders found</p>
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="flex flex-col gap-4 w-full">
             {orders
               .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
               .map((order) => {
@@ -304,32 +338,60 @@ const Orders = () => {
                   return acc;
                 }, {});
 
+                const totalItems = order.items.length;
+                const customer = order.customer;
+                const reqStart = new Date(order.requestedStartDate).toLocaleDateString("pl-PL");
+                const reqEnd = new Date(order.requestedEndDate).toLocaleDateString("pl-PL");
+
                 return (
-                  <div key={order._id} className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 flex flex-col gap-2 hover:shadow-md transition">
-                    <h2 className="text-sm font-bold text-slate-800 pb-2 border-b border-slate-100">
-                      📧 {order?.customer?.email || "No email"}
-                    </h2>
-                    {Object.values(itemsByOwner).map((group, idx) => (
-                      <OrderGroupCard
-                        key={idx}
-                        order={order}
-                        group={group}
-                        expanded={expanded}
-                        setExpanded={setExpanded}
-                        canProcessOrder={canProcessOrder}
-                        canRejectOrder={canRejectOrder}
-                        canPrepareOrder={canPrepareOrder}
-                        canRentOrder={canRentOrder}
-                        canReturnOrder={canReturnOrder}
-                        canPrintOrder={canPrintOrder}
-                        handleOpenModal={handleOpenModal}
-                        handleRejectOrder={handleRejectOrder}
-                        handlePrepareOrder={handlePrepareOrder}
-                        handleRentOrder={handleRentOrder}
-                        handleReturnOrder={handleReturnOrder}
-                        downloadRentalAgreement={downloadRentalAgreement}
-                      />
-                    ))}
+                  <div key={order._id} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md transition overflow-hidden">
+                    {/* Order header */}
+                    <div className="flex flex-wrap items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">
+                            {customer?.firstName && customer?.lastName
+                              ? `${customer.firstName} ${customer.lastName}`
+                              : customer?.email || "Unknown customer"}
+                          </span>
+                          {customer?.email && customer?.firstName && (
+                            <span className="text-xs text-slate-500 dark:text-slate-400 truncate">{customer.email}</span>
+                          )}
+                        </div>
+                        <div className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+                          📅 {reqStart} → {reqEnd}
+                          {customer?.fieldOfStudy && <span className="ml-2 text-slate-400">· {customer.fieldOfStudy}</span>}
+                        </div>
+                      </div>
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                        {totalItems} item{totalItems !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+
+                    {/* Order groups */}
+                    <div className="p-3">
+                      {Object.values(itemsByOwner).map((group, idx) => (
+                        <OrderGroupCard
+                          key={idx}
+                          order={order}
+                          group={group}
+                          expanded={expanded}
+                          setExpanded={setExpanded}
+                          canProcessOrder={canProcessOrder}
+                          canRejectOrder={canRejectOrder}
+                          canPrepareOrder={canPrepareOrder}
+                          canRentOrder={canRentOrder}
+                          canReturnOrder={canReturnOrder}
+                          canPrintOrder={canPrintOrder}
+                          handleOpenModal={handleOpenModal}
+                          handleRejectOrder={handleRejectOrder}
+                          handlePrepareOrder={handlePrepareOrder}
+                          handleRentOrder={handleRentOrder}
+                          handleReturnOrder={handleReturnOrder}
+                          downloadRentalAgreement={downloadRentalAgreement}
+                        />
+                      ))}
+                    </div>
                   </div>
                 );
               })}
@@ -360,6 +422,8 @@ const Orders = () => {
           stockStatus={stockStatus}
           highestPriorityGroupStatus={highestPriorityGroupStatus}
           getAllowedStatusChanges={getAllowedStatusChanges}
+          validationError={validationError}
+          setValidationError={setValidationError}
         />
       )}
     </div>

@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@variant dark (.dark &);
+
 @layer base {
   body {
     font-family: 'Inter', sans-serif;
@@ -20,3 +22,184 @@
     -moz-appearance: textfield;
   }
 }
+
+/* Global Dark Mode Overrides */
+.dark body {
+  background-color: #0f172a !important; /* slate-900 */
+  color: #f8fafc !important; /* slate-50 */
+}
+
+/* Background overrides */
+.dark .bg-slate-50\/30 {
+  background-color: rgba(15, 23, 42, 0.45) !important;
+}
+.dark .bg-slate-50 {
+  background-color: #0f172a !important;
+}
+.dark .bg-white {
+  background-color: #1e293b !important; /* slate-800 */
+  color: #f8fafc !important;
+}
+.dark .bg-gray-100 {
+  background-color: #0f172a !important;
+}
+.dark .bg-slate-100 {
+  background-color: #0f172a !important;
+}
+.dark .bg-indigo-50 {
+  background-color: rgba(99, 102, 241, 0.15) !important;
+}
+
+/* Text overrides */
+.dark .text-slate-900 {
+  color: #f8fafc !important;
+}
+.dark .text-slate-800 {
+  color: #f1f5f9 !important;
+}
+.dark .text-slate-700 {
+  color: #cbd5e1 !important;
+}
+.dark .text-slate-650 {
+  color: #cbd5e1 !important;
+}
+.dark .text-slate-600 {
+  color: #94a3b8 !important;
+}
+.dark .text-slate-500 {
+  color: #94a3b8 !important;
+}
+.dark .text-slate-400 {
+  color: #cbd5e1 !important;
+}
+.dark .text-gray-700 {
+  color: #cbd5e1 !important;
+}
+.dark .text-gray-500 {
+  color: #94a3b8 !important;
+}
+
+/* Border overrides */
+.dark .border-slate-200 {
+  border-color: #334155 !important; /* slate-700 */
+}
+.dark .border-slate-100 {
+  border-color: #1e293b !important;
+}
+.dark .border-slate-250 {
+  border-color: #334155 !important;
+}
+.dark .border-slate-300 {
+  border-color: #475569 !important;
+}
+.dark .border-gray-200 {
+  border-color: #334155 !important;
+}
+
+/* Hover overrides */
+.dark .hover\:bg-slate-50:hover {
+  background-color: #334155 !important;
+}
+.dark .hover\:bg-slate-50\/60:hover {
+  background-color: rgba(51, 65, 85, 0.6) !important;
+}
+.dark .hover\:bg-gray-50:hover {
+  background-color: #334155 !important;
+}
+
+/* Form Fields & Controls */
+.dark input, .dark select, .dark textarea {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
+}
+.dark input::placeholder, .dark textarea::placeholder {
+  color: #64748b !important;
+}
+
+/* Pagination Overrides */
+.dark .bg-slate-950 {
+  background-color: #090d16 !important;
+}
+.dark .border-slate-850 {
+  border-color: #1e293b !important;
+}
+
+/* Dropdowns & Modals */
+.dark .shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.5) !important;
+}
+.dark .shadow-2xl {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7) !important;
+}
+
+/* Additional element overrides for dark mode */
+.dark .text-gray-800 {
+  color: #f1f5f9 !important;
+}
+.dark .text-gray-700 {
+  color: #cbd5e1 !important;
+}
+.dark .text-gray-650 {
+  color: #94a3b8 !important;
+}
+.dark .text-gray-600 {
+  color: #cbd5e1 !important;
+}
+.dark .text-gray-550 {
+  color: #cbd5e1 !important;
+}
+.dark .text-gray-500 {
+  color: #94a3b8 !important;
+}
+.dark .text-gray-900 {
+  color: #f8fafc !important;
+}
+.dark .bg-gray-50 {
+  background-color: #0f172a !important;
+}
+.dark .border-gray-250 {
+  border-color: #334155 !important;
+}
+.dark .border-gray-200 {
+  border-color: #334155 !important;
+}
+.dark .bg-yellow-50 {
+  background-color: rgba(245, 158, 11, 0.1) !important;
+}
+.dark .border-yellow-200 {
+  border-color: rgba(245, 158, 11, 0.25) !important;
+}
+.dark .text-yellow-800 {
+  color: #f59e0b !important;
+}
+.dark .bg-blue-50 {
+  background-color: rgba(59, 130, 246, 0.15) !important;
+}
+.dark .text-blue-700 {
+  color: #60a5fa !important;
+}
+.dark .bg-red-50 {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+}
+.dark .border-red-300 {
+  border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+/* Toast animation */
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateX(calc(100% + 1.25rem));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Slider progress bar animation */
+@keyframes sliderProgress {
+  from { width: 0%; }
+  to   { width: 100%; }
+}

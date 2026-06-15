@@ -14,14 +14,20 @@ const ProductsMobileCards = ({
   return (
     <div className="md:hidden flex flex-col gap-4">
       {paginatedProducts.map(product => (
-        <div key={product._id} className="border border-slate-100 rounded-2xl shadow-sm p-5 bg-white flex flex-col gap-3 hover:shadow-md transition">
+        <div
+          key={product._id}
+          className="border border-slate-100 rounded-2xl shadow-sm p-5 bg-white flex flex-col gap-3 hover:shadow-md cursor-pointer transition"
+          onClick={(e) => {
+            if (e.target.closest("button, select, input, option, a")) {
+              return;
+            }
+            handlePreview(product._id);
+          }}
+        >
           {/* Name */}
           <div className="flex justify-between items-center py-1 border-b border-slate-100 last:border-b-0">
             <span className="font-semibold text-slate-400 text-xs uppercase tracking-wider">Name:</span>
-            <span
-              className="text-indigo-600 font-semibold truncate cursor-pointer hover:text-indigo-700 transition text-sm"
-              onClick={() => handlePreview(product._id)}
-            >
+            <span className="text-indigo-600 font-semibold truncate text-sm">
               {product.name}
             </span>
           </div>
@@ -29,11 +35,7 @@ const ProductsMobileCards = ({
           {/* Description */}
           <div className="flex justify-between items-center py-1 border-b border-slate-100 last:border-b-0">
             <span className="font-semibold text-slate-400 text-xs uppercase tracking-wider">Description:</span>
-            <span
-              className="text-slate-600 truncate cursor-pointer hover:text-slate-800 transition text-sm"
-              onClick={() => handlePreview(product._id)}
-              title={product.description}
-            >
+            <span className="text-slate-600 truncate text-sm" title={product.description}>
               {product.description?.length > 50 ? product.description.slice(0, 30) + "…" : product.description}
             </span>
           </div>

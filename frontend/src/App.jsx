@@ -1,5 +1,8 @@
 import "./App.css";
 import { useEffect } from "react";
+import { LanguageProvider } from "./context/LanguageContext";
+import { ThemeProvider } from "./context/ThemeContext";
+import { ToastProvider } from "./context/ToastContext";
 import {
   BrowserRouter as Router,
   Routes,
@@ -62,55 +65,61 @@ function GlobalEffect() {
 
 function App() {
   return (
-    <Router>
-      <GlobalEffect />
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<WelcomePage />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/forgot-password" element={<PasswordResetFlow />} />
-        <Route path="/unauthorized" element={<>Unauthorized</>} />
-        <Route path="/redirect" element={<RootRedirect />} />
-        <Route path="/logout" element={<Logout />} />
-        <Route path="/cart" element={<CartPage />} />
-        <Route
-          path="/guest-products/:menuCategory?"
-          element={<GuestProducts />}
-        />
-        <Route path="/mainguest" element={<MainGuest />} />
-        <Route path="/preview" element={<ProductPreview />} />
-        <Route path="/orderPreview/:orderUUID" element={<OrderPreview />} />
-        <Route
-          path="/components/:collectionId"
-          element={<ComponentPreview />}
-        />
+    <ThemeProvider>
+      <LanguageProvider>
+        <ToastProvider>
+          <Router>
+            <GlobalEffect />
+            <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<WelcomePage />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/forgot-password" element={<PasswordResetFlow />} />
+            <Route path="/unauthorized" element={<>Unauthorized</>} />
+            <Route path="/redirect" element={<RootRedirect />} />
+            <Route path="/logout" element={<Logout />} />
+            <Route path="/cart" element={<CartPage />} />
+            <Route
+              path="/guest-products/:menuCategory?"
+              element={<GuestProducts />}
+            />
+            <Route path="/mainguest" element={<MainGuest />} />
+            <Route path="/preview" element={<ProductPreview />} />
+            <Route path="/orderPreview/:orderUUID" element={<OrderPreview />} />
+            <Route
+              path="/components/:collectionId"
+              element={<ComponentPreview />}
+            />
 
-        {/* Admin Dashboard - Protected Routes */}
-        <Route
-          path="/admin-dashboard"
-          element={
-            <ProtectedRoutes requireRole={["admin", "lecturer"]}>
-              <Admin />
-            </ProtectedRoutes>
-          }
-        >
-          <Route index element={<Dashboard />} />
-          <Route path="products" element={<Products />} />
-          <Route path="orders" element={<Orders />} />
-          <Route path="profile" element={<Profile />} />
-          <Route path="preview" element={<ProductPreview />} />
-          <Route path="notes" element={<Notes />} />
+            {/* Admin Dashboard - Protected Routes */}
+            <Route
+              path="/admin-dashboard"
+              element={
+                <ProtectedRoutes requireRole={["admin", "lecturer"]}>
+                  <Admin />
+                </ProtectedRoutes>
+              }
+            >
+              <Route index element={<Dashboard />} />
+              <Route path="products" element={<Products />} />
+              <Route path="orders" element={<Orders />} />
+              <Route path="profile" element={<Profile />} />
+              <Route path="preview" element={<ProductPreview />} />
+              <Route path="notes" element={<Notes />} />
 
-          <Route element={<ProtectedRoutes requireRole={["admin"]} />}>
-            <Route path="users" element={<Users />} />
-            <Route path="materials" element={<Materials />} />
-            <Route path="components" element={<Components />} />
-            <Route path="categories" element={<Categories />} />
-            <Route path="templates" element={<Templates />} />
-          </Route>
-        </Route>
-      </Routes>
-    </Router>
+              <Route element={<ProtectedRoutes requireRole={["admin"]} />}>
+                <Route path="users" element={<Users />} />
+                <Route path="materials" element={<Materials />} />
+                <Route path="components" element={<Components />} />
+                <Route path="categories" element={<Categories />} />
+                <Route path="templates" element={<Templates />} />
+              </Route>
+            </Route>
+          </Routes>
+          </Router>
+        </ToastProvider>
+      </LanguageProvider>
+    </ThemeProvider>
   );
 }
 

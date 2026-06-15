@@ -17,14 +17,17 @@ const mapUploadedFiles = (filesArray = [], additionalData = []) => {
   if (!filesArray.length || filesArray.length !== additionalData.length)
     return [];
 
-  return filesArray.map((file, idx) => ({
-    filename: file.filename,
-    originalName: additionalData[idx]?.originalName || file.originalname,
-    uniqueKey: additionalData[idx]?.uniqueKey,
-    isVisible: additionalData[idx]?.isVisible || false,
-    size: file.size || 0,
-    path: file.path,
-  }));
+  return filesArray.map((file, idx) => {
+    const pathNormalized = file.path ? file.path.replace(/\\/g, "/") : "";
+    return {
+      filename: file.filename,
+      originalName: additionalData[idx]?.originalName || file.originalname,
+      uniqueKey: additionalData[idx]?.uniqueKey,
+      isVisible: additionalData[idx]?.isVisible || false,
+      size: file.size || 0,
+      path: pathNormalized,
+    };
+  });
 };
 
 const initProduct = (req) => {

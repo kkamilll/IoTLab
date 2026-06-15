@@ -23,6 +23,23 @@ const ProductPreview = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const [cartQuantities, setCartQuantities] = useState({});
+  const [localQty, setLocalQty] = useState(0);
+
+  useEffect(() => {
+    if (product) {
+      const cart = JSON.parse(localStorage.getItem("cart")) || [];
+      const item = cart.find((p) => p._id === product._id);
+      setLocalQty(item ? item.quantity : 0);
+    }
+  }, [product]);
+
+  const handleLocalQtyChange = (value) => {
+    let qty = parseInt(value, 10);
+    if (isNaN(qty) || qty < 0) qty = 0;
+    const maxQty = getAvailableStockForProduct(product);
+    if (qty > maxQty) qty = maxQty;
+    setLocalQty(qty);
+  };
 
   useEffect(() => setCurrentImageIndex(0), [productId]);
   const getAvailableStockForProduct = (product) =>
@@ -262,22 +279,22 @@ const ProductPreview = () => {
             </p>
           </div>
           <div className="space-y-4">
-            {categoryNames.length > 0 && (
-              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
-                <h2 className="text-xl font-semibold text-slate-900 mb-3">
-                  Categories
-                </h2>
-                <p className="text-slate-700">{categoryNames.join(", ")}</p>
-              </div>
-            )}
-            {product.tags && (
-              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
-                <h2 className="text-xl font-semibold text-slate-900 mb-3">
-                  Tags
-                </h2>
-                <p className="text-slate-700">{product.tags.join(", ")}</p>
-              </div>
-            )}
+            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
+              <h2 className="text-xl font-semibold text-slate-900 mb-3">
+                Categories
+              </h2>
+              <p className="text-slate-700">
+                {categoryNames.length > 0 ? categoryNames.join(", ") : "No categories assigned to this product / object"}
+              </p>
+            </div>
+            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
+              <h2 className="text-xl font-semibold text-slate-900 mb-3">
+                Tags
+              </h2>
+              <p className="text-slate-700">
+                {product.tags && product.tags.length > 0 ? product.tags.join(", ") : "No tags assigned to this product / object"}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -326,16 +343,10 @@ const ProductPreview = () => {
             <h3 className="text-lg font-semibold text-slate-900 mb-3">
               Add to cart
             </h3>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-3 items-center">
               <button
-                onClick={() =>
-                  handleQuantityChange(
-                    product._id,
-                    (cartQuantities[product._id] || 0) - 1,
-                    product,
-                  )
-                }
-                disabled={(cartQuantities[product._id] || 0) <= 0}
+                onClick={() => handleLocalQtyChange(localQty - 1)}
+                disabled={localQty <= 0}
                 className="rounded-2xl bg-slate-100 px-4 py-3 text-xl font-bold text-slate-700 hover:bg-slate-200 disabled:opacity-40"
               >
                 −
@@ -344,31 +355,29 @@ const ProductPreview = () => {
                 type="number"
                 min="0"
                 max={getAvailableStockForProduct(product)}
-                value={cartQuantities[product._id] || 0}
-                onChange={(e) =>
-                  handleQuantityChange(product._id, e.target.value, product)
-                }
+                value={localQty}
+                onChange={(e) => handleLocalQtyChange(e.target.value)}
                 className="w-24 rounded-2xl border border-slate-200 px-3 py-3 text-center text-lg text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
               />
               <button
-                onClick={() =>
-                  handleQuantityChange(
-                    product._id,
-                    (cartQuantities[product._id] || 0) + 1,
-                    product,
-                  )
-                }
-                disabled={
-                  (cartQuantities[product._id] || 0) >=
-                  getAvailableStockForProduct(product)
-                }
+                onClick={() => handleLocalQtyChange(localQty + 1)}
+                disabled={localQty >= getAvailableStockForProduct(product)}
                 className="rounded-2xl bg-slate-100 px-4 py-3 text-xl font-bold text-slate-700 hover:bg-slate-200 disabled:opacity-40"
               >
                 +
               </button>
+              <button
+                onClick={() => {
+                  handleQuantityChange(product._id, localQty, product);
+                  alert("Cart has been updated!");
+                }}
+                className="rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow hover:bg-indigo-700 transition"
+              >
+                Confirm
+              </button>
             </div>
             <p className="mt-4 text-sm text-slate-500">
-              Quantity will be stored in the cart automatically.
+              Change the quantity and click Confirm to update your cart.
             </p>
           </div>
 

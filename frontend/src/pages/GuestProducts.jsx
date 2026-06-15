@@ -35,7 +35,7 @@ const GuestProducts = () => {
   }, [cart]);
 
   const handlePreview = (productId) => {
-    if (!productId) return alert("No product to preview");
+    if (!productId) return;
     navigate("/preview", { state: { productId } });
   };
 
@@ -62,7 +62,6 @@ const GuestProducts = () => {
       setProducts(updatedProducts);
     } catch (err) {
       console.error("Error fetching products:", err);
-      alert("Error fetching products");
     } finally {
       setLoading(false);
     }
@@ -315,20 +314,25 @@ const GuestProducts = () => {
                   </thead>
                   <tbody className="divide-y divide-slate-200 bg-white">
                     {paginatedProducts.map((p) => (
-                      <tr key={p._id} className="hover:bg-slate-50 transition">
+                      <tr
+                        key={p._id}
+                        className="hover:bg-slate-50 cursor-pointer transition"
+                        onClick={(e) => {
+                          if (e.target.closest("button, select, input, option, a")) {
+                            return;
+                          }
+                          handlePreview(p._id);
+                        }}
+                      >
                         {allColumns.map((col, idx) => (
                           <td
                             key={idx}
                             className="px-4 py-3 align-top text-slate-700"
                           >
                             {col === "name" ? (
-                              <button
-                                type="button"
-                                onClick={() => handlePreview(p._id)}
-                                className="text-blue-600 hover:text-blue-700 font-semibold"
-                              >
+                              <span className="text-blue-600 hover:text-blue-700 font-semibold">
                                 {p.name}
-                              </button>
+                              </span>
                             ) : col === "available" ? (
                               <span className="inline-flex rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-800">
                                 {getAvailableStockForProduct(p)}
@@ -408,17 +412,19 @@ const GuestProducts = () => {
                 {paginatedProducts.map((p) => (
                   <div
                     key={p._id}
-                    className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm"
+                    className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md cursor-pointer transition"
+                    onClick={(e) => {
+                      if (e.target.closest("button, select, input, option, a")) {
+                        return;
+                      }
+                      handlePreview(p._id);
+                    }}
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <button
-                          type="button"
-                          onClick={() => handlePreview(p._id)}
-                          className="text-lg font-semibold text-blue-600 hover:text-blue-700"
-                        >
+                        <span className="text-lg font-semibold text-blue-600">
                           {p.name}
-                        </button>
+                        </span>
                         <p className="mt-1 text-sm text-slate-500 line-clamp-3">
                           {p.description || "No description available."}
                         </p>

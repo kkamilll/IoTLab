@@ -6,6 +6,7 @@ import ProductsTable from "../components/products/ProductsTable";
 import ProductsMobileCards from "../components/products/ProductsMobileCards";
 import { generateProductsPDF } from "../utils/pdfGenerator";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
 import { buildTree } from "../utils/categoryUtils";
 import CategoryTree from "../components/categories/CategoryTree";
 import PageHeader from "../components/layout/PageHeader";
@@ -22,6 +23,7 @@ const Products = () => {
   const { user, token } = useAuth();
   const isAdmin = user?.role === "admin";
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const [openModal, setOpenModal] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
@@ -58,10 +60,7 @@ const Products = () => {
   const [expandedCategories, setExpandedCategories] = useState([]);
 
   const [newTag, setNewTag] = useState("");
-  // const [previewImage, setPreviewImage] = useState(null);
-
   const [cartQuantities, setCartQuantities] = useState({});
-  // const [cartQuantitiesInCart, setCartQuantitiesInCart] = useState({});
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -80,7 +79,6 @@ const Products = () => {
     );
   };
 
-  // const allColumns = ["name", "description", "Owned", "tag", ...extraColumns];
   const allColumns = [
     "name",
     "description",
@@ -90,7 +88,6 @@ const Products = () => {
     "owner",
     ...extraColumns,
   ];
-  // const allColumns = ["name", "description", "stock", "hiddenStock", "category", "owner", ...extraColumns];
 
   const allCategories = Object.values(
     // create an array of objects from object of objects
@@ -199,13 +196,14 @@ const Products = () => {
     }
   };
 
-  // Pobieranie produktów
   const fetchProducts = async () => {
     try {
       const res = await apiClient.get("/products/private");
 
-      if (!res.data.success)
-        return alert(res.data.message || "Error fetching products");
+      if (!res.data.success) {
+        showToast(res.data.message || "Error fetching products", "error");
+        return;
+      }
 
       const allExtraKeys = new Set(extraColumns);
       res.data.products.forEach((p) => {
@@ -226,21 +224,21 @@ const Products = () => {
       setFilteredProducts(updatedProducts);
     } catch (err) {
       console.error(err);
-      alert(`${err.response.data.message}`);
+      showToast(err.response?.data?.message || err.message || "Error fetching products", "error");
     }
   };
 
   const fetchUsers = async () => {
     try {
       const res = await apiClient.get("/users");
-      if (!res.data.success)
-        return alert(res.data.message || "Error fetching products");
-
-      const fetchedUsers = res.data.users;
-      setUsers(fetchedUsers);
+      if (!res.data.success) {
+        showToast(res.data.message || "Error fetching users", "error");
+        return;
+      }
+      setUsers(res.data.users);
     } catch (error) {
       console.error(error);
-      alert(`${error.response.data.message}`);
+      showToast(error.response?.data?.message || error.message || "Error fetching users", "error");
     }
   };
 
@@ -286,9 +284,7 @@ const Products = () => {
   const filesChange = (newFiles, oldFiles) => {
     const validFiles = newFiles.filter((file) => {
       if (file.size > MAX_FILE_SIZE) {
-        alert(
-          `${file.name} is too large (max ${MAX_FILE_SIZE / MEGA_BYTE}MB).`,
-        );
+        showToast(`${file.name} is too large (max ${MAX_FILE_SIZE / MEGA_BYTE}MB).`, "warning");
         return false;
       }
       return true;
@@ -390,7 +386,7 @@ const Products = () => {
       setFormData((prev) => ({ ...prev, tags: [...prev.tags, tagLower] }));
       setNewTag("");
     } else {
-      alert("This tag is already added.");
+      showToast("This tag is already added.", "warning");
     }
   };
 
@@ -417,11 +413,6 @@ const Products = () => {
     const newFiles = Array.from(e.target.files);
     const oldImages = formData.images || [];
     const newImages = newFiles.filter((file) => file.type.startsWith("image/"));
-    // console.log(oldImages);
-
-    // if (newFiles.length !== newImages.length) {
-    //   alert("Only image files are allowed!");
-    // }
 
     const uniqueImages = filesChange(newImages, oldImages);
 
@@ -440,16 +431,11 @@ const Products = () => {
 
   const handleQuantityChange = (productId, value, product) => {
     let qty = parseInt(value, 10);
-
-    // minimalna ilość 0, maksymalna = dostępny stock
     if (isNaN(qty) || qty < 0) qty = 0;
-    if (qty > getAvailableStockForProduct(product))
-      qty = getAvailableStockForProduct(product);
+    if (qty > getAvailableStockForProduct(product)) qty = getAvailableStockForProduct(product);
 
-    // aktualizacja stanu koszyka
     setCartQuantities((prev) => ({ ...prev, [productId]: qty }));
 
-    // aktualizacja localStorage
     const cart = JSON.parse(localStorage.getItem("cart")) || [];
     const existingIndex = cart.findIndex((p) => p._id === productId);
 
@@ -464,19 +450,17 @@ const Products = () => {
     }
 
     localStorage.setItem("cart", JSON.stringify(cart));
-    // setCartQuantitiesInCart(cart.reduce((acc, item) => ({ ...acc, [item._id]: item.quantity }), {}));
   };
 
   const addExtraField = () => {
     const key = prompt("Enter the name of the new column (max 30 characters):")
       ?.trim()
       ?.toLowerCase();
-    if (!key) return; // użytkownik anulował
+    if (!key) return;
     if (key.length > 30) {
-      alert("Column name cannot be longer than 30 characters.");
+      showToast("Column name cannot be longer than 30 characters.", "warning");
       return;
     }
-
     if (!extraColumns.includes(key)) {
       setExtraColumns((prev) => [...prev, key]);
       setProducts((prev) =>
@@ -490,7 +474,7 @@ const Products = () => {
         extraFields: { ...prev.extraFields, [key]: "" },
       }));
     } else {
-      alert("A column with this name already exists.");
+      showToast("A column with this name already exists.", "warning");
     }
   };
 
@@ -501,7 +485,6 @@ const Products = () => {
       const res = await apiClient.delete(`/products/extraField/${key}`);
 
       if (res.data.success) {
-        // Usuń kolumnę z widoku
         setExtraColumns((prev) => prev.filter((col) => col !== key));
         setProducts((prev) =>
           prev.map((p) => {
@@ -515,12 +498,13 @@ const Products = () => {
           delete newExtra[key];
           return { ...prev, extraFields: newExtra };
         });
+        showToast(`Column "${key}" deleted.`, "success");
       } else {
-        alert(res.data.message || "Failed to delete column");
+        showToast(res.data.message || "Failed to delete column", "error");
       }
     } catch (err) {
       console.error(err);
-      alert(`${err.response.data.message}`);
+      showToast(err.response?.data?.message || err.message || "Failed to delete column", "error");
     }
   };
 
@@ -544,7 +528,6 @@ const Products = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Remove empty extraFields
       const cleanedExtraFields = Object.fromEntries(
         Object.entries(formData.extraFields).filter(
           ([key, value]) => value != null && value !== "",
@@ -636,26 +619,22 @@ const Products = () => {
         form.append("oldAttachments", JSON.stringify(attachmentsData));
       }
 
-      const config = {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      };
+      const config = { headers: { "Content-Type": "multipart/form-data" } };
 
       const res = editProduct
         ? await apiClient.put(`/products/${editProduct}`, form, config)
         : await apiClient.post("/products/create", form, config);
-      // console.log(res);
 
       if (res.data.success) {
+        showToast(editProduct ? "Product updated successfully!" : "Product created successfully!", "success");
         fetchProducts();
         closeModal();
       } else {
-        alert(res.data.message || "Operation failed");
+        showToast(res.data.message || "Operation failed", "error");
       }
     } catch (error) {
       console.error(error);
-      alert(`${error.response.data.message}`);
+      showToast(error.response?.data?.message || error.message || "Operation failed", "error");
     }
   };
 
@@ -663,9 +642,15 @@ const Products = () => {
     if (!window.confirm("Delete this product?")) return;
     try {
       const data = await deleteProduct(id);
-      if (data.success) fetchProducts();
+      if (data.success) {
+        showToast("Product deleted.", "success");
+        fetchProducts();
+      } else {
+        showToast(data.message || "Failed to delete product", "error");
+      }
     } catch (err) {
       console.error(err);
+      showToast(err.response?.data?.message || err.message || "Failed to delete product", "error");
     }
   };
 
@@ -673,7 +658,7 @@ const Products = () => {
     generateProductsPDF(filteredProducts, allColumns, hiddenColumns);
   };
   const handlePreview = (productId) => {
-    if (!productId) return alert("No product to preview");
+    if (!productId) return;
     navigate("/admin-dashboard/preview", { state: { productId } });
   };
   const handleCategorySelect = (catId) => {
