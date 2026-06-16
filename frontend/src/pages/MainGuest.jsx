@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import apiClient from "../api/apiClient";
 import { FaFolder, FaInfoCircle } from "react-icons/fa";
 import { buildTree } from "../utils/categoryUtils";
+import { useLanguage } from "../context/LanguageContext";
 
 const MainGuest = () => {
   const navigate = useNavigate();
+  const { t, language } = useLanguage();
   const [categories, setCategories] = useState([]);
   const [expandedIds, setExpandedIds] = useState(new Set());
   const [showDescriptionIds, setShowDescriptionIds] = useState(new Set());
@@ -89,7 +91,7 @@ const MainGuest = () => {
 
   const allCategory = {
     _id: "", // unique key
-    name: "All",
+    name: language === "pl" ? "Wszystkie" : "All",
     logo: <FaFolder size={16} className="text-blue-700 flex-shrink-0" />,
     description: null,
     children: [],
@@ -100,19 +102,19 @@ const MainGuest = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex justify-center py-10 px-4">
-      <div className="w-full max-w-3xl">
+      <div className="w-full max-w-7xl">
         {/* Back button */}
         <div className="mb-6 text-left">
           <button
             onClick={() => navigate("/")}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-bold shadow-sm"
           >
-            Back
+            ← {t("common.back")}
           </button>
         </div>
 
         <h1 className="text-3xl font-extrabold mb-8 text-blue-900 text-center">
-          Categories
+          {t("categories.title")}
         </h1>
 
         {categoriesWithAll.length > 0 ? (

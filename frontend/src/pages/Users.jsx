@@ -7,10 +7,12 @@ import PageHeader from "../components/layout/PageHeader";
 import FilterBar from "../components/layout/FilterBar";
 import Pagination from "../components/layout/Pagination";
 import Btn from "../components/layout/Btn";
+import { useLanguage } from "../context/LanguageContext";
 
 const USERS_PER_PAGE = 10;
 
 const Users = () => {
+  const { language, t } = useLanguage();
   const [formData, setFormData] = useState({
     name: "", email: "", password: "", role: "", labRooms: [], isActive: true,
   });
@@ -35,7 +37,7 @@ const Users = () => {
       setFilteredUsers(res.data.users || []);
     } catch (err) {
       console.error(err);
-      alert("Failed to fetch users.");
+      alert(t("users.failedFetch"));
     }
     setLoading(false);
   };
@@ -60,7 +62,7 @@ const Users = () => {
       setFormData((prev) => ({ ...prev, labRooms: [...prev.labRooms, newLabRoom] }));
       setNewLabRoom("");
     } else {
-      alert("This lab room is already added.");
+      alert(t("users.labAlreadyAdded"));
     }
   };
 
@@ -86,37 +88,37 @@ const Users = () => {
     try {
       if (!editingUserId) {
         if (!formData.name || !formData.email || !formData.password || !formData.role) {
-          alert("All fields are required!"); setSubmitLoading(false); return;
+          alert(t("users.allFieldsRequired")); setSubmitLoading(false); return;
         }
         const res = await apiClient.post("/users/create", formData);
-        if (res.data.success) { alert("User added successfully!"); resetForm(); setShowForm(false); fetchUsers(); }
+        if (res.data.success) { alert(t("users.addSuccess")); resetForm(); setShowForm(false); fetchUsers(); }
       } else {
         if (!formData.name || !formData.email || !formData.role) {
-          alert("Name, Email, and Role are required!"); setSubmitLoading(false); return;
+          alert(t("users.requiredFields")); setSubmitLoading(false); return;
         }
         const dataToSend = { ...formData };
         if (!dataToSend.password?.trim()) delete dataToSend.password;
         if (dataToSend.email === "admin@gmail.com") dataToSend.isActive = true;
         const res = await apiClient.put(`/users/${editingUserId}`, dataToSend);
-        if (res.data.success) { alert("User updated successfully!"); resetForm(); setShowForm(false); fetchUsers(); }
+        if (res.data.success) { alert(t("users.updateSuccess")); resetForm(); setShowForm(false); fetchUsers(); }
       }
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || "Server error.");
+      alert(err.response?.data?.message || t("users.serverError"));
     }
     setSubmitLoading(false);
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this user?")) return;
+    if (!window.confirm(t("users.deleteConfirm"))) return;
     setDeleteLoadingId(id);
     try {
       const res = await apiClient.delete(`/users/${id}`);
-      if (res.data.success) { fetchUsers(); alert("User deleted successfully!"); }
-      else alert(res.data.message || "Delete failed.");
+      if (res.data.success) { fetchUsers(); alert(t("users.deleteSuccess")); }
+      else alert(res.data.message || t("users.deleteFailed"));
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || "Server error.");
+      alert(err.response?.data?.message || t("users.serverError"));
     }
     setDeleteLoadingId(null);
   };
@@ -135,103 +137,108 @@ const Users = () => {
 
   if (loading) return (
     <div className="w-full h-full flex items-center justify-center p-20 text-slate-400 font-semibold">
-      Loading users...
+      {t("users.loading")}
     </div>
   );
 
   return (
-    <div className="w-full h-full flex flex-col gap-6 p-6 md:p-8 bg-slate-50/30 dark:bg-slate-900/10">
-      <PageHeader title="User Management" subtitle="Create, edit, activate, or assign permissions to system users">
-        {!showForm ? (
-          <Btn variant="primary" onClick={handleAddUserClick}>➕ Add User</Btn>
-        ) : (
-          <Btn variant="danger-outline" onClick={handleCancel}>❌ Cancel</Btn>
-        )}
-      </PageHeader>
-
-      <FilterBar
-        searchValue={searchTerm}
-        onSearchChange={(e) => setSearchTerm(e.target.value)}
-        searchPlaceholder="Search users by name..."
-      >
-        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Role:</span>
-        <select
-          value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value)}
-          className="text-xs border border-slate-200 dark:border-slate-800 rounded-lg bg-slate-50 dark:bg-slate-950 px-2.5 py-1.5 font-semibold text-slate-700 dark:text-slate-250 outline-none focus:ring-2 focus:ring-indigo-500/20 min-w-[120px]"
+    <div className="w-full min-h-screen bg-slate-50/30 dark:bg-slate-900/10">
+      <div className="w-full px-4 sm:px-6 md:px-8 py-6 md:py-8 flex flex-col gap-6">
+        <PageHeader
+          title={"👥 " + t("users.title")}
+          subtitle={t("users.subtitle")}
         >
-          <option value="">All Roles</option>
-          <option value="admin">Admin</option>
-          <option value="lecturer">Lecturer</option>
-        </select>
-      </FilterBar>
+          {!showForm ? (
+            <Btn variant="primary" onClick={handleAddUserClick}>{t("users.addUser")}</Btn>
+          ) : (
+            <Btn variant="danger-outline" onClick={handleCancel}>{t("users.cancel")}</Btn>
+          )}
+        </PageHeader>
 
-      {showForm && (
-        <UserForm
-          editingUserId={editingUserId}
-          formData={formData}
-          newLabRoom={newLabRoom}
-          setNewLabRoom={setNewLabRoom}
-          handleChange={handleChange}
-          handleAddLabRoom={handleAddLabRoom}
-          handleRemoveLabRoom={handleRemoveLabRoom}
-          handleSubmit={handleSubmit}
-          handleCancel={handleCancel}
-          submitLoading={submitLoading}
-          labDropdownRef={labDropdownRef}
-        />
-      )}
+        <FilterBar
+          searchValue={searchTerm}
+          onSearchChange={(e) => setSearchTerm(e.target.value)}
+          searchPlaceholder={t("users.searchPlaceholder")}
+        >
+          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider">{t("users.roleLabel")}</span>
+          <select
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+            className="text-xs border border-slate-200 dark:border-slate-800 rounded-lg bg-slate-50 dark:bg-slate-950 px-2.5 py-1.5 font-semibold text-slate-700 dark:text-slate-250 outline-none focus:ring-2 focus:ring-indigo-500/20 min-w-[120px]"
+          >
+            <option value="">{t("users.allRoles")}</option>
+            <option value="admin">{language === "pl" ? "Administrator" : "Admin"}</option>
+            <option value="lecturer">{language === "pl" ? "Wykładowca" : "Lecturer"}</option>
+          </select>
+        </FilterBar>
 
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full table-auto text-left border-collapse">
-            <thead className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 text-slate-550 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
-              <tr>
-                <th className="p-4 hidden md:table-cell">#</th>
-                <th className="p-4">Name</th>
-                <th className="p-4 hidden lg:table-cell">Email</th>
-                <th className="p-4">Role</th>
-                <th className="p-4">Status</th>
-                <th className="p-4 hidden lg:table-cell">Lab Rooms</th>
-                <th className="p-4 text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {paginatedUsers.map((user, idx) => (
-                <tr key={user._id} className="hover:bg-slate-50/60 dark:hover:bg-slate-850/40 transition">
-                  <td className="p-4 text-xs text-slate-500 dark:text-slate-450 hidden md:table-cell">
-                    {(currentPage - 1) * USERS_PER_PAGE + idx + 1}
-                  </td>
-                  <td className="p-4 text-xs font-bold text-slate-800 dark:text-slate-200">{user.name}</td>
-                  <td className="p-4 text-xs text-slate-600 dark:text-slate-400 hidden lg:table-cell">{user.email}</td>
-                  <td className="p-4 text-xs">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${user.role === "admin" ? "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border-indigo-200/50 dark:border-indigo-900/30" : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-350 border-slate-200 dark:border-slate-750"}`}>
-                      {user.role}
-                    </span>
-                  </td>
-                  <td className="p-4 text-xs">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${user.isActive ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200/50 dark:border-emerald-900/30" : "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-200/50 dark:border-red-900/30"}`}>
-                      {user.isActive ? "Active" : "Inactive"}
-                    </span>
-                  </td>
-                  <td className="p-4 text-xs hidden lg:table-cell">
-                    {user.labRooms?.length > 0 ? <LabRoomsDropdown rooms={user.labRooms} /> : "—"}
-                  </td>
-                  <td className="p-4 text-center text-xs">
-                    <ActionMenu user={user} onEdit={startEdit} onDelete={handleDelete} loadingId={deleteLoadingId} />
-                  </td>
+        {showForm && (
+          <UserForm
+            editingUserId={editingUserId}
+            formData={formData}
+            newLabRoom={newLabRoom}
+            setNewLabRoom={setNewLabRoom}
+            handleChange={handleChange}
+            handleAddLabRoom={handleAddLabRoom}
+            handleRemoveLabRoom={handleRemoveLabRoom}
+            handleSubmit={handleSubmit}
+            handleCancel={handleCancel}
+            submitLoading={submitLoading}
+            labDropdownRef={labDropdownRef}
+          />
+        )}
+
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full table-auto text-left border-collapse">
+              <thead className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 text-slate-550 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
+                <tr>
+                  <th className="p-4 hidden md:table-cell">#</th>
+                  <th className="p-4">{t("users.name")}</th>
+                  <th className="p-4 hidden lg:table-cell">{t("users.email")}</th>
+                  <th className="p-4">{t("users.role")}</th>
+                  <th className="p-4">{t("users.status")}</th>
+                  <th className="p-4 hidden lg:table-cell">{t("users.labRooms")}</th>
+                  <th className="p-4 text-center">{t("common.actions")}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {paginatedUsers.map((user, idx) => (
+                  <tr key={user._id} className="hover:bg-slate-50/60 dark:hover:bg-slate-850/40 transition">
+                    <td className="p-4 text-xs text-slate-500 dark:text-slate-450 hidden md:table-cell">
+                      {(currentPage - 1) * USERS_PER_PAGE + idx + 1}
+                    </td>
+                    <td className="p-4 text-xs font-bold text-slate-800 dark:text-slate-200">{user.name}</td>
+                    <td className="p-4 text-xs text-slate-600 dark:text-slate-400 hidden lg:table-cell">{user.email}</td>
+                    <td className="p-4 text-xs">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${user.role === "admin" ? "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border-indigo-200/50 dark:border-indigo-900/30" : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-355 border-slate-200 dark:border-slate-750"}`}>
+                        {user.role === "admin" ? (language === "pl" ? "Administrator" : "Admin") : (language === "pl" ? "Wykładowca" : "Lecturer")}
+                      </span>
+                    </td>
+                    <td className="p-4 text-xs">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${user.isActive ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200/50 dark:border-emerald-900/30" : "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-200/50 dark:border-red-900/30"}`}>
+                        {user.isActive ? t("users.active") : t("users.inactive")}
+                      </span>
+                    </td>
+                    <td className="p-4 text-xs hidden lg:table-cell">
+                      {user.labRooms?.length > 0 ? <LabRoomsDropdown rooms={user.labRooms} /> : "—"}
+                    </td>
+                    <td className="p-4 text-center text-xs">
+                      <ActionMenu user={user} onEdit={startEdit} onDelete={handleDelete} loadingId={deleteLoadingId} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPrev={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+            onNext={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+            onPage={setCurrentPage}
+          />
         </div>
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPrev={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-          onNext={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-          onPage={setCurrentPage}
-        />
       </div>
     </div>
   );

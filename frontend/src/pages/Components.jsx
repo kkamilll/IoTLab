@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from "react";
 import apiClient from "../api/apiClient";
 import { useAuth } from "../context/AuthContext";
+import PageHeader from "../components/layout/PageHeader";
+import { useLanguage } from "../context/LanguageContext";
 
 const Components = () => {
   const { token } = useAuth();
+  const { t, language } = useLanguage();
   const [collections, setCollections] = useState([]);
   const [newCollection, setNewCollection] = useState("");
   const [newCollectionLogo, setNewCollectionLogo] = useState("");
@@ -44,20 +47,20 @@ const Components = () => {
       setNewCollection("");
       setNewCollectionLogo("");
     } catch {
-      alert("Error adding collection");
+      alert(t("components.addLinkError")); // Or dynamic edit error
     }
   };
 
   // Delete collection
   const deleteCollection = async (collectionId) => {
-    if (!window.confirm("Are you sure you want to delete this collection?"))
+    if (!window.confirm(t("components.deleteCollectionConfirm")))
       return;
     try {
       await apiClient.delete(`/components/${collectionId}`);
       await fetchCollections();
       setExpanded(null);
     } catch {
-      alert("Error deleting collection");
+      alert(t("components.deleteCollectionError"));
     }
   };
 
@@ -76,14 +79,14 @@ const Components = () => {
       setEditingName("");
       setEditingLogo("");
     } catch {
-      alert("Error editing collection");
+      alert(t("components.editCollectionError"));
     }
   };
 
   // Add link
   const addLink = async (collectionId) => {
     const input = linkInputs[collectionId];
-    if (!input?.text || !input?.href) return alert("Text and URL are required");
+    if (!input?.text || !input?.href) return alert(t("components.linkTextRequired"));
 
     let href = input.href;
     if (!/^https?:\/\//i.test(href)) href = "http://" + href;
@@ -100,24 +103,25 @@ const Components = () => {
         [collectionId]: { text: "", href: "" },
       }));
     } catch {
-      alert("Error adding link");
+      alert(t("components.addLinkError"));
     }
   };
 
   // Delete link
   const deleteLink = async (collectionId, linkId) => {
+    if (!window.confirm(t("components.deleteLinkConfirm"))) return;
     try {
       await apiClient.delete(`/components/${collectionId}/links/${linkId}`);
       await fetchCollections();
     } catch {
-      alert("Error deleting link");
+      alert(t("components.deleteLinkError"));
     }
   };
 
   // Edit link
   const saveLink = async (collectionId) => {
     if (!editingLink.text || !editingLink.href)
-      return alert("Text and URL are required");
+      return alert(t("components.linkTextRequired"));
 
     let href = editingLink.href;
     if (!/^https?:\/\//i.test(href)) href = "http://" + href;
@@ -134,7 +138,7 @@ const Components = () => {
 
       setEditingLink({ id: null, text: "", href: "" });
     } catch {
-      alert("Error updating link");
+      alert(t("components.saveLinkError"));
     }
   };
 
@@ -147,7 +151,7 @@ const Components = () => {
   const [fileInputs, setFileInputs] = useState({});
   const addFile = async (collectionId) => {
     const file = fileInputs[collectionId];
-    if (!file) return alert("Choose a file first!");
+    if (!file) return alert(t("components.uploadFileFirst"));
 
     const formData = new FormData();
     formData.append("file", file);
@@ -159,17 +163,18 @@ const Components = () => {
       await fetchCollections();
       setFileInputs((prev) => ({ ...prev, [collectionId]: null }));
     } catch {
-      alert("Error uploading file");
+      alert(t("components.uploadError"));
     }
   };
 
   // Delete file
   const deleteFile = async (collectionId, fileId) => {
+    if (!window.confirm(t("components.deleteFileConfirm"))) return;
     try {
       await apiClient.delete(`/components/${collectionId}/files/${fileId}`);
       await fetchCollections();
     } catch {
-      alert("Error deleting file");
+      alert(t("components.deleteFileError"));
     }
   };
 
@@ -178,31 +183,24 @@ const Components = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50/30 flex flex-col items-center p-6 md:p-8">
-      <div className="w-full max-w-6xl flex flex-col gap-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-slate-200 pb-6 gap-4 w-full">
-          <div>
-            <h1 className="text-2xl font-black text-slate-900">
-              📂 Components & Documents
-            </h1>
-            <p className="text-slate-500 text-sm mt-0.5">
-              Organize links, attachments, and files for each component
-              collection.
-            </p>
-          </div>
-        </div>
+    <div className="w-full min-h-screen bg-slate-50/30 dark:bg-slate-900/10">
+      <div className="w-full px-4 sm:px-6 md:px-8 py-6 md:py-8 flex flex-col gap-6">
+        <PageHeader
+          title={"📂 " + t("nav.components")}
+          subtitle={t("components.subtitle")}
+        />
 
         <div className="flex flex-col gap-6">
           {/* Add collection */}
           <div className="flex flex-col gap-3 bg-slate-50/50 p-4 border border-slate-100 rounded-xl">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-              Create New Collection
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              {t("components.createNewCollection")}
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <input
                 value={newCollection}
                 onChange={(e) => setNewCollection(e.target.value.slice(0, 25))}
-                placeholder="Collection name (e.g., Microcontrollers)..."
+                placeholder={t("components.collectionNamePlaceholder")}
                 className="flex-1 border border-slate-200 rounded-xl px-3.5 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               />
               <div className="flex gap-2">
@@ -211,14 +209,14 @@ const Components = () => {
                   onChange={(e) =>
                     setNewCollectionLogo(e.target.value.slice(0, 10))
                   }
-                  placeholder="Optional logo emoji"
+                  placeholder={t("components.logoEmojiPlaceholder")}
                   className="w-36 border border-slate-200 rounded-xl px-3.5 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                 />
                 <button
                   onClick={addCollection}
                   className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-sm transition"
                 >
-                  Add
+                  {t("common.add") || "Add"}
                 </button>
               </div>
             </div>
@@ -228,10 +226,9 @@ const Components = () => {
           <div className="flex flex-col gap-4">
             {collections.length === 0 && (
               <div className="py-20 text-center text-slate-500 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                <p className="text-lg font-semibold mb-2">No collections yet</p>
+                <p className="text-lg font-semibold mb-2">{t("components.noCollections")}</p>
                 <p className="text-sm text-slate-500">
-                  Add a collection above to organize your components, files and
-                  links.
+                  {t("components.noCollectionsDesc")}
                 </p>
               </div>
             )}
@@ -247,20 +244,20 @@ const Components = () => {
                         value={editingName}
                         onChange={(e) => setEditingName(e.target.value)}
                         className="flex-1 border border-slate-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                        placeholder="Collection name"
+                        placeholder={t("components.collectionName")}
                       />
                       <input
                         value={editingLogo}
                         onChange={(e) => setEditingLogo(e.target.value)}
                         className="flex-1 border border-slate-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                        placeholder="Logo string"
+                        placeholder={t("components.logoString")}
                       />
                       <div className="flex gap-2">
                         <button
                           onClick={() => editCollection(collection._id)}
                           className="bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-sm hover:bg-emerald-700 transition"
                         >
-                          Save
+                          {t("common.save")}
                         </button>
                         <button
                           onClick={() => {
@@ -270,7 +267,7 @@ const Components = () => {
                           }}
                           className="bg-slate-100 text-slate-700 text-xs font-bold px-3 py-1.5 rounded-xl hover:bg-slate-200 transition"
                         >
-                          Cancel
+                          {t("common.cancel")}
                         </button>
                       </div>
                     </div>
@@ -338,7 +335,7 @@ const Components = () => {
                     {collection.files?.length > 0 && (
                       <div className="flex flex-col gap-2 bg-slate-50/50 p-3 rounded-xl border border-slate-100">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                          Attached Files:
+                          {t("components.attachedFiles")}
                         </p>
                         {collection.files.map((file) => (
                           <div
@@ -382,14 +379,14 @@ const Components = () => {
                         onClick={() => addFile(collection._id)}
                         className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow-sm transition"
                       >
-                        Upload
+                        {t("components.upload")}
                       </button>
                     </div>
 
                     {/* Links */}
                     <div className="border-t border-slate-100 pt-4">
                       <h4 className="font-bold text-xs text-slate-400 uppercase tracking-wider mb-2">
-                        Links:
+                        {t("components.links")}:
                       </h4>
                       <div className="flex flex-col gap-2">
                         {collection.links?.map((link) => (
@@ -408,7 +405,7 @@ const Components = () => {
                                       text: e.target.value,
                                     }))
                                   }
-                                  placeholder="Text"
+                                  placeholder={t("components.linkText")}
                                 />
                                 <input
                                   className="border border-slate-200 px-2 py-1 rounded-lg text-xs flex-1 min-w-0"
@@ -476,7 +473,7 @@ const Components = () => {
                       <div className="flex flex-col sm:flex-row gap-2 mt-3 w-full">
                         <input
                           className="border border-slate-200 px-3 py-1.5 rounded-xl text-xs flex-1 min-w-0"
-                          placeholder="Link label (e.g. datasheet)"
+                          placeholder={t("components.linkLabelPlaceholder")}
                           value={linkInputs[collection._id]?.text || ""}
                           onChange={(e) =>
                             setLinkInputs((prev) => ({
@@ -506,7 +503,7 @@ const Components = () => {
                           className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1.5 text-xs font-bold rounded-xl shadow-sm transition"
                           onClick={() => addLink(collection._id)}
                         >
-                          Add Link
+                          {t("components.addLink")}
                         </button>
                       </div>
                     </div>

@@ -6,9 +6,11 @@ import { buildTree, findDescendants } from "../utils/categoryUtils";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import PageHeader from "../components/layout/PageHeader";
 import Btn from "../components/layout/Btn";
+import { useLanguage } from "../context/LanguageContext";
 
 const Categories = () => {
   const { token } = useAuth();
+  const { t } = useLanguage();
   const [categories, setCategories] = useState([]);
   const [editCategory, setEditCategory] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -101,9 +103,9 @@ const Categories = () => {
 
   return (
     <div className="w-full h-full flex flex-col gap-6 p-6 md:p-8 bg-slate-50/30 dark:bg-slate-900/10">
-      <PageHeader title="Category Management" subtitle="Manage hierarchical categorization of laboratory resources">
+      <PageHeader title={"🏷️ " + t("categories.title")} subtitle={t("categories.subtitle")}>
         <Btn variant="primary" onClick={() => { setEditCategory(null); setModalOpen(true); }}>
-          + Add Category
+          {t("categories.addCategory")}
         </Btn>
       </PageHeader>
 

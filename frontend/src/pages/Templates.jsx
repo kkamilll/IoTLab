@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef } from "react";
 import apiClient from "../api/apiClient";
 import { useAuth } from "../context/AuthContext";
+import PageHeader from "../components/layout/PageHeader";
+import { useLanguage } from "../context/LanguageContext";
 
 const PLACEHOLDER_MAP = {
   newOrder: ["orderId", "CustomerName", "orderLink", "orderPassword"],
@@ -10,6 +12,7 @@ const PLACEHOLDER_MAP = {
 
 function TemplatesApp() {
   const { token } = useAuth();
+  const { t, language } = useLanguage();
   const [templatesNames, setTemplatesNames] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [selected, setSelected] = useState(null);
@@ -104,7 +107,7 @@ function TemplatesApp() {
 
   // Delete template
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this template?"))
+    if (!window.confirm(t("templates.deleteConfirm")))
       return;
     setDeleteLoadingId(id);
     try {
@@ -151,37 +154,30 @@ function TemplatesApp() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4 py-10">
         <div className="rounded-3xl border border-slate-200 bg-white px-10 py-8 text-slate-600 shadow-lg">
-          Loading templates…
+          {t("templates.loading")}
         </div>
       </div>
     );
 
   return (
-    <div className="min-h-screen bg-slate-50/30 flex flex-col items-center p-6 md:p-8">
-      <div className="w-full h-full flex flex-col gap-6 p-6 md:p-8 bg-slate-50/30">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-slate-200 pb-6 gap-4 w-full">
-          <div>
-            <h1 className="text-2xl font-black text-slate-900">
-              📧 Templates Manager
-            </h1>
-            <p className="text-slate-500 text-sm mt-0.5">
-              Create, edit and organize email templates with placeholders for
-              orders, password resets, and updates.
-            </p>
-          </div>
-        </div>
+    <div className="w-full min-h-screen bg-slate-50/30 dark:bg-slate-900/10">
+      <div className="w-full px-4 sm:px-6 md:px-8 py-6 md:py-8 flex flex-col gap-6">
+        <PageHeader
+          title={"📧 " + t("nav.templates")}
+          subtitle={t("templates.subtitle")}
+        />
 
         <div className="grid gap-6 lg:grid-cols-[1.4fr_0.6fr]">
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="rounded-3xl border border-slate-200 bg-white dark:bg-slate-900 p-6 shadow-sm">
             <div className="flex flex-wrap gap-4">
               <select
                 value={filters.name}
                 onChange={(e) =>
                   setFilters({ ...filters, name: e.target.value })
                 }
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-4 py-3 text-slate-900 dark:text-slate-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
               >
-                <option value="">All Names</option>
+                <option value="">{t("templates.allNames")}</option>
                 {templatesNames.map((name) => (
                   <option key={name} value={name}>
                     {name}
@@ -190,51 +186,51 @@ function TemplatesApp() {
               </select>
               <input
                 type="text"
-                placeholder="Subject contains..."
+                placeholder={t("templates.subjectContains")}
                 value={filters.subject}
                 onChange={(e) =>
                   setFilters({ ...filters, subject: e.target.value })
                 }
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-4 py-3 text-slate-900 dark:text-slate-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
               />
               <select
                 value={filters.isDefault}
                 onChange={(e) =>
                   setFilters({ ...filters, isDefault: e.target.value })
                 }
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-4 py-3 text-slate-900 dark:text-slate-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
               >
-                <option value="">All</option>
-                <option value="true">Default</option>
-                <option value="false">Not Default</option>
+                <option value="">{t("templates.all")}</option>
+                <option value="true">{t("templates.default")}</option>
+                <option value="false">{t("templates.notDefault")}</option>
               </select>
             </div>
           </div>
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="rounded-3xl border border-slate-200 bg-white dark:bg-slate-900 p-6 shadow-sm">
             <p className="text-sm uppercase tracking-[0.3em] text-slate-500">
-              Quick actions
+              {t("templates.quickActions")}
             </p>
             <button
               onClick={() => setShowForm(true)}
               className="mt-4 w-full rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-lg hover:bg-blue-700 transition"
             >
-              + Add Template
+              {t("templates.addTemplate")}
             </button>
-            <div className="mt-6 space-y-3 text-sm text-slate-600">
+            <div className="mt-6 space-y-3 text-sm text-slate-600 dark:text-slate-400">
               <p>
-                <span className="font-semibold text-slate-900">
-                  Total templates:
+                <span className="font-semibold text-slate-900 dark:text-white">
+                  {t("templates.totalTemplates")}
                 </span>{" "}
                 {templates.length}
               </p>
               <p>
-                <span className="font-semibold text-slate-900">
-                  Visible filters:
+                <span className="font-semibold text-slate-900 dark:text-white">
+                  {t("templates.visibleFilters")}
                 </span>{" "}
                 {filters.name || filters.subject || filters.isDefault
-                  ? "Active"
-                  : "None"}
+                  ? t("templates.active")
+                  : t("templates.none")}
               </p>
             </div>
           </div>
@@ -243,18 +239,18 @@ function TemplatesApp() {
         {showForm && (
           <form
             onSubmit={handleSubmit}
-            className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-5"
+            className="rounded-3xl border border-slate-200 bg-white dark:bg-slate-900 p-6 shadow-sm space-y-5"
           >
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <h2 className="text-2xl font-semibold text-slate-900">
-                {selected ? "Edit Template" : "Create New Template"}
+              <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">
+                {selected ? t("templates.editTemplate") : t("templates.createNewTemplate")}
               </h2>
               <button
                 type="button"
                 onClick={resetForm}
-                className="rounded-2xl border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200 transition"
+                className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
             </div>
 
@@ -264,11 +260,11 @@ function TemplatesApp() {
                 setForm({ ...form, name: e.target.value });
                 setCurrName(e.target.value);
               }}
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-4 py-3 text-slate-900 dark:text-slate-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
               required
             >
               <option value="" disabled>
-                Select template name
+                {t("templates.selectTemplateName")}
               </option>
               {templatesNames.map((name) => (
                 <option key={name} value={name}>
@@ -279,11 +275,11 @@ function TemplatesApp() {
 
             <input
               type="text"
-              placeholder="Subject"
+              placeholder={t("templates.subject")}
               value={form.subject}
               onFocus={() => setActiveField("subject")}
               onChange={(e) => setForm({ ...form, subject: e.target.value })}
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-4 py-3 text-slate-900 dark:text-slate-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
               required
             />
 
@@ -292,7 +288,7 @@ function TemplatesApp() {
                 <button
                   key={p}
                   type="button"
-                  className="rounded-2xl bg-slate-100 px-3 py-2 text-sm text-slate-700 hover:bg-slate-200 transition"
+                  className="rounded-2xl bg-slate-100 dark:bg-slate-800 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
                   onClick={() => insertPlaceholder(p)}
                 >
                   {p}
@@ -302,25 +298,25 @@ function TemplatesApp() {
 
             <textarea
               ref={textareaRef}
-              placeholder="Body"
+              placeholder={t("templates.body")}
               value={form.body}
               onFocus={() => setActiveField("body")}
               onChange={(e) => setForm({ ...form, body: e.target.value })}
-              className="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-4 text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              className="w-full rounded-3xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-4 py-4 text-slate-900 dark:text-slate-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
               rows={6}
               required
             />
 
-            <label className="flex items-center gap-3 text-sm text-slate-700">
+            <label className="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
               <input
                 type="checkbox"
                 checked={form.isDefault}
                 onChange={(e) =>
                   setForm({ ...form, isDefault: e.target.checked })
                 }
-                className="h-5 w-5 rounded border border-slate-300 bg-white text-blue-600 focus:ring-blue-500"
+                className="h-5 w-5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-blue-600 focus:ring-blue-500"
               />
-              <span>Set as default template</span>
+              <span>{t("templates.defaultTemplate")}</span>
             </label>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
@@ -331,60 +327,60 @@ function TemplatesApp() {
               >
                 {submitLoading
                   ? selected
-                    ? "Updating..."
-                    : "Creating..."
+                    ? (language === "pl" ? "Aktualizowanie..." : "Updating...")
+                    : (language === "pl" ? "Tworzenie..." : "Creating...")
                   : selected
-                    ? "Update Template"
-                    : "Create Template"}
+                    ? t("templates.saveTemplate")
+                    : t("templates.createNewTemplate")}
               </button>
               <button
                 type="button"
                 onClick={resetForm}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-200 transition"
+                className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-850 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-750 transition"
               >
-                Reset
+                {language === "pl" ? "Resetuj" : "Reset"}
               </button>
             </div>
           </form>
         )}
 
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm overflow-x-auto">
-          <table className="min-w-full text-sm text-slate-700">
-            <thead className="bg-slate-100 text-left text-slate-600 uppercase tracking-[0.18em] text-xs">
+        <div className="rounded-3xl border border-slate-200 bg-white dark:bg-slate-900 p-6 shadow-sm overflow-x-auto">
+          <table className="min-w-full text-sm text-slate-700 dark:text-slate-300">
+            <thead className="bg-slate-100 dark:bg-slate-950 text-left text-slate-600 dark:text-slate-400 uppercase tracking-[0.18em] text-xs">
               <tr>
                 <th className="p-3">#</th>
-                <th className="p-3">Name</th>
-                <th className="p-3">Subject</th>
-                <th className="p-3">Default</th>
-                <th className="p-3 text-center">Actions</th>
+                <th className="p-3">{t("users.name")}</th>
+                <th className="p-3">{t("templates.subject")}</th>
+                <th className="p-3">{t("templates.default")}</th>
+                <th className="p-3 text-center">{t("common.actions")}</th>
               </tr>
             </thead>
             <tbody>
-              {templates.map((t, idx) => (
+              {templates.map((tmpl, idx) => (
                 <tr
-                  key={t._id}
-                  className="border-t border-slate-100 hover:bg-slate-50 transition"
+                  key={tmpl._id}
+                  className="border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850/40 transition"
                 >
                   <td className="p-3 align-top">{idx + 1}</td>
-                  <td className="p-3 align-top">{t.name}</td>
-                  <td className="p-3 align-top">{t.subject}</td>
+                  <td className="p-3 align-top">{tmpl.name}</td>
+                  <td className="p-3 align-top">{tmpl.subject}</td>
                   <td className="p-3 align-top">
-                    {t.isDefault ? "Yes" : "No"}
+                    {tmpl.isDefault ? t("cart.yes") : t("cart.no")}
                   </td>
                   <td className="p-3 align-top text-center">
                     <div className="inline-flex flex-wrap gap-2 justify-center">
                       <button
-                        onClick={() => fetchTemplateById(t._id)}
+                        onClick={() => fetchTemplateById(tmpl._id)}
                         className="rounded-2xl bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition"
                       >
-                        Edit
+                        {t("common.edit")}
                       </button>
                       <button
-                        onClick={() => handleDelete(t._id)}
-                        disabled={deleteLoadingId === t._id}
-                        className={`rounded-2xl px-3 py-2 text-xs font-semibold text-white transition ${deleteLoadingId === t._id ? "bg-red-300 cursor-not-allowed" : "bg-red-600 hover:bg-red-700"}`}
+                        onClick={() => handleDelete(tmpl._id)}
+                        disabled={deleteLoadingId === tmpl._id}
+                        className={`rounded-2xl px-3 py-2 text-xs font-semibold text-white transition ${deleteLoadingId === tmpl._id ? "bg-red-300 cursor-not-allowed" : "bg-red-600 hover:bg-red-700"}`}
                       >
-                        {deleteLoadingId === t._id ? "Deleting..." : "Delete"}
+                        {deleteLoadingId === tmpl._id ? (language === "pl" ? "Usuwanie..." : "Deleting...") : t("common.delete")}
                       </button>
                     </div>
                   </td>
@@ -393,7 +389,7 @@ function TemplatesApp() {
               {templates.length === 0 && (
                 <tr>
                   <td colSpan={5} className="p-6 text-center text-slate-500">
-                    No templates found. Use the button above to create one.
+                    {language === "pl" ? "Nie znaleziono szablonów. Użyj przycisku powyżej, aby utworzyć szablon." : "No templates found. Use the button above to create one."}
                   </td>
                 </tr>
               )}

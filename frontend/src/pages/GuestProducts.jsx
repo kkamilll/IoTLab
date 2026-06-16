@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
 import apiClient from "../api/apiClient";
 import { useNavigate, useParams } from "react-router-dom";
+import { useLanguage } from "../context/LanguageContext";
 
 const GuestProducts = () => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { menuCategory } = useParams();
 
@@ -192,10 +194,10 @@ const GuestProducts = () => {
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <p className="text-sm uppercase tracking-[0.28em] text-slate-500">
-                Guest Shop
+                {t("guest.subtitle")}
               </p>
               <h1 className="text-4xl font-black text-slate-900">
-                Browse Objects
+                {t("guest.title")}
               </h1>
             </div>
             <div className="flex flex-wrap gap-3">
@@ -203,13 +205,13 @@ const GuestProducts = () => {
                 onClick={() => navigate("/")}
                 className="rounded-2xl border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200 transition"
               >
-                Back Home
+                {t("guest.backHome")}
               </button>
               <button
                 onClick={() => navigate("/cart")}
                 className="rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition"
               >
-                View Cart ({cart.reduce((sum, item) => sum + item.quantity, 0)})
+                {t("guest.viewCart")} ({cart.reduce((sum, item) => sum + item.quantity, 0)})
               </button>
             </div>
           </div>
@@ -219,7 +221,7 @@ const GuestProducts = () => {
               <div className="grid gap-3 sm:grid-cols-[1fr_220px]">
                 <input
                   type="text"
-                  placeholder="Search objects by name, description or field"
+                  placeholder={t("guest.searchPlaceholder")}
                   className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                   onChange={(e) => setSearchTerm(e.target.value.toLowerCase())}
                 />
@@ -228,7 +230,7 @@ const GuestProducts = () => {
                   onChange={(e) => setActiveCategory(e.target.value)}
                   className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                 >
-                  <option value="">All Categories</option>
+                  <option value="">{t("guest.allCategories")}</option>
                   {categories.map((cat) => (
                     <option key={cat._id} value={cat._id}>
                       {cat.name}
@@ -238,35 +240,34 @@ const GuestProducts = () => {
               </div>
 
               <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-sm font-semibold text-slate-600">Showing</p>
+                <p className="text-sm font-semibold text-slate-600">{t("guest.showing")}</p>
                 <p className="text-2xl font-bold text-slate-900">
-                  {filteredProducts.length} items
+                  {filteredProducts.length} {t("guest.items")}
                 </p>
                 <p className="mt-2 text-sm text-slate-500">
-                  Use filters above to narrow the collection and add items to
-                  your cart.
+                  {t("guest.useFilters")}
                 </p>
               </div>
             </div>
 
             <div className="rounded-3xl border border-slate-200 bg-blue-600 p-4 text-white shadow-lg">
               <p className="text-sm uppercase tracking-[0.22em] text-blue-200">
-                Quick Info
+                {t("guest.quickInfo")}
               </p>
               <div className="mt-4 space-y-3 text-sm leading-6">
                 <p>
-                  <strong className="text-white">Category:</strong>{" "}
+                  <strong className="text-white">{t("guest.category")}:</strong>{" "}
                   {activeCategory
                     ? categories.find((cat) => cat._id === activeCategory)
                         ?.name || "Selected"
-                    : "All"}
+                    : t("guest.allCategories")}
                 </p>
                 <p>
-                  <strong className="text-white">Total in cart:</strong>{" "}
+                  <strong className="text-white">{t("guest.totalInCart")}:</strong>{" "}
                   {cart.reduce((sum, item) => sum + item.quantity, 0)}
                 </p>
                 <p>
-                  <strong className="text-white">Current page:</strong>{" "}
+                  <strong className="text-white">{t("guest.currentPage")}:</strong>{" "}
                   {currentPage} /{" "}
                   {Math.max(
                     1,
@@ -279,11 +280,11 @@ const GuestProducts = () => {
 
           {loading ? (
             <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center text-slate-500">
-              Loading products…
+              {t("guest.loading")}
             </div>
           ) : filteredProducts.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-12 text-center text-slate-500">
-              No products found. Try a different keyword or category.
+              {t("guest.noProducts")}
             </div>
           ) : (
             <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
@@ -291,24 +292,30 @@ const GuestProducts = () => {
                 <table className="min-w-full divide-y divide-slate-200 text-sm">
                   <thead className="bg-slate-100 text-slate-600 uppercase tracking-[0.08em] text-xs">
                     <tr>
-                      {allColumns.map((col, idx) => (
-                        <th
-                          key={idx}
-                          className="px-4 py-4 text-left font-semibold"
-                          onClick={() => handleSort(col)}
-                        >
-                          <div className="flex items-center gap-2 cursor-pointer select-none">
-                            {col}
-                            {sortConfig.key === col
-                              ? sortConfig.direction === "asc"
-                                ? "↑"
-                                : "↓"
-                              : ""}
-                          </div>
-                        </th>
-                      ))}
+                      {allColumns.map((col, idx) => {
+                        const colTrans = t(`products.columns.${col}`);
+                        const displayName = colTrans.startsWith("products.columns.")
+                          ? (col === "available" ? t("guest.available") : col)
+                          : colTrans;
+                        return (
+                          <th
+                            key={idx}
+                            className="px-4 py-4 text-left font-semibold cursor-pointer select-none"
+                            onClick={() => handleSort(col)}
+                          >
+                            <div className="flex items-center gap-2">
+                              {displayName}
+                              {sortConfig.key === col
+                                ? sortConfig.direction === "asc"
+                                  ? "↑"
+                                  : "↓"
+                                : ""}
+                            </div>
+                          </th>
+                        );
+                      })}
                       <th className="px-4 py-4 text-left font-semibold">
-                        Quantity
+                        {t("guest.quantity")}
                       </th>
                     </tr>
                   </thead>
@@ -426,17 +433,17 @@ const GuestProducts = () => {
                           {p.name}
                         </span>
                         <p className="mt-1 text-sm text-slate-500 line-clamp-3">
-                          {p.description || "No description available."}
+                          {p.description || "—"}
                         </p>
                       </div>
                       <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800">
-                        {getAvailableStockForProduct(p)} avail
+                        {t("guest.available")}: {getAvailableStockForProduct(p)}
                       </span>
                     </div>
                     <div className="mt-4 flex flex-col gap-3">
                       <div className="grid grid-cols-2 gap-2">
                         <div className="rounded-2xl bg-slate-50 p-3 text-sm text-slate-700">
-                          Categories
+                          {t("products.columns.categories")}
                         </div>
                         <div className="rounded-2xl bg-slate-50 p-3 text-sm text-slate-700">
                           {p.categories?.map((c) => c.name).join(", ") || "—"}
@@ -492,7 +499,7 @@ const GuestProducts = () => {
 
           <div className="flex flex-col items-center justify-between gap-3 border-t border-slate-200 pt-4 sm:flex-row">
             <div className="text-sm text-slate-500">
-              Page {currentPage} of{" "}
+              {t("common.page")} {currentPage} {t("common.of")}{" "}
               {Math.max(1, Math.ceil(filteredProducts.length / itemsPerPage))}
             </div>
             <div className="flex gap-2">
@@ -501,7 +508,7 @@ const GuestProducts = () => {
                 disabled={currentPage === 1}
                 className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
               >
-                Prev
+                {t("common.prev")}
               </button>
               <button
                 onClick={() =>
@@ -521,7 +528,7 @@ const GuestProducts = () => {
                 }
                 className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
               >
-                Next
+                {t("common.next")}
               </button>
             </div>
           </div>

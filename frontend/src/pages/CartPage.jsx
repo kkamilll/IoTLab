@@ -118,7 +118,7 @@ const CartPage = () => {
 
     try {
       if (!cart.length) {
-        showToast(language === "pl" ? "Twój koszyk jest pusty!" : "Your cart is empty!", "warning");
+        showToast(t("cart.emptyAlert"), "warning");
         return;
       }
 
@@ -133,58 +133,36 @@ const CartPage = () => {
 
       if (missingField) {
         const fieldLabel = t(`cart.${missingField}`) || missingField;
-        showToast(
-          language === "pl"
-            ? `Proszę wypełnić pole: ${fieldLabel}!`
-            : `Please fill in your ${fieldLabel}!`,
-          "warning"
-        );
+        showToast(t("cart.fillField", { field: fieldLabel }), "warning");
         return;
       }
 
       // reCAPTCHA validation when configured
       const captchaToken = recaptchaKey ? recaptchaRef.current?.getValue() : null;
       if (recaptchaKey && !captchaToken) {
-        showToast(
-          language === "pl" ? "Proszę zweryfikować, że nie jesteś robotem!" : "Please verify that you are human!",
-          "warning"
-        );
+        showToast(t("cart.recaptchaAlert"), "warning");
         return;
       }
 
       if (orderCustomer.phoneNumber && !phoneRegex.test(orderCustomer.phoneNumber)) {
-        showToast(
-          language === "pl" ? "Numer telefonu musi składać się z 9–10 cyfr" : "Phone number must be 9–10 digits",
-          "error"
-        );
+        showToast(t("cart.phoneDigitsAlert"), "error");
         return;
       }
 
       const indexRegex = /^\d{6}$/;
       if (orderCustomer.index && !indexRegex.test(orderCustomer.index)) {
-        showToast(
-          language === "pl" ? "Numer indeksu musi składać się z dokładnie 6 cyfr" : "Index must be exactly 6 digits",
-          "error"
-        );
+        showToast(t("cart.indexDigitsAlert"), "error");
         return;
       }
 
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (orderCustomer.email && !emailRegex.test(orderCustomer.email)) {
-        showToast(
-          language === "pl" ? "Proszę podać poprawny adres e-mail" : "Please enter a valid email address",
-          "error"
-        );
+        showToast(t("cart.emailValidAlert"), "error");
         return;
       }
 
       if (!orderDates.startDate || !orderDates.endDate) {
-        showToast(
-          language === "pl"
-            ? "Proszę wybrać datę rozpoczęcia i zakończenia zamówienia!"
-            : "Please select start and end dates for the order!",
-          "warning"
-        );
+        showToast(t("cart.selectDatesAlert"), "warning");
         return;
       }
 
@@ -194,17 +172,11 @@ const CartPage = () => {
       const bufferTime = new Date(now.getTime() - 60000);
 
       if (start < bufferTime) {
-        showToast(
-          language === "pl" ? "Data rozpoczęcia nie może być w przeszłości!" : "Start date cannot be in the past!",
-          "error"
-        );
+        showToast(t("cart.startDatePastAlert"), "error");
         return;
       }
       if (end <= start) {
-        showToast(
-          language === "pl" ? "Data zakończenia musi być po dacie rozpoczęcia!" : "End date must be after start date!",
-          "error"
-        );
+        showToast(t("cart.endDateBeforeStartAlert"), "error");
         return;
       }
 
@@ -221,10 +193,7 @@ const CartPage = () => {
         requestedEndDate: orderDates.endDate,
       });
 
-      showToast(
-        language === "pl" ? "Zamówienie zostało złożone i wysłane e-mailem!" : "Order submitted and emailed!",
-        "success"
-      );
+      showToast(t("cart.orderSuccessAlert"), "success");
       setCart([]);
       localStorage.removeItem("cart");
       navigate("/");
@@ -244,7 +213,7 @@ const CartPage = () => {
         <h2 className="text-2xl font-bold">{t("cart.emptyTitle")}</h2>
         <p className="text-slate-500 dark:text-slate-400 text-sm max-w-md text-center">{t("cart.subtitle")}</p>
         <button
-          onClick={() => navigate("/")}
+          onClick={() => navigate(token ? "/admin-dashboard/products" : "/guest-products")}
           className="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-2xl shadow-lg hover:bg-indigo-700 transition cursor-pointer"
         >
           {t("cart.back")}
@@ -344,8 +313,8 @@ const CartPage = () => {
                 <span className={`rounded-full border px-3 py-1 font-medium ${orderDates.startDate && orderDates.endDate ? "border-emerald-200 dark:border-emerald-900/30 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400" : "border-slate-200 dark:border-slate-750 bg-slate-50 dark:bg-slate-800"}`}>
                   {t("cart.datesSelected")}:{" "}
                   {orderDates.startDate && orderDates.endDate
-                    ? (language === "pl" ? "✓ Tak" : "✓ Yes")
-                    : (language === "pl" ? "Nie" : "No")}
+                    ? `✓ ${t("cart.yes")}`
+                    : t("cart.no")}
                 </span>
               </div>
             </div>
@@ -442,7 +411,7 @@ const CartPage = () => {
             {/* Order Preview */}
             <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 p-5 shadow-sm">
               <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-3">{t("cart.orderDetails")}</h3>
-              <div className="space-y-2 text-sm text-slate-600 dark:text-slate-350">
+              <div className="space-y-2 text-sm text-slate-600 dark:text-slate-355">
                 <div className="flex justify-between">
                   <span className="text-slate-500">{t("cart.email")}:</span>
                   <span className="font-medium text-slate-900 dark:text-white truncate max-w-[180px]">
@@ -456,7 +425,7 @@ const CartPage = () => {
                 <div className="pt-1 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
                   {orderDates.startDate && orderDates.endDate
                     ? `📅 ${new Date(orderDates.startDate).toLocaleString()} → ${new Date(orderDates.endDate).toLocaleString()}`
-                    : (language === "pl" ? "Brak wybranych dat" : "No dates selected")}
+                    : t("cart.noDates")}
                 </div>
               </div>
             </div>

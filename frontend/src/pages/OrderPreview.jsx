@@ -1,10 +1,14 @@
 // OrderPreview.jsx
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import apiClient from "../api/apiClient";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function OrderPreview() {
   const { orderUUID } = useParams();
+  const navigate = useNavigate();
+  const { t } = useLanguage();
+
   const [order, setOrder] = useState(null);
   const [isAuthed, setIsAuthed] = useState(false);
   const [password, setPassword] = useState("");
@@ -26,7 +30,7 @@ export default function OrderPreview() {
       setOrder(null);
       setIsAuthed(false);
       localStorage.removeItem(`order-secret-${orderUUID}`);
-      setError("Invalid or expired access code.");
+      setError(t("orderPreview.invalidAccessCode"));
     } finally {
       setLoading(false);
     }
@@ -45,51 +49,79 @@ export default function OrderPreview() {
 
   if (loading)
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4 py-10">
-        <div className="rounded-3xl border border-slate-200 bg-white px-8 py-6 text-slate-600 shadow-lg">
-          Loading order details…
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 px-4 py-10 transition-colors duration-300">
+        <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 px-8 py-6 text-slate-650 dark:text-slate-300 shadow-lg flex items-center gap-3">
+          <svg className="animate-spin w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+          {t("orderPreview.loadingOrderDetails")}
         </div>
       </div>
     );
 
   if (!isAuthed) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-100 via-slate-200 to-slate-100 flex items-center justify-center px-4 py-10">
-        <form
-          onSubmit={handleLogin}
-          className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl border border-slate-200"
-        >
-          <h2 className="text-2xl font-bold mb-4 text-slate-900 text-center">
-            Enter Order Access Code
-          </h2>
-          {error && (
-            <p className="mb-4 rounded-2xl bg-red-100 px-4 py-3 text-sm text-red-700">
-              {error}
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center px-4 py-12 transition-colors duration-300">
+        <div className="w-full max-w-md">
+          {/* Brand/App logo or header */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 text-3xl mb-4 shadow-sm">
+              🔒
+            </div>
+            <h2 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+              IoTLab
+            </h2>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+              {t("welcome.subtitle")}
             </p>
-          )}
-          <input
-            type="text"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-            placeholder="Secret code"
-          />
-          <button
-            type="submit"
-            className="mt-6 w-full rounded-2xl bg-blue-600 px-4 py-3 text-white font-semibold shadow-lg hover:bg-blue-700 transition"
+          </div>
+
+          <form
+            onSubmit={handleLogin}
+            className="rounded-3xl bg-white dark:bg-slate-850 p-8 shadow-xl border border-slate-150 dark:border-slate-800 transition-colors duration-300"
           >
-            Access Order
-          </button>
-        </form>
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6 text-center">
+              {t("orderPreview.enterOrderAccessCode")}
+            </h3>
+            
+            {error && (
+              <div className="mb-5 rounded-2xl bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900/30 px-4 py-3 text-sm text-red-650 dark:text-red-400 flex items-center gap-2">
+                <span>⚠️</span>
+                <span>{error}</span>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full rounded-2xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 px-4 py-3.5 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 transition"
+                  placeholder={t("orderPreview.secretCode")}
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-4 shadow-lg hover:shadow-indigo-500/20 transition duration-150 cursor-pointer"
+              >
+                {t("orderPreview.accessOrderButton")}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     );
   }
 
   if (!order)
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4 py-10">
-        <div className="rounded-3xl border border-slate-200 bg-white px-8 py-6 text-slate-600 shadow-lg">
-          No order data available.
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 px-4 py-10 transition-colors duration-300">
+        <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 px-8 py-6 text-slate-650 dark:text-slate-300 shadow-lg">
+          {t("orderPreview.noOrderData")}
         </div>
       </div>
     );
@@ -155,55 +187,55 @@ export default function OrderPreview() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 py-10 px-4 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-5xl">
-        <div className="mb-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
+    <div className="min-h-screen bg-slate-100 dark:bg-slate-900 py-10 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-8 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 p-6 shadow-2xl transition-colors duration-300">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-3xl font-black text-slate-900">
-                Order Preview
+              <h1 className="text-3xl font-black text-slate-900 dark:text-white">
+                {t("orderPreview.orderPreviewTitle")}
               </h1>
-              <p className="mt-2 text-sm text-slate-500">
-                Review your order and confirm each owner group.
+              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                {t("orderPreview.orderPreviewSub")}
               </p>
             </div>
             <button
               onClick={() => navigate(-1)}
-              className="self-start rounded-2xl border border-slate-200 bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-200 transition"
+              className="self-start rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer"
             >
-              Back
+              {t("common.back")}
             </button>
           </div>
 
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-              <h2 className="text-lg font-semibold text-slate-900 mb-3">
-                Customer
+            <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 p-5">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-3">
+                {t("orderPreview.customer")}
               </h2>
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-slate-600 dark:text-slate-300">
                 {order.customer.firstName} {order.customer.lastName}
               </p>
-              <p className="text-sm text-slate-600">
-                Email: {order.customer.email}
+              <p className="text-sm text-slate-600 dark:text-slate-300">
+                {t("cart.email")}: {order.customer.email}
               </p>
-              <p className="text-sm text-slate-600">
-                Phone: {order.customer.phoneNumber}
+              <p className="text-sm text-slate-600 dark:text-slate-300">
+                {t("cart.phone")}: {order.customer.phoneNumber}
               </p>
             </div>
-            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-              <h2 className="text-lg font-semibold text-slate-900 mb-3">
-                Rental Dates
+            <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 p-5">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-3">
+                {t("orderPreview.rentalDates")}
               </h2>
-              <p className="text-sm text-slate-600">
-                Requested:{" "}
+              <p className="text-sm text-slate-600 dark:text-slate-300">
+                {t("orderPreview.requested")}:{" "}
                 {new Date(order.requestedStartDate).toLocaleDateString()} →{" "}
                 {new Date(order.requestedEndDate).toLocaleDateString()}
               </p>
               {order.ownersData?.some(
                 (owner) => owner.assignedStartDate && owner.assignedEndDate,
               ) && (
-                <p className="mt-2 text-sm text-slate-600">
-                  Assigned dates may vary per owner.
+                <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                  {t("orderPreview.assignedDatesComment")}
                 </p>
               )}
             </div>
@@ -214,31 +246,31 @@ export default function OrderPreview() {
           {Object.values(itemsByOwner).map((group, idx) => (
             <div
               key={idx}
-              className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
+              className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 p-6 shadow-sm transition-colors duration-300"
             >
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-900">
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-white">
                     {group.owner.name}
                   </h2>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Group status:{" "}
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    {t("orderPreview.groupStatus")}:{" "}
                     <span className={getStatusColor(group.status)}>
                       {group.status}
                     </span>
                   </p>
                 </div>
-                <div className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700">
-                  {group.items.length} item{group.items.length !== 1 ? "s" : ""}
+                <div className="rounded-full bg-slate-100 dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  {group.items.length} {group.items.length !== 1 ? t("cart.items") : t("cart.item")}
                 </div>
               </div>
 
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-                    Requested
+                <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 p-4">
+                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    {t("orderPreview.requested")}
                   </p>
-                  <p className="mt-2 text-sm text-slate-700">
+                  <p className="mt-2 text-sm text-slate-700 dark:text-slate-300">
                     {new Date(
                       group.dates.requestedStartDate,
                     ).toLocaleDateString()}{" "}
@@ -249,11 +281,11 @@ export default function OrderPreview() {
                   </p>
                 </div>
                 {group.hasAssignedDates && (
-                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-                      Assigned
+                  <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 p-4">
+                    <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                      {t("orderPreview.assigned")}
                     </p>
-                    <p className="mt-2 text-sm text-slate-700">
+                    <p className="mt-2 text-sm text-slate-700 dark:text-slate-300">
                       {new Date(
                         group.dates.assignedStartDate,
                       ).toLocaleDateString()}{" "}
@@ -270,16 +302,16 @@ export default function OrderPreview() {
                 {group.items.map((item, i) => (
                   <div
                     key={i}
-                    className="rounded-3xl border border-slate-200 bg-slate-50 p-4"
+                    className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 p-4"
                   >
-                    <p className="font-semibold text-slate-900">
+                    <p className="font-semibold text-slate-900 dark:text-white">
                       {item.product?.name || "Unknown product"}
                     </p>
-                    <p className="text-sm text-slate-600">
-                      Quantity: {item.requestedQuantity}
+                    <p className="text-sm text-slate-600 dark:text-slate-305">
+                      {t("orderPreview.quantity")}: {item.requestedQuantity}
                     </p>
-                    <p className="text-sm text-slate-600">
-                      Status: {item.status}
+                    <p className="text-sm text-slate-600 dark:text-slate-305">
+                      {t("common.status")}: {item.status}
                     </p>
                   </div>
                 ))}
@@ -290,15 +322,15 @@ export default function OrderPreview() {
                   <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                     <button
                       onClick={() => handleOwnerAction(group, true)}
-                      className="w-full rounded-2xl bg-green-600 px-5 py-3 text-sm font-semibold text-white hover:bg-green-700 transition"
+                      className="w-full rounded-2xl bg-green-600 px-5 py-3 text-sm font-semibold text-white hover:bg-green-700 transition cursor-pointer"
                     >
-                      Approve
+                      {t("orderPreview.approve")}
                     </button>
                     <button
                       onClick={() => handleOwnerAction(group, false)}
-                      className="w-full rounded-2xl bg-red-600 px-5 py-3 text-sm font-semibold text-white hover:bg-red-700 transition"
+                      className="w-full rounded-2xl bg-red-600 px-5 py-3 text-sm font-semibold text-white hover:bg-red-700 transition cursor-pointer"
                     >
-                      Reject
+                      {t("orderPreview.reject")}
                     </button>
                   </div>
                 )}

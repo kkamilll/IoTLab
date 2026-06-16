@@ -1,4 +1,5 @@
 import React from "react";
+import { useLanguage } from "../../context/LanguageContext";
 
 const ProductsMobileCards = ({
   paginatedProducts,
@@ -11,6 +12,8 @@ const ProductsMobileCards = ({
   user,
   isAdmin
 }) => {
+  const { t } = useLanguage();
+
   return (
     <div className="md:hidden flex flex-col gap-4">
       {paginatedProducts.map(product => (
@@ -26,7 +29,7 @@ const ProductsMobileCards = ({
         >
           {/* Name */}
           <div className="flex justify-between items-center py-1 border-b border-slate-100 last:border-b-0">
-            <span className="font-semibold text-slate-400 text-xs uppercase tracking-wider">Name:</span>
+            <span className="font-semibold text-slate-400 text-xs uppercase tracking-wider">{t("products.columns.name")}:</span>
             <span className="text-indigo-600 font-semibold truncate text-sm">
               {product.name}
             </span>
@@ -34,7 +37,7 @@ const ProductsMobileCards = ({
 
           {/* Description */}
           <div className="flex justify-between items-center py-1 border-b border-slate-100 last:border-b-0">
-            <span className="font-semibold text-slate-400 text-xs uppercase tracking-wider">Description:</span>
+            <span className="font-semibold text-slate-400 text-xs uppercase tracking-wider">{t("products.columns.description")}:</span>
             <span className="text-slate-600 truncate text-sm" title={product.description}>
               {product.description?.length > 50 ? product.description.slice(0, 30) + "…" : product.description}
             </span>
@@ -42,19 +45,19 @@ const ProductsMobileCards = ({
 
           {/* Stock Total */}
           <div className="flex justify-between items-center py-1 border-b border-slate-100 last:border-b-0">
-            <span className="font-semibold text-slate-400 text-xs uppercase tracking-wider">Total:</span>
+            <span className="font-semibold text-slate-400 text-xs uppercase tracking-wider">{t("products.columns.total")}:</span>
             <span className="text-slate-800 font-medium text-sm">{product.stockTotal ?? 0}</span>
           </div>
 
           {/* Stock For Rent */}
           <div className="flex justify-between items-center py-1 border-b border-slate-100 last:border-b-0">
-            <span className="font-semibold text-slate-400 text-xs uppercase tracking-wider">For rent:</span>
+            <span className="font-semibold text-slate-400 text-xs uppercase tracking-wider">{t("products.columns.for rent")}:</span>
             <span className="text-slate-800 font-medium text-sm">{product.stockForRent ?? 0}</span>
           </div>
 
           {/* Categories */}
           <div className="flex justify-between items-center py-1 border-b border-slate-100 last:border-b-0">
-            <span className="font-semibold text-slate-400 text-xs uppercase tracking-wider">Categories:</span>
+            <span className="font-semibold text-slate-400 text-xs uppercase tracking-wider">{t("products.columns.categories")}:</span>
             <div className="relative inline-block w-40">
               <select
                 className="block w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg bg-white appearance-none pr-8 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-sm"
@@ -67,7 +70,7 @@ const ProductsMobileCards = ({
                 )}
                 {product.categories.length > 1 && (
                   <>
-                    <option value="" disabled hidden>Check Categories</option>
+                    <option value="" disabled hidden>{t("products.columns.categories")}</option>
                     {product.categories.map((c, i) => (
                       <option key={i} value={c?.name ?? ""}>{c?.name}</option>
                     ))}
@@ -88,7 +91,7 @@ const ProductsMobileCards = ({
 
           {/* Owner */}
           <div className="flex justify-between items-center py-1 border-b border-slate-100 last:border-b-0">
-            <span className="font-semibold text-slate-400 text-xs uppercase tracking-wider">Owner:</span>
+            <span className="font-semibold text-slate-400 text-xs uppercase tracking-wider">{t("products.columns.owner")}:</span>
             <span className="text-slate-800 font-medium text-sm">{product.owner?.name ?? product.owner}</span>
           </div>
 
@@ -131,10 +134,10 @@ const ProductsMobileCards = ({
           {/* In cart / Available */}
           <div className="flex justify-between items-center mt-1">
             <span className="bg-slate-50 text-slate-700 text-xs font-semibold px-2.5 py-1 rounded-full border border-slate-100">
-              Available: {getAvailableStockForProduct(product)}
+              {t("products.available")}: {getAvailableStockForProduct(product)}
             </span>
             <span className="bg-emerald-50 text-emerald-700 text-xs font-semibold px-2.5 py-1 rounded-full border border-emerald-100">
-              In cart: {cartQuantities[product._id] || 0}
+              {t("cart.inCart")}: {cartQuantities[product._id] || 0}
             </span>
           </div>
 
@@ -145,20 +148,20 @@ const ProductsMobileCards = ({
               disabled={user.id !== product.owner._id && !isAdmin}
               className="flex-1 px-3 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-700 transition disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed text-center"
             >
-              Edit
+              {t("common.edit")}
             </button>
             <button
               onClick={() => handlePreview(product._id)}
               className="flex-1 px-3 py-2 bg-slate-100 text-slate-800 rounded-xl text-xs font-semibold hover:bg-slate-200 transition text-center"
             >
-              Preview
+              {t("products.preview")}
             </button>
             <button
               onClick={() => handleDelete(product._id)}
               disabled={user.id !== product.owner._id && !isAdmin}
               className="flex-1 px-3 py-2 bg-red-50 text-red-600 border border-red-100 rounded-xl text-xs font-semibold hover:bg-red-100 transition disabled:bg-slate-100 disabled:text-slate-400 disabled:border-transparent disabled:cursor-not-allowed text-center"
             >
-              Delete
+              {t("common.delete")}
             </button>
           </div>
         </div>

@@ -15,12 +15,19 @@ export const LanguageProvider = ({ children }) => {
     localStorage.setItem("language", language);
   }, [language]);
 
-  const t = (key) => {
+  const t = (key, params = {}) => {
     const keys = key.split(".");
     let value = translations[language];
     for (const k of keys) {
       if (value === undefined || value === null) return key;
       value = value[k];
+    }
+    if (typeof value === "string") {
+      let str = value;
+      Object.entries(params).forEach(([paramKey, paramVal]) => {
+        str = str.replace(`{${paramKey}}`, paramVal);
+      });
+      return str;
     }
     return value || key;
   };

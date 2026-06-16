@@ -2,9 +2,11 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import apiClient from "../api/apiClient";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../context/LanguageContext";
 
 const CollectionFiles = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const { token } = useAuth();
   const { collectionId } = useParams();
@@ -64,12 +66,12 @@ const CollectionFiles = () => {
     }
   };
 
-  if (loading) return <div className="text-center mt-10 text-slate-500 font-medium">Loading...</div>;
-  if (!collection) return <div className="text-center mt-10 text-red-500 font-semibold">Collection not found.</div>;
+  if (loading) return <div className="text-center mt-10 text-slate-500 font-medium">{t("guest.loading") || "Loading..."}</div>;
+  if (!collection) return <div className="text-center mt-10 text-red-500 font-semibold">{t("components.collectionNotFound") || "Collection not found."}</div>;
 
   return (
-    <div className="min-h-screen bg-slate-50 py-10 px-4">
-      <div className="w-full max-w-4xl mx-auto flex flex-col gap-6">
+    <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-7xl mx-auto flex flex-col gap-6">
 
         {/* Back + Title */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-6 gap-4">
@@ -77,14 +79,14 @@ const CollectionFiles = () => {
             onClick={() => navigate("/")}
             className="px-5 py-2.5 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 shadow-sm transition font-semibold text-sm self-start"
           >
-            ← Back Home
+            {t("components.backHome")}
           </button>
           <div>
             <h1 className="text-3xl font-black text-slate-900 text-center sm:text-left">
               {collection.name}
             </h1>
             <p className="text-slate-500 text-sm mt-0.5 text-center sm:text-left">
-              Explore files and resources in this collection
+              {t("components.exploreFiles")}
             </p>
           </div>
           <div className="w-[1px]" />
@@ -92,9 +94,9 @@ const CollectionFiles = () => {
 
         {/* Files section */}
         <div className="flex flex-col gap-4">
-          <h2 className="text-xl font-bold text-slate-800">Files:</h2>
+          <h2 className="text-xl font-bold text-slate-800">{t("components.attachedFiles")}</h2>
           {collection.files.length === 0 ? (
-            <p className="text-center text-slate-400 mt-2 select-none italic text-sm">No files in this category.</p>
+            <p className="text-center text-slate-400 mt-2 select-none italic text-sm">{t("components.noFilesInCategory")}</p>
           ) : (
             <div className="grid gap-3">
               {collection.files.map((file) => (
@@ -109,7 +111,7 @@ const CollectionFiles = () => {
                     onClick={() => handleDownload(file._id, file.originalName || file.name)}
                     className="text-emerald-600 font-semibold hover:text-emerald-700 transition"
                   >
-                    Download ↓
+                    {t("components.download")}
                   </button>
                 </div>
               ))}
@@ -119,9 +121,9 @@ const CollectionFiles = () => {
 
         {/* Links section */}
         <div className="flex flex-col gap-4 mt-4">
-          <h2 className="text-xl font-bold text-slate-800">Links:</h2>
+          <h2 className="text-xl font-bold text-slate-800">{t("components.addLink")}:</h2>
           {collection.links.length === 0 ? (
-            <p className="text-center text-slate-400 mt-2 select-none italic text-sm">No links in this collection.</p>
+            <p className="text-center text-slate-400 mt-2 select-none italic text-sm">{t("components.noLinksInCollection")}</p>
           ) : (
             <div className="grid gap-3">
               {collection.links.map((link) => (
@@ -144,12 +146,12 @@ const CollectionFiles = () => {
         {selectedFile && (
           <div className="mt-8 flex flex-col gap-4 bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
             <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-              <h2 className="text-lg font-bold text-slate-800">Preview:</h2>
+              <h2 className="text-lg font-bold text-slate-800">{t("components.preview")}:</h2>
               <button
                 onClick={() => setSelectedFile(null)}
                 className="text-red-500 font-semibold hover:text-red-600 transition"
               >
-                Hide ×
+                {t("components.hide")}
               </button>
             </div>
             <div className="border border-slate-200 rounded-2xl shadow-inner overflow-hidden">

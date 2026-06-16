@@ -7,6 +7,7 @@ import ProductsMobileCards from "../components/products/ProductsMobileCards";
 import { generateProductsPDF } from "../utils/pdfGenerator";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
+import { useLanguage } from "../context/LanguageContext";
 import { buildTree } from "../utils/categoryUtils";
 import CategoryTree from "../components/categories/CategoryTree";
 import PageHeader from "../components/layout/PageHeader";
@@ -24,6 +25,7 @@ const Products = () => {
   const isAdmin = user?.role === "admin";
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { t } = useLanguage();
 
   const [openModal, setOpenModal] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
@@ -54,7 +56,7 @@ const Products = () => {
   const [categories, setCategories] = useState([]);
   const [activeCategories, setActiveCategories] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
-  const [hiddenColumns, setHiddenColumns] = useState([]);
+  const [hiddenColumns, setHiddenColumns] = useState(["description", "categories", "owner"]);
   const [columnsDropdownOpen, setColumnsDropdownOpen] = useState(false);
   const [categoriesDropdownOpen, setCategoriesDropdownOpen] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState([]);
@@ -678,22 +680,23 @@ const Products = () => {
     );
   };
   return (
-    <div className="w-full h-full flex flex-col gap-6 p-6 md:p-8 bg-slate-50/30">
-      <PageHeader
-        title="Objects Management"
-        subtitle="Manage and organize laboratory objects, items, and inventory"
-      >
-        <Btn variant="secondary" onClick={generatePDF}>Export PDF</Btn>
-        <Btn variant="dark" onClick={addExtraField}>Add Column</Btn>
-        <Btn variant="success" onClick={() => navigate("/cart")}>Go to Cart</Btn>
-        <Btn variant="primary" onClick={() => { setEditProduct(null); setOpenModal(true); }}>Add Object</Btn>
+    <div className="w-full min-h-screen bg-slate-50/30 dark:bg-slate-900/10">
+      <div className="w-full px-4 sm:px-6 md:px-8 py-6 md:py-8 flex flex-col gap-6">
+        <PageHeader
+          title={"📦 " + t("products.title")}
+          subtitle={t("products.subtitle")}
+        >
+        <Btn variant="secondary" onClick={generatePDF}>{t("products.exportPdf")}</Btn>
+        <Btn variant="dark" onClick={addExtraField}>{t("products.addColumn")}</Btn>
+        <Btn variant="success" onClick={() => navigate("/cart")}>{t("products.goToCart")}</Btn>
+        <Btn variant="primary" onClick={() => { setEditProduct(null); setOpenModal(true); }}>{t("products.addObject")}</Btn>
       </PageHeader>
 
       {/* Search & Filters */}
       <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
         <input
           type="text"
-          placeholder="Search objects..."
+          placeholder={t("products.searchPlaceholder")}
           className="border border-slate-200 px-4 py-2 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm w-full lg:max-w-md"
           onChange={handleSearch}
         />
@@ -706,7 +709,7 @@ const Products = () => {
               onClick={() => setCategoriesDropdownOpen((prev) => !prev)}
               className="inline-flex justify-between items-center w-full rounded-xl border border-slate-200 shadow-sm px-4 py-2 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 focus:outline-none transition"
             >
-              <span>Filter by Category</span>
+              <span>{t("products.filterByCategory")}</span>
               <svg
                 className="ml-2 h-4 w-4 text-slate-400"
                 xmlns="http://www.w3.org/2000/svg"
@@ -759,7 +762,7 @@ const Products = () => {
               className="inline-flex justify-between items-center w-full rounded-xl border border-slate-200 shadow-sm px-4 py-2 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 focus:outline-none transition"
             >
               <span>
-                {columnsDropdownOpen ? "Hide Columns" : "Show Columns"}
+                {columnsDropdownOpen ? t("products.hideColumns") : t("products.showColumns")}
               </span>
               <svg
                 className={`ml-2 h-4 w-4 text-slate-400 transform transition-transform duration-200 ${columnsDropdownOpen ? "rotate-180" : ""}`}
@@ -778,19 +781,23 @@ const Products = () => {
 
             {columnsDropdownOpen && (
               <ul className="absolute mt-2 w-full rounded-xl shadow-lg bg-white border border-slate-100 z-30 overflow-y-auto max-h-60 py-1.5">
-                {allColumns.map((col) => (
-                  <li key={col}>
-                    <label className="flex items-center gap-2.5 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 cursor-pointer transition">
-                      <input
-                        type="checkbox"
-                        checked={!hiddenColumns.includes(col)}
-                        onChange={() => toggleColumn(col)}
-                        className="accent-indigo-600 w-4 h-4 rounded"
-                      />
-                      <span>{col}</span>
-                    </label>
-                  </li>
-                ))}
+                {allColumns.map((col) => {
+                  const colTrans = t(`products.columns.${col}`);
+                  const displayName = colTrans.startsWith("products.columns.") ? col : colTrans;
+                  return (
+                    <li key={col}>
+                      <label className="flex items-center gap-2.5 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 cursor-pointer transition">
+                        <input
+                          type="checkbox"
+                          checked={!hiddenColumns.includes(col)}
+                          onChange={() => toggleColumn(col)}
+                          className="accent-indigo-600 w-4 h-4 rounded"
+                        />
+                        <span>{displayName}</span>
+                      </label>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
@@ -862,6 +869,7 @@ const Products = () => {
           MAX_FILE_NAME_LENGTH={MAX_FILE_NAME_LENGTH}
         />
       )}
+      </div>
     </div>
   );
 };

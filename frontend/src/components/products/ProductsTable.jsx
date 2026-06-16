@@ -1,4 +1,5 @@
 import React from "react";
+import { useLanguage } from "../../context/LanguageContext";
 
 const ProductsTable = ({
   paginatedProducts,
@@ -17,6 +18,7 @@ const ProductsTable = ({
   cartQuantities,
   getAvailableStockForProduct,
 }) => {
+  const { t } = useLanguage();
   const API_BASE = `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}`;
 
   const SortIcon = ({ col }) => {
@@ -31,38 +33,42 @@ const ProductsTable = ({
           <tr>
             {/* Thumbnail col */}
             <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider w-12">
-              Img
+              {t("products.columns.image") || "Img"}
             </th>
 
             {allColumns
               .filter((col) => !hiddenColumns.includes(col))
-              .map((col, idx) => (
-                <th
-                  key={idx}
-                  className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap select-none"
-                >
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      onClick={() => handleSort(col)}
-                      className="cursor-pointer hover:text-slate-800 transition flex items-center gap-1"
-                    >
-                      {col} <SortIcon col={col} />
-                    </span>
-                    {extraColumns.includes(col) && (
-                      <button
-                        onClick={() => removeExtraField(col)}
-                        className="ml-1 px-1.5 py-0.5 bg-red-50 text-red-500 border border-red-100 rounded hover:bg-red-100 text-[10px] font-bold transition"
-                        title={`Remove column "${col}"`}
+              .map((col, idx) => {
+                const colTrans = t(`products.columns.${col}`);
+                const displayName = colTrans.startsWith("products.columns.") ? col : colTrans;
+                return (
+                  <th
+                    key={idx}
+                    className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap select-none"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        onClick={() => handleSort(col)}
+                        className="cursor-pointer hover:text-slate-800 transition flex items-center gap-1"
                       >
-                        ✕
-                      </button>
-                    )}
-                  </div>
-                </th>
-              ))}
+                        {displayName} <SortIcon col={col} />
+                      </span>
+                      {extraColumns.includes(col) && (
+                        <button
+                          onClick={() => removeExtraField(col)}
+                          className="ml-1 px-1.5 py-0.5 bg-red-50 text-red-500 border border-red-100 rounded hover:bg-red-100 text-[10px] font-bold transition"
+                          title={`Remove column "${col}"`}
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  </th>
+                );
+              })}
 
-            <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Actions</th>
-            <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Status</th>
+            <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">{t("products.actions")}</th>
+            <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">{t("products.status")}</th>
           </tr>
         </thead>
 
@@ -171,20 +177,20 @@ const ProductsTable = ({
                     disabled={user.id !== p.owner._id && !isAdmin}
                     className="px-3 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                   >
-                    Edit
+                    {t("common.edit")}
                   </button>
                   <button
                     onClick={() => handlePreview(p._id)}
                     className="px-3 py-1.5 text-xs font-semibold bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition"
                   >
-                    Preview
+                    {t("products.preview")}
                   </button>
                   <button
                     onClick={() => handleDelete(p._id)}
                     disabled={user.id !== p.owner._id && !isAdmin}
                     className="px-3 py-1.5 text-xs font-semibold bg-red-50 text-red-600 border border-red-100 rounded-lg hover:bg-red-100 transition disabled:bg-slate-100 disabled:text-slate-400 disabled:border-transparent disabled:cursor-not-allowed"
                   >
-                    Delete
+                    {t("common.delete")}
                   </button>
 
                   {/* Quantity stepper */}
@@ -215,7 +221,7 @@ const ProductsTable = ({
               <td className="px-4 py-2.5">
                 <div className="flex flex-col gap-1">
                   <span className="inline-flex items-center bg-slate-50 text-slate-600 text-xs font-semibold px-2.5 py-1 rounded-full border border-slate-100">
-                    Avail: {getAvailableStockForProduct(p)}
+                    {t("products.available")}: {getAvailableStockForProduct(p)}
                   </span>
                   {(cartQuantities[p._id] || 0) > 0 && (
                     <span className="inline-flex items-center bg-emerald-50 text-emerald-700 text-xs font-semibold px-2.5 py-1 rounded-full border border-emerald-100">

@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import apiClient from "../api/apiClient";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
+import { useLanguage } from "../context/LanguageContext";
 import OrderModal from "../components/orders/OrderModal";
 import OrderGroupCard from "../components/orders/OrderGroupCard";
 import PageHeader from "../components/layout/PageHeader";
@@ -15,6 +16,7 @@ import html2canvas from "html2canvas";
 const Orders = () => {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const { language } = useLanguage();
 
   const [orders, setOrders] = useState([]);
   const [orderStatuses, setOrderStatuses] = useState([]);
@@ -283,8 +285,12 @@ const Orders = () => {
   };
 
   return (
-    <div className="w-full h-full flex flex-col gap-6 p-6 md:p-8 bg-slate-50/30 dark:bg-slate-900/10">
-      <PageHeader title="Order Management" subtitle="Track, review, approve, and finalize equipment rentals" />
+    <div className="w-full min-h-screen bg-slate-50/30 dark:bg-slate-900/10">
+      <div className="w-full px-4 sm:px-6 md:px-8 py-6 md:py-8 flex flex-col gap-6">
+        <PageHeader
+          title={"📋 " + (language === "pl" ? "Zarządzanie Zamówieniami" : "Order Management")}
+          subtitle={language === "pl" ? "Śledź, przeglądaj, zatwierdzaj i finalizuj wynajem sprzętu" : "Track, review, approve, and finalize equipment rentals"}
+        />
 
       <FilterBar
         searchValue={emailFilter}
@@ -426,6 +432,7 @@ const Orders = () => {
           setValidationError={setValidationError}
         />
       )}
+      </div>
     </div>
   );
 };

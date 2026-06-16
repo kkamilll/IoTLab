@@ -2,6 +2,8 @@ import React, { useEffect, useState, useCallback } from "react";
 import apiClient from "../api/apiClient";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
+import { useLanguage } from "../context/LanguageContext";
+import PageHeader from "../components/layout/PageHeader";
 import {
   PieChart,
   Pie,
@@ -24,6 +26,7 @@ const COLORS = [
 const Dashboard = () => {
   const { token } = useAuth();
   const { showToast } = useToast();
+  const { t } = useLanguage();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -120,19 +123,13 @@ const Dashboard = () => {
     })) || [];
 
   return (
-    <div className="min-h-screen bg-slate-50/30 dark:bg-slate-900/10 p-6 md:p-8 transition-colors duration-300">
-      {/* Header & Global Filters */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8 gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-white">
-            Orders Statistics
-          </h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">
-            Real-time overview of laboratory orders, items, and popular
-            categories
-          </p>
-        </div>
-
+    <div className="w-full min-h-screen bg-slate-50/30 dark:bg-slate-900/10">
+      <div className="w-full px-4 sm:px-6 md:px-8 py-6 md:py-8 flex flex-col transition-colors duration-300">
+        {/* Header & Global Filters */}
+        <PageHeader
+          title={"📊 " + t("nav.statistics")}
+          subtitle="Real-time overview of laboratory orders, items, and popular categories"
+        >
         <div className="flex flex-wrap items-center gap-3 bg-white dark:bg-slate-900 p-3 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
@@ -172,12 +169,12 @@ const Dashboard = () => {
             </select>
           </div>
         </div>
-      </div>
+      </PageHeader>
 
       {/* Charts Grid */}
-      <div className="flex flex-col lg:flex-row gap-8">
+      <div className="flex flex-col lg:flex-row gap-6 min-w-0">
         {/* Status Pie Chart */}
-        <div className="flex-1 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="flex-1 min-w-0 overflow-hidden bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
           <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-4 tracking-tight">
             Registered Orders by Status
           </h2>
@@ -208,7 +205,7 @@ const Dashboard = () => {
         </div>
 
         {/* Interactive Category Chart */}
-        <div className="flex-1 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="flex-1 min-w-0 overflow-hidden bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 tracking-tight">
               Category Popularity
@@ -270,7 +267,7 @@ const Dashboard = () => {
       </div>
 
       {/* Top Products Chart */}
-      <div className="mt-8 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+      <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 tracking-tight">
             Top Products by Status
@@ -327,7 +324,8 @@ const Dashboard = () => {
         </div>
       </div>
     </div>
-  );
+  </div>
+);
 };
 
 export default Dashboard;

@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import apiClient from "../api/apiClient";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
+import { useLanguage } from "../context/LanguageContext";
+import PageHeader from "../components/layout/PageHeader";
 
 /* ── colour palette for note cards ─────────────────────────────── */
 const NOTE_PALETTES = [
@@ -136,7 +138,6 @@ const NoteCard = ({
   );
 };
 
-/* ── Notes page ─────────────────────────────────────────────────── */
 const Notes = () => {
   const [notes, setNotes] = useState([]);
   const [text, setText] = useState("");
@@ -149,6 +150,7 @@ const Notes = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const { token } = useAuth();
   const { showToast } = useToast();
+  const { t, language } = useLanguage();
 
   const addTextareaRef = useRef(null);
   const editingTextareaRef = useRef(null);
@@ -173,56 +175,56 @@ const Notes = () => {
       if (res.data.success) setNotes(sortNotes(res.data.data));
     } catch (err) {
       console.error(err);
-      showToast("Błąd pobierania notatek", "error");
+      showToast(language === "pl" ? "Błąd pobierania notatek" : "Error fetching notes", "error");
     }
   };
   useEffect(() => { fetchNotes(); }, [token]);
 
   const addNote = async () => {
-    if (!text.trim()) { showToast("Notatka nie może być pusta", "warning"); return; }
+    if (!text.trim()) { showToast(t("notes.emptyWarning"), "warning"); return; }
     try {
       setLoading(true);
       const res = await apiClient.post("/notes/create", { text, important });
       if (res.data.success) {
         setNotes((prev) => sortNotes([...prev, res.data.data]));
         setText(""); setImportant(false);
-        showToast("Notatka dodana!", "success");
+        showToast(language === "pl" ? "Notatka dodana!" : "Note added!", "success");
       }
     } catch (err) {
-      showToast(err.response?.data?.message || "Błąd dodawania notatki", "error");
+      showToast(err.response?.data?.message || (language === "pl" ? "Błąd dodawania notatki" : "Error adding note"), "error");
     } finally { setLoading(false); }
   };
 
   const deleteNote = async (id) => {
-    if (!window.confirm("Usunąć tę notatkę?")) return;
+    if (!window.confirm(t("notes.deleteConfirm"))) return;
     try {
       await apiClient.delete(`/notes/${id}`);
       setNotes((prev) => prev.filter((n) => n._id !== id));
-      showToast("Notatka usunięta", "success");
+      showToast(t("notes.deleteSuccess"), "success");
     } catch (err) {
-      showToast(err.response?.data?.message || "Błąd usuwania", "error");
+      showToast(err.response?.data?.message || t("notes.deleteError"), "error");
     }
   };
 
   const saveEdit = async (id) => {
-    if (!editingText.trim()) { showToast("Notatka nie może być pusta", "warning"); return; }
+    if (!editingText.trim()) { showToast(t("notes.emptyWarning"), "warning"); return; }
     try {
       const res = await apiClient.put(`/notes/${id}`, { text: editingText, important: editingImportant });
       if (res.data.success) {
         setNotes((prev) => sortNotes([...prev.filter((n) => n._id !== id), res.data.data]));
         cancelEditing();
-        showToast("Notatka zaktualizowana!", "success");
+        showToast(t("notes.editSuccess"), "success");
       }
     } catch (err) {
-      showToast(err.response?.data?.message || "Błąd edycji", "error");
+      showToast(err.response?.data?.message || t("notes.editError"), "error");
     }
   };
 
   const startEditing = (note) => { setEditingId(note._id); setEditingText(note.text); setEditingImportant(note.important || false); };
   const cancelEditing = () => { setEditingId(null); setEditingText(""); setEditingImportant(false); };
 
-  const authors = Array.from(new Set(notes.map((n) => n.author?.name || "Anonim").filter(Boolean)));
-  const filteredNotes = authorFilter ? notes.filter((n) => (n.author?.name || "Anonim") === authorFilter) : notes;
+  const authors = Array.from(new Set(notes.map((n) => n.author?.name || (language === "pl" ? "Anonim" : "Anonymous")).filter(Boolean)));
+  const filteredNotes = authorFilter ? notes.filter((n) => (n.author?.name || (language === "pl" ? "Anonim" : "Anonymous")) === authorFilter) : notes;
 
   // When DB has no notes yet → show demo cards as empty state
   const showDemo = filteredNotes.length === 0 && !loading;
@@ -235,39 +237,35 @@ const Notes = () => {
     : { editingId, editingText, editingTextareaRef, editingImportant, onStartEditing: startEditing, onCancelEditing: cancelEditing, onSaveEdit: saveEdit, onDelete: deleteNote, onSetEditingText: setEditingText, onSetEditingImportant: setEditingImportant };
 
   return (
-    <div className="min-h-screen bg-slate-50/30 dark:bg-slate-900/10 flex flex-col p-6 md:p-8 transition-colors duration-300">
-      <div className="w-full max-w-6xl mx-auto flex flex-col gap-6">
+    <div className="w-full min-h-screen bg-slate-50/30 dark:bg-slate-900/10 flex flex-col transition-colors duration-300">
+      <div className="w-full px-4 sm:px-6 md:px-8 py-6 md:py-8 flex flex-col gap-6">
 
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
-          <div>
-            <h1 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2.5">
-              <span className="w-9 h-9 rounded-2xl bg-indigo-100 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-base">📝</span>
-              Notatki
-            </h1>
-            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Ogłoszenia i notatki dla użytkowników laboratorium</p>
-          </div>
+        <PageHeader
+          title={"📝 " + t("nav.notes")}
+          subtitle={language === "pl" ? "Ogłoszenia i notatki dla użytkowników laboratorium" : "Announcements and notes for laboratory users"}
+        >
           {authors.length > 0 && (
             <select
               value={authorFilter}
               onChange={(e) => { setAuthorFilter(e.target.value); setCurrentPage(1); }}
-              className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-700 transition w-full sm:w-52"
+              className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-700 transition w-full sm:w-52 cursor-pointer"
             >
-              <option value="">Wszyscy autorzy</option>
+              <option value="">{t("notes.allAuthors")}</option>
               {authors.map((name) => <option key={name} value={name}>{name}</option>)}
             </select>
           )}
-        </div>
+        </PageHeader>
 
         {/* Add note panel */}
         <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm p-5">
-          <p className="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-3">Nowa notatka</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-3">{t("notes.newNote")}</p>
           <textarea
             ref={addTextareaRef}
             value={text}
             onChange={(e) => e.target.value.length <= MAX_LENGTH && setText(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) addNote(); }}
-            placeholder="Wpisz treść notatki… (Ctrl+Enter żeby zapisać)"
+            placeholder={t("notes.notePlaceholder")}
             className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-4 py-3 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-700 focus:border-indigo-400 resize-none min-h-[80px] overflow-hidden transition"
             rows={2}
           />
@@ -275,10 +273,10 @@ const Notes = () => {
             <button
               type="button"
               onClick={() => setImportant(!important)}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition cursor-pointer ${important ? "bg-rose-500 text-white border-rose-400 shadow-sm" : "bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800 hover:bg-rose-50 dark:hover:bg-rose-950/30"}`}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition cursor-pointer ${important ? "bg-rose-500 text-white border-rose-400 shadow-sm" : "bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800 hover:bg-rose-50 dark:hover:bg-rose-955 hover:text-rose-700 dark:hover:text-rose-300"}`}
             >
               <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
-              Ważne
+              {t("notes.important")}
             </button>
             <div className="flex items-center gap-3 ml-auto">
               <span className="text-xs text-slate-400 dark:text-slate-500 tabular-nums">{text.length}/{MAX_LENGTH}</span>
@@ -291,7 +289,7 @@ const Notes = () => {
                   ? <svg className="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
                   : <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
                 }
-                {loading ? "Dodawanie…" : "Dodaj"}
+                {loading ? t("notes.adding") : t("notes.add")}
               </button>
             </div>
           </div>
@@ -301,7 +299,7 @@ const Notes = () => {
         {showDemo && (
           <div className="rounded-2xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/20 px-5 py-3 flex items-center gap-3 text-sm text-amber-800 dark:text-amber-300">
             <span className="text-lg flex-shrink-0">💡</span>
-            <span>Brak notatek w bazie — poniżej widoczne są <strong>przykładowe</strong> ogłoszenia. Dodaj pierwszą notatkę powyżej!</span>
+            <span>{t("notes.demoBannerText")}</span>
           </div>
         )}
 
@@ -320,9 +318,9 @@ const Notes = () => {
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-center gap-3 pt-2">
-            <button onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))} disabled={currentPage === 1} className="px-4 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:pointer-events-none transition cursor-pointer">← Poprzednia</button>
-            <span className="px-4 py-2 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-bold text-slate-600 dark:text-slate-300 rounded-2xl">{currentPage} / {totalPages}</span>
-            <button onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages} className="px-4 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:pointer-events-none transition cursor-pointer">Następna →</button>
+            <button onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))} disabled={currentPage === 1} className="px-4 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:pointer-events-none transition cursor-pointer">{t("notes.prev")}</button>
+            <span className="px-4 py-2 bg-slate-100 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 text-sm font-bold text-slate-600 dark:text-slate-300 rounded-2xl">{currentPage} / {totalPages}</span>
+            <button onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages} className="px-4 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:pointer-events-none transition cursor-pointer">{t("notes.next")}</button>
           </div>
         )}
 

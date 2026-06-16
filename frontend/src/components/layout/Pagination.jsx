@@ -1,9 +1,12 @@
 import React from "react";
+import { useLanguage } from "../../context/LanguageContext";
 
 /**
  * Standardowa paginacja. Używaj wszędzie.
  */
 const Pagination = ({ currentPage, totalPages, onPrev, onNext, onPage }) => {
+  const { t } = useLanguage();
+
   if (totalPages <= 1) return null;
 
   return (
@@ -13,7 +16,7 @@ const Pagination = ({ currentPage, totalPages, onPrev, onNext, onPage }) => {
         disabled={currentPage === 1}
         className="px-3 py-1.5 text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200/60 rounded-xl hover:bg-slate-200 disabled:opacity-40 disabled:pointer-events-none transition"
       >
-        Prev
+        {t("common.prev")}
       </button>
 
       {onPage &&
@@ -33,7 +36,7 @@ const Pagination = ({ currentPage, totalPages, onPrev, onNext, onPage }) => {
 
       {!onPage && (
         <span className="text-slate-500 text-xs font-semibold">
-          Page {currentPage} / {totalPages}
+          {t("common.page")} {currentPage} / {totalPages}
         </span>
       )}
 
@@ -42,7 +45,7 @@ const Pagination = ({ currentPage, totalPages, onPrev, onNext, onPage }) => {
         disabled={currentPage === totalPages}
         className="px-3 py-1.5 text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200/60 rounded-xl hover:bg-slate-200 disabled:opacity-40 disabled:pointer-events-none transition"
       >
-        Next
+        {t("common.next")}
       </button>
     </div>
   );

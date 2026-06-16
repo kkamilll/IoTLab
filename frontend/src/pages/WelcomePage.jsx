@@ -77,7 +77,8 @@ const WelcomePage = () => {
     const updateVisible = () => {
       if (window.innerWidth < 640) setVisibleCount(1); // mobile
       else if (window.innerWidth < 1024) setVisibleCount(2); // tablet
-      else setVisibleCount(3); // desktop
+      else if (window.innerWidth < 1280) setVisibleCount(3); // small desktop
+      else setVisibleCount(4); // large desktop
     };
     updateVisible();
     window.addEventListener("resize", updateVisible);
@@ -123,7 +124,7 @@ const WelcomePage = () => {
           <button
             onClick={toggleTheme}
             className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors bg-white dark:bg-slate-900 cursor-pointer"
-            title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            title={theme === "dark" ? (language === "pl" ? "Przełącz na tryb jasny" : "Switch to Light Mode") : (language === "pl" ? "Przełącz na tryb ciemny" : "Switch to Dark Mode")}
           >
             {theme === "dark" ? (
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4.5 w-4.5 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -238,7 +239,7 @@ const WelcomePage = () => {
       </section>
 
       <section className="py-16 bg-slate-100/30 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 px-6 md:px-12">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
           <h2 className="text-2xl font-black mb-1.5 text-center tracking-tight text-slate-900 dark:text-white">
             {t("nav.explore")}
           </h2>
@@ -308,7 +309,7 @@ const WelcomePage = () => {
 
       {/* NOTES & ANNOUNCEMENTS */}
       <section className="py-16 bg-white dark:bg-slate-900 px-6 md:px-12">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
           <h2 className="text-2xl font-black mb-1.5 text-center tracking-tight text-slate-900 dark:text-white">
             {t("nav.announcements")}
           </h2>
@@ -337,7 +338,7 @@ const WelcomePage = () => {
                       {note.text}
                     </p>
                     <div className="mt-4 text-slate-500 dark:text-slate-400 text-xs font-semibold italic border-t border-slate-250 dark:border-slate-800 pt-3">
-                      {t("welcome.addedBy")} <strong className="text-indigo-600 dark:text-indigo-400">{note.author?.name || 'Anonymous'}</strong> •{' '}
+                      {t("welcome.addedBy")} <strong className="text-indigo-600 dark:text-indigo-400">{note.author?.name || t("welcome.anonymous")}</strong> •{' '}
                       {`${new Date(note.createdAt).getDate().toString().padStart(2, '0')}.${(new Date(note.createdAt).getMonth() + 1).toString().padStart(2, '0')}.${new Date(note.createdAt).getFullYear()} ${new Date(note.createdAt).getHours().toString().padStart(2, '0')}:${new Date(note.createdAt).getMinutes().toString().padStart(2, '0')}`}
                     </div>
                   </li>

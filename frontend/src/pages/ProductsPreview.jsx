@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import apiClient from "../api/apiClient";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../context/LanguageContext";
 import {
   FaFilePdf,
   FaFileWord,
@@ -16,6 +17,7 @@ const ProductPreview = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { token } = useAuth();
+  const { t } = useLanguage();
   const { productId } = location.state || {};
   const [product, setProduct] = useState(null);
   const [categoryNames, setCategoryNames] = useState([]);
@@ -181,18 +183,18 @@ const ProductPreview = () => {
   };
 
   if (!product)
-    return <div className="p-6 text-center">Loading product...</div>;
+    return <div className="p-6 text-center">{t("productPreview.loadingProduct") || "Loading product..."}</div>;
 
   const API_URL = `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}`;
 
   return (
     <div className="min-h-screen bg-slate-100 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-5xl rounded-3xl bg-white p-6 shadow-2xl border border-slate-200">
+      <div className="mx-auto max-w-7xl rounded-3xl bg-white p-6 shadow-2xl border border-slate-200">
         <button
           onClick={() => navigate(-1)}
           className="mb-6 inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-200 transition"
         >
-          ← Back
+          ← {t("common.back")}
         </button>
 
         <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
@@ -201,13 +203,13 @@ const ProductPreview = () => {
               {product.name}
             </h1>
             <p className="mt-2 text-sm text-slate-500">
-              Detailed product preview and rental options.
+              {t("productPreview.subtitle")}
             </p>
           </div>
           <div className="rounded-3xl bg-slate-50 p-5 shadow-sm border border-slate-200">
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm uppercase tracking-[0.3em] text-slate-500">
-                Available
+                {t("productPreview.available")}
               </p>
               <span className="rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-700">
                 {getAvailableStockForProduct(product)}
@@ -215,23 +217,23 @@ const ProductPreview = () => {
             </div>
             <div className="mt-4 space-y-3 text-sm text-slate-600">
               <p>
-                <span className="font-semibold text-slate-900">Category:</span>{" "}
-                {categoryNames.join(", ") || "Uncategorized"}
+                <span className="font-semibold text-slate-900">{t("productPreview.category")}:</span>{" "}
+                {categoryNames.join(", ") || t("productPreview.uncategorized")}
               </p>
               <p>
-                <span className="font-semibold text-slate-900">In cart:</span>{" "}
+                <span className="font-semibold text-slate-900">{t("productPreview.inCart")}:</span>{" "}
                 {cartQuantities[product._id] || 0}
               </p>
               <p>
-                <span className="font-semibold text-slate-900">Owner:</span>{" "}
-                {product.owner?.name || "Unknown"}
+                <span className="font-semibold text-slate-900">{t("productPreview.owner")}:</span>{" "}
+                {product.owner?.name || t("welcome.anonymous")}
               </p>
             </div>
             <button
               onClick={() => navigate("/cart")}
               className="mt-6 w-full rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-lg hover:bg-blue-700 transition"
             >
-              View Cart
+              {t("productPreview.viewCart")}
             </button>
           </div>
         </div>
@@ -265,34 +267,34 @@ const ProductPreview = () => {
           </div>
         ) : (
           <div className="mt-6 rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-12 text-center text-slate-500">
-            No images available for this product.
+            {t("productPreview.noImages")}
           </div>
         )}
 
         <div className="mt-8 grid gap-4 md:grid-cols-2">
           <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
             <h2 className="text-xl font-semibold text-slate-900 mb-3">
-              Description
+              {t("productPreview.description")}
             </h2>
             <p className="text-slate-700 whitespace-pre-line">
-              {product.description || "No description provided."}
+              {product.description || t("productPreview.noDescription")}
             </p>
           </div>
           <div className="space-y-4">
             <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
               <h2 className="text-xl font-semibold text-slate-900 mb-3">
-                Categories
+                {t("productPreview.categories")}
               </h2>
               <p className="text-slate-700">
-                {categoryNames.length > 0 ? categoryNames.join(", ") : "No categories assigned to this product / object"}
+                {categoryNames.length > 0 ? categoryNames.join(", ") : t("productPreview.noCategories")}
               </p>
             </div>
             <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
               <h2 className="text-xl font-semibold text-slate-900 mb-3">
-                Tags
+                {t("productPreview.tags")}
               </h2>
               <p className="text-slate-700">
-                {product.tags && product.tags.length > 0 ? product.tags.join(", ") : "No tags assigned to this product / object"}
+                {product.tags && product.tags.length > 0 ? product.tags.join(", ") : t("productPreview.noTags")}
               </p>
             </div>
           </div>
@@ -302,7 +304,7 @@ const ProductPreview = () => {
           Object.entries(product.extraFields).length > 0 && (
             <div className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <h2 className="text-xl font-semibold text-slate-900 mb-4">
-                Additional Data
+                {t("productPreview.additionalData")}
               </h2>
               <div className="grid gap-4 sm:grid-cols-2">
                 {Object.entries(product.extraFields).map(([key, val]) => (
@@ -320,7 +322,7 @@ const ProductPreview = () => {
         {product.attachments?.length > 0 && (
           <div className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 className="text-xl font-semibold text-slate-900 mb-4">
-              Attachments
+              {t("productPreview.attachments")}
             </h2>
             <div className="grid gap-3 sm:grid-cols-2">
               {product.attachments.map((att) => (
@@ -341,7 +343,7 @@ const ProductPreview = () => {
         <div className="mt-8 grid gap-4 sm:grid-cols-[1fr_220px] items-end">
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <h3 className="text-lg font-semibold text-slate-900 mb-3">
-              Add to cart
+              {t("productPreview.addToCart")}
             </h3>
             <div className="flex flex-wrap gap-3 items-center">
               <button
@@ -369,15 +371,15 @@ const ProductPreview = () => {
               <button
                 onClick={() => {
                   handleQuantityChange(product._id, localQty, product);
-                  alert("Cart has been updated!");
+                  alert(t("productPreview.cartUpdatedAlert") || "Cart has been updated!");
                 }}
                 className="rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow hover:bg-indigo-700 transition"
               >
-                Confirm
+                {t("productPreview.confirm")}
               </button>
             </div>
             <p className="mt-4 text-sm text-slate-500">
-              Change the quantity and click Confirm to update your cart.
+              {t("productPreview.updateCartHelp")}
             </p>
           </div>
 
@@ -385,7 +387,7 @@ const ProductPreview = () => {
             onClick={() => navigate("/cart")}
             className="rounded-3xl bg-blue-600 px-5 py-4 text-sm font-semibold text-white shadow-lg hover:bg-blue-700 transition"
           >
-            View Cart & Checkout
+            {t("productPreview.viewCartCheckout")}
           </button>
         </div>
       </div>

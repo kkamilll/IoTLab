@@ -4,17 +4,19 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import "swiper/css/navigation";
 import { Navigation, Autoplay } from "swiper/modules";
+import { useLanguage } from "../../context/LanguageContext";
 
 const MainSlider = ({ materials }) => {
+  const { t } = useLanguage();
+
   return (
-    <section className="w-full py-10 bg-slate-950/95">
-      <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
+    <section className="w-full py-10 bg-slate-50 dark:bg-slate-900/50 transition-colors duration-300">
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 md:px-8">
         <div className="mb-6 flex items-center justify-between gap-4 text-white">
           <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-slate-400">
-              Featured Slides
+            <p className="text-sm uppercase tracking-[0.3em] text-slate-400 dark:text-slate-550 font-semibold">
+              {t("welcome.latestMaterials")}
             </p>
-            <h2 className="text-3xl font-bold">Latest Materials</h2>
           </div>
         </div>
 
@@ -24,7 +26,8 @@ const MainSlider = ({ materials }) => {
             navigation
             autoplay={{ delay: 3500, disableOnInteraction: false }}
             loop
-            className="rounded-3xl overflow-hidden shadow-2xl border border-white/10"
+            // ZMIENIONO: border-slate-200 zamiast białego borderu
+            className="rounded-3xl overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800"
           >
             {materials
               .slice()
@@ -55,8 +58,8 @@ const MainSlider = ({ materials }) => {
               ))}
           </Swiper>
         ) : (
-          <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-12 text-center text-slate-300 shadow-inner">
-            No materials available yet.
+          <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center text-slate-500 dark:text-slate-400 shadow-sm transition-colors duration-300 font-medium">
+            {t("welcome.noMaterials")}
           </div>
         )}
       </div>
