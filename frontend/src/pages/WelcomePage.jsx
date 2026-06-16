@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import MainSlider from '../components/layout/MainSlider';
+import Btn from '../components/layout/Btn';
 
 const WelcomePage = () => {
   const navigate = useNavigate();
@@ -168,35 +169,38 @@ const WelcomePage = () => {
               </span>
 
               {/* Back button */}
-              <button
+              <Btn
                 onClick={handleBackToSidebar}
-                className="flex items-center justify-center gap-1.5 border border-slate-300 dark:border-slate-700 text-slate-650 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors rounded-xl px-4 py-1.5 text-xs font-bold w-full sm:w-auto shadow-sm cursor-pointer"
+                variant="secondary"
+                className="py-1.5 px-4 text-xs font-bold w-full sm:w-auto shadow-sm"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
                 {t("common.back")}
-              </button>
+              </Btn>
 
               {/* Logout button */}
-              <button
+              <Btn
                 onClick={handleLogout}
-                className="flex items-center justify-center gap-1.5 bg-red-600 hover:bg-red-700 active:bg-red-800 transition-colors text-white rounded-xl px-4 py-1.5 text-xs font-bold w-full sm:w-auto shadow-sm cursor-pointer"
+                variant="danger"
+                className="py-1.5 px-4 text-xs font-bold w-full sm:w-auto shadow-sm"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7" />
                 </svg>
                 {t("common.logout")}
-              </button>
+              </Btn>
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <button
+              <Btn
                 onClick={handleLoginClick}
-                className="border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold px-3 py-1.5 rounded-lg text-xs transition-colors cursor-pointer"
+                variant="secondary"
+                className="py-1.5 px-4 text-xs font-bold shadow-sm"
               >
                 {t("common.login")}
-              </button>
+              </Btn>
             </div>
           )}
         </div>
@@ -221,18 +225,20 @@ const WelcomePage = () => {
 
           {!user && (
             <div className="flex flex-col sm:flex-row justify-center gap-4 mt-6">
-              <button
+              <Btn
                 onClick={handleLoginClick}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 py-3 rounded-xl shadow-lg hover:shadow-indigo-500/20 transition-all hover:-translate-y-0.5 text-sm cursor-pointer"
+                variant="primary"
+                className="px-8 py-3.5 text-sm font-bold shadow-lg"
               >
                 {t("nav.loginAccount")}
-              </button>
-              <button
+              </Btn>
+              <Btn
                 onClick={() => navigate('/mainguest')}
-                className="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-850 dark:text-slate-100 font-bold px-8 py-3 rounded-xl shadow-lg transition-all hover:-translate-y-0.5 border border-slate-200 dark:border-slate-700 text-sm cursor-pointer"
+                variant="secondary"
+                className="px-8 py-3.5 text-sm font-bold shadow-lg"
               >
                 {t("nav.orderAsGuest")}
-              </button>
+              </Btn>
             </div>
           )}
         </div>
@@ -347,23 +353,25 @@ const WelcomePage = () => {
 
               {/* Pagination */}
               <div className="flex justify-center items-center gap-4 mt-8">
-                <button
+                <Btn
                   onClick={() => setNotesPage(prev => Math.max(prev - 1, 1))}
                   disabled={notesPage === 1}
-                  className="px-4 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 disabled:opacity-40 disabled:pointer-events-none transition cursor-pointer"
+                  variant="secondary"
+                  className="px-4 py-2"
                 >
                   {t("welcome.previous")}
-                </button>
+                </Btn>
                 <span className="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-950 text-slate-650 dark:text-slate-400 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-850">
                   {notesPage} / {totalPages}
                 </span>
-                <button
+                <Btn
                   onClick={() => setNotesPage(prev => Math.min(prev + 1, totalPages))}
                   disabled={notesPage === totalPages}
-                  className="px-4 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 disabled:opacity-40 disabled:pointer-events-none transition cursor-pointer"
+                  variant="secondary"
+                  className="px-4 py-2"
                 >
                   {t("welcome.next")}
-                </button>
+                </Btn>
               </div>
             </>
           )}

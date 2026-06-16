@@ -1,5 +1,6 @@
 import React from "react";
 import { useLanguage } from "../../context/LanguageContext";
+import Btn from "./Btn";
 
 /**
  * Standardowa paginacja. Używaj wszędzie.
@@ -11,27 +12,25 @@ const Pagination = ({ currentPage, totalPages, onPrev, onNext, onPage }) => {
 
   return (
     <div className="flex justify-center items-center gap-2 py-4 border-t border-slate-100 bg-slate-50/20">
-      <button
+      <Btn
         onClick={onPrev}
         disabled={currentPage === 1}
-        className="px-3 py-1.5 text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200/60 rounded-xl hover:bg-slate-200 disabled:opacity-40 disabled:pointer-events-none transition"
+        variant="secondary"
+        size="sm"
       >
         {t("common.prev")}
-      </button>
+      </Btn>
 
       {onPage &&
         Array.from({ length: totalPages }, (_, i) => (
-          <button
+          <Btn
             key={i}
             onClick={() => onPage(i + 1)}
-            className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition ${
-              currentPage === i + 1
-                ? "bg-indigo-600 border-indigo-600 text-white shadow-sm"
-                : "bg-white border-slate-200/80 text-slate-600 hover:bg-slate-50"
-            }`}
+            variant={currentPage === i + 1 ? "primary" : "secondary"}
+            size="sm"
           >
             {i + 1}
-          </button>
+          </Btn>
         ))}
 
       {!onPage && (
@@ -40,13 +39,14 @@ const Pagination = ({ currentPage, totalPages, onPrev, onNext, onPage }) => {
         </span>
       )}
 
-      <button
+      <Btn
         onClick={onNext}
         disabled={currentPage === totalPages}
-        className="px-3 py-1.5 text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200/60 rounded-xl hover:bg-slate-200 disabled:opacity-40 disabled:pointer-events-none transition"
+        variant="secondary"
+        size="sm"
       >
         {t("common.next")}
-      </button>
+      </Btn>
     </div>
   );
 };

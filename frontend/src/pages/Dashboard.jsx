@@ -130,15 +130,15 @@ const Dashboard = () => {
           title={"📊 " + t("nav.statistics")}
           subtitle="Real-time overview of laboratory orders, items, and popular categories"
         >
-        <div className="flex flex-wrap items-center gap-3 bg-white dark:bg-slate-900 p-3 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
+        <div className="flex flex-wrap items-center gap-4 bg-white dark:bg-slate-900 p-3.5 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-sm">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider pl-1">
               Owner:
             </span>
             <select
               value={selectedOwnerId}
               onChange={(e) => setSelectedOwnerId(e.target.value)}
-              className="text-xs border border-slate-200 dark:border-slate-800 rounded-lg bg-slate-50 dark:bg-slate-950 px-2.5 py-1.5 font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/20"
+              className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-950/40 pl-3.5 pr-9 py-2 font-semibold text-slate-700 dark:text-slate-200 outline-none hover:border-slate-350 dark:hover:border-slate-700 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 appearance-none cursor-pointer min-w-[120px]"
             >
               <option value="">All</option>
               {owners.map((owner) => (
@@ -149,16 +149,16 @@ const Dashboard = () => {
             </select>
           </div>
 
-          <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block"></div>
+          <div className="h-5 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block"></div>
 
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider pl-1">
               Product:
             </span>
             <select
               value={selectedProductId}
               onChange={(e) => setSelectedProductId(e.target.value)}
-              className="text-xs border border-slate-200 dark:border-slate-800 rounded-lg bg-slate-50 dark:bg-slate-950 px-2.5 py-1.5 font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/20 max-w-[200px]"
+              className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-950/40 pl-3.5 pr-9 py-2 font-semibold text-slate-700 dark:text-slate-200 outline-none hover:border-slate-350 dark:hover:border-slate-700 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 appearance-none cursor-pointer max-w-[220px]"
             >
               <option value="">All</option>
               {products.map((product) => (
@@ -217,7 +217,7 @@ const Dashboard = () => {
               <select
                 value={selectedCategoryStatus}
                 onChange={(e) => setSelectedCategoryStatus(e.target.value)}
-                className="text-xs border border-slate-200 dark:border-slate-800 rounded-lg bg-slate-50 dark:bg-slate-950 px-2 py-1 font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/20"
+                className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-950/40 pl-3 pr-8 py-1.5 font-semibold text-slate-700 dark:text-slate-200 outline-none hover:border-slate-350 dark:hover:border-slate-700 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 appearance-none cursor-pointer"
               >
                 {statusOptions.map((status) => (
                   <option key={status} value={status}>
@@ -279,7 +279,7 @@ const Dashboard = () => {
             <select
               value={selectedTopProductStatus}
               onChange={(e) => setSelectedTopProductStatus(e.target.value)}
-              className="text-xs border border-slate-200 dark:border-slate-800 rounded-lg bg-slate-50 dark:bg-slate-950 px-2 py-1 font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/20"
+              className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-950/40 pl-3 pr-8 py-1.5 font-semibold text-slate-700 dark:text-slate-200 outline-none hover:border-slate-350 dark:hover:border-slate-700 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 appearance-none cursor-pointer"
             >
               {topProductStatusOptions.map((status) => (
                 <option key={status} value={status}>

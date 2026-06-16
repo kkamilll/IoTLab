@@ -112,9 +112,13 @@
 
 /* Form Fields & Controls */
 .dark input, .dark select, .dark textarea {
-  background-color: #0f172a !important;
+  background-color: rgba(15, 23, 42, 0.45) !important;
   color: #f8fafc !important;
   border-color: #334155 !important;
+}
+.dark input:focus, .dark select:focus, .dark textarea:focus {
+  background-color: #0f172a !important;
+  border-color: #818cf8 !important;
 }
 .dark input::placeholder, .dark textarea::placeholder {
   color: #64748b !important;
@@ -205,4 +209,61 @@
 @keyframes sliderProgress {
   from { width: 0%; }
   to   { width: 100%; }
+}
+
+/* Global Form Controls & Select Elements Styling */
+@layer base {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="search"],
+  select,
+  textarea {
+    border-radius: 0.75rem; /* 12px default */
+    border: 1px solid rgba(226, 232, 240, 0.8); /* slate-200 */
+    padding: 0.5rem 0.875rem; /* comfort padding */
+    font-size: 0.875rem; /* text-sm */
+    background-color: rgba(248, 250, 252, 0.6); /* slate-50/60 */
+    color: #1e293b; /* slate-800 */
+    outline: none;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
+  }
+
+  input[type="text"]:hover,
+  input[type="email"]:hover,
+  input[type="password"]:hover,
+  input[type="number"]:hover,
+  input[type="search"]:hover,
+  select:hover,
+  textarea:hover {
+    border-color: rgba(203, 213, 225, 1); /* slate-300 */
+  }
+
+  input[type="text"]:focus,
+  input[type="email"]:focus,
+  input[type="password"]:focus,
+  input[type="number"]:focus,
+  input[type="search"]:focus,
+  select:focus,
+  textarea:focus {
+    border-color: #6366f1; /* indigo-500 */
+    background-color: #ffffff;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1), 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+
+  /* Custom dropdown arrow for select elements */
+  select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1em;
+    padding-right: 2.25rem;
+  }
+  
+  .dark select {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  }
 }

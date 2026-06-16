@@ -19,7 +19,8 @@
     "prev": "Poprzednia",
     "next": "Następna",
     "page": "Strona",
-    "of": "z"
+    "of": "z",
+    "add": "Dodaj"
   },
   "nav": {
     "welcome": "Witaj",

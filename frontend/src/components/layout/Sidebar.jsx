@@ -75,12 +75,19 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
 
       {/* Sidebar */}
       <div
-        className={`fixed top-0 left-0 h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 shadow-xl z-40 flex flex-col transform transition-all duration-300 ease-in-out
+        className={`fixed top-0 left-0 h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 shadow-xl z-40 flex flex-col transform transition-all duration-300 ease-in-out w-64
         ${isOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0 ${isCollapsed ? "md:w-20" : "md:w-64"}`}
       >
         <div className="h-16 flex items-center justify-center border-b border-slate-200 dark:border-slate-800 relative">
           <span className="text-2xl font-black tracking-wider text-slate-900 dark:text-white bg-clip-text bg-gradient-to-r from-blue-500 to-indigo-500 dark:from-blue-400 dark:to-indigo-400">
-            {isCollapsed ? "IOT" : "IOTLAB"}
+            {isCollapsed ? (
+              <>
+                <span className="hidden md:inline">IOT</span>
+                <span className="inline md:hidden">IOTLAB</span>
+              </>
+            ) : (
+              "IOTLAB"
+            )}
           </span>
 
           {/* Desktop Collapse Button */}
@@ -94,35 +101,33 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
           </button>
         </div>
 
-        <nav className="flex-grow overflow-y-auto mt-6">
-          <ul className="space-y-1.5 px-4">
+        <nav className="flex-grow overflow-y-auto overflow-x-hidden mt-6">
+          <ul className={`space-y-1.5 ${isCollapsed ? "px-2" : "px-4"}`}>
             {menuLinks.map((item) => (
               <li key={item.name} className="relative group">
                 <NavLink
                   end={item.isParent}
                   to={item.path}
                   className={({ isActive }) =>
-                    `flex items-center px-4 py-2.5 rounded-xl transition-all duration-200 text-sm ${
+                    `flex items-center py-2.5 rounded-xl transition-all duration-200 text-sm ${
                       isActive 
                         ? "bg-indigo-600 text-white font-semibold shadow-md dark:shadow-lg dark:shadow-indigo-900/30" 
                         : "text-slate-600 dark:text-slate-400 hover:text-slate-950 hover:bg-slate-100 dark:hover:text-white dark:hover:bg-slate-800/60"
-                    } ${isCollapsed ? "justify-center px-2" : ""}`
+                    } ${isCollapsed ? "md:justify-center md:px-2 px-4" : "px-4"}`
                   }
                   onClick={() => setIsOpen(false)}
                 >
                   <span className="text-lg flex-shrink-0" title={isCollapsed ? t(item.translationKey) : undefined}>
                     {item.icon}
                   </span>
-                  {!isCollapsed && (
-                    <span className="font-medium ml-3 transition-all">
-                      {t(item.translationKey)}
-                    </span>
-                  )}
+                  <span className={`font-medium ml-3 transition-all ${isCollapsed ? "md:hidden" : ""}`}>
+                    {t(item.translationKey)}
+                  </span>
                 </NavLink>
 
                 {/* Collapsed Tooltip */}
                 {isCollapsed && (
-                  <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1.5 bg-slate-950/90 text-white text-xs font-semibold rounded-lg shadow-lg pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 whitespace-nowrap">
+                  <div className="hidden md:block fixed left-20 -translate-y-1/2 ml-2 px-2.5 py-1.5 bg-slate-950/90 text-white text-xs font-semibold rounded-lg shadow-lg pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 whitespace-nowrap">
                     {t(item.translationKey)}
                   </div>
                 )}
@@ -132,49 +137,115 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
         </nav>
 
         {/* Sidebar Footer Controls */}
-        <div className="mt-auto p-4 flex flex-col gap-3">
+        <div className={`mt-auto flex flex-col gap-3 ${isCollapsed ? "md:p-2 p-4" : "p-4"}`}>
           {isCollapsed ? (
-            <div className="flex flex-col gap-2.5 items-center">
-              {/* Theme Toggle Button (Compact) */}
-              <button
-                onClick={toggleTheme}
-                className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 text-slate-650 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer bg-white dark:bg-slate-900"
-                title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
-                type="button"
-              >
-                {theme === "dark" ? (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4.5 w-4.5 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 9h-1m14.071-5.071l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M14 12a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4.5 w-4.5 text-slate-650" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                  </svg>
-                )}
-              </button>
+            <>
+              {/* Desktop Collapsed View */}
+              <div className="hidden md:flex flex-col gap-2.5 items-center">
+                {/* Theme Toggle Button (Compact) */}
+                <button
+                  onClick={toggleTheme}
+                  className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 text-slate-650 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer bg-white dark:bg-slate-900"
+                  title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                  type="button"
+                >
+                  {theme === "dark" ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4.5 w-4.5 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 9h-1m14.071-5.071l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M14 12a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4.5 w-4.5 text-slate-650" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                    </svg>
+                  )}
+                </button>
 
-              {/* Language Toggle (Compact) */}
-              <button
-                onClick={() => setLanguage(language === "pl" ? "en" : "pl")}
-                className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 text-[10px] font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer bg-white dark:bg-slate-900"
-                title={language === "pl" ? "Przełącz na angielski" : "Switch to Polish"}
-                type="button"
-              >
-                {language.toUpperCase()}
-              </button>
+                {/* Language Toggle (Compact) */}
+                <button
+                  onClick={() => setLanguage(language === "pl" ? "en" : "pl")}
+                  className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 text-[10px] font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer bg-white dark:bg-slate-900"
+                  title={language === "pl" ? "Przełącz na angielski" : "Switch to Polish"}
+                  type="button"
+                >
+                  {language.toUpperCase()}
+                </button>
 
-              {/* Logout Button (Compact) */}
-              <NavLink
-                to="/logout"
-                className="w-10 h-10 flex items-center justify-center rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white transition-all duration-200"
-                onClick={() => setIsOpen(false)}
-                title={t("common.logout")}
-              >
-                <svg xmlns="http://www.w3.org/2500/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7" />
-                </svg>
-              </NavLink>
-            </div>
+                {/* Logout Button (Compact) */}
+                <NavLink
+                  to="/logout"
+                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white transition-all duration-200"
+                  onClick={() => setIsOpen(false)}
+                  title={t("common.logout")}
+                >
+                  <svg xmlns="http://www.w3.org/2500/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7" />
+                  </svg>
+                </NavLink>
+              </div>
+
+              {/* Mobile Expanded View */}
+              <div className="flex md:hidden flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  {/* Theme Toggle Button */}
+                  <button
+                    onClick={toggleTheme}
+                    className="flex-1 flex items-center justify-center py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-650 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors gap-2 text-xs font-semibold cursor-pointer bg-white dark:bg-slate-900"
+                    title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                    type="button"
+                  >
+                    {theme === "dark" ? (
+                      <>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 9h-1m14.071-5.071l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M14 12a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        <span>Light</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-slate-650" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                        </svg>
+                        <span>Dark</span>
+                      </>
+                    )}
+                  </button>
+
+                  {/* Language Switcher */}
+                  <div className="flex-1 flex items-center rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-white/50 dark:bg-slate-900/50 text-[11px] font-bold h-9">
+                    <button
+                      onClick={() => setLanguage("pl")}
+                      className={`flex-grow h-full text-center transition-colors cursor-pointer ${
+                        language === "pl"
+                          ? "bg-indigo-600 text-white"
+                          : "text-slate-500 hover:bg-slate-105 dark:hover:bg-slate-800"
+                      }`}
+                      type="button"
+                    >
+                      PL
+                    </button>
+                    <button
+                      onClick={() => setLanguage("en")}
+                      className={`flex-grow h-full text-center transition-colors cursor-pointer ${
+                        language === "en"
+                          ? "bg-indigo-600 text-white"
+                          : "text-slate-500 hover:bg-slate-105 dark:hover:bg-slate-800"
+                      }`}
+                      type="button"
+                    >
+                      EN
+                    </button>
+                  </div>
+                </div>
+
+                <NavLink
+                  to="/logout"
+                  className="flex items-center justify-center px-4 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white text-sm font-semibold transition-all duration-200"
+                  onClick={() => setIsOpen(false)}
+                >
+                  {t("common.logout")}
+                </NavLink>
+              </div>
+            </>
           ) : (
             <>
               <div className="flex items-center gap-2">
@@ -240,12 +311,20 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
           )}
         </div>
 
-        <div className="border-t border-slate-200 dark:border-slate-800 p-4 text-center text-xs bg-slate-50 dark:bg-slate-950/40 text-slate-600 dark:text-slate-400 transition-all duration-300 flex flex-col items-center justify-center min-h-[4rem]">
+        <div className={`border-t border-slate-200 dark:border-slate-800 text-center text-xs bg-slate-50 dark:bg-slate-950/40 text-slate-600 dark:text-slate-400 transition-all duration-300 flex flex-col items-center justify-center min-h-[4rem] ${isCollapsed ? "md:p-2 p-4" : "p-4"}`}>
           {user ? (
             isCollapsed ? (
-              <span className="w-8 h-8 rounded-full bg-indigo-550/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold flex items-center justify-center border border-indigo-200/50 dark:border-indigo-800/40 text-[10px]" title={user.name || user.email}>
-                {(user.name || user.email || "U").slice(0, 2).toUpperCase()}
-              </span>
+              <>
+                {/* Desktop Collapsed Avatar */}
+                <span className="hidden md:flex w-8 h-8 rounded-full bg-indigo-550/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold items-center justify-center border border-indigo-200/50 dark:border-indigo-800/40 text-[10px]" title={user.name || user.email}>
+                  {(user.name || user.email || "U").slice(0, 2).toUpperCase()}
+                </span>
+                {/* Mobile Expanded Avatar Details */}
+                <div className="flex md:hidden flex-col items-center justify-center w-full">
+                  <p className="font-semibold text-slate-700 dark:text-slate-200 truncate w-full">{user.name || user.email}</p>
+                  <p className="text-slate-500 capitalize mt-0.5">{user.role}</p>
+                </div>
+              </>
             ) : (
               <>
                 <p className="font-semibold text-slate-700 dark:text-slate-200 truncate w-full">{user.name || user.email}</p>
@@ -253,7 +332,14 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
               </>
             )
           ) : (
-            <p className="text-slate-500">{isCollapsed ? "👤" : t("common.notLoggedIn")}</p>
+            isCollapsed ? (
+              <>
+                <p className="hidden md:block text-slate-500">👤</p>
+                <p className="block md:hidden text-slate-500">{t("common.notLoggedIn")}</p>
+              </>
+            ) : (
+              <p className="text-slate-500">{t("common.notLoggedIn")}</p>
+            )
           )}
         </div>
       </div>

@@ -4,6 +4,7 @@ import apiClient from "../api/apiClient";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useTheme } from "../context/ThemeContext";
+import Btn from "../components/layout/Btn";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -173,31 +174,34 @@ const Login = () => {
               />
             </label>
 
-            <button
+            <Btn
               type="submit"
-              className="w-full rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-indigo-700 disabled:opacity-50 cursor-pointer"
+              variant="primary"
+              className="w-full py-3 text-sm font-semibold"
               disabled={loading}
             >
               {loading ? t("login.loggingIn") : t("login.button")}
-            </button>
+            </Btn>
           </form>
 
-          <button
+          <Btn
             onClick={handleForgotPassword}
-            className="mt-6 w-full rounded-2xl border border-slate-200 dark:border-slate-750 bg-slate-50 dark:bg-slate-900 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-350 transition hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+            variant="secondary"
+            className="mt-6 w-full py-3 text-sm font-semibold"
             type="button"
           >
             {t("login.forgotPassword")}
-          </button>
+          </Btn>
 
           {/* Back to Home Button */}
-          <button
+          <Btn
             onClick={() => navigate("/")}
-            className="mt-3 w-full rounded-2xl border border-slate-200 dark:border-slate-750 bg-slate-50 dark:bg-slate-900 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-350 transition hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+            variant="secondary"
+            className="mt-3 w-full py-3 text-sm font-semibold"
             type="button"
           >
             {t("common.backToHome")}
-          </button>
+          </Btn>
         </div>
       </div>
     </div>

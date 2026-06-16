@@ -25,4 +25,17 @@ apiClient.interceptors.request.use(
   }
 );
 
+// Automatically handle 401 Unauthorized by clearing invalid/old tokens and redirecting
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      localStorage.removeItem("pos-token");
+      localStorage.removeItem("pos-user");
+      window.location.href = "/login";
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default apiClient;

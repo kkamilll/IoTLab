@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import Btn from "../layout/Btn";
 
 const STATUS_COLORS = {
   changed:  "text-red-800 dark:text-red-300 bg-red-50 dark:bg-red-950/40 border-red-200/50 dark:border-red-900/30",
@@ -173,34 +174,34 @@ const OrderGroupCard = ({
               <p className="font-bold text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Actions</p>
               <div className="flex flex-wrap gap-2">
                 {canProcessOrder(group.status) && (
-                  <button onClick={() => handleOpenModal(group)} className="px-3.5 py-1.5 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-xl shadow-sm transition cursor-pointer">
+                  <Btn onClick={() => handleOpenModal(group)} variant="warning" size="sm">
                     Process
-                  </button>
+                  </Btn>
                 )}
                 {canRejectOrder(group.status) && (
-                  <button onClick={() => handleRejectOrder(group)} className="px-3.5 py-1.5 text-xs font-bold bg-red-50 dark:bg-red-950/20 text-red-650 dark:text-red-400 border border-red-100 dark:border-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-xl transition cursor-pointer">
+                  <Btn onClick={() => handleRejectOrder(group)} variant="danger-outline" size="sm">
                     Reject
-                  </button>
+                  </Btn>
                 )}
                 {canPrepareOrder(group.status) && (
-                  <button onClick={() => handlePrepareOrder(group)} className="px-3.5 py-1.5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-sm transition cursor-pointer">
+                  <Btn onClick={() => handlePrepareOrder(group)} variant="primary" size="sm">
                     Prepare
-                  </button>
+                  </Btn>
                 )}
                 {canRentOrder(group.status) && (
-                  <button onClick={() => handleRentOrder(group)} className="px-3.5 py-1.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm transition cursor-pointer">
+                  <Btn onClick={() => handleRentOrder(group)} variant="success" size="sm">
                     Rent
-                  </button>
+                  </Btn>
                 )}
                 {canReturnOrder(group.status) && (
-                  <button onClick={() => handleReturnOrder(group)} className="px-3.5 py-1.5 text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white rounded-xl shadow-sm transition cursor-pointer">
+                  <Btn onClick={() => handleReturnOrder(group)} variant="sky" size="sm">
                     Return
-                  </button>
+                  </Btn>
                 )}
                 {canPrintOrder(group.status) && (
-                  <button onClick={() => downloadRentalAgreement(group)} className="px-3.5 py-1.5 text-xs font-bold bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-650 text-white rounded-xl shadow-sm transition cursor-pointer">
+                  <Btn onClick={() => downloadRentalAgreement(group)} variant="dark" size="sm">
                     PDF
-                  </button>
+                  </Btn>
                 )}
               </div>
             </div>

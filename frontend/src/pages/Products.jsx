@@ -13,6 +13,7 @@ import CategoryTree from "../components/categories/CategoryTree";
 import PageHeader from "../components/layout/PageHeader";
 import Btn from "../components/layout/Btn";
 import Pagination from "../components/layout/Pagination";
+import { FileDown, Plus, ShoppingCart, LayoutGrid } from "lucide-react";
 
 const MEGA_BYTE = 1024 * 1024;
 const MAX_FILE_SIZE = 50 * MEGA_BYTE;
@@ -686,10 +687,22 @@ const Products = () => {
           title={"📦 " + t("products.title")}
           subtitle={t("products.subtitle")}
         >
-        <Btn variant="secondary" onClick={generatePDF}>{t("products.exportPdf")}</Btn>
-        <Btn variant="dark" onClick={addExtraField}>{t("products.addColumn")}</Btn>
-        <Btn variant="success" onClick={() => navigate("/cart")}>{t("products.goToCart")}</Btn>
-        <Btn variant="primary" onClick={() => { setEditProduct(null); setOpenModal(true); }}>{t("products.addObject")}</Btn>
+        <Btn variant="secondary" onClick={generatePDF}>
+          <FileDown className="w-4 h-4" />
+          {t("products.exportPdf")}
+        </Btn>
+        <Btn variant="dark" onClick={addExtraField}>
+          <LayoutGrid className="w-4 h-4" />
+          {t("products.addColumn")}
+        </Btn>
+        <Btn variant="success" onClick={() => navigate("/cart")}>
+          <ShoppingCart className="w-4 h-4" />
+          {t("products.goToCart")}
+        </Btn>
+        <Btn variant="primary" onClick={() => { setEditProduct(null); setOpenModal(true); }}>
+          <Plus className="w-4 h-4" />
+          {t("products.addObject")}
+        </Btn>
       </PageHeader>
 
       {/* Search & Filters */}

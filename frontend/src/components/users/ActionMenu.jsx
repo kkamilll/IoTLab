@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import ReactDOM from "react-dom";
 import { useLanguage } from "../../context/LanguageContext";
+import Btn from "../layout/Btn";
 
 const ActionMenu = ({ user, onEdit, onDelete, loadingId }) => {
   const [open, setOpen] = useState(false);
@@ -41,20 +42,33 @@ const ActionMenu = ({ user, onEdit, onDelete, loadingId }) => {
   return (
     <div className="relative">
       <div className="hidden md:flex justify-center gap-2">
-        <button onClick={() => onEdit(user)} className="bg-blue-600 text-white px-3 py-1 rounded-xl hover:bg-blue-700">{t("common.edit")}</button>
-        <button onClick={() => onDelete(user._id)} disabled={loadingId === user._id} className={`px-3 py-1 rounded-xl text-white ${loadingId === user._id ? "bg-red-300 cursor-not-allowed" : "bg-red-600 hover:bg-red-700"}`}>
+        <Btn onClick={() => onEdit(user)} variant="primary" size="sm">
+          {t("common.edit")}
+        </Btn>
+        <Btn
+          onClick={() => onDelete(user._id)}
+          disabled={loadingId === user._id}
+          variant="danger"
+          size="sm"
+        >
           {loadingId === user._id ? (language === "pl" ? "Usuwanie..." : "Deleting...") : t("common.delete")}
-        </button>
+        </Btn>
       </div>
 
-      <div className="md:hidden relative">
-        <button ref={buttonRef} onClick={toggleMenu} className="px-2 py-1 bg-gray-300 dark:bg-slate-800 rounded-xl text-slate-800 dark:text-slate-200">⋮</button>
+      <div className="md:hidden relative flex justify-center">
+        <button
+          ref={buttonRef}
+          onClick={toggleMenu}
+          className="w-7 h-7 flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-350 rounded-full transition-all duration-200 cursor-pointer font-bold"
+        >
+          ⋮
+        </button>
         {open && ReactDOM.createPortal(
-          <div ref={menuRef} className="absolute bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-800 rounded-xl shadow-lg p-2 flex flex-col gap-1 z-[9999]"
+          <div ref={menuRef} className="absolute bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-lg p-1.5 flex flex-col gap-1 z-[9999]"
             style={{ top: coords.top, left: coords.left, width: '140px' }}
           >
-            <button onClick={() => { onEdit(user); setOpen(false); }} className="px-3 py-1 hover:bg-blue-100 dark:hover:bg-slate-850 rounded text-left text-slate-800 dark:text-slate-200">{t("common.edit")}</button>
-            <button onClick={() => { onDelete(user._id); setOpen(false); }} disabled={loadingId === user._id} className={`px-3 py-1 rounded text-left text-slate-800 dark:text-slate-200 ${loadingId === user._id ? "bg-red-300 cursor-not-allowed" : "hover:bg-red-100 dark:hover:bg-slate-850"}`}>
+            <button onClick={() => { onEdit(user); setOpen(false); }} className="px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-left text-xs font-semibold text-slate-800 dark:text-slate-200 transition cursor-pointer">{t("common.edit")}</button>
+            <button onClick={() => { onDelete(user._id); setOpen(false); }} disabled={loadingId === user._id} className={`px-3 py-2 rounded-xl text-left text-xs font-semibold text-red-650 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition cursor-pointer ${loadingId === user._id ? "opacity-50 cursor-not-allowed" : ""}`}>
               {loadingId === user._id ? (language === "pl" ? "Usuwanie..." : "Deleting...") : t("common.delete")}
             </button>
           </div>,
