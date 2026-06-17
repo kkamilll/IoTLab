@@ -36,8 +36,6 @@ import Templates from "./pages/Templates";
 // Components
 import Logout from "./components/auth/Logout";
 
-// import ReturnedOrders from './components/ReturnedOrders';
-
 // Utils
 import ProtectedRoutes from "./utils/ProtectedRoutes";
 import RootRedirect from "./utils/RootRedirect";
