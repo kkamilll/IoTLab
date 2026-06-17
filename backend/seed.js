@@ -9,6 +9,7 @@ import Order from "./models/Order.js";
 import Template from "./models/Template.js";
 import Note from "./models/Note.js";
 import Material from "./models/Material.js";
+import Component from "./models/Component.js";
 import bcrypt from "bcrypt";
 import { v4 as uuidv4 } from "uuid";
 
@@ -28,6 +29,7 @@ const seedDatabase = async () => {
     await Template.deleteMany({});
     await Note.deleteMany({});
     await Material.deleteMany({});
+    await Component.deleteMany({});
 
     // ─────────────────────────────────────────────
     // USERS
@@ -427,6 +429,66 @@ const seedDatabase = async () => {
     await note5.save();
 
     // ─────────────────────────────────────────────
+    // COMPONENTS
+    // ─────────────────────────────────────────────
+    console.log("Seeding Components...");
+
+    const compMicro = new Component({
+      name: "Mikrokontrolery",
+      logo: "📟",
+      author: admin._id,
+      links: [
+        {
+          text: "Dokumentacja Arduino Uno (PDF)",
+          href: "https://docs.arduino.cc/resources/datasheets/A000066-datasheet.pdf"
+        },
+        {
+          text: "ESP32 DevKit Datasheet (PDF)",
+          href: "https://www.espressif.com/sites/default/files/documentation/esp32-wroom-32d_esp32-wroom-32u_datasheet_en.pdf"
+        }
+      ],
+      files: []
+    });
+
+    const compSensors = new Component({
+      name: "Sensory i Czujniki",
+      logo: "🌡️",
+      author: lecturer2._id,
+      links: [
+        {
+          text: "Karta katalogowa czujnika DHT22 (PDF)",
+          href: "https://www.sparkfun.com/datasheets/Sensors/Temperature/DHT22.pdf"
+        },
+        {
+          text: "Przewodnik po czujniku odległości HC-SR04",
+          href: "https://cdn.sparkfun.com/datasheets/Sensors/Proximity/HCSR04.pdf"
+        }
+      ],
+      files: []
+    });
+
+    const compSBC = new Component({
+      name: "Single Board Computers",
+      logo: "🍓",
+      author: admin._id,
+      links: [
+        {
+          text: "Karta katalogowa Raspberry Pi 4 Model B",
+          href: "https://datasheets.raspberrypi.com/rpi4/raspberry-pi-4-product-brief.pdf"
+        },
+        {
+          text: "Raspberry Pi 5 oficjalna dokumentacja",
+          href: "https://www.raspberrypi.com/documentation/computers/raspberry-pi.html"
+        }
+      ],
+      files: []
+    });
+
+    await compMicro.save();
+    await compSensors.save();
+    await compSBC.save();
+
+    // ─────────────────────────────────────────────
     // MATERIALS (Slider)
     // ─────────────────────────────────────────────
     console.log("Seeding Materials (Slider)...");
@@ -434,24 +496,24 @@ const seedDatabase = async () => {
     // Note: path is a placeholder – physical files don't exist in seed.
     // Real materials are uploaded via the admin panel.
     const mat1 = new Material({
-      filename: "slide1.jpg",
-      path: "uploads/materials/slide1.jpg",
+      filename: "slide1.png",
+      path: "uploads/materials/slide1.png",
       link: "https://www.put.poznan.pl",
       author: admin._id,
       order: 1,
     });
 
     const mat2 = new Material({
-      filename: "slide2.jpg",
-      path: "uploads/materials/slide2.jpg",
+      filename: "slide2.png",
+      path: "uploads/materials/slide2.png",
       link: null,
       author: admin._id,
       order: 2,
     });
 
     const mat3 = new Material({
-      filename: "slide3.jpg",
-      path: "uploads/materials/slide3.jpg",
+      filename: "slide3.png",
+      path: "uploads/materials/slide3.png",
       link: "https://www.embedded.pl",
       author: lecturer3._id,
       order: 3,
@@ -661,6 +723,7 @@ const seedDatabase = async () => {
     console.log(`   Products: 11`);
     console.log(`   Templates: 3 (newOrder, updateOrder, resetPassword) — all set as default`);
     console.log(`   Notes: 5`);
+    console.log(`   Components: 3`);
     console.log(`   Materials (slider): 3`);
     console.log(`   Orders: 5 (pending, approved, rented, prepared, returned)`);
     console.log(`\n   Admin login: admin@gmail.com / admin`);
