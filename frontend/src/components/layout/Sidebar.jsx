@@ -16,6 +16,7 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
     {name:"Categories", path: "/admin-dashboard/categories", isParent:false, translationKey: "nav.categories", icon: "🏷️"},
     {name:"Orders", path: "/admin-dashboard/orders", isParent:false, translationKey: "nav.orders", icon: "📋"},
     {name:"Users", path: "/admin-dashboard/users", isParent:false, translationKey: "nav.users", icon: "👥"},
+    {name:"Notifications", path: "/admin-dashboard/notifications", isParent:false, translationKey: "nav.notifications", icon: "🔔"},
     {name:"Profile", path: "/admin-dashboard/profile", isParent:false, translationKey: "nav.profile", icon: "👤"},
     {name:"Notes", path: "/admin-dashboard/notes", isParent:false, translationKey: "nav.notes", icon: "📝"},
     {name:"Slider", path: "/admin-dashboard/materials", isParent:false, translationKey: "nav.slider", icon: "📸"},
@@ -31,6 +32,7 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
     {name:"Home Page", path: "/", isParent:true, translationKey: "nav.welcome", icon: "🏠"},
     {name:"Products", path: "/admin-dashboard", isParent:true, translationKey: "nav.objects", icon: "📦"},
     {name:"Orders", path: "/admin-dashboard/orders", isParent:false, translationKey: "nav.orders", icon: "📋"},
+    {name:"Notifications", path: "/admin-dashboard/notifications", isParent:false, translationKey: "nav.notifications", icon: "🔔"},
   ];
 
   const [menuLinks, setMenuLinks] = useState(customerItems);

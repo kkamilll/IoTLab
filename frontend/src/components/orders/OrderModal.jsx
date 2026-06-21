@@ -49,13 +49,20 @@ const OrderModal = ({
           <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
             {language === "pl" ? "Opiekun:" : "Owner:"}{" "}
             <span className="font-extrabold text-slate-850 dark:text-slate-200">{editGroup.owner?.name}</span>
+            <span className="mx-2 text-slate-300 dark:text-slate-600">|</span>
+            {language === "pl" ? "Student:" : "Student:"}{" "}
+            <span className="font-extrabold text-indigo-600 dark:text-indigo-400">
+              {editGroup.customerInfo?.firstName && editGroup.customerInfo?.lastName 
+                ? `${editGroup.customerInfo.firstName} ${editGroup.customerInfo.lastName}` 
+                : editGroup.customerInfo?.email}
+            </span>
           </p>
         </div>
 
         {/* Scrollable Content */}
         <div className="p-6 pt-4 overflow-y-auto flex-1">
           {/* Dates */}
-          <div className="p-4 bg-slate-50/50 dark:bg-slate-950 border border-slate-200 dark:border-slate-855 rounded-2xl mb-4">
+          <div className="p-4 bg-slate-50/50 dark:bg-slate-950 border border-slate-200 dark:border-slate-900 rounded-2xl mb-4">
             <p className="font-extrabold text-[10px] text-slate-400 dark:text-slate-550 uppercase tracking-wider mb-3">
               {language === "pl" ? "Daty zamówienia" : "Order Dates"}
             </p>
@@ -173,7 +180,7 @@ const OrderModal = ({
                   className={`px-4 py-2.5 rounded-xl border text-xs font-bold whitespace-nowrap transition-all duration-200 cursor-pointer shadow-xs border-solid ${
                     isSelected
                       ? "border-indigo-500 bg-indigo-500/10 text-indigo-650 dark:text-indigo-400 font-extrabold"
-                      : "border-slate-200 dark:border-slate-805 bg-slate-50 dark:bg-slate-950/60 hover:bg-slate-100 dark:hover:bg-slate-900 text-slate-600 dark:text-slate-400"
+                      : "border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 hover:bg-slate-100 dark:hover:bg-slate-900 text-slate-600 dark:text-slate-400"
                   }`}
                 >
                   {item.product?.name || "Deleted Product"}
@@ -186,7 +193,7 @@ const OrderModal = ({
           {currentItemId && itemsUpdateData[currentItemId] && (
             <form className="flex flex-col gap-3.5" onSubmit={handleSubmit}>
               {validationError && (
-                <div className="bg-red-50 dark:bg-red-955/15 border border-solid border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400 rounded-xl p-4 text-xs font-bold shadow-xs flex items-center gap-2 mb-2">
+                <div className="bg-red-50 dark:bg-red-950/15 border border-solid border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400 rounded-xl p-4 text-xs font-bold shadow-xs flex items-center gap-2 mb-2">
                   <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                   <span>{validationError}</span>
                 </div>
@@ -199,7 +206,7 @@ const OrderModal = ({
                     <div className="flex flex-col gap-2 p-1">
                       {/* Product Name */}
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-slate-455 dark:text-slate-500 text-xs font-semibold uppercase tracking-wider">
+                        <span className="text-slate-400 dark:text-slate-500 text-xs font-semibold uppercase tracking-wider">
                           {language === "pl" ? "Nazwa produktu:" : "Product Name:"}
                         </span>
                         <span className="font-extrabold text-slate-850 dark:text-slate-200 text-sm">{itemData?.product?.name || "Deleted Product"}</span>
@@ -208,7 +215,7 @@ const OrderModal = ({
                       {/* Tags */}
                       {itemData?.product?.tags?.length > 0 && (
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-slate-455 dark:text-slate-500 text-xs font-semibold uppercase tracking-wider">
+                          <span className="text-slate-400 dark:text-slate-500 text-xs font-semibold uppercase tracking-wider">
                             {language === "pl" ? "Tagi:" : "Tags:"}
                           </span>
                           <div className="flex flex-wrap gap-1">
@@ -223,22 +230,22 @@ const OrderModal = ({
                     </div>
 
                     {/* Requested info summary */}
-                    <div className="p-3.5 bg-slate-50/50 dark:bg-slate-950 border border-slate-200 dark:border-slate-855 rounded-2xl mb-1">
+                    <div className="p-3.5 bg-slate-50/50 dark:bg-slate-950 border border-slate-200 dark:border-slate-900 rounded-2xl mb-1">
                       <p className="font-extrabold text-[10px] text-slate-400 dark:text-slate-550 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
                         <Calendar className="w-3.5 h-3.5 text-indigo-500" />
                         <span>{language === "pl" ? "Informacje o rezerwacji" : "Requested Info"}</span>
                       </p>
                       <div className="grid grid-cols-2 gap-y-2 text-xs text-slate-600 dark:text-slate-400 font-medium">
                         <p className="text-slate-400 dark:text-slate-550">{language === "pl" ? "Ilość" : "Quantity"}</p>
-                        <p className="text-slate-805 dark:text-slate-200 font-extrabold">{itemData.requestedQuantity}</p>
+                        <p className="text-slate-800 dark:text-slate-200 font-extrabold">{itemData.requestedQuantity}</p>
 
                         <p className="text-slate-400 dark:text-slate-550">{language === "pl" ? "Data rozpoczęcia" : "Start Date"}</p>
-                        <p className="text-slate-805 dark:text-slate-200 font-extrabold">
+                        <p className="text-slate-800 dark:text-slate-200 font-extrabold">
                           {new Date(datesUpdateData.requestedStartDate).toLocaleString("pl-PL")}
                         </p>
 
                         <p className="text-slate-400 dark:text-slate-550">{language === "pl" ? "Data zakończenia" : "End Date"}</p>
-                        <p className="text-slate-805 dark:text-slate-200 font-extrabold">
+                        <p className="text-slate-800 dark:text-slate-200 font-extrabold">
                           {new Date(datesUpdateData.requestedEndDate).toLocaleString("pl-PL")}
                         </p>
                       </div>
@@ -246,7 +253,7 @@ const OrderModal = ({
 
                     {/* Stock Overview Cards Grid */}
                     {stockStatus && processableStatuses.includes(itemData.prevStatus) && stockStatus[currentItemId] && (
-                      <div className="p-4 bg-slate-50/50 dark:bg-slate-950 border border-slate-200 dark:border-slate-855 rounded-2xl mb-1">
+                      <div className="p-4 bg-slate-50/50 dark:bg-slate-950 border border-slate-200 dark:border-slate-900 rounded-2xl mb-1">
                         <p className="font-extrabold text-[10px] text-slate-400 dark:text-slate-550 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                           <Layers className="w-3.5 h-3.5 text-indigo-500" />
                           <span>{language === "pl" ? "Status zapasów i zapotrzebowania" : "Stock & Demand Status"}</span>
@@ -254,7 +261,7 @@ const OrderModal = ({
 
                         <div className="grid grid-cols-2 gap-3">
                           {/* Available to Assign */}
-                          <div className="bg-white dark:bg-slate-900 border border-solid border-emerald-250 dark:border-emerald-955 rounded-xl p-3 shadow-xs">
+                          <div className="bg-white dark:bg-slate-900 border border-solid border-emerald-250 dark:border-emerald-950 rounded-xl p-3 shadow-xs">
                             <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                               {language === "pl" ? "Dostępne do przypisania" : "Available to Assign"}
                             </p>
@@ -268,13 +275,13 @@ const OrderModal = ({
                             <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                               {language === "pl" ? "Łącznie dostępne" : "Total Available"}
                             </p>
-                            <p className="text-xl font-black text-slate-805 dark:text-slate-100 mt-1">
+                            <p className="text-xl font-black text-slate-800 dark:text-slate-100 mt-1">
                               {stockStatus[currentItemId].availableTotal}
                             </p>
                           </div>
 
                           {/* Rented Out */}
-                          <div className="bg-white dark:bg-slate-900 border border-solid border-amber-200 dark:border-amber-955/20 rounded-xl p-3 shadow-xs">
+                          <div className="bg-white dark:bg-slate-900 border border-solid border-amber-200 dark:border-amber-950/20 rounded-xl p-3 shadow-xs">
                             <p className="text-[10px] font-bold text-slate-400 dark:text-slate-555 uppercase tracking-wider">
                               {language === "pl" ? "Aktualnie wypożyczone" : "Currently Rented"}
                             </p>
@@ -284,7 +291,7 @@ const OrderModal = ({
                           </div>
 
                           {/* Demand Overview */}
-                          <div className="bg-white dark:bg-slate-900 border border-solid border-indigo-150 dark:border-indigo-950 rounded-xl p-3 shadow-xs">
+                          <div className="bg-white dark:bg-slate-900 border border-solid border-indigo-100 dark:border-indigo-950 rounded-xl p-3 shadow-xs">
                             <p className="text-[10px] font-bold text-indigo-400 dark:text-indigo-500 uppercase tracking-wider">
                               {language === "pl" ? "Zapotrzebowanie / Wnioski" : "Demand / Requesters"}
                             </p>
@@ -301,7 +308,7 @@ const OrderModal = ({
 
                     {/* Quantity Input */}
                     <div>
-                      <label className="font-extrabold text-slate-455 dark:text-slate-500 block mb-1 text-[10px] uppercase tracking-wider">
+                      <label className="font-extrabold text-slate-400 dark:text-slate-500 block mb-1 text-[10px] uppercase tracking-wider">
                         {language === "pl" ? "Ilość" : "Quantity"}
                       </label>
                       <input
@@ -309,19 +316,19 @@ const OrderModal = ({
                         value={itemData.assignedQuantity || 0}
                         min={1}
                         onChange={(e) => handleEditChange(currentItemId, e)}
-                        className="border border-solid border-slate-200 dark:border-slate-805 p-2.5 rounded-lg w-full disabled:bg-slate-100 dark:disabled:bg-slate-950 disabled:text-slate-450 dark:disabled:text-slate-600 disabled:cursor-not-allowed bg-white dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm font-semibold text-slate-700 dark:text-slate-202 shadow-sm transition-shadow"
+                        className="border border-solid border-slate-200 dark:border-slate-800 p-2.5 rounded-lg w-full disabled:bg-slate-100 dark:disabled:bg-slate-950 disabled:text-slate-450 dark:disabled:text-slate-600 disabled:cursor-not-allowed bg-white dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm font-semibold text-slate-700 dark:text-slate-202 shadow-sm transition-shadow"
                         disabled={!processableStatuses.includes(itemData.prevStatus) || (itemData.prevStatus !== highestPriorityGroupStatus) || itemData.newStatus === "rejected" || !itemData?.product}
                       />
                     </div>
 
                     {/* Status Dropdown */}
                     <div>
-                      <label className="font-extrabold text-slate-455 dark:text-slate-555 block mb-1 text-[10px] uppercase tracking-wider">Status</label>
+                      <label className="font-extrabold text-slate-400 dark:text-slate-555 block mb-1 text-[10px] uppercase tracking-wider">Status</label>
                       <select
                         name="newStatus"
                         value={itemData.newStatus}
                         onChange={(e) => handleStatusChange(currentItemId, e)}
-                        className="border border-solid border-slate-200 dark:border-slate-805 py-2.5 rounded-lg w-full disabled:bg-slate-100 dark:disabled:bg-slate-950 disabled:text-slate-455 dark:disabled:text-slate-600 disabled:cursor-not-allowed bg-white dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm font-semibold text-slate-700 dark:text-slate-202 shadow-sm transition-shadow cursor-pointer"
+                        className="border border-solid border-slate-200 dark:border-slate-800 py-2.5 rounded-lg w-full disabled:bg-slate-100 dark:disabled:bg-slate-950 disabled:text-slate-400 dark:disabled:text-slate-600 disabled:cursor-not-allowed bg-white dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm font-semibold text-slate-700 dark:text-slate-202 shadow-sm transition-shadow cursor-pointer"
                         disabled={!processableStatuses.includes(itemData.prevStatus) || (itemData.prevStatus !== highestPriorityGroupStatus) || !itemData?.product}
                       >
                         <option value={itemData.prevStatus}>

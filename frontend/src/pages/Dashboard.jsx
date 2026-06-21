@@ -339,7 +339,7 @@ const Dashboard = () => {
                           setProductSearch("");
                         }}
                         type="button"
-                        className={`text-left text-xs px-3 py-2 rounded-xl transition-all duration-150 font-semibold cursor-pointer ${
+                        className={`text-left text-xs px-3 py-2 rounded-xl transition-all duration-100 font-semibold cursor-pointer ${
                           productId1 === ""
                             ? "bg-indigo-600 text-white shadow-sm"
                             : "text-slate-650 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-800/60"
@@ -367,7 +367,7 @@ const Dashboard = () => {
                                   setProductSearch("");
                                 }}
                                 type="button"
-                                className={`text-left text-xs px-3 py-2 rounded-xl transition-all duration-150 truncate cursor-pointer ${
+                                className={`text-left text-xs px-3 py-2 rounded-xl transition-all duration-100 truncate cursor-pointer ${
                                   productId1 === product._id
                                     ? "bg-indigo-600 text-white shadow-sm font-semibold"
                                     : "text-slate-650 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-800/60"
@@ -416,7 +416,7 @@ const Dashboard = () => {
                   wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }}
                   formatter={(value) => (
                     <span
-                      className="text-slate-600 dark:text-slate-400 font-semibold select-none cursor-help hover:text-indigo-655 dark:hover:text-indigo-400 transition-colors"
+                      className="text-slate-600 dark:text-slate-400 font-semibold select-none cursor-help hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                       title={value}
                     >
                       {truncateText(value, 28)}
@@ -512,7 +512,7 @@ const Dashboard = () => {
                     wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }}
                     formatter={(value) => (
                       <span
-                        className="text-slate-600 dark:text-slate-400 font-semibold select-none cursor-help hover:text-indigo-655 dark:hover:text-indigo-400 transition-colors"
+                        className="text-slate-600 dark:text-slate-400 font-semibold select-none cursor-help hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                         title={value}
                       >
                         {truncateText(value, 28)}
@@ -612,7 +612,7 @@ const Dashboard = () => {
                   wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }}
                   formatter={(value) => (
                     <span
-                      className="text-slate-600 dark:text-slate-400 font-semibold select-none cursor-help hover:text-indigo-655 dark:hover:text-indigo-400 transition-colors"
+                      className="text-slate-600 dark:text-slate-400 font-semibold select-none cursor-help hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                       title={value}
                     >
                       {truncateText(value, 28)}

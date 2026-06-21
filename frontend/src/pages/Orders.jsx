@@ -6,6 +6,7 @@ import { useLanguage } from "../context/LanguageContext";
 import { useLocation, useNavigate } from "react-router-dom";
 import OrderModal from "../components/orders/OrderModal";
 import OrderGroupCard from "../components/orders/OrderGroupCard";
+import OrdersCalendar from "../components/orders/OrdersCalendar";
 import PageHeader from "../components/layout/PageHeader";
 import FilterBar from "../components/layout/FilterBar";
 import Pagination from "../components/layout/Pagination";
@@ -14,6 +15,7 @@ import { User, Info, Calendar, Hash, Phone, BookOpen } from "lucide-react";
 import { rentalAgreementTemplate } from "../templates/rentalAgreementTemplate";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import { generateOrdersReportPDF } from "../utils/pdfGenerator";
 
 const getOrderBorderColor = (order) => {
   const statuses = order.ownersData?.map(od => od.status) || [];
@@ -51,6 +53,7 @@ const Orders = () => {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [totalOrders, setTotalOrders] = useState(0);
+  const [viewMode, setViewMode] = useState("list"); // "list" or "calendar"
 
   useEffect(() => {
     if (location.state?.ownerId) {
@@ -91,9 +94,10 @@ const Orders = () => {
 
   const fetchOrders = async (page = 1) => {
     try {
+      const currentLimit = viewMode === "calendar" ? 1000 : limit;
       const queryParams = new URLSearchParams({
         page,
-        limit,
+        limit: currentLimit,
         email: emailFilter,
         status: statusFilter,
         sortBy,
@@ -139,7 +143,7 @@ const Orders = () => {
   useEffect(() => { fetchStatuses(); }, []);
   useEffect(() => {
     fetchOrders(1);
-  }, [statusFilter, emailFilter, ownerFilter, limit, sortBy, sortOrder, dateFrom, dateTo, indexFilter, yearFilter, semesterFilter, fieldFilter]);
+  }, [statusFilter, emailFilter, ownerFilter, limit, viewMode, sortBy, sortOrder, dateFrom, dateTo, indexFilter, yearFilter, semesterFilter, fieldFilter]);
 
   useEffect(() => {
     if (!editGroup || !itemsUpdateData || Object.keys(itemsUpdateData).length === 0) return;
@@ -354,71 +358,9 @@ const Orders = () => {
         <FilterBar
         searchValue={emailFilter}
         onSearchChange={(e) => setEmailFilter(e.target.value)}
-        searchPlaceholder={language === "pl" ? "Filtruj po emailu..." : "Filter by customer email..."}
-        searchLabel={language === "pl" ? "Szukaj (Email studenta):" : "Search (Student Email):"}
+        searchPlaceholder={language === "pl" ? "Szukaj po emailu lub ID..." : "Search by email or ID..."}
+        searchLabel={language === "pl" ? "Szukaj (Email / ID):" : "Search (Email / ID):"}
       >
-        {/* Date From */}
-        <div className="flex flex-col gap-1 w-full sm:w-auto">
-          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1 select-none">
-            {language === "pl" ? "Od:" : "From:"}
-          </span>
-          <input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-950/40 px-3.5 py-2 font-semibold text-slate-700 dark:text-slate-200 outline-none hover:border-slate-300 dark:hover:border-slate-700 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 w-full sm:w-auto cursor-pointer"
-          />
-        </div>
-
-        {/* Date To */}
-        <div className="flex flex-col gap-1 w-full sm:w-auto">
-          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1 select-none">
-            {language === "pl" ? "Do:" : "To:"}
-          </span>
-          <input
-            type="date"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-950/40 px-3.5 py-2 font-semibold text-slate-700 dark:text-slate-200 outline-none hover:border-slate-300 dark:hover:border-slate-700 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 w-full sm:w-auto cursor-pointer"
-          />
-        </div>
-
-        {/* Status Filter */}
-        <div className="flex flex-col gap-1 w-full sm:w-auto">
-          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1 select-none">Status:</span>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-950/40 pl-3.5 pr-8 py-2 font-semibold text-slate-700 dark:text-slate-200 outline-none hover:border-slate-350 dark:hover:border-slate-700 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 appearance-none cursor-pointer min-w-[100px] w-full sm:w-auto"
-          >
-            <option value="">{language === "pl" ? "Wszystkie" : "All"}</option>
-            {orderStatuses.map((status, idx) => (
-              <option key={idx} value={status}>{status}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Sort Filter */}
-        <div className="flex flex-col gap-1 w-full sm:w-auto">
-          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1 select-none">
-            {language === "pl" ? "Sortuj:" : "Sort:"}
-          </span>
-          <select
-            value={`${sortBy}_${sortOrder}`}
-            onChange={(e) => {
-              const [newSortBy, newSortOrder] = e.target.value.split("_");
-              setSortBy(newSortBy);
-              setSortOrder(newSortOrder);
-            }}
-            className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-950/40 pl-3.5 pr-8 py-2 font-semibold text-slate-700 dark:text-slate-200 outline-none hover:border-slate-350 dark:hover:border-slate-705 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 appearance-none cursor-pointer min-w-[140px] w-full sm:w-auto"
-          >
-            <option value="createdAt_desc">{language === "pl" ? "Najnowsze zamówienia" : "Newest orders"}</option>
-            <option value="createdAt_asc">{language === "pl" ? "Najstarsze zamówienia" : "Oldest orders"}</option>
-            <option value="requestedStartDate_asc">{language === "pl" ? "Wynajem (najwcześniejszy)" : "Rental start (earliest)"}</option>
-            <option value="requestedStartDate_desc">{language === "pl" ? "Wynajem (najpóźniejszy)" : "Rental start (latest)"}</option>
-          </select>
-        </div>
-
         {/* Toggle Advanced Filters Button */}
         <button
           type="button"
@@ -429,13 +371,99 @@ const Orders = () => {
               : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-950"
           }`}
         >
-          <span>{language === "pl" ? "Filtry studenta" : "Student filters"}</span>
+          <span>{language === "pl" ? "Filtry szczegółowe" : "Advanced filters"}</span>
           <span className="text-[10px] opacity-70">⚡</span>
+        </button>
+
+        {/* View Mode Toggle */}
+        <button
+          type="button"
+          onClick={() => setViewMode(viewMode === "list" ? "calendar" : "list")}
+          className={`text-xs border rounded-xl px-3.5 py-2 font-bold transition-all duration-200 cursor-pointer flex items-center gap-1.5 shadow-sm h-[38px] ${
+            viewMode === "calendar"
+              ? "border-purple-500 bg-purple-500/10 text-purple-650 dark:text-purple-400 font-extrabold"
+              : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-950"
+          }`}
+        >
+          <Calendar className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">{viewMode === "list" ? (language === "pl" ? "Kalendarz" : "Calendar") : (language === "pl" ? "Lista" : "List")}</span>
+        </button>
+
+        {/* PDF Export Button */}
+        <button
+          type="button"
+          onClick={() => generateOrdersReportPDF(orders, t, language)}
+          className="text-xs border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 rounded-xl px-3.5 py-2 font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all duration-200 cursor-pointer flex items-center gap-1.5 shadow-sm h-[38px]"
+        >
+          <span className="hidden sm:inline">{language === "pl" ? "Raport PDF" : "PDF Report"}</span>
+          <span className="text-[12px]">📊</span>
         </button>
       </FilterBar>
 
       {showAdvanced && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 p-5 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-805 rounded-2xl shadow-sm transition-all duration-300">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 p-5 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-sm transition-all duration-300">
+          {/* Status Filter */}
+          <div className="flex flex-col gap-1 w-full">
+            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1 select-none">Status:</span>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-950/40 pl-3.5 pr-8 py-2 font-semibold text-slate-700 dark:text-slate-200 outline-none hover:border-slate-350 dark:hover:border-slate-700 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 appearance-none cursor-pointer w-full"
+            >
+              <option value="">{language === "pl" ? "Wszystkie" : "All"}</option>
+              {orderStatuses.map((status, idx) => (
+                <option key={idx} value={status}>{t(`statuses.${status}`) || status}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Sort Filter */}
+          <div className="flex flex-col gap-1 w-full">
+            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1 select-none">
+              {language === "pl" ? "Sortuj:" : "Sort:"}
+            </span>
+            <select
+              value={`${sortBy}_${sortOrder}`}
+              onChange={(e) => {
+                const [newSortBy, newSortOrder] = e.target.value.split("_");
+                setSortBy(newSortBy);
+                setSortOrder(newSortOrder);
+              }}
+              className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-950/40 pl-3.5 pr-8 py-2 font-semibold text-slate-700 dark:text-slate-200 outline-none hover:border-slate-350 dark:hover:border-slate-705 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 appearance-none cursor-pointer w-full"
+            >
+              <option value="createdAt_desc">{language === "pl" ? "Najnowsze zamówienia" : "Newest orders"}</option>
+              <option value="createdAt_asc">{language === "pl" ? "Najstarsze zamówienia" : "Oldest orders"}</option>
+              <option value="requestedStartDate_asc">{language === "pl" ? "Wynajem (najwcześniejszy)" : "Rental start (earliest)"}</option>
+              <option value="requestedStartDate_desc">{language === "pl" ? "Wynajem (najpóźniejszy)" : "Rental start (latest)"}</option>
+            </select>
+          </div>
+
+          {/* Date From */}
+          <div className="flex flex-col gap-1 w-full">
+            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1 select-none">
+              {language === "pl" ? "Od (Data wynajmu):" : "From (Rental Date):"}
+            </span>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-950/40 px-3.5 py-2 font-semibold text-slate-700 dark:text-slate-200 outline-none hover:border-slate-300 dark:hover:border-slate-700 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 w-full cursor-pointer"
+            />
+          </div>
+
+          {/* Date To */}
+          <div className="flex flex-col gap-1 w-full">
+            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1 select-none">
+              {language === "pl" ? "Do (Data wynajmu):" : "To (Rental Date):"}
+            </span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-950/40 px-3.5 py-2 font-semibold text-slate-700 dark:text-slate-200 outline-none hover:border-slate-300 dark:hover:border-slate-700 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 w-full cursor-pointer"
+            />
+          </div>
+
           {/* Student Index Input */}
           <div className="flex flex-col gap-1">
             <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1 select-none">
@@ -634,7 +662,7 @@ const Orders = () => {
                 setDateFrom("");
                 setDateTo("");
               }}
-              className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-955/20 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/30 rounded-xl text-xs font-bold transition cursor-pointer shadow-sm ml-2"
+              className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/30 rounded-xl text-xs font-bold transition cursor-pointer shadow-sm ml-2"
             >
               {language === "pl" ? "Wyczyść wszystkie" : "Clear all"}
             </button>
@@ -647,6 +675,8 @@ const Orders = () => {
           <div className="text-4xl mb-3">📋</div>
           <p>{language === "pl" ? "Nie znaleziono zamówień" : "No orders found"}</p>
         </div>
+      ) : viewMode === "calendar" ? (
+        <OrdersCalendar orders={orders} onEventClick={handleOpenModal} />
       ) : (
         <>
           <div className="flex flex-col gap-6 w-full">
@@ -680,12 +710,12 @@ const Orders = () => {
                 const reqEnd = new Date(order.requestedEndDate).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" });
 
                 return (
-                  <div key={order._id} className={`bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-805 border-l-4 ${getOrderBorderColor(order)} shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden`}>
+                  <div key={order._id} className={`bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 border-l-4 ${getOrderBorderColor(order)} shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden`}>
                     {/* Order header */}
                     <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-slate-200/60 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/70">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="inline-flex items-center text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-955/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/35">
+                          <span className="inline-flex items-center text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/35">
                             {language === "pl" ? "Student" : "Student"}
                           </span>
                           <span className="text-sm font-black text-slate-850 dark:text-slate-100 truncate">
@@ -743,7 +773,7 @@ const Orders = () => {
 
                           {/* Field of Study */}
                           <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-xl p-3 shadow-xs flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-955/40 text-blue-500 dark:text-blue-400">
+                            <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-500 dark:text-blue-400">
                               <BookOpen className="w-4 h-4" />
                             </div>
                             <div className="min-w-0">
@@ -758,7 +788,7 @@ const Orders = () => {
 
                           {/* Year / Semester */}
                           <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-xl p-3 shadow-xs flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-955/40 text-purple-500 dark:text-purple-400">
+                            <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-950/40 text-purple-500 dark:text-purple-400">
                               <Calendar className="w-4 h-4" />
                             </div>
                             <div className="min-w-0">
@@ -773,7 +803,7 @@ const Orders = () => {
 
                           {/* Phone */}
                           <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-xl p-3 shadow-xs flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-955/40 text-emerald-500 dark:text-emerald-400">
+                            <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-500 dark:text-emerald-400">
                               <Phone className="w-4 h-4" />
                             </div>
                             <div className="min-w-0">

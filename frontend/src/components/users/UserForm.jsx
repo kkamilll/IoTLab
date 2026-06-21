@@ -72,7 +72,7 @@ const UserForm = ({
             {language === "pl" ? "Zdjęcie profilowe" : "Profile Picture"}
           </label>
           <div className="flex items-center gap-4 w-full">
-            <div className="relative w-14 h-14 rounded-full overflow-hidden border-2 border-dashed border-slate-250 dark:border-slate-800 bg-slate-50 dark:bg-slate-955 flex items-center justify-center flex-shrink-0">
+            <div className="relative w-14 h-14 rounded-full overflow-hidden border-2 border-dashed border-slate-250 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex items-center justify-center flex-shrink-0">
               {formData.profileImageFile ? (
                 <img
                   src={URL.createObjectURL(formData.profileImageFile)}
@@ -105,7 +105,7 @@ const UserForm = ({
               <div className="flex items-center gap-2">
                 <label
                   htmlFor="profileImage"
-                  className="px-4 py-2 border border-slate-205 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl transition duration-155 cursor-pointer shadow-xs"
+                  className="px-4 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl transition duration-155 cursor-pointer shadow-xs"
                 >
                   {language === "pl" ? "Wybierz plik" : "Choose File"}
                 </label>
@@ -116,7 +116,7 @@ const UserForm = ({
                       handleChange({ target: { name: "profileImageFile", value: null } });
                       handleChange({ target: { name: "profileImage", value: "" } });
                     }}
-                    className="px-3 py-2 bg-rose-50 hover:bg-rose-100 dark:bg-rose-955/20 dark:hover:bg-rose-955/40 text-rose-600 dark:text-rose-455 border border-rose-100 dark:border-rose-900/30 text-xs font-bold rounded-xl transition duration-155 cursor-pointer"
+                    className="px-3 py-2 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/30 text-xs font-bold rounded-xl transition duration-155 cursor-pointer"
                   >
                     {language === "pl" ? "Usuń" : "Remove"}
                   </button>
@@ -176,7 +176,7 @@ const UserForm = ({
               type="text"
               value={newLabRoom}
               onChange={(e) => setNewLabRoom(e.target.value)}
-              className="border border-slate-250/70 dark:border-slate-850/80 bg-slate-50/40 dark:bg-slate-950/30 text-slate-800 dark:text-slate-100 rounded-xl px-3.5 py-2 text-sm hover:bg-slate-50/80 dark:hover:bg-slate-955 hover:border-slate-350 dark:hover:border-slate-755 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 shadow-sm focus:shadow-md flex-1"
+              className="border border-slate-250/70 dark:border-slate-850/80 bg-slate-50/40 dark:bg-slate-950/30 text-slate-800 dark:text-slate-100 rounded-xl px-3.5 py-2 text-sm hover:bg-slate-50/80 dark:hover:bg-slate-950 hover:border-slate-350 dark:hover:border-slate-755 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 shadow-sm focus:shadow-md flex-1"
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddLabRoom(); } }}
             />
             <Btn type="button" variant="dark" onClick={handleAddLabRoom}>{language === "pl" ? "Dodaj" : "Add"}</Btn>
@@ -185,16 +185,16 @@ const UserForm = ({
           {formData.labRooms.length > 0 && (
             <div ref={labDropdownRef} className="flex flex-wrap gap-2 mt-2">
               {formData.labRooms.map((room, i) => (
-                <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-355 border border-indigo-200/50 dark:border-indigo-900/30 rounded-full text-xs font-semibold shadow-sm transition hover:bg-indigo-100/50 dark:hover:bg-indigo-950/70">
+                <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200/50 dark:border-indigo-900/30 rounded-full text-xs font-semibold shadow-sm transition hover:bg-indigo-100/50 dark:hover:bg-indigo-950/70">
                   {room}
-                  <button type="button" onClick={() => handleRemoveLabRoom(room)} className="text-rose-500 dark:text-rose-455 font-bold hover:text-rose-750 dark:hover:text-rose-300 transition duration-150 text-sm leading-none flex items-center justify-center p-0.5 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-full w-4 h-4 cursor-pointer">×</button>
+                  <button type="button" onClick={() => handleRemoveLabRoom(room)} className="text-rose-500 dark:text-rose-400 font-bold hover:text-rose-700 dark:hover:text-rose-300 transition duration-100 text-sm leading-none flex items-center justify-center p-0.5 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-full w-4 h-4 cursor-pointer">×</button>
                 </span>
               ))}
             </div>
           )}
         </div>
 
-        <div className="flex gap-2.5 pt-4 border-t border-slate-150 dark:border-slate-800/80 mt-2">
+        <div className="flex gap-2.5 pt-4 border-t border-slate-100 dark:border-slate-800/80 mt-2">
           <Btn type="button" variant="ghost" onClick={handleCancel} className="flex-1">{t("common.cancel")}</Btn>
           <Btn type="submit" variant="primary" disabled={submitLoading} className="flex-1">
             {submitLoading ? (editingUserId ? (language === "pl" ? "Zapisywanie..." : "Saving...") : (language === "pl" ? "Dodawanie..." : "Adding...")) : (editingUserId ? ("💾 " + t("profile.saveChanges")) : t("users.addUser"))}

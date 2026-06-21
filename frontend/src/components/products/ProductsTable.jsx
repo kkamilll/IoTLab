@@ -34,7 +34,7 @@ const ProductsTable = ({
 
   return (
     <div className="hidden md:block overflow-x-auto w-full bg-white dark:bg-slate-900 rounded-[1.25rem] border border-slate-200 dark:border-slate-800/80 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05),0_2px_4px_-2px_rgba(0,0,0,0.02)] transition overflow-hidden">
-      <table className="table-auto w-full min-w-max divide-y divide-slate-150 dark:divide-slate-850">
+      <table className="table-auto w-full min-w-max divide-y divide-slate-100 dark:divide-slate-850">
         <thead className="bg-slate-50/65 dark:bg-slate-950/60 backdrop-blur-md sticky top-0 z-10 border-b border-slate-200/80 dark:border-slate-850/80">
           <tr>
             {/* Select All Checkbox */}
@@ -71,7 +71,7 @@ const ProductsTable = ({
                     <div className="flex items-center gap-1.5">
                       <span
                         onClick={() => handleSort(col)}
-                        className="cursor-pointer hover:text-slate-750 dark:hover:text-slate-200 transition flex items-center gap-1 group/header"
+                        className="cursor-pointer hover:text-slate-700 dark:hover:text-slate-200 transition flex items-center gap-1 group/header"
                       >
                         {displayName}
                         <span className="transition-transform duration-200 group-hover/header:scale-110">
@@ -81,7 +81,7 @@ const ProductsTable = ({
                       {extraColumns.includes(col) && (
                         <button
                           onClick={() => removeExtraField(col)}
-                          className="ml-1 px-1.5 py-0.5 bg-red-50 dark:bg-red-955/30 text-red-500 dark:text-red-400 border border-red-100 dark:border-red-900/30 rounded hover:bg-red-100 dark:hover:bg-red-900/50 text-[10px] font-bold transition cursor-pointer"
+                          className="ml-1 px-1.5 py-0.5 bg-red-50 dark:bg-red-950/30 text-red-500 dark:text-red-400 border border-red-100 dark:border-red-900/30 rounded hover:bg-red-100 dark:hover:bg-red-900/50 text-[10px] font-bold transition cursor-pointer"
                           title={`Remove column "${col}"`}
                         >
                           ✕
@@ -97,11 +97,11 @@ const ProductsTable = ({
           </tr>
         </thead>
 
-        <tbody className="bg-white dark:bg-slate-900 divide-y divide-slate-150 dark:divide-slate-850">
+        <tbody className="bg-white dark:bg-slate-900 divide-y divide-slate-100 dark:divide-slate-850">
           {paginatedProducts.map((p) => (
             <tr
               key={p._id}
-              className="hover:bg-slate-50/50 dark:hover:bg-slate-850/30 cursor-pointer transition-colors duration-150 group"
+              className="hover:bg-slate-50/50 dark:hover:bg-slate-850/30 cursor-pointer transition-colors duration-100 group"
               onClick={(e) => {
                 if (e.target.closest("button, select, input, option, a, td.select-cell")) return;
                 handlePreview(p._id);
@@ -165,21 +165,21 @@ const ProductsTable = ({
                           {p.categories.map((c, i) => (
                             <span
                               key={i}
-                              className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-indigo-50/50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-355 border border-indigo-100/50 dark:border-indigo-900/30 shadow-xs transition hover:scale-102 hover:border-indigo-200/50 dark:hover:border-indigo-850/40"
+                              className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-indigo-50/50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-300 border border-indigo-100/50 dark:border-indigo-900/30 shadow-xs transition hover:scale-102 hover:border-indigo-200/50 dark:hover:border-indigo-850/40"
                             >
                               {c?.name}
                             </span>
                           ))}
                         </div>
                       ) : (
-                        <span className="text-slate-300 dark:text-slate-750">—</span>
+                        <span className="text-slate-300 dark:text-slate-700">—</span>
                       );
                       break;
 
                     case "owner":
                       value = (
                         <div className="flex items-center gap-2">
-                          <div className="w-5 h-5 rounded-full bg-slate-55 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-750 flex items-center justify-center">
+                          <div className="w-5 h-5 rounded-full bg-slate-55 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex items-center justify-center">
                             <User className="w-3 h-3 text-slate-450 dark:text-slate-400" />
                           </div>
                           <span className="text-xs font-medium text-slate-650 dark:text-slate-350">{p.owner?.name ?? p.owner}</span>
@@ -201,7 +201,7 @@ const ProductsTable = ({
                           {p.description}
                         </span>
                       ) : (
-                        <span className="text-slate-300 dark:text-slate-750">—</span>
+                        <span className="text-slate-300 dark:text-slate-700">—</span>
                       );
                       break;
 
@@ -213,7 +213,7 @@ const ProductsTable = ({
                       ) : str ? (
                         <span className="text-xs font-medium text-slate-650 dark:text-slate-300">{str}</span>
                       ) : (
-                        <span className="text-slate-300 dark:text-slate-750">—</span>
+                        <span className="text-slate-300 dark:text-slate-700">—</span>
                       );
                     }
                   }
@@ -238,7 +238,7 @@ const ProductsTable = ({
                   </button>
                   <button
                     onClick={() => handlePreview(p._id)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/50 dark:hover:bg-slate-700/60 text-slate-705 dark:text-slate-300 border border-slate-200 dark:border-slate-750 transition-colors cursor-pointer shadow-xs"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/50 dark:hover:bg-slate-700/60 text-slate-705 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer shadow-xs"
                   >
                     <Eye className="w-3.5 h-3.5" />
                     {t("products.preview")}
@@ -246,14 +246,14 @@ const ProductsTable = ({
                   <button
                     onClick={() => handleDelete(p._id)}
                     disabled={user.id !== p.owner._id && !isAdmin}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-50 hover:bg-red-100 dark:bg-red-955/15 dark:hover:bg-red-955/30 text-red-600 dark:text-red-400 border border-red-105 dark:border-red-900/25 transition-colors disabled:bg-slate-50 dark:disabled:bg-slate-800/40 disabled:text-slate-400 dark:disabled:text-slate-655 disabled:border-transparent disabled:cursor-not-allowed cursor-pointer shadow-xs"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-50 hover:bg-red-100 dark:bg-red-950/15 dark:hover:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-105 dark:border-red-900/25 transition-colors disabled:bg-slate-50 dark:disabled:bg-slate-800/40 disabled:text-slate-400 dark:disabled:text-slate-600 disabled:border-transparent disabled:cursor-not-allowed cursor-pointer shadow-xs"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     {t("common.delete")}
                   </button>
 
                   {/* Quantity stepper */}
-                  <div className="flex items-center border border-slate-200 dark:border-slate-800 rounded-full overflow-hidden h-9 bg-slate-50/80 dark:bg-slate-955/80 ml-1 transition-all focus-within:ring-2 focus-within:ring-indigo-500/20 shadow-xs">
+                  <div className="flex items-center border border-slate-200 dark:border-slate-800 rounded-full overflow-hidden h-9 bg-slate-50/80 dark:bg-slate-950/80 ml-1 transition-all focus-within:ring-2 focus-within:ring-indigo-500/20 shadow-xs">
                     <button
                       onClick={() => handleQuantityChange(p._id, (cartQuantities[p._id] || 0) - 1, p)}
                       className="px-3.5 hover:bg-slate-200 dark:hover:bg-slate-850 text-slate-500 dark:text-slate-450 h-full transition disabled:opacity-40 disabled:pointer-events-none cursor-pointer flex items-center justify-center"
@@ -293,7 +293,7 @@ const ProductsTable = ({
                       {t("products.statusUnavailable") || "Niedostępne"}
                     </span>
                   ) : getAvailableStockForProduct(p) <= 2 ? (
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-50/80 dark:bg-amber-955/25 text-amber-655 dark:text-amber-400 border border-amber-100/60 dark:border-amber-900/30 shadow-xs">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-50/80 dark:bg-amber-950/25 text-amber-600 dark:text-amber-400 border border-amber-100/60 dark:border-amber-900/30 shadow-xs">
                       {(t("products.statusLowStock") || "Niski zapas") + `: ${getAvailableStockForProduct(p)}`}
                     </span>
                   ) : (

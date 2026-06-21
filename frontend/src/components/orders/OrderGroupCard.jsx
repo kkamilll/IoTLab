@@ -16,11 +16,11 @@ import {
 
 const STATUS_COLORS = {
   changed:  "text-red-800 dark:text-red-300 bg-red-50 dark:bg-red-950/40 border-red-200/50 dark:border-red-900/30",
-  pending:  "text-yellow-700 dark:text-yellow-300 bg-yellow-50 dark:bg-yellow-955/30 border-yellow-200/50 dark:border-yellow-900/25",
-  approved: "text-lime-700 dark:text-lime-300 bg-lime-50 dark:bg-lime-955/20 border-lime-200/50 dark:border-lime-900/25",
+  pending:  "text-yellow-700 dark:text-yellow-300 bg-yellow-50 dark:bg-yellow-950/30 border-yellow-200/50 dark:border-yellow-900/25",
+  approved: "text-lime-700 dark:text-lime-300 bg-lime-50 dark:bg-lime-950/20 border-lime-200/50 dark:border-lime-900/25",
   prepared: "text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200/50 dark:border-indigo-900/30",
-  rented:   "text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-955/20 border-green-200/50 dark:border-green-900/25",
-  returned: "text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-955/20 border-blue-200/50 dark:border-blue-900/25",
+  rented:   "text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-950/20 border-green-200/50 dark:border-green-900/25",
+  returned: "text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/20 border-blue-200/50 dark:border-blue-900/25",
   rejected: "text-gray-705 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/40 border-gray-200/50 dark:border-gray-700/50",
 };
 
@@ -104,13 +104,13 @@ const OrderItemDetails = ({ item, expanded, setExpanded, orderId }) => {
       </div>
 
       {isItemExpanded && (
-        <div className="mt-3 bg-slate-50/50 dark:bg-slate-950/40 rounded-xl p-3.5 border border-slate-150 dark:border-slate-850 flex gap-3.5">
-          <div className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-805 rounded-xl p-3 text-center shadow-xs">
+        <div className="mt-3 bg-slate-50/50 dark:bg-slate-950/40 rounded-xl p-3.5 border border-slate-100 dark:border-slate-850 flex gap-3.5">
+          <div className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-center shadow-xs">
             <p className="text-[10px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider">{language === "pl" ? "Wnioskowane" : "Requested"}</p>
             <p className="text-slate-850 dark:text-slate-100 font-black text-xl mt-1">{item?.requestedQuantity ?? "—"}</p>
           </div>
           {item?.assignedQuantity && item.status !== "pending" && (
-            <div className="flex-1 bg-indigo-50/30 dark:bg-indigo-950/20 border border-indigo-150/40 dark:border-indigo-900/20 rounded-xl p-3 text-center shadow-xs">
+            <div className="flex-1 bg-indigo-50/30 dark:bg-indigo-950/20 border border-indigo-100/40 dark:border-indigo-900/20 rounded-xl p-3 text-center shadow-xs">
               <p className="text-[10px] font-bold text-indigo-500 dark:text-indigo-400 uppercase tracking-wider">{language === "pl" ? "Przydzielone" : "Assigned"}</p>
               <p className="text-indigo-700 dark:text-indigo-300 font-black text-xl mt-1">{item.assignedQuantity}</p>
             </div>
@@ -176,7 +176,7 @@ const OrderGroupCard = ({
             <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border border-solid ${
               group.ownerData.customerApproval
                 ? "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-450 border-emerald-200/40 dark:border-emerald-900/20 shadow-xs"
-                : "bg-rose-50 dark:bg-rose-955/15 text-rose-600 dark:text-rose-455 border-rose-200/40 dark:border-rose-900/20 shadow-xs"
+                : "bg-rose-50 dark:bg-rose-950/15 text-rose-600 dark:text-rose-400 border-rose-200/40 dark:border-rose-900/20 shadow-xs"
             }`}>
               {group.ownerData.customerApproval ? (
                 <>
@@ -202,10 +202,10 @@ const OrderGroupCard = ({
       </button>
 
       {!isCollapsed && (
-        <div className="px-4 pb-4 border-t border-slate-150 dark:border-slate-850/80 bg-slate-100/10 dark:bg-slate-950/10">
+        <div className="px-4 pb-4 border-t border-slate-100 dark:border-slate-850/80 bg-slate-100/10 dark:bg-slate-950/10">
           {/* Dates */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 mb-4">
-            <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-805/85 rounded-xl p-3.5 shadow-xs flex items-start gap-3">
+            <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800/85 rounded-xl p-3.5 shadow-xs flex items-start gap-3">
               <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-550">
                 <Calendar className="w-4 h-4" />
               </div>
@@ -262,7 +262,7 @@ const OrderGroupCard = ({
 
           {/* Actions */}
           {hasActions && (
-            <div className="border-t border-slate-150/80 dark:border-slate-850/80 pt-3.5 mt-3.5">
+            <div className="border-t border-slate-100/80 dark:border-slate-850/80 pt-3.5 mt-3.5">
               <div className="flex items-center gap-1.5 mb-2.5">
                 <span className="p-1 rounded bg-slate-100 dark:bg-slate-900 text-slate-400 dark:text-slate-500">
                   <Settings className="w-3.5 h-3.5" />

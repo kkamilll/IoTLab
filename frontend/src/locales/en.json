@@ -38,7 +38,8 @@
     "notes": "Notes",
     "slider": "Slider",
     "components": "Components",
-    "templates": "Templates"
+    "templates": "Templates",
+    "notifications": "Notifications"
   },
   "welcome": {
     "reservationSystem": "Reservation System",
@@ -328,7 +329,6 @@
     "deleteConfirm": "Are you sure you want to delete this template?",
     "loading": "Loading templates..."
   },
-
   "materials": {
     "title": "Slider / Images",
     "subtitle": "Upload and organize images for your laboratory slider",
@@ -379,7 +379,9 @@
     "rented": "Rented",
     "returned": "Returned",
     "rejected": "Rejected",
-    "changed": "Changed"
+    "changed": "Changed",
+    "late": "Late",
+    "cancelled": "Cancelled"
   },
   "statistics": {
     "subtitle": "Real-time overview of laboratory orders, items, and popular categories",

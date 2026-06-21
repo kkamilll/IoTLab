@@ -150,14 +150,14 @@ const Login = () => {
           )}
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-            <label className="block text-sm font-medium text-slate-750 dark:text-slate-300">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
               {t("login.email")}
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="mt-3 w-full rounded-2xl border border-slate-200 dark:border-slate-750 bg-slate-50 dark:bg-slate-900 px-4 py-3 text-sm text-slate-900 dark:text-slate-100 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 transition-colors duration-300"
+                className="mt-3 w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-4 py-3 text-sm text-slate-900 dark:text-slate-100 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 transition-colors duration-300"
                 required
               />
             </label>
@@ -169,7 +169,7 @@ const Login = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="********"
-                className="mt-3 w-full rounded-2xl border border-slate-200 dark:border-slate-750 bg-slate-50 dark:bg-slate-900 px-4 py-3 text-sm text-slate-900 dark:text-slate-100 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 transition-colors duration-300"
+                className="mt-3 w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-4 py-3 text-sm text-slate-900 dark:text-slate-100 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 transition-colors duration-300"
                 required
               />
             </label>

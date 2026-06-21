@@ -79,7 +79,7 @@ export default function OrderPreview() {
 
           <form
             onSubmit={handleLogin}
-            className="rounded-3xl bg-white dark:bg-slate-850 p-8 shadow-xl border border-slate-150 dark:border-slate-800 transition-colors duration-300"
+            className="rounded-3xl bg-white dark:bg-slate-850 p-8 shadow-xl border border-slate-100 dark:border-slate-800 transition-colors duration-300"
           >
             <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6 text-center">
               {t("orderPreview.enterOrderAccessCode")}
@@ -106,7 +106,7 @@ export default function OrderPreview() {
 
               <button
                 type="submit"
-                className="w-full rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-4 shadow-lg hover:shadow-indigo-500/20 transition duration-150 cursor-pointer"
+                className="w-full rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-4 shadow-lg hover:shadow-indigo-500/20 transition duration-100 cursor-pointer"
               >
                 {t("orderPreview.accessOrderButton")}
               </button>

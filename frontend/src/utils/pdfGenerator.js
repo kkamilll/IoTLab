@@ -108,3 +108,91 @@ export const generateProductsPDF = async (filteredProducts, allColumns, hiddenCo
 
   doc.save(`IoTLab_Inventory_${new Date().toISOString().slice(0, 10)}.pdf`);
 };
+
+export const generateOrdersReportPDF = async (orders, t, language) => {
+  const doc = new jsPDF({ orientation: "landscape" });
+
+  let hasCustomFont = false;
+  try {
+    const fontUrl = "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Regular.ttf";
+    const fontBase64 = await fetchFontAsBase64(fontUrl);
+    doc.addFileToVFS("Roboto-Regular.ttf", fontBase64);
+    doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
+    doc.setFont("Roboto");
+    hasCustomFont = true;
+  } catch (err) {
+    console.warn("Could not load Roboto font for PDF export, falling back to standard font:", err);
+  }
+
+  doc.setFontSize(14);
+  const title = language === "pl" ? "IoTLab - Raport Zamówień / Orders Report" : "IoTLab - Orders Report";
+  doc.text(title, 14, 15);
+  doc.setFontSize(8);
+  const dateText = `Wygenerowano / Generated: ${new Date().toLocaleString("pl-PL")}`;
+  doc.text(dateText, 14, 21);
+
+  const headers = language === "pl" 
+    ? ["#", "ID", "Student", "Przedmiot (Opiekun)", "Od - Do", "Status"]
+    : ["#", "ID", "Customer", "Item (Supervisor)", "From - To", "Status"];
+
+  const rows = [];
+  let index = 1;
+
+  orders.forEach((order) => {
+    const customerName = order.customer?.firstName && order.customer?.lastName 
+      ? `${order.customer.firstName} ${order.customer.lastName}`
+      : order.customer?.email || "Unknown";
+
+    const uuidShort = `#${order.uuid.substring(0, 6)}`;
+
+    order.items.forEach((item) => {
+      const ownerData = order.ownersData?.find(od => od.owner?.toString() === item.responsibleOwner?._id?.toString() || od.owner?.toString() === item.responsibleOwner?.toString());
+      const ownerName = item.responsibleOwner?.name || "Unknown";
+      
+      const start = ownerData?.assignedStartDate ? new Date(ownerData.assignedStartDate) : new Date(order.requestedStartDate);
+      const end = ownerData?.assignedEndDate ? new Date(ownerData.assignedEndDate) : new Date(order.requestedEndDate);
+      const dateRange = `${start.toLocaleDateString("pl-PL")} - ${end.toLocaleDateString("pl-PL")}`;
+
+      const itemName = item.product?.name || "Deleted Product";
+      const statusTrans = t(`statuses.${item.status}`) || item.status;
+
+      rows.push([
+        index++,
+        uuidShort,
+        customerName,
+        `${itemName} (${ownerName})`,
+        dateRange,
+        statusTrans
+      ]);
+    });
+  });
+
+  autoTable(doc, {
+    head: [headers],
+    body: rows,
+    startY: 25,
+    styles: { 
+      font: hasCustomFont ? "Roboto" : "Helvetica",
+      fontSize: 8, 
+      overflow: 'linebreak', 
+      cellPadding: 3 
+    },
+    headStyles: { 
+      fillColor: [79, 70, 229], // Brand Indigo theme
+      textColor: [255, 255, 255],
+      fontStyle: 'bold'
+    },
+    alternateRowStyles: {
+      fillColor: [248, 250, 252]
+    },
+    margin: { left: 10, right: 10 },
+    didDrawPage: (data) => {
+      const str = `Strona ${data.pageNumber} z ${doc.internal.getNumberOfPages()}`;
+      doc.setFontSize(8);
+      const pageSize = doc.internal.pageSize;
+      doc.text(str, pageSize.getWidth() - 30, pageSize.getHeight() - 8);
+    }
+  });
+
+  doc.save(`IoTLab_Orders_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
+};

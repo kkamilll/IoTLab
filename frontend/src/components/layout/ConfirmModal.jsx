@@ -21,7 +21,7 @@ const ConfirmModal = ({
       <div className="fixed inset-0 bg-slate-950/40 dark:bg-slate-950/60 backdrop-blur-xs transition-opacity" />
 
       {/* Modal Content */}
-      <div className="relative bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800 rounded-2xl shadow-xl max-w-md w-full overflow-hidden z-10 transition-all duration-200 animate-in fade-in-50 zoom-in-95">
+      <div className="relative bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-xl max-w-md w-full overflow-hidden z-10 transition-all duration-200 animate-in fade-in-50 zoom-in-95">
         {/* Header/Close */}
         <div className="absolute top-4 right-4">
           <button

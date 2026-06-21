@@ -12,11 +12,11 @@ const NOTES_PER_PAGE = 6;
 
 /* ── colour palette for note cards ─────────────────────────────── */
 const NOTE_PALETTES = [
-  { bg: "bg-amber-50 dark:bg-amber-955/20", border: "border-amber-200 dark:border-amber-805/50", dot: "bg-amber-400" },
-  { bg: "bg-sky-50 dark:bg-sky-955/20", border: "border-sky-200 dark:border-sky-805/50", dot: "bg-sky-400" },
-  { bg: "bg-emerald-50 dark:bg-emerald-955/20", border: "border-emerald-200 dark:border-emerald-805/50", dot: "bg-emerald-400" },
-  { bg: "bg-violet-50 dark:bg-violet-955/20", border: "border-violet-200 dark:border-violet-805/50", dot: "bg-violet-400" },
-  { bg: "bg-rose-50 dark:bg-rose-955/20", border: "border-rose-200 dark:border-rose-805/50", dot: "bg-rose-400" },
+  { bg: "bg-amber-50 dark:bg-amber-950/20", border: "border-amber-200 dark:border-amber-900/50", dot: "bg-amber-400" },
+  { bg: "bg-sky-50 dark:bg-sky-950/20", border: "border-sky-200 dark:border-sky-900/50", dot: "bg-sky-400" },
+  { bg: "bg-emerald-50 dark:bg-emerald-950/20", border: "border-emerald-200 dark:border-emerald-900/50", dot: "bg-emerald-400" },
+  { bg: "bg-violet-50 dark:bg-violet-950/20", border: "border-violet-200 dark:border-violet-900/50", dot: "bg-violet-400" },
+  { bg: "bg-rose-50 dark:bg-rose-950/20", border: "border-rose-200 dark:border-rose-900/50", dot: "bg-rose-400" },
 ];
 
 const fmt = (d) =>
@@ -91,7 +91,7 @@ const NoteCard = ({
           <div className="flex items-center gap-1">
             {isEditing ? (
               <>
-                <button onClick={() => onSaveEdit(note._id)} title="Zapisz" className="p-2 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-955/40 text-emerald-600 dark:text-emerald-400 transition cursor-pointer">
+                <button onClick={() => onSaveEdit(note._id)} title="Zapisz" className="p-2 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 transition cursor-pointer">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                 </button>
                 <button onClick={onCancelEditing} title="Anuluj" className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition cursor-pointer">
@@ -100,10 +100,10 @@ const NoteCard = ({
               </>
             ) : (
               <>
-                <button onClick={() => onStartEditing(note)} title="Edytuj" className="p-2 rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-955/40 text-indigo-650 dark:text-indigo-450 transition cursor-pointer">
+                <button onClick={() => onStartEditing(note)} title="Edytuj" className="p-2 rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-950/40 text-indigo-650 dark:text-indigo-450 transition cursor-pointer">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                 </button>
-                <button onClick={() => onDelete(note._id)} title="Usuń" className="p-2 rounded-xl hover:bg-rose-100 dark:hover:bg-rose-955/40 text-rose-500 dark:text-rose-400 transition cursor-pointer">
+                <button onClick={() => onDelete(note._id)} title="Usuń" className="p-2 rounded-xl hover:bg-rose-100 dark:hover:bg-rose-950/40 text-rose-500 dark:text-rose-400 transition cursor-pointer">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                 </button>
               </>

@@ -11,53 +11,14 @@ import {
   ConflictError,
   ServerError,
 } from "../errors/CustomErrors.js";
-import { sendOrderEmail } from "../utils/sendEmail.js";
+import { sendOrderEmail, sendOwnerNotificationEmail } from "../utils/sendEmail.js";
+import { createNotification } from "./notificationController.js";
+import User from "../models/User.js";
 import { v4 as uuidv4 } from "uuid";
 import { randomBytes } from "crypto";
 import asyncHandler from "../middleware/asyncHandler.js";
 
-export const productOwnerMap = async (order) => {
-  const productIdSet = new Set();
-  for (const item of order.items) {
-    const productIdStr =
-      item?.product?._id?.toString() || item?.product?.toString();
-    if (
-      !productIdStr ||
-      productIdStr === "undefined" ||
-      productIdStr === "null"
-    )
-      throw new ValidationError("Product cannot be empty");
-    if (!mongoose.Types.ObjectId.isValid(item.product)) {
-      throw new ValidationError("Invalid product ID");
-    }
 
-    productIdSet.add(item.product?.toString());
-  }
-  if (!productIdSet.size) throw new ValidationError("Order cannot be empty");
-
-  const productIdArray = [...productIdSet];
-  const products = await Product.find({
-    _id: { $in: productIdArray },
-    isDeleted: false,
-  }).select("_id owner");
-
-  const productOwnerMap = {};
-  for (const product of products) {
-    if (!product?.owner?.toString()?.trim()) {
-      console.warn(
-        `Product ${product._id} has no owner or is not rentable/deleted`,
-      );
-      continue;
-    }
-
-    const ownerId = product.owner?._id
-      ? product.owner._id.toString()
-      : product.owner?.toString();
-    productOwnerMap[product._id?.toString()] = ownerId;
-  }
-
-  return productOwnerMap;
-};
 
 export const getOrderStats = asyncHandler(async (req, res, next) => {
   const { ownerId, productId } = req.query;
@@ -292,7 +253,11 @@ export const getOrders = asyncHandler(async (req, res, next) => {
   }
 
   if (email) {
-    filter["customer.email"] = { $regex: email, $options: "i" };
+    const searchTerm = email.startsWith("#") ? email.slice(1) : email;
+    filter.$or = [
+      { "customer.email": { $regex: searchTerm, $options: "i" } },
+      { uuid: { $regex: searchTerm, $options: "i" } }
+    ];
   }
   if (index) {
     filter["customer.index"] = { $regex: index, $options: "i" };
@@ -489,6 +454,23 @@ export const createOrder = asyncHandler(async (req, res, next) => {
 
     await sendOrderEmail(order, customerKey, order.uuid);
 
+    const ownerIds = [...new Set(enrichedItems.map((i) => i.responsibleOwner?.toString()).filter(Boolean))];
+    if (ownerIds.length > 0) {
+      const owners = await User.find({ _id: { $in: ownerIds } }, "email");
+      for (const owner of owners) {
+        if (owner.email) {
+          await sendOwnerNotificationEmail(owner.email, order);
+        }
+        await createNotification({
+          user: owner._id,
+          type: "ORDER_CREATED",
+          title: "Nowe zamówienie",
+          message: `Otrzymałeś nowe zamówienie od ${customer.firstName} ${customer.lastName} (${customer.email}).`,
+          relatedOrder: order._id,
+        });
+      }
+    }
+
     return res
       .status(201)
       .json({ success: true, message: "Order created", order });
@@ -639,10 +621,11 @@ export const updateOrder = asyncHandler(async (req, res, next) => {
       ]),
     );
 
+    let productsForNotif = [];
     if (productIds.length > 0) {
-      const products = await Product.find({ _id: { $in: productIds } });
+      productsForNotif = await Product.find({ _id: { $in: productIds } });
 
-      for (const product of products) {
+      for (const product of productsForNotif) {
         const rentedDelta =
           productChanges.rented.get(product._id.toString()) ?? 0;
         const reservedDelta =
@@ -671,6 +654,30 @@ export const updateOrder = asyncHandler(async (req, res, next) => {
     await order.save();
 
     await sendOrderEmail(order);
+
+    let statusMsg = "Zmieniono status elementów w zamówieniu.";
+    if (productsForNotif.length > 0) {
+      const statusChanges = [];
+      for (const itemUpdate of itemUpdates) {
+        const item = currentItemsMap[itemUpdate.itemId];
+        if (!item) continue;
+        const prod = productsForNotif.find(p => p._id.toString() === item.product.toString());
+        if (prod) {
+          statusChanges.push(`${prod.name} (${itemUpdate.newStatus})`);
+        }
+      }
+      if (statusChanges.length > 0) {
+        statusMsg = `Sprzęt: ${statusChanges.join(", ")}`;
+      }
+    }
+
+    await createNotification({
+      user: req.user._id,
+      type: "STATUS_CHANGED",
+      title: "Zmiana statusu",
+      message: statusMsg,
+      relatedOrder: order._id,
+    });
 
     return res.status(200).json({ success: true, order });
   } catch (error) {

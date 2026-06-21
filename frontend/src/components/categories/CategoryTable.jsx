@@ -31,7 +31,7 @@ const CategoryNode = ({
   const getLevelStyles = (lvl) => {
     if (lvl === 0) {
       return {
-        cardClass: "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-805 border-l-4 border-l-indigo-600 dark:border-l-indigo-500 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05),0_2px_4px_-2px_rgba(0,0,0,0.02)] p-5 rounded-2xl",
+        cardClass: "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 border-l-4 border-l-indigo-600 dark:border-l-indigo-500 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05),0_2px_4px_-2px_rgba(0,0,0,0.02)] p-5 rounded-2xl",
         badge: (
           <span className="inline-flex items-center text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 border border-indigo-100/50 dark:border-indigo-900/30">
             {t("categories.mainCategory")}
@@ -42,7 +42,7 @@ const CategoryNode = ({
       return {
         cardClass: "bg-slate-50/70 dark:bg-slate-950/30 border border-slate-200/80 dark:border-slate-800/85 border-l-4 border-l-blue-500 p-4.5 rounded-xl shadow-xs",
         badge: (
-          <span className="inline-flex items-center text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-955/35 text-blue-650 dark:text-blue-400 border border-blue-100/80 dark:border-blue-900/25">
+          <span className="inline-flex items-center text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950/35 text-blue-650 dark:text-blue-400 border border-blue-100/80 dark:border-blue-900/25">
             {t("categories.subcategory")}
           </span>
         ),
@@ -51,7 +51,7 @@ const CategoryNode = ({
       return {
         cardClass: "bg-slate-100/40 dark:bg-slate-900/25 border border-slate-200/60 dark:border-slate-800/70 border-l-4 border-l-purple-500 p-4 rounded-xl",
         badge: (
-          <span className="inline-flex items-center text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-purple-50 dark:bg-purple-955/30 text-purple-650 dark:text-purple-400 border border-purple-100/60 dark:border-purple-900/20">
+          <span className="inline-flex items-center text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-purple-50 dark:bg-purple-950/30 text-purple-650 dark:text-purple-400 border border-purple-100/60 dark:border-purple-900/20">
             {t("categories.nestedSubcategory")}
           </span>
         ),
@@ -115,7 +115,7 @@ const CategoryNode = ({
                 className={`p-1.5 rounded-lg transition-colors flex items-center justify-center cursor-pointer border-0 ${
                   showDescription
                     ? "bg-indigo-50 dark:bg-indigo-950/30 text-indigo-650 dark:text-indigo-400"
-                    : "text-slate-455 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    : "text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-800"
                 }`}
                 title={showDescription ? t("categories.hideDescription") : t("categories.showDescription")}
               >
@@ -157,7 +157,7 @@ const CategoryNode = ({
 
       {/* Recursive Children Container with branch connector lines */}
       {isExpanded && hasChildren && (
-        <div className="ml-3 sm:ml-6 pl-2.5 sm:pl-4 border-l-2 border-dashed border-slate-205 dark:border-slate-800/80 flex flex-col gap-3 mt-3 relative">
+        <div className="ml-3 sm:ml-6 pl-2.5 sm:pl-4 border-l-2 border-dashed border-slate-200 dark:border-slate-800/80 flex flex-col gap-3 mt-3 relative">
           {category.children.map((child) => (
             <CategoryNode
               key={child._id}
@@ -260,7 +260,7 @@ const ActionButton = ({ icon, label, color, onClick }) => {
   const colors = {
     indigo: "bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/60 text-indigo-650 dark:text-indigo-400 border border-indigo-100/50 dark:border-indigo-900/35",
     slate: "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200/50 dark:border-slate-700/65",
-    red: "bg-red-50 hover:bg-red-100 dark:bg-red-955/15 dark:hover:bg-red-955/30 text-red-600 dark:text-red-400 border border-red-105 dark:border-red-900/25",
+    red: "bg-red-50 hover:bg-red-100 dark:bg-red-950/15 dark:hover:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-105 dark:border-red-900/25",
   };
 
   return (

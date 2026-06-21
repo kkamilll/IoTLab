@@ -3,8 +3,8 @@
 @theme {
   --color-indigo-650: #493fdb;
   --color-indigo-405: #818cf8;
-  --color-slate-205: #e2e8f0;
-  --color-slate-355: #cbd5e1;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
   --color-slate-450: #94a3b8;
   --color-slate-650: #475569;
   --color-slate-850: #1e293b;
@@ -346,4 +346,83 @@
 }
 .scrollbar-thin::-webkit-scrollbar-track {
   background: transparent !important;
-}
+}
+
+/* React Big Calendar Dark Mode Overrides */
+.dark .rbc-calendar {
+  color: #e2e8f0; /* slate-200 */
+}
+.dark .rbc-month-view,
+.dark .rbc-time-view,
+.dark .rbc-agenda-view {
+  border-color: #334155; /* slate-700 */
+  background-color: #0f172a; /* slate-900 */
+}
+.dark .rbc-header {
+  border-color: #334155;
+  background-color: #1e293b; /* slate-800 */
+  color: #f8fafc;
+  padding: 8px 0;
+}
+.dark .rbc-header + .rbc-header,
+.dark .rbc-day-bg + .rbc-day-bg,
+.dark .rbc-time-header-content {
+  border-left-color: #334155;
+}
+.dark .rbc-month-row + .rbc-month-row {
+  border-top-color: #334155;
+}
+.dark .rbc-day-bg {
+  border-color: #334155;
+}
+.dark .rbc-off-range-bg {
+  background-color: #1e293b; /* slate-800 */
+}
+.dark .rbc-today {
+  background-color: rgba(99, 102, 241, 0.15); /* indigo-500 opacity */
+}
+.dark .rbc-time-content,
+.dark .rbc-time-header,
+.dark .rbc-time-header.rbc-overflowing {
+  border-color: #334155;
+}
+.dark .rbc-timeslot-group {
+  border-bottom-color: #334155;
+}
+.dark .rbc-time-slot {
+  border-top-color: #334155;
+}
+.dark .rbc-agenda-view table.rbc-agenda-table,
+.dark .rbc-agenda-view table.rbc-agenda-table tbody > tr > td + td {
+  border-color: #334155;
+}
+.dark .rbc-agenda-view table.rbc-agenda-table tbody > tr + tr {
+  border-top-color: #334155;
+}
+.dark .rbc-agenda-view table.rbc-agenda-table thead > tr > th {
+  border-bottom-color: #334155;
+}
+.dark .rbc-button-link {
+  color: #e2e8f0;
+}
+.dark .rbc-show-more {
+  color: #818cf8; /* indigo-400 */
+  background-color: transparent;
+}
+.dark .rbc-toolbar button {
+  color: #cbd5e1; /* slate-300 */
+  border-color: #475569; /* slate-600 */
+  background-color: #1e293b; /* slate-800 */
+}
+.dark .rbc-toolbar button:hover,
+.dark .rbc-toolbar button:active,
+.dark .rbc-toolbar button.rbc-active {
+  background-color: #334155; /* slate-700 */
+  color: #f8fafc;
+  border-color: #64748b;
+}
+.dark .rbc-toolbar button:focus {
+  color: #f8fafc;
+  background-color: #334155;
+  border-color: #818cf8;
+}

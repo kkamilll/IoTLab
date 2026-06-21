@@ -262,7 +262,7 @@ const WelcomePage = () => {
               {/* Left arrow */}
               <button
                 onClick={() => setCollectionIndex(prev => Math.max(prev - 1, 0))}
-                className="absolute left-0 z-10 w-9 h-9 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 rounded-full shadow-md text-slate-800 dark:text-white font-bold transition disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                className="absolute left-0 z-10 w-9 h-9 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-full shadow-md text-slate-800 dark:text-white font-bold transition disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
                 disabled={collectionIndex === 0}
               >
                 ←
@@ -300,7 +300,7 @@ const WelcomePage = () => {
                     Math.min(prev + 1, collections.length - visibleCount)
                   )
                 }
-                className="absolute right-0 z-10 w-9 h-9 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 rounded-full shadow-md text-slate-800 dark:text-white font-bold transition disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                className="absolute right-0 z-10 w-9 h-9 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-full shadow-md text-slate-800 dark:text-white font-bold transition disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
                 disabled={collectionIndex >= collections.length - visibleCount}
               >
                 →
@@ -434,7 +434,7 @@ const WelcomePage = () => {
                   >
                     {t("welcome.previous")}
                   </Btn>
-                  <span className="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-950 text-slate-655 dark:text-slate-400 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-850">
+                  <span className="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-850">
                     {notesPage} / {totalPages}
                   </span>
                   <Btn

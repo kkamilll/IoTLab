@@ -182,7 +182,7 @@ const Profile = () => {
             </p>
 
             {/* Role Badge */}
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1 mt-3 rounded-full text-xs font-bold border ${user.role === "admin" ? "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border-indigo-100 dark:border-indigo-900/30" : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-355 border-slate-200 dark:border-slate-700"}`}>
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1 mt-3 rounded-full text-xs font-bold border ${user.role === "admin" ? "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border-indigo-100 dark:border-indigo-900/30" : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700"}`}>
               {user.role === "admin" ? (
                 <>🛡️ {language === "pl" ? "Administrator" : "Admin"}</>
               ) : (
@@ -200,7 +200,7 @@ const Profile = () => {
                   {user.labRooms.map((room, idx) => (
                     <span
                       key={idx}
-                      className="bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-750 dark:text-indigo-305 border border-indigo-150/30 dark:border-indigo-900/20 px-2.5 py-1 rounded-lg text-xs font-semibold"
+                      className="bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-305 border border-indigo-100/30 dark:border-indigo-900/20 px-2.5 py-1 rounded-lg text-xs font-semibold"
                     >
                       {room}
                     </span>
@@ -215,7 +215,7 @@ const Profile = () => {
           </div>
 
           {/* Column 2 & 3: Profile Settings Form */}
-          <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-805 p-6 shadow-sm flex flex-col gap-6">
+          <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm flex flex-col gap-6">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-650 dark:text-indigo-400 select-none">
                 {t("profile.settings")}
@@ -236,7 +236,7 @@ const Profile = () => {
                   value={user.name}
                   disabled={!editMode}
                   onChange={(e) => setUser({ ...user, name: e.target.value })}
-                  className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-955/40 px-3.5 py-2.5 font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 w-full disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-950/40 px-3.5 py-2.5 font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 w-full disabled:opacity-60 disabled:cursor-not-allowed"
                   placeholder={t("profile.name")}
                 />
               </div>
@@ -251,7 +251,7 @@ const Profile = () => {
                   value={user.email}
                   disabled={!editMode}
                   onChange={(e) => setUser({ ...user, email: e.target.value })}
-                  className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-955/40 px-3.5 py-2.5 font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 w-full disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-950/40 px-3.5 py-2.5 font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 w-full disabled:opacity-60 disabled:cursor-not-allowed"
                   placeholder={t("profile.email")}
                 />
               </div>
@@ -266,7 +266,7 @@ const Profile = () => {
                     type="password"
                     value={user.password}
                     onChange={(e) => setUser({ ...user, password: e.target.value })}
-                    className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-955/40 px-3.5 py-2.5 font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 w-full"
+                    className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-950/40 px-3.5 py-2.5 font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 w-full"
                     placeholder={t("profile.password")}
                   />
                 </div>
@@ -282,7 +282,7 @@ const Profile = () => {
                     type="file"
                     accept="image/*"
                     onChange={handleFileChange}
-                    className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-955/40 px-3.5 py-2 font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 w-full cursor-pointer file:mr-4 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 dark:file:bg-indigo-950/40 dark:file:text-indigo-400"
+                    className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-950/40 px-3.5 py-2 font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 w-full cursor-pointer file:mr-4 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 dark:file:bg-indigo-950/40 dark:file:text-indigo-400"
                   />
                 </div>
               )}
@@ -300,13 +300,13 @@ const Profile = () => {
                         placeholder="np. Lab 204"
                         value={newLabRoom}
                         onChange={(e) => setNewLabRoom(e.target.value)}
-                        className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-955/40 px-3.5 py-2.5 font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 w-full"
+                        className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-950/40 px-3.5 py-2.5 font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 w-full"
                       />
                     </div>
                     <button
                       type="button"
                       onClick={handleAddLabRoom}
-                      className="px-4 py-2.5 bg-slate-850 hover:bg-slate-800 dark:bg-slate-805 dark:hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition cursor-pointer shadow-sm w-full sm:w-auto h-[38px] flex items-center justify-center"
+                      className="px-4 py-2.5 bg-slate-850 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition cursor-pointer shadow-sm w-full sm:w-auto h-[38px] flex items-center justify-center"
                     >
                       {t("profile.addLab")}
                     </button>
@@ -335,7 +335,7 @@ const Profile = () => {
                             {user.labRooms.map((room, i) => (
                               <div
                                 key={i}
-                                className="flex items-center justify-between rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-955/40 px-3.5 py-2 text-xs text-slate-700 dark:text-slate-300"
+                                className="flex items-center justify-between rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 px-3.5 py-2 text-xs text-slate-700 dark:text-slate-300"
                               >
                                 <span className="font-semibold">{room}</span>
                                 <button

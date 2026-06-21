@@ -28,6 +28,7 @@ import MainGuest from "./pages/MainGuest";
 import Orders from "./pages/Orders";
 import Users from "./pages/Users";
 import OrderPreview from "./pages/OrderPreview";
+import Notifications from "./pages/Notifications";
 
 import Components from "./pages/Components";
 import ComponentPreview from "./pages/ComponentPreview";
@@ -104,6 +105,7 @@ function App() {
               <Route path="profile" element={<Profile />} />
               <Route path="preview" element={<ProductPreview />} />
               <Route path="notes" element={<Notes />} />
+              <Route path="notifications" element={<Notifications />} />
 
               <Route element={<ProtectedRoutes requireRole={["admin"]} />}>
                 <Route path="users" element={<Users />} />

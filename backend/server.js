@@ -18,10 +18,12 @@ import noteRoutes from "./routes/noteRoutes.js";
 import materialRoutes from "./routes/materialRoutes.js";
 import componentRoutes from "./routes/componentRoutes.js";
 import templateRoutes from "./routes/templateRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
 
 import fileRoutes from "./routes/fileRoutes.js";
 
 import { errorHandler } from "./middleware/errorHandler.js";
+import { startCronJobs } from "./utils/cronJobs.js";
 
 dotenv.config();
 
@@ -80,6 +82,7 @@ app.use("/notes", noteRoutes);
 app.use("/materials", materialRoutes);
 app.use("/components", componentRoutes);
 app.use("/templates", templateRoutes);
+app.use("/notifications", notificationRoutes);
 
 app.use(errorHandler);
 
@@ -92,4 +95,5 @@ const PORT = process.env.PORT || 3500;
 app.listen(PORT, "0.0.0.0", async () => {
   await connectDB();
   console.log(`Server running on port ${PORT}`);
+  startCronJobs();
 });

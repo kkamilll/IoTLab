@@ -38,7 +38,8 @@
     "notes": "Notatki",
     "slider": "Slider",
     "components": "Komponenty",
-    "templates": "Szablony"
+    "templates": "Szablony",
+    "notifications": "Powiadomienia"
   },
   "welcome": {
     "reservationSystem": "System rezerwacji",
@@ -328,7 +329,6 @@
     "deleteConfirm": "Czy na pewno chcesz usunąć ten szablon?",
     "loading": "Ładowanie szablonów..."
   },
-
   "materials": {
     "title": "Karuzela / Zdjęcia",
     "subtitle": "Przesyłaj i organizuj zdjęcia do głównego slidera laboratorium",
@@ -379,7 +379,9 @@
     "rented": "Wypożyczone",
     "returned": "Zwrócone",
     "rejected": "Odrzucone",
-    "changed": "Zmienione"
+    "changed": "Zmienione",
+    "late": "Spóźnione",
+    "cancelled": "Anulowane"
   },
   "statistics": {
     "subtitle": "Bieżący podgląd zamówień laboratoryjnych, obiektów oraz popularnych kategorii",

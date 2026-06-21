@@ -9,7 +9,7 @@ import { generateProductsPDF } from "../utils/pdfGenerator";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { useLanguage } from "../context/LanguageContext";
-import { buildTree } from "../utils/categoryUtils";
+import { buildTree, getDescendantCategoryIds, getCategoryDepth, getSortedHierarchicalCategories, isCategoryVisible } from "../utils/categoryUtils";
 import CategoryTree from "../components/categories/CategoryTree";
 import PageHeader from "../components/layout/PageHeader";
 import Btn from "../components/layout/Btn";
@@ -20,64 +20,6 @@ const MEGA_BYTE = 1024 * 1024;
 const MAX_FILE_SIZE = 50 * MEGA_BYTE;
 const MAX_FILE_NAME_LENGTH = 15;
 const EXTENSION_OFFSET = 3;
-
-const getDescendantCategoryIds = (catId, allCats) => {
-  const children = allCats.filter(c => {
-    const parentId = c.parent?._id || c.parent;
-    return parentId === catId;
-  }).map(c => c._id);
-  let descendants = [...children];
-  for (const childId of children) {
-    descendants = [...descendants, ...getDescendantCategoryIds(childId, allCats)];
-  }
-  return descendants;
-};
-
-const getCategoryDepth = (catId, allCats) => {
-  let depth = 0;
-  let current = allCats.find(c => c._id === catId);
-  while (current && current.parent) {
-    depth++;
-    const parentId = current.parent._id || current.parent;
-    current = allCats.find(c => c._id === parentId);
-  }
-  return depth;
-};
-
-const getSortedHierarchicalCategories = (allCats) => {
-  const roots = allCats.filter(c => !c.parent);
-  const result = [];
-  const traverse = (cat, depth) => {
-    result.push({ ...cat, depth });
-    const children = allCats.filter(c => {
-      const pId = c.parent?._id || c.parent;
-      return pId === cat._id;
-    });
-    children.forEach(child => traverse(child, depth + 1));
-  };
-  roots.forEach(root => traverse(root, 0));
-  // Include any categories that might have been skipped
-  allCats.forEach(c => {
-    if (!result.some(r => r._id === c._id)) {
-      result.push({ ...c, depth: 0 });
-    }
-  });
-  return result;
-};
-
-const isCategoryVisible = (cat, allCats, expandedIds) => {
-  let current = cat;
-  while (current) {
-    const parentVal = current.parent;
-    if (!parentVal) break;
-    const parentId = (parentVal._id || parentVal).toString();
-    if (!expandedIds.includes(parentId)) {
-      return false;
-    }
-    current = allCats.find(c => c._id.toString() === parentId);
-  }
-  return true;
-};
 
 const Products = () => {
   const { user, token } = useAuth();
@@ -897,7 +839,7 @@ const Products = () => {
             <input
               type="text"
               placeholder={t("products.searchPlaceholder")}
-              className="border border-slate-205 dark:border-slate-800 pl-10 pr-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm w-full transition"
+              className="border border-slate-200 dark:border-slate-800 pl-10 pr-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm w-full transition"
               onChange={handleSearch}
             />
           </div>
@@ -912,7 +854,7 @@ const Products = () => {
                   setColumnsDropdownOpen(false);
                   setOwnersDropdownOpen(false);
                 }}
-                className="inline-flex justify-between items-center w-full rounded-xl border border-slate-205 dark:border-slate-800 shadow-sm px-4 py-2.5 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-850 focus:outline-none transition cursor-pointer"
+                className="inline-flex justify-between items-center w-full rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm px-4 py-2.5 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-850 focus:outline-none transition cursor-pointer"
               >
                 <span>{t("products.filterByCategory")}</span>
                 <svg
@@ -938,7 +880,7 @@ const Products = () => {
                       placeholder={t("products.searchCategoryPlaceholder") || "Szukaj kategorii..."}
                       value={categorySearch}
                       onChange={(e) => setCategorySearch(e.target.value)}
-                      className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-205 dark:border-slate-800 bg-slate-50 dark:bg-slate-955 text-slate-800 dark:text-slate-150 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                      className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                     />
                   </div>
                   <ul className="py-1 overflow-y-auto flex-1">
@@ -966,7 +908,7 @@ const Products = () => {
                                     e.stopPropagation();
                                     handleCategoryExpand(category._id);
                                   }}
-                                  className="p-1 rounded hover:bg-slate-205 dark:hover:bg-slate-700 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-350 transition cursor-pointer flex items-center justify-center"
+                                  className="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-350 transition cursor-pointer flex items-center justify-center"
                                   title={isExpanded ? "Collapse" : "Expand"}
                                 >
                                   {isExpanded ? (
@@ -978,7 +920,7 @@ const Products = () => {
                               ) : (
                                 <span className="w-6 h-6 flex-shrink-0" />
                               )}
-                              <label className="flex items-center gap-2.5 py-1 text-xs text-slate-650 dark:text-slate-355 cursor-pointer transition font-medium flex-1 select-none">
+                              <label className="flex items-center gap-2.5 py-1 text-xs text-slate-650 dark:text-slate-300 cursor-pointer transition font-medium flex-1 select-none">
                                 <input
                                   type="checkbox"
                                   value={category._id}
@@ -1013,7 +955,7 @@ const Products = () => {
                   setCategoriesDropdownOpen(false);
                   setColumnsDropdownOpen(false);
                 }}
-                className="inline-flex justify-between items-center w-full rounded-xl border border-slate-205 dark:border-slate-800 shadow-sm px-4 py-2.5 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-850 focus:outline-none transition cursor-pointer"
+                className="inline-flex justify-between items-center w-full rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm px-4 py-2.5 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-850 focus:outline-none transition cursor-pointer"
               >
                 <span className="truncate">
                   {ownerFilter
@@ -1043,7 +985,7 @@ const Products = () => {
                       placeholder={language === "pl" ? "Szukaj opiekuna..." : "Search owner..."}
                       value={ownerSearch}
                       onChange={(e) => setOwnerSearch(e.target.value)}
-                      className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-205 dark:border-slate-800 bg-slate-50 dark:bg-slate-955 text-slate-800 dark:text-slate-150 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                      className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                     />
                   </div>
                   <ul className="py-1 overflow-y-auto flex-1 max-h-56">
@@ -1072,7 +1014,7 @@ const Products = () => {
                             className={`w-full text-left px-4 py-2 text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition cursor-pointer flex items-center justify-between ${
                               ownerFilter === u._id
                                 ? "text-indigo-650 dark:text-indigo-400 font-bold bg-indigo-50/20 dark:bg-indigo-950/20"
-                                : "text-slate-650 dark:text-slate-355"
+                                : "text-slate-650 dark:text-slate-300"
                             }`}
                           >
                             <span>{u.name}</span>
@@ -1096,7 +1038,7 @@ const Products = () => {
                   setCategoriesDropdownOpen(false);
                   setOwnersDropdownOpen(false);
                 }}
-                className="inline-flex justify-between items-center w-full rounded-xl border border-slate-205 dark:border-slate-800 shadow-sm px-4 py-2.5 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-850 focus:outline-none transition cursor-pointer"
+                className="inline-flex justify-between items-center w-full rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm px-4 py-2.5 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-850 focus:outline-none transition cursor-pointer"
               >
                 <span>
                   {columnsDropdownOpen ? t("products.hideColumns") : t("products.showColumns")}
@@ -1142,7 +1084,7 @@ const Products = () => {
 
                   <ul className="py-1 overflow-y-auto">
                     {/* Standard Columns Group */}
-                    <div className="px-4 py-1 text-[9px] font-extrabold text-slate-400 uppercase tracking-wider select-none bg-slate-50/55 dark:bg-slate-955/20">
+                    <div className="px-4 py-1 text-[9px] font-extrabold text-slate-400 uppercase tracking-wider select-none bg-slate-50/55 dark:bg-slate-950/20">
                       {t("products.columnsStandardGroup") || "STANDARD"}
                     </div>
                     {allColumns
@@ -1152,7 +1094,7 @@ const Products = () => {
                         const displayName = colTrans.startsWith("products.columns.") ? col : colTrans;
                         return (
                           <li key={col}>
-                            <label className="flex items-center gap-2.5 px-4 py-1.5 text-xs text-slate-650 dark:text-slate-355 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition font-medium">
+                            <label className="flex items-center gap-2.5 px-4 py-1.5 text-xs text-slate-650 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition font-medium">
                               <input
                                 type="checkbox"
                                 checked={!hiddenColumns.includes(col)}
@@ -1168,13 +1110,13 @@ const Products = () => {
                     {/* Custom Columns Group */}
                     {extraColumns.length > 0 && (
                       <>
-                        <div className="px-4 py-1 text-[9px] font-extrabold text-slate-400 uppercase tracking-wider select-none bg-slate-50/55 dark:bg-slate-955/20 border-t border-slate-100 dark:border-slate-800 mt-1">
+                        <div className="px-4 py-1 text-[9px] font-extrabold text-slate-400 uppercase tracking-wider select-none bg-slate-50/55 dark:bg-slate-950/20 border-t border-slate-100 dark:border-slate-800 mt-1">
                           {t("products.columnsCustomGroup") || "CUSTOM"}
                         </div>
                         {extraColumns.map((col) => {
                           return (
                             <li key={col}>
-                              <label className="flex items-center gap-2.5 px-4 py-1.5 text-xs text-slate-650 dark:text-slate-355 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition font-medium">
+                              <label className="flex items-center gap-2.5 px-4 py-1.5 text-xs text-slate-650 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition font-medium">
                                 <input
                                   type="checkbox"
                                   checked={!hiddenColumns.includes(col)}
@@ -1182,7 +1124,7 @@ const Products = () => {
                                   className="accent-indigo-650 w-3.5 h-3.5 rounded"
                                 />
                                 <span className="truncate max-w-[120px]">{col}</span>
-                                <span className="text-[8px] bg-indigo-50 dark:bg-indigo-955/50 text-indigo-500 dark:text-indigo-400 px-1 rounded ml-auto">custom</span>
+                                <span className="text-[8px] bg-indigo-50 dark:bg-indigo-950/50 text-indigo-500 dark:text-indigo-400 px-1 rounded ml-auto">custom</span>
                               </label>
                             </li>
                           );
@@ -1199,7 +1141,7 @@ const Products = () => {
         {/* Active Filters Display */}
         {(activeCategories.length > 0 || ownerFilter) && (
           <div className="flex flex-wrap gap-2 items-center bg-slate-100/50 dark:bg-slate-900/35 border border-slate-200/50 dark:border-slate-800/80 p-3 rounded-2xl transition">
-            <span className="text-[10px] font-bold text-slate-455 dark:text-slate-500 uppercase tracking-wider pl-1 select-none">
+            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider pl-1 select-none">
               {language === "pl" ? "Aktywne filtry:" : "Active filters:"}
             </span>
             {activeCategories.map((catId) => {
@@ -1207,7 +1149,7 @@ const Products = () => {
               return (
                 <span
                   key={catId}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-55 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-150/40 dark:border-indigo-900/30 rounded-lg text-xs font-semibold shadow-sm"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-55 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-100/40 dark:border-indigo-900/30 rounded-lg text-xs font-semibold shadow-sm"
                 >
                   {category?.name || catId}
                   <button
@@ -1223,7 +1165,7 @@ const Products = () => {
             })}
             {ownerFilter && (
               <span
-                className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-55 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-150/40 dark:border-indigo-900/30 rounded-lg text-xs font-semibold shadow-sm"
+                className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-55 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-100/40 dark:border-indigo-900/30 rounded-lg text-xs font-semibold shadow-sm"
               >
                 <span className="opacity-75">{language === "pl" ? "Opiekun: " : "Owner: "}</span>
                 {users.find((u) => u._id === ownerFilter)?.name || ownerFilter}
@@ -1289,7 +1231,7 @@ const Products = () => {
         />
       </div>
 
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 p-4 border-t border-slate-100 dark:border-slate-805/80 bg-white dark:bg-slate-900 rounded-2xl shadow-sm">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 p-4 border-t border-slate-100 dark:border-slate-800/80 bg-white dark:bg-slate-900 rounded-2xl shadow-sm">
         {/* Items per page selector */}
         <div className="flex items-center gap-2 text-xs font-bold text-slate-550 dark:text-slate-400">
           <span>{t("products.itemsPerPage") || "Elementów na stronie:"}</span>
@@ -1362,7 +1304,7 @@ const Products = () => {
               <button
                 type="button"
                 onClick={() => { setIsAddColModalOpen(false); setNewColName(""); }}
-                className="p-1 rounded-full text-slate-400 hover:text-slate-655 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                className="p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
               >
                 ✕
               </button>
@@ -1379,7 +1321,7 @@ const Products = () => {
                   onChange={(e) => setNewColName(e.target.value)}
                   maxLength={30}
                   placeholder="np. serial_number"
-                  className="w-full rounded-xl border border-slate-205 dark:border-slate-800 px-4 py-2.5 text-sm bg-slate-50 dark:bg-slate-955 text-slate-800 dark:text-slate-150 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 px-4 py-2.5 text-sm bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition"
                   autoFocus
                 />
               </div>

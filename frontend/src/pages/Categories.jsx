@@ -6,6 +6,7 @@ import { buildTree, findDescendants } from "../utils/categoryUtils";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import PageHeader from "../components/layout/PageHeader";
 import Btn from "../components/layout/Btn";
+import FilterBar from "../components/layout/FilterBar";
 import { useLanguage } from "../context/LanguageContext";
 import { useToast } from "../context/ToastContext";
 import ConfirmModal from "../components/layout/ConfirmModal";
@@ -24,6 +25,7 @@ const Categories = () => {
     onConfirm: null,
   });
   const [modalOpen, setModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [categoryData, setCategoryData] = useState({
     name: "", description: "", parent: null, isVisible: false,
   });
@@ -44,6 +46,28 @@ const Categories = () => {
   );
 
   const categoryTree = useMemo(() => buildTree(normalizedCategories), [normalizedCategories]);
+
+  const filteredTree = useMemo(() => {
+    if (!searchQuery.trim()) return categoryTree;
+    const lowerQuery = searchQuery.toLowerCase();
+    
+    const filterNodes = (nodes) => {
+      return nodes.map(node => {
+        const isMatch = node.name.toLowerCase().includes(lowerQuery) || node.description?.toLowerCase().includes(lowerQuery);
+        const filteredChildren = filterNodes(node.children || []);
+        
+        if (isMatch || filteredChildren.length > 0) {
+          // If parent matches, should we show all children? 
+          // Let's just show all children if parent matches to see the whole branch,
+          // OR we can strictly filter children too. Usually strict filter is better.
+          return { ...node, children: isMatch ? node.children : filteredChildren };
+        }
+        return null;
+      }).filter(Boolean);
+    };
+
+    return filterNodes(categoryTree);
+  }, [categoryTree, searchQuery]);
 
   const excludedIds = useMemo(() =>
     editCategory ? [editCategory, ...findDescendants(editCategory, normalizedCategories)] : [],
@@ -133,12 +157,21 @@ const Categories = () => {
         </Btn>
       </PageHeader>
 
-      <CategoryTable
-        categoryTree={categoryTree}
-        handleEdit={handleEdit}
-        handleDelete={handleDeleteCategory}
-        handleAdd={handleAdd}
+      <FilterBar
+        searchValue={searchQuery}
+        onSearchChange={(e) => setSearchQuery(e.target.value)}
+        searchPlaceholder={t("categories.searchPlaceholder") || "Szukaj kategorii..."}
+        searchLabel={t("categories.searchLabel") || "Wyszukiwarka"}
       />
+
+      <div className="flex-1 overflow-y-auto pr-2 pb-10">
+        <CategoryTable
+          categoryTree={filteredTree}
+          handleEdit={handleEdit}
+          handleDelete={handleDeleteCategory}
+          handleAdd={handleAdd}
+        />
+      </div>
 
       {/* Category Modal */}
       {modalOpen && (

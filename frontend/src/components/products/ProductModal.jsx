@@ -106,7 +106,7 @@ const ProductModal = ({
           </div>
           <button
             onClick={closeModal}
-            className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-450 dark:text-slate-500 hover:text-slate-650 dark:hover:text-slate-355 transition cursor-pointer"
+            className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-450 dark:text-slate-500 hover:text-slate-650 dark:hover:text-slate-300 transition cursor-pointer"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -117,7 +117,7 @@ const ProductModal = ({
         {/* Scrollable Container to prevent scrollbar corner bleeding */}
         <div id="product-modal-scroll-wrapper" className="overflow-y-auto flex-1 flex flex-col">
           {/* Tab Selection Navigation Bar */}
-          <div className="flex border-b border-slate-100 dark:border-slate-800 px-6 bg-slate-50/50 dark:bg-slate-955/20 sticky top-0 z-10 backdrop-blur-sm">
+          <div className="flex border-b border-slate-100 dark:border-slate-800 px-6 bg-slate-50/50 dark:bg-slate-950/20 sticky top-0 z-10 backdrop-blur-sm">
           <button
             type="button"
             onClick={() => setActiveTab("basic")}
@@ -169,7 +169,7 @@ const ProductModal = ({
         {/* Modal Form */}
         <form className="p-6 md:p-8 flex flex-col gap-6" onSubmit={handleLocalSubmit}>
           {hasErrors && (
-            <div className="bg-red-50 dark:bg-red-955/20 border border-red-200 dark:border-red-900/50 text-red-650 dark:text-red-400 rounded-xl p-4 text-sm font-semibold shadow-sm">
+            <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 text-red-650 dark:text-red-400 rounded-xl p-4 text-sm font-semibold shadow-sm">
               {t("productModal.errorsHeader")}
               <ul className="list-disc ml-5 mt-2 font-medium">
                 {Object.values(errors).map((err, i) => (
@@ -183,7 +183,7 @@ const ProductModal = ({
           {activeTab === "basic" && (
             <div className="flex flex-col gap-6">
               {/* Settings / Toggles */}
-              <div className="bg-slate-50/50 dark:bg-slate-955/35 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-slate-50/50 dark:bg-slate-950/35 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Serialized Toggle */}
                 <div 
                   className={`flex flex-col items-center justify-between p-4.5 rounded-2xl border-2 cursor-pointer transition-all duration-200 min-h-[160px] ${formData.isSerialized ? "border-indigo-500 bg-indigo-50/30 dark:bg-indigo-950/20" : "border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs hover:border-slate-350 dark:hover:border-slate-700"}`}
@@ -195,13 +195,13 @@ const ProductModal = ({
                   }))}
                 >
                   <div className="flex flex-col items-center justify-center text-center">
-                    <div className={`p-2.5 rounded-full mb-2 ${formData.isSerialized ? "bg-indigo-100 dark:bg-indigo-955 text-indigo-650 dark:text-indigo-400" : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"}`}>
+                    <div className={`p-2.5 rounded-full mb-2 ${formData.isSerialized ? "bg-indigo-100 dark:bg-indigo-950 text-indigo-650 dark:text-indigo-400" : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"}`}>
                       {formData.isSerialized ? <FaCube size={18} /> : <FaCubes size={18} />}
                     </div>
                     <span className="font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-200">{t("productModal.toggleUnique")}</span>
                     <span className="text-[9px] text-slate-450 dark:text-slate-500 text-center mt-1 leading-normal">{t("productModal.toggleUniqueDesc")}</span>
                   </div>
-                  <div className={`mt-3 w-9 h-5 flex items-center rounded-full p-0.5 transition-colors duration-200 ${formData.isSerialized ? "bg-indigo-600" : "bg-slate-205 dark:bg-slate-800"}`}>
+                  <div className={`mt-3 w-9 h-5 flex items-center rounded-full p-0.5 transition-colors duration-200 ${formData.isSerialized ? "bg-indigo-600" : "bg-slate-200 dark:bg-slate-800"}`}>
                     <div className={`bg-white w-4 h-4 rounded-full shadow-xs transform transition-transform duration-200 ${formData.isSerialized ? "translate-x-4" : "translate-x-0"}`} />
                   </div>
                 </div>
@@ -216,20 +216,20 @@ const ProductModal = ({
                   }))}
                 >
                   <div className="flex flex-col items-center justify-center text-center">
-                    <div className={`p-2.5 rounded-full mb-2 ${formData.isRentable ? "bg-emerald-100 dark:bg-emerald-955 text-emerald-650 dark:text-emerald-450" : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"}`}>
+                    <div className={`p-2.5 rounded-full mb-2 ${formData.isRentable ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-650 dark:text-emerald-450" : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"}`}>
                       <FaHandshake size={18} />
                     </div>
                     <span className="font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-200">{t("productModal.toggleRentable")}</span>
-                    <span className="text-[9px] text-slate-455 dark:text-slate-500 text-center mt-1 leading-normal">{t("productModal.toggleRentableDesc")}</span>
+                    <span className="text-[9px] text-slate-400 dark:text-slate-500 text-center mt-1 leading-normal">{t("productModal.toggleRentableDesc")}</span>
                   </div>
-                  <div className={`mt-3 w-9 h-5 flex items-center rounded-full p-0.5 transition-colors duration-200 ${formData.isRentable ? "bg-emerald-500" : "bg-slate-205 dark:bg-slate-800"}`}>
+                  <div className={`mt-3 w-9 h-5 flex items-center rounded-full p-0.5 transition-colors duration-200 ${formData.isRentable ? "bg-emerald-500" : "bg-slate-200 dark:bg-slate-800"}`}>
                     <div className={`bg-white w-4 h-4 rounded-full shadow-xs transform transition-transform duration-200 ${formData.isRentable ? "translate-x-4" : "translate-x-0"}`} />
                   </div>
                 </div>
 
                 {/* Visible Toggle */}
                 <div 
-                  className={`flex flex-col items-center justify-between p-4.5 rounded-2xl border-2 cursor-pointer transition-all duration-200 min-h-[160px] ${formData.isVisible ? "border-blue-500 bg-blue-50/30 dark:bg-blue-955/20" : "border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs hover:border-slate-350 dark:hover:border-slate-700"}`}
+                  className={`flex flex-col items-center justify-between p-4.5 rounded-2xl border-2 cursor-pointer transition-all duration-200 min-h-[160px] ${formData.isVisible ? "border-blue-500 bg-blue-50/30 dark:bg-blue-950/20" : "border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs hover:border-slate-350 dark:hover:border-slate-700"}`}
                   onClick={() => setFormData((prev) => ({
                     ...prev,
                     isVisible: !formData.isVisible,
@@ -237,20 +237,20 @@ const ProductModal = ({
                   }))}
                 >
                   <div className="flex flex-col items-center justify-center text-center">
-                    <div className={`p-2.5 rounded-full mb-2 ${formData.isVisible ? "bg-blue-100 dark:bg-blue-955 text-blue-600 dark:text-blue-400" : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"}`}>
+                    <div className={`p-2.5 rounded-full mb-2 ${formData.isVisible ? "bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400" : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"}`}>
                       {formData.isVisible ? <FaEye size={18} /> : <FaEyeSlash size={18} />}
                     </div>
                     <span className="font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-200">{t("productModal.toggleVisible")}</span>
                     <span className="text-[9px] text-slate-450 dark:text-slate-500 text-center mt-1 leading-normal">{t("productModal.toggleVisibleDesc")}</span>
                   </div>
-                  <div className={`mt-3 w-9 h-5 flex items-center rounded-full p-0.5 transition-colors duration-200 ${formData.isVisible ? "bg-blue-500" : "bg-slate-205 dark:bg-slate-800"}`}>
+                  <div className={`mt-3 w-9 h-5 flex items-center rounded-full p-0.5 transition-colors duration-200 ${formData.isVisible ? "bg-blue-500" : "bg-slate-200 dark:bg-slate-800"}`}>
                     <div className={`bg-white w-4 h-4 rounded-full shadow-xs transform transition-transform duration-200 ${formData.isVisible ? "translate-x-4" : "translate-x-0"}`} />
                   </div>
                 </div>
 
                 {/* Shared Toggle */}
                 <div 
-                  className={`flex flex-col items-center justify-between p-4.5 rounded-2xl border-2 cursor-pointer transition-all duration-200 min-h-[160px] ${formData.isShared ? "border-violet-500 bg-violet-50/30 dark:bg-violet-955/20" : "border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs hover:border-slate-350 dark:hover:border-slate-700"}`}
+                  className={`flex flex-col items-center justify-between p-4.5 rounded-2xl border-2 cursor-pointer transition-all duration-200 min-h-[160px] ${formData.isShared ? "border-violet-500 bg-violet-50/30 dark:bg-violet-950/20" : "border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs hover:border-slate-350 dark:hover:border-slate-700"}`}
                   onClick={() => setFormData((prev) => ({
                     ...prev,
                     isShared: !formData.isShared,
@@ -258,13 +258,13 @@ const ProductModal = ({
                   }))}
                 >
                   <div className="flex flex-col items-center justify-center text-center">
-                    <div className={`p-2.5 rounded-full mb-2 ${formData.isShared ? "bg-violet-100 dark:bg-violet-955 text-violet-650 dark:text-violet-400" : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"}`}>
+                    <div className={`p-2.5 rounded-full mb-2 ${formData.isShared ? "bg-violet-100 dark:bg-violet-950 text-violet-650 dark:text-violet-400" : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"}`}>
                       {formData.isShared ? <FaUserShield size={18} /> : <FaUserLock size={18} />}
                     </div>
                     <span className="font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-200">{t("productModal.toggleShared")}</span>
-                    <span className="text-[9px] text-slate-455 dark:text-slate-550 text-center mt-1 leading-normal">{t("productModal.toggleSharedDesc")}</span>
+                    <span className="text-[9px] text-slate-400 dark:text-slate-550 text-center mt-1 leading-normal">{t("productModal.toggleSharedDesc")}</span>
                   </div>
-                  <div className={`mt-3 w-9 h-5 flex items-center rounded-full p-0.5 transition-colors duration-200 ${formData.isShared ? "bg-violet-500" : "bg-slate-205 dark:bg-slate-800"}`}>
+                  <div className={`mt-3 w-9 h-5 flex items-center rounded-full p-0.5 transition-colors duration-200 ${formData.isShared ? "bg-violet-500" : "bg-slate-200 dark:bg-slate-800"}`}>
                     <div className={`bg-white w-4 h-4 rounded-full shadow-xs transform transition-transform duration-200 ${formData.isShared ? "translate-x-4" : "translate-x-0"}`} />
                   </div>
                 </div>
@@ -281,7 +281,7 @@ const ProductModal = ({
                     value={formData.name}
                     onChange={handleChange}
                     maxLength={100}
-                    className={`w-full rounded-xl border px-4 py-2.5 text-sm bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-150 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition ${errors.name ? 'border-red-400 dark:border-red-900/60' : 'border-slate-200 dark:border-slate-800'}`}
+                    className={`w-full rounded-xl border px-4 py-2.5 text-sm bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition ${errors.name ? 'border-red-400 dark:border-red-900/60' : 'border-slate-200 dark:border-slate-800'}`}
                   />
                   <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold mt-1 text-right">{formData.name.length}/100</p>
                 </div>
@@ -296,7 +296,7 @@ const ProductModal = ({
                     onChange={handleChange}
                     rows={4}
                     maxLength={1000}
-                    className="w-full rounded-xl border border-slate-200 dark:border-slate-800 px-4 py-3 text-sm bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-150 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition resize-y min-h-[100px]"
+                    className="w-full rounded-xl border border-slate-200 dark:border-slate-800 px-4 py-3 text-sm bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition resize-y min-h-[100px]"
                   />
                   <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold mt-1 text-right">{formData.description.length}/1000</p>
                 </div>
@@ -310,7 +310,7 @@ const ProductModal = ({
                       value={formData.owner}
                       onChange={handleOwnerChange}
                       disabled={!isAdmin}
-                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 px-4 py-2.5 text-sm bg-slate-50 dark:bg-slate-955 text-slate-800 dark:text-slate-150 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-60 disabled:cursor-not-allowed transition"
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 px-4 py-2.5 text-sm bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-60 disabled:cursor-not-allowed transition"
                     >
                       {users.map((user) => (
                         <option key={user._id} value={user._id}>{user.name}</option>
@@ -324,7 +324,7 @@ const ProductModal = ({
                       name="labRoom"
                       value={formData.labRoom}
                       onChange={handleChange}
-                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 px-4 py-2.5 text-sm bg-slate-50 dark:bg-slate-955 text-slate-800 dark:text-slate-150 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition"
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 px-4 py-2.5 text-sm bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition"
                     >
                       <option value="">{t("productModal.roomNone")}</option>
                       {labRooms?.map((room) => (
@@ -341,7 +341,7 @@ const ProductModal = ({
           {activeTab === "inventory" && (
             <div className="flex flex-col gap-6">
               {/* Card 1: Stock Configuration */}
-              <div className="bg-slate-50/50 dark:bg-slate-955/35 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6">
+              <div className="bg-slate-50/50 dark:bg-slate-950/35 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6">
                 <h3 className="text-sm font-extrabold text-slate-400 dark:text-slate-550 uppercase tracking-wider mb-4 flex items-center gap-2">
                   <FaCubes className="w-4 h-4 text-indigo-500" />
                   {language === "pl" ? "Konfiguracja zapasów" : "Inventory Settings"}
@@ -359,7 +359,7 @@ const ProductModal = ({
                       onChange={handleChange}
                       min={1}
                       disabled={formData.isSerialized}
-                      className={`w-full rounded-xl border px-4 py-2.5 text-sm bg-slate-50 dark:bg-slate-955 text-slate-800 dark:text-slate-150 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-60 disabled:cursor-not-allowed transition ${errors.stockTotal ? 'border-red-450 dark:border-red-900/60' : 'border-slate-200 dark:border-slate-800'}`}
+                      className={`w-full rounded-xl border px-4 py-2.5 text-sm bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-60 disabled:cursor-not-allowed transition ${errors.stockTotal ? 'border-red-450 dark:border-red-900/60' : 'border-slate-200 dark:border-slate-800'}`}
                     />
                   </div>
                   <div>
@@ -375,7 +375,7 @@ const ProductModal = ({
                       min={0}
                       max={formData.stockTotal}
                       disabled={formData.isSerialized || !formData.isRentable}
-                      className={`w-full rounded-xl border px-4 py-2.5 text-sm bg-slate-50 dark:bg-slate-955 text-slate-800 dark:text-slate-150 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-60 disabled:cursor-not-allowed transition ${errors.stockForRent ? 'border-red-450 dark:border-red-900/60' : 'border-slate-200 dark:border-slate-800'}`}
+                      className={`w-full rounded-xl border px-4 py-2.5 text-sm bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-60 disabled:cursor-not-allowed transition ${errors.stockForRent ? 'border-red-450 dark:border-red-900/60' : 'border-slate-200 dark:border-slate-800'}`}
                     />
                   </div>
                 </div>
@@ -390,7 +390,7 @@ const ProductModal = ({
               </div>
 
               {/* Card 2: Categories */}
-              <div className="bg-slate-50/50 dark:bg-slate-955/35 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6">
+              <div className="bg-slate-50/50 dark:bg-slate-950/35 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6">
                 <h3 className="text-sm font-extrabold text-slate-400 dark:text-slate-550 uppercase tracking-wider mb-4 flex items-center gap-2">
                   <span>📂</span>
                   {t("productModal.fieldCategories")}
@@ -406,7 +406,7 @@ const ProductModal = ({
               </div>
 
               {/* Card 3: Tags */}
-              <div className="bg-slate-50/50 dark:bg-slate-955/35 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6">
+              <div className="bg-slate-50/50 dark:bg-slate-950/35 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6">
                 <h3 className="text-sm font-extrabold text-slate-400 dark:text-slate-555 uppercase tracking-wider mb-4 flex items-center gap-2">
                   <FaTag className="w-3.5 h-3.5 text-indigo-500" />
                   {t("productModal.fieldTags")}
@@ -424,7 +424,7 @@ const ProductModal = ({
                       onChange={(e) => setNewTag(e.target.value)}
                       maxLength={100}
                       placeholder={t("productModal.tagPlaceholder")}
-                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 pl-10 pr-4 py-2.5 text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-150 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition shadow-sm"
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 pl-10 pr-4 py-2.5 text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition shadow-sm"
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           e.preventDefault();
@@ -485,7 +485,7 @@ const ProductModal = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {extraColumns.map((col, idx) => (
                   <div key={idx} className="flex flex-col">
-                    <label htmlFor={`extra-${col}`} className="block text-sm font-semibold text-slate-700 dark:text-slate-355 mb-1.5" title={col}>
+                    <label htmlFor={`extra-${col}`} className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5" title={col}>
                       {col.length > 30 ? col.slice(0, 27) + "…" : col}
                     </label>
                     <textarea
@@ -496,7 +496,7 @@ const ProductModal = ({
                       onChange={(e) => handleExtraFieldChange(col, e.target.value)}
                       rows={1}
                       maxLength={1000}
-                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 px-4 py-2.5 text-sm bg-slate-50 dark:bg-slate-955 text-slate-800 dark:text-slate-150 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition resize-y min-h-[42px]"
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 px-4 py-2.5 text-sm bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition resize-y min-h-[42px]"
                     />
                   </div>
                 ))}
@@ -507,9 +507,9 @@ const ProductModal = ({
           {/* TAB 4: FILES & MEDIA */}
           {activeTab === "media" && (
             <div className="space-y-6">
-              <div className="bg-slate-50/50 dark:bg-slate-955/35 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 flex flex-col gap-4">
+              <div className="bg-slate-50/50 dark:bg-slate-950/35 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 flex flex-col gap-4">
                 <div>
-                  <label htmlFor="files" className="block text-sm font-semibold text-slate-700 dark:text-slate-355 mb-2">{t("productModal.uploadFiles")}</label>
+                  <label htmlFor="files" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">{t("productModal.uploadFiles")}</label>
                   <input
                     id="files"
                     type="file"
@@ -532,7 +532,7 @@ const ProductModal = ({
                       return (
                         <span key={imageObj.uniqueKey} className="inline-flex items-center gap-2.5 px-3.5 py-2 bg-slate-50/50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm text-xs font-semibold text-slate-700 dark:text-slate-300" title={name}>
                           {displayName}
-                          <div className="w-px h-4 bg-slate-205 dark:bg-slate-850 mx-1"></div>
+                          <div className="w-px h-4 bg-slate-200 dark:bg-slate-850 mx-1"></div>
                           <button
                             type="button"
                             onClick={() =>
@@ -577,7 +577,7 @@ const ProductModal = ({
                       return (
                         <span key={attachmentObj.uniqueKey} className="inline-flex items-center gap-2.5 px-3.5 py-2 bg-slate-50/50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm text-xs font-semibold text-slate-700 dark:text-slate-300" title={name}>
                           {displayName}
-                          <div className="w-px h-4 bg-slate-205 dark:bg-slate-850 mx-1"></div>
+                          <div className="w-px h-4 bg-slate-200 dark:bg-slate-850 mx-1"></div>
                           <button
                             type="button"
                             onClick={() =>
@@ -618,7 +618,7 @@ const ProductModal = ({
             <button
               type="button"
               onClick={closeModal}
-              className="px-6 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-sm rounded-xl hover:bg-slate-200 dark:hover:bg-slate-750 transition cursor-pointer"
+              className="px-6 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-sm rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer"
             >
               {t("productModal.btnCancel")}
             </button>
