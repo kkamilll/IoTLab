@@ -310,73 +310,147 @@ const WelcomePage = () => {
         </div>
       </section>
 
-      {/* MAIN SLIDER – always shown, falls back to demo slides if no materials */}
-      <MainSlider materials={materials} />
-
-      {/* NOTES & ANNOUNCEMENTS */}
-      <section className="py-16 bg-white dark:bg-slate-900 px-6 md:px-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-          <h2 className="text-2xl font-black mb-1.5 text-center tracking-tight text-slate-900 dark:text-white">
-            {t("nav.announcements")}
-          </h2>
-          <p className="text-slate-500 dark:text-slate-400 text-xs text-center mb-8">
-            {t("welcome.notesSubtitle")}
-          </p>
-
-          {notesLoading && (
-            <p className="text-center text-sm text-slate-400 font-semibold">
-              {t("welcome.loadingNotes")}
+      {/* LABORATORY FEATURES GRID - shown only if no materials and no notes exist */}
+      {materials.length === 0 && notes.length === 0 && (
+        <section className="py-20 bg-white dark:bg-slate-950/20 px-6 md:px-12 border-b border-slate-200 dark:border-slate-800 transition-colors duration-300">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+            <span className="block text-center text-xs font-extrabold uppercase tracking-widest text-indigo-650 dark:text-indigo-400 mb-2">
+              {language === "pl" ? "Możliwości IoTLab" : "IoTLab Features"}
+            </span>
+            <h2 className="text-3xl font-black mb-3 text-center tracking-tight text-slate-900 dark:text-white">
+              {language === "pl" ? "Co oferuje nasze laboratorium?" : "What does our lab offer?"}
+            </h2>
+            <p className="text-slate-555 dark:text-slate-400 text-sm text-center max-w-2xl mx-auto mb-12">
+              {language === "pl" 
+                ? "IoTLab to przestrzeń stworzona do rozwoju projektów z zakresu internetu rzeczy, systemów wbudowanych oraz elektroniki."
+                : "IoTLab is a space designed for developing projects in the Internet of Things, embedded systems, and electronics."}
             </p>
-          )}
-          {notesError && <p className="text-center text-red-400 font-semibold">{notesError}</p>}
-          {!notesLoading && !notesError && notes.length === 0 && (
-            <p className="text-center text-sm text-slate-500 font-semibold">
-              {t("welcome.noNotes")}
-            </p>
-          )}
 
-          {!notesLoading && !notesError && notes.length > 0 && (
-            <>
-              <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {paginatedNotes.map(note => (
-                  <li key={note._id} className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-850 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-[1.02] flex flex-col justify-between">
-                    <p className="text-slate-700 dark:text-slate-200 text-sm leading-relaxed font-semibold whitespace-pre-wrap break-words break-all">
-                      {note.text}
-                    </p>
-                    <div className="mt-4 text-slate-500 dark:text-slate-400 text-xs font-semibold italic border-t border-slate-250 dark:border-slate-800 pt-3">
-                      {t("welcome.addedBy")} <strong className="text-indigo-600 dark:text-indigo-400">{note.author?.name || t("welcome.anonymous")}</strong> •{' '}
-                      {`${new Date(note.createdAt).getDate().toString().padStart(2, '0')}.${(new Date(note.createdAt).getMonth() + 1).toString().padStart(2, '0')}.${new Date(note.createdAt).getFullYear()} ${new Date(note.createdAt).getHours().toString().padStart(2, '0')}:${new Date(note.createdAt).getMinutes().toString().padStart(2, '0')}`}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-
-              {/* Pagination */}
-              <div className="flex justify-center items-center gap-4 mt-8">
-                <Btn
-                  onClick={() => setNotesPage(prev => Math.max(prev - 1, 1))}
-                  disabled={notesPage === 1}
-                  variant="secondary"
-                  className="px-4 py-2"
-                >
-                  {t("welcome.previous")}
-                </Btn>
-                <span className="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-950 text-slate-650 dark:text-slate-400 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-850">
-                  {notesPage} / {totalPages}
-                </span>
-                <Btn
-                  onClick={() => setNotesPage(prev => Math.min(prev + 1, totalPages))}
-                  disabled={notesPage === totalPages}
-                  variant="secondary"
-                  className="px-4 py-2"
-                >
-                  {t("welcome.next")}
-                </Btn>
+            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/80 rounded-3xl p-6 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] flex flex-col gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-900/40 text-indigo-650 dark:text-indigo-400 flex items-center justify-center text-xl shadow-inner font-bold">
+                  🛠️
+                </div>
+                <h3 className="font-bold text-base text-slate-900 dark:text-white">
+                  {language === "pl" ? "Zaawansowany sprzęt" : "Advanced Hardware"}
+                </h3>
+                <p className="text-slate-550 dark:text-slate-400 text-xs leading-relaxed font-medium">
+                  {language === "pl" 
+                    ? "Szeroka baza sensorów, mikrokontrolerów ESP32/Arduino, minikomputerów Raspberry Pi oraz modułów komunikacyjnych."
+                    : "A wide database of sensors, ESP32/Arduino microcontrollers, Raspberry Pi single-board computers, and communication modules."}
+                </p>
               </div>
-            </>
-          )}
-        </div>
-      </section>
+
+              <div className="bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/80 rounded-3xl p-6 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] flex flex-col gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-100 dark:border-emerald-900/40 text-emerald-650 dark:text-indigo-400 flex items-center justify-center text-xl shadow-inner font-bold">
+                  📅
+                </div>
+                <h3 className="font-bold text-base text-slate-900 dark:text-white">
+                  {language === "pl" ? "Szybka rezerwacja" : "Quick Booking"}
+                </h3>
+                <p className="text-slate-550 dark:text-slate-400 text-xs leading-relaxed font-medium">
+                  {language === "pl"
+                    ? "Intuicyjny system wynajmu sprzętu online, pozwalający na sprawne planowanie pracy i projektów studenckich."
+                    : "An intuitive online equipment rental system that allows efficient planning of student work and projects."}
+                </p>
+              </div>
+
+              <div className="bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/80 rounded-3xl p-6 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] flex flex-col gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/50 border border-amber-100 dark:border-amber-900/40 text-amber-650 dark:text-indigo-400 flex items-center justify-center text-xl shadow-inner font-bold">
+                  🏫
+                </div>
+                <h3 className="font-bold text-base text-slate-900 dark:text-white">
+                  {language === "pl" ? "Pokoje laboratoryjne" : "Laboratory Rooms"}
+                </h3>
+                <p className="text-slate-555 dark:text-slate-400 text-xs leading-relaxed font-medium">
+                  {language === "pl"
+                    ? "Możliwość rezerwacji dedykowanych stanowisk pracy w salach laboratoryjnych wyposażonych w specjalistyczną aparaturę."
+                    : "Possibility to book dedicated workstations in laboratory rooms equipped with specialized apparatus."}
+                </p>
+              </div>
+
+              <div className="bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/80 rounded-3xl p-6 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] flex flex-col gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-violet-50 dark:bg-violet-950/50 border border-violet-100 dark:border-violet-900/40 text-violet-650 dark:text-indigo-400 flex items-center justify-center text-xl shadow-inner font-bold">
+                  📚
+                </div>
+                <h3 className="font-bold text-base text-slate-900 dark:text-white">
+                  {language === "pl" ? "Zasoby i linki" : "Resources & Links"}
+                </h3>
+                <p className="text-slate-550 dark:text-slate-400 text-xs leading-relaxed font-medium">
+                  {language === "pl"
+                    ? "Dostęp do kart katalogowych, schematów oraz przydatnych linków dla każdego komponentu dostępnego w bazie."
+                    : "Access to datasheets, schematics, and useful links for each component available in the inventory."}
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* MAIN SLIDER – shown only if there are materials */}
+      {materials.length > 0 && <MainSlider materials={materials} />}
+
+      {/* NOTES & ANNOUNCEMENTS – shown only if loading, error, or has notes */}
+      {(notesLoading || notesError || notes.length > 0) && (
+        <section className="py-16 bg-white dark:bg-slate-900 px-6 md:px-12 border-b border-slate-200 dark:border-slate-800 transition-colors duration-300">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+            <h2 className="text-2xl font-black mb-1.5 text-center tracking-tight text-slate-900 dark:text-white">
+              {t("nav.announcements")}
+            </h2>
+            <p className="text-slate-500 dark:text-slate-400 text-xs text-center mb-8">
+              {t("welcome.notesSubtitle")}
+            </p>
+
+            {notesLoading && (
+              <p className="text-center text-sm text-slate-400 font-semibold">
+                {t("welcome.loadingNotes")}
+              </p>
+            )}
+            {notesError && <p className="text-center text-red-400 font-semibold">{notesError}</p>}
+
+            {!notesLoading && !notesError && notes.length > 0 && (
+              <>
+                <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {paginatedNotes.map(note => (
+                    <li key={note._id} className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-850 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-[1.02] flex flex-col justify-between">
+                      <p className="text-slate-700 dark:text-slate-200 text-sm leading-relaxed font-semibold whitespace-pre-wrap break-words break-all">
+                        {note.text}
+                      </p>
+                      <div className="mt-4 text-slate-500 dark:text-slate-400 text-xs font-semibold italic border-t border-slate-250 dark:border-slate-800 pt-3">
+                        {t("welcome.addedBy")} <strong className="text-indigo-600 dark:text-indigo-400">{note.author?.name || t("welcome.anonymous")}</strong> •{' '}
+                        {`${new Date(note.createdAt).getDate().toString().padStart(2, '0')}.${(new Date(note.createdAt).getMonth() + 1).toString().padStart(2, '0')}.${new Date(note.createdAt).getFullYear()} ${new Date(note.createdAt).getHours().toString().padStart(2, '0')}:${new Date(note.createdAt).getMinutes().toString().padStart(2, '0')}`}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* Pagination */}
+                <div className="flex justify-center items-center gap-4 mt-8">
+                  <Btn
+                    onClick={() => setNotesPage(prev => Math.max(prev - 1, 1))}
+                    disabled={notesPage === 1}
+                    variant="secondary"
+                    className="px-4 py-2"
+                  >
+                    {t("welcome.previous")}
+                  </Btn>
+                  <span className="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-950 text-slate-655 dark:text-slate-400 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-850">
+                    {notesPage} / {totalPages}
+                  </span>
+                  <Btn
+                    onClick={() => setNotesPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={notesPage === totalPages}
+                    variant="secondary"
+                    className="px-4 py-2"
+                  >
+                    {t("welcome.next")}
+                  </Btn>
+                </div>
+              </>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* FOOTER */}
       <footer className="bg-white/40 dark:bg-slate-950/40 border-t border-slate-200 dark:border-slate-900 text-center py-6 text-xs text-slate-500 font-semibold tracking-wide">

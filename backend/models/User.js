@@ -8,6 +8,7 @@ const userSchema = new mongoose.Schema({
   role: { type: String, enum: ["admin", "lecturer"], default: "lecturer", required: true },
   labRooms: [{ type: String }],
   isActive: { type: Boolean, default: true },
+  profileImage: { type: String, default: "" },
   tokenVersion: { type: Number, default: 0 },
   passwordChangedAt: Date,
   resetPasswordOtp: String,

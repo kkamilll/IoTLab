@@ -42,3 +42,15 @@ const storageCollection = multer.diskStorage({
   filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname)
 });
 export const filesUploadCollection = multer({ storage: storageCollection });
+
+const storageUser = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join("uploads", "users");
+    fs.mkdir(dir, { recursive: true }, (error) => {
+      if (error) cb(error);
+      cb(null, dir);
+    })
+  },
+  filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
+});
+export const filesUploadUser = multer({ storage: storageUser });

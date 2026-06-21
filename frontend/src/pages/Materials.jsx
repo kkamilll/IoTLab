@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import apiClient from "../api/apiClient";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
+import ConfirmModal from "../components/layout/ConfirmModal";
 import {
   DndContext,
   closestCenter,
@@ -25,6 +27,7 @@ const SortableItem = ({
   deleteMaterial,
   setPreviewImage,
 }) => {
+  const { showToast } = useToast();
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id: mat._id });
   const style = { transform: CSS.Transform.toString(transform), transition };
@@ -105,10 +108,10 @@ const SortableItem = ({
             await apiClient.patch(`/materials/${mat._id}`, {
               link: currentMaterial.link,
             });
-            alert("Link updated!");
+            showToast("Link updated!", "success");
           } catch (err) {
             console.error(err);
-            alert("Error updating link");
+            showToast("Error updating link", "error");
           }
         }}
         className="mt-3 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-2 rounded-xl shadow-sm transition"
@@ -126,7 +129,15 @@ const Materials = () => {
   const [link, setLink] = useState("");
   const [loading, setLoading] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
+  const [confirmConfig, setConfirmConfig] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "danger",
+    onConfirm: null,
+  });
   const { token } = useAuth();
+  const { showToast } = useToast();
 
   const fetchMaterials = async () => {
     try {
@@ -138,7 +149,7 @@ const Materials = () => {
         "Fetch materials error:",
         error.response?.data || error.message,
       );
-      alert("Error fetching materials");
+      showToast("Error fetching materials", "error");
     }
   };
 
@@ -147,7 +158,10 @@ const Materials = () => {
   }, [token]);
 
   const addMaterial = async () => {
-    if (!file) return alert("Select a file to add");
+    if (!file) {
+      showToast("Select a file to add", "warning");
+      return;
+    }
     const formData = new FormData();
     formData.append("file", file);
     formData.append("link", link);
@@ -171,24 +185,33 @@ const Materials = () => {
         "Add material error:",
         error.response?.data || error.message,
       );
-      alert("Error adding material");
+      showToast("Error adding material", "error");
     } finally {
       setLoading(false);
     }
   };
 
-  const deleteMaterial = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this image?")) return;
-    try {
-      await apiClient.delete(`/materials/${id}`);
-      setMaterials((prev) => prev.filter((m) => m._id !== id));
-    } catch (error) {
-      console.error(
-        "Delete material error:",
-        error.response?.data || error.message,
-      );
-      alert("Error deleting material");
-    }
+  const deleteMaterial = (id) => {
+    setConfirmConfig({
+      isOpen: true,
+      title: "Usuń zdjęcie",
+      message: "Are you sure you want to delete this image?",
+      type: "danger",
+      onConfirm: async () => {
+        setConfirmConfig((prev) => ({ ...prev, isOpen: false }));
+        try {
+          await apiClient.delete(`/materials/${id}`);
+          setMaterials((prev) => prev.filter((m) => m._id !== id));
+          showToast("Image deleted", "success");
+        } catch (error) {
+          console.error(
+            "Delete material error:",
+            error.response?.data || error.message,
+          );
+          showToast("Error deleting material", "error");
+        }
+      }
+    });
   };
 
   const sensors = useSensors(useSensor(PointerSensor));
@@ -211,7 +234,7 @@ const Materials = () => {
         });
       } catch (err) {
         console.error("Error saving order:", err);
-        alert("Failed to save image order!");
+        showToast("Failed to save image order!", "error");
       }
     }
   };
@@ -252,8 +275,9 @@ const Materials = () => {
                   const minWidth = 800,
                     minHeight = 600;
                   if (img.width < minWidth || img.height < minHeight) {
-                    alert(
+                    showToast(
                       `Image too small! Minimum: ${minWidth}x${minHeight}px`,
+                      "warning"
                     );
                     setFile(null);
                   } else {
@@ -346,6 +370,14 @@ const Materials = () => {
           </div>
         )}
       </div>
+      <ConfirmModal
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        type={confirmConfig.type}
+        onConfirm={confirmConfig.onConfirm}
+        onCancel={() => setConfirmConfig((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

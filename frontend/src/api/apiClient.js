@@ -11,13 +11,14 @@ const apiClient = axios.create({
   baseURL: getBaseURL(),
 });
 
-// Automatically inject JWT token into requests
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("pos-token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    const lang = localStorage.getItem("language") || "pl";
+    config.headers["Accept-Language"] = lang;
     return config;
   },
   (error) => {

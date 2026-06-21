@@ -1,5 +1,19 @@
 @import "tailwindcss";
 
+@theme {
+  --color-indigo-650: #493fdb;
+  --color-indigo-405: #818cf8;
+  --color-slate-205: #e2e8f0;
+  --color-slate-355: #cbd5e1;
+  --color-slate-450: #94a3b8;
+  --color-slate-650: #475569;
+  --color-slate-850: #1e293b;
+  --color-red-650: #dc2626;
+  --color-emerald-650: #059669;
+  --color-amber-650: #d97706;
+  --color-violet-650: #7c3aed;
+}
+
 @variant dark (.dark &);
 
 @layer base {
@@ -266,4 +280,70 @@
   .dark select {
     background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
   }
+}
+
+/* Custom premium scrollbars for a modern aesthetic */
+/* Firefox standard */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 rgba(248, 250, 252, 0.25);
+}
+
+.dark * {
+  scrollbar-color: #475569 rgba(15, 23, 42, 0.25);
+}
+
+/* Chrome, Edge, Safari, Opera */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(241, 245, 249, 0.35);
+  border-radius: 9999px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.35);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  transition: background 0.25s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+  background-clip: padding-box;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+  background-clip: padding-box;
+}
+
+/* Custom scrollbar style for thin tab containers */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px !important;
+  height: 4px !important;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: rgba(99, 102, 241, 0.45) !important;
+  border-radius: 9999px !important;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(99, 102, 241, 0.75) !important;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent !important;
 }

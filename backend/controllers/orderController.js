@@ -266,10 +266,23 @@ export const getOrders = asyncHandler(async (req, res, next) => {
 
   const status = req.query.status || "";
   const email = req.query.email || "";
+  const ownerId = req.query.ownerId || "";
+  const sortBy = req.query.sortBy || "createdAt";
+  const sortOrder = req.query.sortOrder === "asc" ? 1 : -1;
+  const dateFrom = req.query.dateFrom || "";
+  const dateTo = req.query.dateTo || "";
+  const index = req.query.index || "";
+  const yearOfStudy = req.query.yearOfStudy || "";
+  const semester = req.query.semester || "";
+  const fieldOfStudy = req.query.fieldOfStudy || "";
 
   const filter = {};
   if (role === "admin") {
-    if (status) {
+    if (ownerId && mongoose.Types.ObjectId.isValid(ownerId)) {
+      const elem = { owner: new mongoose.Types.ObjectId(String(ownerId)) };
+      if (status) elem.status = status;
+      filter.ownersData = { $elemMatch: elem };
+    } else if (status) {
       filter.ownersData = { $elemMatch: { status } };
     }
   } else {
@@ -281,10 +294,30 @@ export const getOrders = asyncHandler(async (req, res, next) => {
   if (email) {
     filter["customer.email"] = { $regex: email, $options: "i" };
   }
+  if (index) {
+    filter["customer.index"] = { $regex: index, $options: "i" };
+  }
+  if (yearOfStudy) {
+    const parsedYear = parseInt(yearOfStudy);
+    if (!isNaN(parsedYear)) filter["customer.yearOfStudy"] = parsedYear;
+  }
+  if (semester) {
+    const parsedSem = parseInt(semester);
+    if (!isNaN(parsedSem)) filter["customer.semester"] = parsedSem;
+  }
+  if (fieldOfStudy) {
+    filter["customer.fieldOfStudy"] = { $regex: fieldOfStudy, $options: "i" };
+  }
+
+  if (dateFrom || dateTo) {
+    filter.requestedStartDate = {};
+    if (dateFrom) filter.requestedStartDate.$gte = new Date(dateFrom);
+    if (dateTo) filter.requestedStartDate.$lte = new Date(dateTo);
+  }
 
   const [orders, totalOrders] = await Promise.all([
     Order.find(filter)
-      .sort({ createdAt: -1 })
+      .sort({ [sortBy]: sortOrder })
       .skip(skip)
       .limit(limit)
       .populate({ path: "items.responsibleOwner", select: "name email" })
@@ -297,18 +330,19 @@ export const getOrders = asyncHandler(async (req, res, next) => {
   ]);
 
   const personalizedOrders = orders.map((order) => {
-    if (role === "admin") return order;
+    if (role === "admin" && !ownerId) return order;
 
+    const filterUserId = (role === "admin" && ownerId) ? ownerId : userId;
     const normalizeId = (obj) =>
       obj?._id ? obj._id.toString() : obj?.toString();
 
     return {
       ...order,
       items: order.items.filter(
-        (item) => normalizeId(item.responsibleOwner) === userId,
+        (item) => normalizeId(item.responsibleOwner) === filterUserId,
       ),
       ownersData: order.ownersData.filter(
-        (ownersData) => normalizeId(ownersData.owner) === userId,
+        (ownersData) => normalizeId(ownersData.owner) === filterUserId,
       ),
     };
   });

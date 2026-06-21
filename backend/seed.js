@@ -82,36 +82,42 @@ const seedDatabase = async () => {
       name: "Microcontrollers",
       description: "Arduino, ESP32, STM32 and other programmable boards.",
       isVisible: true,
+      parent: null,
     });
 
     const catSensors = new Category({
       name: "Sensors",
       description: "Temperature, humidity, motion, distance and gas sensors.",
       isVisible: true,
+      parent: null,
     });
 
     const catActuators = new Category({
       name: "Actuators",
       description: "Servo motors, relays, solenoids, and stepper motors.",
       isVisible: true,
+      parent: null,
     });
 
     const catSBC = new Category({
       name: "Single Board Computers",
       description: "Raspberry Pi, BeagleBone, Orange Pi, etc.",
       isVisible: true,
+      parent: null,
     });
 
     const catNetworking = new Category({
       name: "Networking Modules",
       description: "WiFi, Bluetooth, Zigbee, LoRa and Ethernet modules.",
       isVisible: true,
+      parent: null,
     });
 
     const catPower = new Category({
       name: "Power & Supplies",
       description: "Power supplies, voltage regulators, batteries and UPS modules.",
       isVisible: false,
+      parent: null,
     });
 
     await catMicro.save();
@@ -120,6 +126,40 @@ const seedDatabase = async () => {
     await catSBC.save();
     await catNetworking.save();
     await catPower.save();
+
+    // Seed Subcategories
+    const cat8Bit = new Category({
+      name: "8-bit Microcontrollers",
+      description: "AVR, PIC, and other 8-bit programmable chips.",
+      isVisible: true,
+      parent: catMicro._id,
+    });
+
+    const cat32Bit = new Category({
+      name: "32-bit Microcontrollers",
+      description: "ESP32, STM32, ARM Cortex, and other advanced microcontrollers.",
+      isVisible: true,
+      parent: catMicro._id,
+    });
+
+    const catEnvSensors = new Category({
+      name: "Environmental Sensors",
+      description: "Sensors for measuring temperature, humidity, air quality, pressure, etc.",
+      isVisible: true,
+      parent: catSensors._id,
+    });
+
+    const catDistSensors = new Category({
+      name: "Distance & Motion Sensors",
+      description: "Ultrasonic, infrared, LIDAR, and accelerometer sensors.",
+      isVisible: true,
+      parent: catSensors._id,
+    });
+
+    await cat8Bit.save();
+    await cat32Bit.save();
+    await catEnvSensors.save();
+    await catDistSensors.save();
 
     // ─────────────────────────────────────────────
     // PRODUCTS
@@ -133,12 +173,19 @@ const seedDatabase = async () => {
       stockForRent: 15,
       stockReserved: 2,
       stockRentedOut: 0,
-      categories: [catMicro._id],
+      categories: [cat8Bit._id],
       tags: ["arduino", "uno", "microcontroller", "board", "atmega"],
       labRoom: "101",
       owner: lecturer1._id,
       isRentable: true,
       isVisible: true,
+      images: [{
+        filename: "arduino_uno.png",
+        originalName: "arduino_uno.png",
+        path: "uploads/products/arduino_uno.png",
+        isVisible: true,
+        size: 153000
+      }]
     });
 
     const prodESP32 = new Product({
@@ -148,12 +195,19 @@ const seedDatabase = async () => {
       stockForRent: 20,
       stockReserved: 0,
       stockRentedOut: 3,
-      categories: [catMicro._id, catNetworking._id],
+      categories: [cat32Bit._id, catNetworking._id],
       tags: ["esp32", "wifi", "bluetooth", "iot", "microcontroller"],
       labRoom: "101",
       owner: lecturer1._id,
       isRentable: true,
       isVisible: true,
+      images: [{
+        filename: "esp32_devkit.png",
+        originalName: "esp32_devkit.png",
+        path: "uploads/products/esp32_devkit.png",
+        isVisible: true,
+        size: 142000
+      }]
     });
 
     const prodSTM32 = new Product({
@@ -163,7 +217,7 @@ const seedDatabase = async () => {
       stockForRent: 8,
       stockReserved: 1,
       stockRentedOut: 0,
-      categories: [catMicro._id],
+      categories: [cat32Bit._id],
       tags: ["stm32", "arm", "cortex", "nucleo", "embedded"],
       labRoom: "102",
       owner: lecturer1._id,
@@ -184,6 +238,13 @@ const seedDatabase = async () => {
       owner: admin._id,
       isRentable: true,
       isVisible: true,
+      images: [{
+        filename: "raspberry_pi.png",
+        originalName: "raspberry_pi.png",
+        path: "uploads/products/raspberry_pi.png",
+        isVisible: true,
+        size: 165000
+      }]
     });
 
     const prodRaspPi5 = new Product({
@@ -208,7 +269,7 @@ const seedDatabase = async () => {
       stockForRent: 25,
       stockReserved: 3,
       stockRentedOut: 0,
-      categories: [catSensors._id],
+      categories: [catEnvSensors._id],
       tags: ["sensor", "dht11", "temperature", "humidity", "analog"],
       labRoom: "201",
       owner: lecturer2._id,
@@ -223,7 +284,7 @@ const seedDatabase = async () => {
       stockForRent: 15,
       stockReserved: 0,
       stockRentedOut: 2,
-      categories: [catSensors._id],
+      categories: [catEnvSensors._id],
       tags: ["sensor", "dht22", "temperature", "humidity", "precision"],
       labRoom: "201",
       owner: lecturer2._id,
@@ -238,7 +299,7 @@ const seedDatabase = async () => {
       stockForRent: 20,
       stockReserved: 0,
       stockRentedOut: 0,
-      categories: [catSensors._id],
+      categories: [catDistSensors._id],
       tags: ["sensor", "ultrasonic", "hcsr04", "distance", "range"],
       labRoom: "201",
       owner: lecturer2._id,
@@ -302,6 +363,7 @@ const seedDatabase = async () => {
     await prodServo.save();
     await prodRelay.save();
     await prodLoRa.save();
+
 
     // ─────────────────────────────────────────────
     // EMAIL TEMPLATES (required for emails to work)

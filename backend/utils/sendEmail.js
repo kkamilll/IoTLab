@@ -90,9 +90,11 @@ export const sendOrderEmail = async (order, customerKey = null, uuid = null) => 
 
     const orderId = order._id.toString();
     const CustomerName = `${order.customer.firstName} ${order.customer.lastName}`;
-    const orderLink = `${process.env.FRONTEND_IP}${process.env.FRONTEND_PORT}${process.env.FRONTEND_ORDER_PATH}/${uuid}`;
+    const orderLink = `${process.env.FRONTEND_IP}${process.env.FRONTEND_PORT}${process.env.FRONTEND_ORDER_PATH}/${uuid || order.uuid}`;
     const orderPassword = customerKey;
-    const templateVariables = { orderId, CustomerName, orderLink, orderPassword };
+    const startDate = new Date(order.requestedStartDate).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" });
+    const endDate = new Date(order.requestedEndDate).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" });
+    const templateVariables = { orderId, CustomerName, orderLink, orderPassword, startDate, endDate };
 
     const template = await Template.findOne({ name: type, isDefault: true }).lean();
     if (!template) throw new ResourceNotFoundError(`No default template found for ${type}`);

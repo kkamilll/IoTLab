@@ -7,18 +7,28 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
 import PageHeader from "../components/layout/PageHeader";
 import Btn from "../components/layout/Btn";
 import { useLanguage } from "../context/LanguageContext";
+import { useToast } from "../context/ToastContext";
+import ConfirmModal from "../components/layout/ConfirmModal";
 
 const Categories = () => {
   const { token } = useAuth();
   const { t } = useLanguage();
+  const { showToast } = useToast();
   const [categories, setCategories] = useState([]);
   const [editCategory, setEditCategory] = useState(null);
+  const [confirmConfig, setConfirmConfig] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "danger",
+    onConfirm: null,
+  });
   const [modalOpen, setModalOpen] = useState(false);
   const [categoryData, setCategoryData] = useState({
     name: "", description: "", parent: null, isVisible: false,
   });
 
-  const MAX_LENGTH = 20;
+  const MAX_LENGTH = 50;
 
   useEffect(() => { fetchCategories(); }, []);
 
@@ -46,7 +56,7 @@ const Categories = () => {
       setCategories(res.data.categories || []);
     } catch (err) {
       console.error("Error fetching categories:", err);
-      alert(err.response?.data?.message || "Failed to fetch categories");
+      showToast(err.response?.data?.message || "Failed to fetch categories", "error");
     }
   };
 
@@ -75,30 +85,44 @@ const Categories = () => {
 
   const handleSubmitCategory = async (e) => {
     e.preventDefault();
-    if (!categoryData.name.trim()) { alert("Category name is required"); return; }
+    if (!categoryData.name.trim()) {
+      showToast("Category name is required", "warning");
+      return;
+    }
     try {
       const res = editCategory
         ? await apiClient.patch(`/categories/${editCategory}`, categoryData)
         : await apiClient.post("/categories/create", categoryData);
       if (res.data.success) {
-        alert(editCategory ? "Category updated" : "Category added");
+        showToast(editCategory ? "Category updated" : "Category added", "success");
         closeModal(); fetchCategories();
       }
     } catch (err) {
       console.error("Error saving category:", err);
-      alert(err.response?.data?.error || "Failed to save category");
+      showToast(err.response?.data?.error || "Failed to save category", "error");
     }
   };
 
-  const handleDeleteCategory = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this category?")) return;
-    try {
-      const res = await apiClient.delete(`/categories/${id}`);
-      if (res.data.success) { alert("Category deleted"); fetchCategories(); }
-    } catch (err) {
-      console.error("Error deleting category:", err);
-      alert("Failed to delete category");
-    }
+  const handleDeleteCategory = (id) => {
+    setConfirmConfig({
+      isOpen: true,
+      title: t("categories.deleteCategory") || "Usuń kategorię",
+      message: "Are you sure you want to delete this category?",
+      type: "danger",
+      onConfirm: async () => {
+        setConfirmConfig((prev) => ({ ...prev, isOpen: false }));
+        try {
+          const res = await apiClient.delete(`/categories/${id}`);
+          if (res.data.success) {
+            showToast("Category deleted", "success");
+            fetchCategories();
+          }
+        } catch (err) {
+          console.error("Error deleting category:", err);
+          showToast("Failed to delete category", "error");
+        }
+      }
+    });
   };
 
   return (
@@ -120,7 +144,6 @@ const Categories = () => {
       {modalOpen && (
         <div
           className="fixed inset-0 flex justify-center items-center z-50 backdrop-blur-md bg-slate-950/40"
-          onClick={closeModal}
         >
           <div
             className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xl w-full max-w-lg p-6 relative"
@@ -178,6 +201,14 @@ const Categories = () => {
           </div>
         </div>
       )}
+      <ConfirmModal
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        type={confirmConfig.type}
+        onConfirm={confirmConfig.onConfirm}
+        onCancel={() => setConfirmConfig((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

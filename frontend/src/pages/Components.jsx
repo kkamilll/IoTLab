@@ -3,10 +3,20 @@ import apiClient from "../api/apiClient";
 import { useAuth } from "../context/AuthContext";
 import PageHeader from "../components/layout/PageHeader";
 import { useLanguage } from "../context/LanguageContext";
+import { useToast } from "../context/ToastContext";
+import ConfirmModal from "../components/layout/ConfirmModal";
 
 const Components = () => {
   const { token } = useAuth();
   const { t, language } = useLanguage();
+  const { showToast } = useToast();
+  const [confirmConfig, setConfirmConfig] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "danger",
+    onConfirm: null,
+  });
   const [collections, setCollections] = useState([]);
   const [newCollection, setNewCollection] = useState("");
   const [newCollectionLogo, setNewCollectionLogo] = useState("");
@@ -29,7 +39,7 @@ const Components = () => {
       const res = await apiClient.get("/components");
       if (res.data.success) setCollections(res.data.data);
     } catch {
-      alert("Error fetching collections");
+      showToast("Error fetching collections", "error");
     }
   };
 
@@ -47,21 +57,28 @@ const Components = () => {
       setNewCollection("");
       setNewCollectionLogo("");
     } catch {
-      alert(t("components.addLinkError")); // Or dynamic edit error
+      showToast(t("components.addLinkError"), "error");
     }
   };
 
   // Delete collection
-  const deleteCollection = async (collectionId) => {
-    if (!window.confirm(t("components.deleteCollectionConfirm")))
-      return;
-    try {
-      await apiClient.delete(`/components/${collectionId}`);
-      await fetchCollections();
-      setExpanded(null);
-    } catch {
-      alert(t("components.deleteCollectionError"));
-    }
+  const deleteCollection = (collectionId) => {
+    setConfirmConfig({
+      isOpen: true,
+      title: t("common.delete") || "Usuń",
+      message: t("components.deleteCollectionConfirm") || "Are you sure you want to delete this collection?",
+      type: "danger",
+      onConfirm: async () => {
+        setConfirmConfig((prev) => ({ ...prev, isOpen: false }));
+        try {
+          await apiClient.delete(`/components/${collectionId}`);
+          await fetchCollections();
+          setExpanded(null);
+        } catch {
+          showToast(t("components.deleteCollectionError"), "error");
+        }
+      }
+    });
   };
 
   // Edit collection name and logo
@@ -79,14 +96,17 @@ const Components = () => {
       setEditingName("");
       setEditingLogo("");
     } catch {
-      alert(t("components.editCollectionError"));
+      showToast(t("components.editCollectionError"), "error");
     }
   };
 
   // Add link
   const addLink = async (collectionId) => {
     const input = linkInputs[collectionId];
-    if (!input?.text || !input?.href) return alert(t("components.linkTextRequired"));
+    if (!input?.text || !input?.href) {
+      showToast(t("components.linkTextRequired"), "warning");
+      return;
+    }
 
     let href = input.href;
     if (!/^https?:\/\//i.test(href)) href = "http://" + href;
@@ -103,25 +123,35 @@ const Components = () => {
         [collectionId]: { text: "", href: "" },
       }));
     } catch {
-      alert(t("components.addLinkError"));
+      showToast(t("components.addLinkError"), "error");
     }
   };
 
   // Delete link
-  const deleteLink = async (collectionId, linkId) => {
-    if (!window.confirm(t("components.deleteLinkConfirm"))) return;
-    try {
-      await apiClient.delete(`/components/${collectionId}/links/${linkId}`);
-      await fetchCollections();
-    } catch {
-      alert(t("components.deleteLinkError"));
-    }
+  const deleteLink = (collectionId, linkId) => {
+    setConfirmConfig({
+      isOpen: true,
+      title: t("common.delete") || "Usuń",
+      message: t("components.deleteLinkConfirm") || "Are you sure you want to delete this link?",
+      type: "danger",
+      onConfirm: async () => {
+        setConfirmConfig((prev) => ({ ...prev, isOpen: false }));
+        try {
+          await apiClient.delete(`/components/${collectionId}/links/${linkId}`);
+          await fetchCollections();
+        } catch {
+          showToast(t("components.deleteLinkError"), "error");
+        }
+      }
+    });
   };
 
   // Edit link
   const saveLink = async (collectionId) => {
-    if (!editingLink.text || !editingLink.href)
-      return alert(t("components.linkTextRequired"));
+    if (!editingLink.text || !editingLink.href) {
+      showToast(t("components.linkTextRequired"), "warning");
+      return;
+    }
 
     let href = editingLink.href;
     if (!/^https?:\/\//i.test(href)) href = "http://" + href;
@@ -138,7 +168,7 @@ const Components = () => {
 
       setEditingLink({ id: null, text: "", href: "" });
     } catch {
-      alert(t("components.saveLinkError"));
+      showToast(t("components.saveLinkError"), "error");
     }
   };
 
@@ -151,7 +181,10 @@ const Components = () => {
   const [fileInputs, setFileInputs] = useState({});
   const addFile = async (collectionId) => {
     const file = fileInputs[collectionId];
-    if (!file) return alert(t("components.uploadFileFirst"));
+    if (!file) {
+      showToast(t("components.uploadFileFirst"), "warning");
+      return;
+    }
 
     const formData = new FormData();
     formData.append("file", file);
@@ -163,19 +196,27 @@ const Components = () => {
       await fetchCollections();
       setFileInputs((prev) => ({ ...prev, [collectionId]: null }));
     } catch {
-      alert(t("components.uploadError"));
+      showToast(t("components.uploadError"), "error");
     }
   };
 
   // Delete file
-  const deleteFile = async (collectionId, fileId) => {
-    if (!window.confirm(t("components.deleteFileConfirm"))) return;
-    try {
-      await apiClient.delete(`/components/${collectionId}/files/${fileId}`);
-      await fetchCollections();
-    } catch {
-      alert(t("components.deleteFileError"));
-    }
+  const deleteFile = (collectionId, fileId) => {
+    setConfirmConfig({
+      isOpen: true,
+      title: t("common.delete") || "Usuń",
+      message: t("components.deleteFileConfirm") || "Are you sure you want to delete this file?",
+      type: "danger",
+      onConfirm: async () => {
+        setConfirmConfig((prev) => ({ ...prev, isOpen: false }));
+        try {
+          await apiClient.delete(`/components/${collectionId}/files/${fileId}`);
+          await fetchCollections();
+        } catch {
+          showToast(t("components.deleteFileError"), "error");
+        }
+      }
+    });
   };
 
   useEffect(() => {
@@ -514,6 +555,14 @@ const Components = () => {
           </div>
         </div>
       </div>
+      <ConfirmModal
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        type={confirmConfig.type}
+        onConfirm={confirmConfig.onConfirm}
+        onCancel={() => setConfirmConfig((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

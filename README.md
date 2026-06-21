@@ -27,11 +27,11 @@ cd IOTLABBB
 ```
 
 ### 2. Backend Setup
+From the project root directory, install the backend dependencies:
 ```bash
-cd backend
 npm install
 ```
-Create a `.env` file in the root or `backend` folder based on your setup:
+Create a `.env` file in the root directory based on your setup:
 ```env
 PORT=3500
 MONGO_URI="mongodb://127.0.0.1:27017/iotlab_db"
@@ -48,7 +48,7 @@ npm run dev
 ```
 
 ### 3. Frontend Setup
-Open a new terminal and navigate to the frontend directory:
+Open a new terminal and navigate to the frontend directory, then install the frontend dependencies:
 ```bash
 cd frontend
 npm install
@@ -59,10 +59,11 @@ npm run dev
 ```
 
 ### 4. Database Seeding (Optional)
-To populate the database with initial admin users or sample data, you can run the seed script:
+To populate the database with initial admin users, components, templates, and sample data, run the seed script from the root directory:
 ```bash
-node backend/seed.js
+npm run seed
 ```
 
 ## 📄 License
 This project is for educational and laboratory purposes at Poznan University of Technology.
+

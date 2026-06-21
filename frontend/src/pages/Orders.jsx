@@ -3,26 +3,68 @@ import apiClient from "../api/apiClient";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { useLanguage } from "../context/LanguageContext";
+import { useLocation, useNavigate } from "react-router-dom";
 import OrderModal from "../components/orders/OrderModal";
 import OrderGroupCard from "../components/orders/OrderGroupCard";
 import PageHeader from "../components/layout/PageHeader";
 import FilterBar from "../components/layout/FilterBar";
 import Pagination from "../components/layout/Pagination";
+import { User, Info, Calendar, Hash, Phone, BookOpen } from "lucide-react";
 
 import { rentalAgreementTemplate } from "../templates/rentalAgreementTemplate";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
+const getOrderBorderColor = (order) => {
+  const statuses = order.ownersData?.map(od => od.status) || [];
+  if (statuses.includes("late")) return "border-l-red-500 dark:border-l-red-400";
+  if (statuses.includes("changed")) return "border-l-amber-500 dark:border-l-amber-400";
+  if (statuses.includes("pending")) return "border-l-yellow-500 dark:border-l-yellow-400";
+  if (statuses.includes("approved") || statuses.includes("prepared")) return "border-l-indigo-500 dark:border-l-indigo-400";
+  if (statuses.includes("rented")) return "border-l-green-500 dark:border-l-green-400";
+  if (statuses.includes("returned")) return "border-l-blue-500 dark:border-l-blue-400";
+  if (statuses.includes("rejected")) return "border-l-slate-300 dark:border-l-slate-700";
+  return "border-l-indigo-650 dark:border-l-indigo-500";
+};
+
 const Orders = () => {
   const { user } = useAuth();
   const { showToast } = useToast();
-  const { language } = useLanguage();
+  const { t, language } = useLanguage();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const [orders, setOrders] = useState([]);
   const [orderStatuses, setOrderStatuses] = useState([]);
   const [statusFilter, setStatusFilter] = useState("");
   const [emailFilter, setEmailFilter] = useState("");
+  const [ownerFilter, setOwnerFilter] = useState("");
+  const [ownerNameFilter, setOwnerNameFilter] = useState("");
+  const [indexFilter, setIndexFilter] = useState("");
+  const [yearFilter, setYearFilter] = useState("");
+  const [semesterFilter, setSemesterFilter] = useState("");
+  const [fieldFilter, setFieldFilter] = useState("");
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [limit, setLimit] = useState(20);
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState("desc");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [totalOrders, setTotalOrders] = useState(0);
+
+  useEffect(() => {
+    if (location.state?.ownerId) {
+      setOwnerFilter(location.state.ownerId);
+      setOwnerNameFilter(location.state.ownerName || "");
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate]);
   const [expanded, setExpanded] = useState({});
+  const [expandedCustomer, setExpandedCustomer] = useState({});
+
+  const toggleCustomer = (orderId) => {
+    setExpandedCustomer((prev) => ({ ...prev, [orderId]: !prev[orderId] }));
+  };
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -47,14 +89,29 @@ const Orders = () => {
     } catch (error) { console.error(error); }
   };
 
-  const fetchOrders = async (page = 1, limit = 20, email = "", status = "") => {
+  const fetchOrders = async (page = 1) => {
     try {
-      const queryParams = new URLSearchParams({ page, limit, email, status });
+      const queryParams = new URLSearchParams({
+        page,
+        limit,
+        email: emailFilter,
+        status: statusFilter,
+        sortBy,
+        sortOrder
+      });
+      if (ownerFilter) queryParams.append("ownerId", ownerFilter);
+      if (dateFrom) queryParams.append("dateFrom", dateFrom);
+      if (dateTo) queryParams.append("dateTo", dateTo);
+      if (indexFilter) queryParams.append("index", indexFilter);
+      if (yearFilter) queryParams.append("yearOfStudy", yearFilter);
+      if (semesterFilter) queryParams.append("semester", semesterFilter);
+      if (fieldFilter) queryParams.append("fieldOfStudy", fieldFilter);
       const res = await apiClient.get(`/orders?${queryParams.toString()}`);
       if (res.data.success) {
         setOrders(res.data.orders);
         setTotalPages(res.data.totalPages);
         setCurrentPage(res.data.page);
+        setTotalOrders(res.data.totalOrders || 0);
       }
     } catch (error) { console.error("Error fetching orders:", error); }
   };
@@ -79,8 +136,10 @@ const Orders = () => {
     }
   };
 
-  useEffect(() => { fetchOrders(1); fetchStatuses(); }, []);
-  useEffect(() => { fetchOrders(1, 20, emailFilter, statusFilter); }, [statusFilter, emailFilter]);
+  useEffect(() => { fetchStatuses(); }, []);
+  useEffect(() => {
+    fetchOrders(1);
+  }, [statusFilter, emailFilter, ownerFilter, limit, sortBy, sortOrder, dateFrom, dateTo, indexFilter, yearFilter, semesterFilter, fieldFilter]);
 
   useEffect(() => {
     if (!editGroup || !itemsUpdateData || Object.keys(itemsUpdateData).length === 0) return;
@@ -285,41 +344,313 @@ const Orders = () => {
   };
 
   return (
-    <div className="w-full min-h-screen bg-slate-50/30 dark:bg-slate-900/10">
+    <div className="w-full min-h-screen bg-slate-50 dark:bg-slate-950/80">
       <div className="w-full px-4 sm:px-6 md:px-8 py-6 md:py-8 flex flex-col gap-6">
         <PageHeader
           title={"📋 " + (language === "pl" ? "Zarządzanie Zamówieniami" : "Order Management")}
           subtitle={language === "pl" ? "Śledź, przeglądaj, zatwierdzaj i finalizuj wynajem sprzętu" : "Track, review, approve, and finalize equipment rentals"}
         />
 
-      <FilterBar
+        <FilterBar
         searchValue={emailFilter}
         onSearchChange={(e) => setEmailFilter(e.target.value)}
-        searchPlaceholder="Filter by customer email..."
+        searchPlaceholder={language === "pl" ? "Filtruj po emailu..." : "Filter by customer email..."}
+        searchLabel={language === "pl" ? "Szukaj (Email studenta):" : "Search (Student Email):"}
       >
-        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Status:</span>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-950/40 pl-3.5 pr-9 py-2 font-semibold text-slate-700 dark:text-slate-200 outline-none hover:border-slate-350 dark:hover:border-slate-700 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 appearance-none cursor-pointer min-w-[120px] w-full sm:w-auto"
+        {/* Date From */}
+        <div className="flex flex-col gap-1 w-full sm:w-auto">
+          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1 select-none">
+            {language === "pl" ? "Od:" : "From:"}
+          </span>
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-950/40 px-3.5 py-2 font-semibold text-slate-700 dark:text-slate-200 outline-none hover:border-slate-300 dark:hover:border-slate-700 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 w-full sm:w-auto cursor-pointer"
+          />
+        </div>
+
+        {/* Date To */}
+        <div className="flex flex-col gap-1 w-full sm:w-auto">
+          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1 select-none">
+            {language === "pl" ? "Do:" : "To:"}
+          </span>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-950/40 px-3.5 py-2 font-semibold text-slate-700 dark:text-slate-200 outline-none hover:border-slate-300 dark:hover:border-slate-700 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 w-full sm:w-auto cursor-pointer"
+          />
+        </div>
+
+        {/* Status Filter */}
+        <div className="flex flex-col gap-1 w-full sm:w-auto">
+          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1 select-none">Status:</span>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-950/40 pl-3.5 pr-8 py-2 font-semibold text-slate-700 dark:text-slate-200 outline-none hover:border-slate-350 dark:hover:border-slate-700 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 appearance-none cursor-pointer min-w-[100px] w-full sm:w-auto"
+          >
+            <option value="">{language === "pl" ? "Wszystkie" : "All"}</option>
+            {orderStatuses.map((status, idx) => (
+              <option key={idx} value={status}>{status}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Sort Filter */}
+        <div className="flex flex-col gap-1 w-full sm:w-auto">
+          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1 select-none">
+            {language === "pl" ? "Sortuj:" : "Sort:"}
+          </span>
+          <select
+            value={`${sortBy}_${sortOrder}`}
+            onChange={(e) => {
+              const [newSortBy, newSortOrder] = e.target.value.split("_");
+              setSortBy(newSortBy);
+              setSortOrder(newSortOrder);
+            }}
+            className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-950/40 pl-3.5 pr-8 py-2 font-semibold text-slate-700 dark:text-slate-200 outline-none hover:border-slate-350 dark:hover:border-slate-705 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 appearance-none cursor-pointer min-w-[140px] w-full sm:w-auto"
+          >
+            <option value="createdAt_desc">{language === "pl" ? "Najnowsze zamówienia" : "Newest orders"}</option>
+            <option value="createdAt_asc">{language === "pl" ? "Najstarsze zamówienia" : "Oldest orders"}</option>
+            <option value="requestedStartDate_asc">{language === "pl" ? "Wynajem (najwcześniejszy)" : "Rental start (earliest)"}</option>
+            <option value="requestedStartDate_desc">{language === "pl" ? "Wynajem (najpóźniejszy)" : "Rental start (latest)"}</option>
+          </select>
+        </div>
+
+        {/* Toggle Advanced Filters Button */}
+        <button
+          type="button"
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className={`text-xs border rounded-xl px-3.5 py-2 font-bold transition-all duration-200 cursor-pointer flex items-center gap-1.5 shadow-sm h-[38px] ${
+            showAdvanced
+              ? "border-indigo-500 bg-indigo-500/10 text-indigo-650 dark:text-indigo-400 font-extrabold"
+              : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-950"
+          }`}
         >
-          <option value="">All</option>
-          {orderStatuses.map((status, idx) => (
-            <option key={idx} value={status}>{status}</option>
-          ))}
-        </select>
+          <span>{language === "pl" ? "Filtry studenta" : "Student filters"}</span>
+          <span className="text-[10px] opacity-70">⚡</span>
+        </button>
       </FilterBar>
+
+      {showAdvanced && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 p-5 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-805 rounded-2xl shadow-sm transition-all duration-300">
+          {/* Student Index Input */}
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1 select-none">
+              {language === "pl" ? "Indeks studenta:" : "Student Index:"}
+            </label>
+            <input
+              type="text"
+              value={indexFilter}
+              onChange={(e) => setIndexFilter(e.target.value)}
+              placeholder={language === "pl" ? "np. 123456" : "e.g. 123456"}
+              className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-950/40 px-3.5 py-2 font-semibold text-slate-700 dark:text-slate-200 outline-none hover:border-slate-300 dark:hover:border-slate-700 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 w-full"
+            />
+          </div>
+
+          {/* Year of study dropdown */}
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1 select-none">
+              {language === "pl" ? "Rok studiów:" : "Year of Study:"}
+            </label>
+            <select
+              value={yearFilter}
+              onChange={(e) => setYearFilter(e.target.value)}
+              className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-950/40 pl-3.5 pr-8 py-2 font-semibold text-slate-700 dark:text-slate-200 outline-none hover:border-slate-350 dark:hover:border-slate-700 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 appearance-none cursor-pointer w-full"
+            >
+              <option value="">{language === "pl" ? "Wszystkie" : "All"}</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+            </select>
+          </div>
+
+          {/* Semester dropdown */}
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1 select-none">
+              {language === "pl" ? "Semestr:" : "Semester:"}
+            </label>
+            <select
+              value={semesterFilter}
+              onChange={(e) => setSemesterFilter(e.target.value)}
+              className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-950/40 pl-3.5 pr-8 py-2 font-semibold text-slate-700 dark:text-slate-200 outline-none hover:border-slate-350 dark:hover:border-slate-700 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 appearance-none cursor-pointer w-full"
+            >
+              <option value="">{language === "pl" ? "Wszystkie" : "All"}</option>
+              {Array.from({ length: 10 }, (_, i) => (
+                <option key={i + 1} value={i + 1}>{i + 1}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Field of Study Input */}
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1 select-none">
+              {language === "pl" ? "Kierunek / Klasa:" : "Field of Study:"}
+            </label>
+            <input
+              type="text"
+              value={fieldFilter}
+              onChange={(e) => setFieldFilter(e.target.value)}
+              placeholder={language === "pl" ? "np. Informatyka" : "e.g. Computer Science"}
+              className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-950/40 px-3.5 py-2 font-semibold text-slate-700 dark:text-slate-200 outline-none hover:border-slate-300 dark:hover:border-slate-700 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 w-full"
+            />
+          </div>
+        </div>
+      )}
+
+      {(ownerFilter || indexFilter || yearFilter || semesterFilter || fieldFilter || dateFrom || dateTo) && (
+        <div className="flex flex-wrap gap-2 items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-2xl transition shadow-sm">
+          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1 select-none">
+            {language === "pl" ? "Aktywne filtry:" : "Active filters:"}
+          </span>
+          <div className="flex flex-wrap gap-2 items-center">
+            {/* Owner Filter Badge */}
+            {ownerFilter && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900/30 rounded-xl text-xs font-semibold shadow-sm">
+                <span className="opacity-75">{language === "pl" ? "Opiekun: " : "Owner: "}</span>
+                {ownerNameFilter || ownerFilter}
+                <button
+                  type="button"
+                  onClick={() => { setOwnerFilter(""); setOwnerNameFilter(""); }}
+                  className="hover:text-red-500 dark:hover:text-red-400 transition cursor-pointer font-bold pl-0.5"
+                  title={language === "pl" ? "Usuń filtr" : "Remove filter"}
+                >
+                  ✕
+                </button>
+              </span>
+            )}
+
+            {/* Student Index Badge */}
+            {indexFilter && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900/30 rounded-xl text-xs font-semibold shadow-sm">
+                <span className="opacity-75">{language === "pl" ? "Indeks: " : "Index: "}</span>
+                {indexFilter}
+                <button
+                  type="button"
+                  onClick={() => setIndexFilter("")}
+                  className="hover:text-red-500 dark:hover:text-red-400 transition cursor-pointer font-bold pl-0.5"
+                  title={language === "pl" ? "Usuń filtr" : "Remove filter"}
+                >
+                  ✕
+                </button>
+              </span>
+            )}
+
+            {/* Year of Study Badge */}
+            {yearFilter && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900/30 rounded-xl text-xs font-semibold shadow-sm">
+                <span className="opacity-75">{language === "pl" ? "Rok: " : "Year: "}</span>
+                {yearFilter}
+                <button
+                  type="button"
+                  onClick={() => setYearFilter("")}
+                  className="hover:text-red-500 dark:hover:text-red-400 transition cursor-pointer font-bold pl-0.5"
+                  title={language === "pl" ? "Usuń filtr" : "Remove filter"}
+                >
+                  ✕
+                </button>
+              </span>
+            )}
+
+            {/* Semester Badge */}
+            {semesterFilter && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900/30 rounded-xl text-xs font-semibold shadow-sm">
+                <span className="opacity-75">{language === "pl" ? "Semestr: " : "Semester: "}</span>
+                {semesterFilter}
+                <button
+                  type="button"
+                  onClick={() => setSemesterFilter("")}
+                  className="hover:text-red-500 dark:hover:text-red-400 transition cursor-pointer font-bold pl-0.5"
+                  title={language === "pl" ? "Usuń filtr" : "Remove filter"}
+                >
+                  ✕
+                </button>
+              </span>
+            )}
+
+            {/* Field of Study Badge */}
+            {fieldFilter && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900/30 rounded-xl text-xs font-semibold shadow-sm">
+                <span className="opacity-75">{language === "pl" ? "Kierunek: " : "Field: "}</span>
+                {fieldFilter}
+                <button
+                  type="button"
+                  onClick={() => setFieldFilter("")}
+                  className="hover:text-red-500 dark:hover:text-red-400 transition cursor-pointer font-bold pl-0.5"
+                  title={language === "pl" ? "Usuń filtr" : "Remove filter"}
+                >
+                  ✕
+                </button>
+              </span>
+            )}
+
+            {/* Date From Badge */}
+            {dateFrom && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900/30 rounded-xl text-xs font-semibold shadow-sm">
+                <span className="opacity-75">{language === "pl" ? "Od: " : "From: "}</span>
+                {dateFrom}
+                <button
+                  type="button"
+                  onClick={() => setDateFrom("")}
+                  className="hover:text-red-500 dark:hover:text-red-400 transition cursor-pointer font-bold pl-0.5"
+                  title={language === "pl" ? "Usuń filtr" : "Remove filter"}
+                >
+                  ✕
+                </button>
+              </span>
+            )}
+
+            {/* Date To Badge */}
+            {dateTo && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900/30 rounded-xl text-xs font-semibold shadow-sm">
+                <span className="opacity-75">{language === "pl" ? "Do: " : "To: "}</span>
+                {dateTo}
+                <button
+                  type="button"
+                  onClick={() => setDateTo("")}
+                  className="hover:text-red-500 dark:hover:text-red-400 transition cursor-pointer font-bold pl-0.5"
+                  title={language === "pl" ? "Usuń filtr" : "Remove filter"}
+                >
+                  ✕
+                </button>
+              </span>
+            )}
+
+            <button
+              type="button"
+              onClick={() => {
+                setEmailFilter("");
+                setStatusFilter("");
+                setOwnerFilter("");
+                setOwnerNameFilter("");
+                setIndexFilter("");
+                setYearFilter("");
+                setSemesterFilter("");
+                setFieldFilter("");
+                setDateFrom("");
+                setDateTo("");
+              }}
+              className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-955/20 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/30 rounded-xl text-xs font-bold transition cursor-pointer shadow-sm ml-2"
+            >
+              {language === "pl" ? "Wyczyść wszystkie" : "Clear all"}
+            </button>
+          </div>
+        </div>
+      )}
 
       {orders.length === 0 ? (
         <div className="text-center p-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-400 dark:text-slate-500 font-medium shadow-sm">
           <div className="text-4xl mb-3">📋</div>
-          <p>No orders found</p>
+          <p>{language === "pl" ? "Nie znaleziono zamówień" : "No orders found"}</p>
         </div>
       ) : (
         <>
-          <div className="flex flex-col gap-4 w-full">
+          <div className="flex flex-col gap-6 w-full">
             {orders
-              .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
               .map((order) => {
                 const itemsByOwner = order.items.reduce((acc, item) => {
                   const ownerId = item?.responsibleOwner?._id?.toString() || "unknown";
@@ -328,7 +659,7 @@ const Orders = () => {
                     acc[ownerId] = {
                       orderId: order._id, items: [],
                       customerInfo: order.customer,
-                      owner: item?.responsibleOwner || { name: "Unknown owner" },
+                      owner: item?.responsibleOwner || { name: language === "pl" ? "Nieznany opiekun" : "Unknown owner" },
                       ownerData, status: ownerData?.status,
                       dates: {
                         requestedStartDate: order.requestedStartDate,
@@ -345,19 +676,22 @@ const Orders = () => {
 
                 const totalItems = order.items.length;
                 const customer = order.customer;
-                const reqStart = new Date(order.requestedStartDate).toLocaleDateString("pl-PL");
-                const reqEnd = new Date(order.requestedEndDate).toLocaleDateString("pl-PL");
+                const reqStart = new Date(order.requestedStartDate).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" });
+                const reqEnd = new Date(order.requestedEndDate).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" });
 
                 return (
-                  <div key={order._id} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md transition overflow-hidden">
+                  <div key={order._id} className={`bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-805 border-l-4 ${getOrderBorderColor(order)} shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden`}>
                     {/* Order header */}
-                    <div className="flex flex-wrap items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+                    <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-slate-200/60 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/70">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">
+                          <span className="inline-flex items-center text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-955/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/35">
+                            {language === "pl" ? "Student" : "Student"}
+                          </span>
+                          <span className="text-sm font-black text-slate-850 dark:text-slate-100 truncate">
                             {customer?.firstName && customer?.lastName
                               ? `${customer.firstName} ${customer.lastName}`
-                              : customer?.email || "Unknown customer"}
+                              : customer?.email || (language === "pl" ? "Nieznany student" : "Unknown customer")}
                           </span>
                           {customer?.email && customer?.firstName && (
                             <span className="text-xs text-slate-500 dark:text-slate-400 truncate">{customer.email}</span>
@@ -365,13 +699,108 @@ const Orders = () => {
                         </div>
                         <div className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
                           📅 {reqStart} → {reqEnd}
-                          {customer?.fieldOfStudy && <span className="ml-2 text-slate-400">· {customer.fieldOfStudy}</span>}
+                          {customer?.fieldOfStudy && <span className="ml-2 text-slate-400 font-medium">· {customer.fieldOfStudy}</span>}
                         </div>
                       </div>
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                        {totalItems} item{totalItems !== 1 ? "s" : ""}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => toggleCustomer(order._id)}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer shadow-xs ${
+                            expandedCustomer[order._id]
+                              ? "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 border-indigo-200/60 dark:border-indigo-900/35"
+                              : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-350 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
+                          }`}
+                        >
+                          <User className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">
+                            {expandedCustomer[order._id] ? (language === "pl" ? "Ukryj dane" : "Hide info") : (language === "pl" ? "Pokaż dane" : "Show info")}
+                          </span>
+                        </button>
+                        <span className="inline-flex items-center px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800/80 text-slate-650 dark:text-slate-350 border border-slate-200/50 dark:border-slate-700/60">
+                          {totalItems} {language === "pl" ? (totalItems === 1 ? "przedmiot" : "przedmioty/ów") : `item${totalItems !== 1 ? "s" : ""}`}
+                        </span>
+                      </div>
                     </div>
+
+                    {/* Collapsible Customer Details */}
+                    {expandedCustomer[order._id] && (
+                      <div className="bg-slate-50/40 dark:bg-slate-950/20 border-b border-slate-100 dark:border-slate-800 p-4 transition-all duration-250">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                          {/* Student Index */}
+                          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-xl p-3 shadow-xs flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-500 dark:text-indigo-400">
+                              <Hash className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                {t("cart.studentIndex") || "Student Index"}
+                              </p>
+                              <p className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">
+                                {customer?.index || "—"}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Field of Study */}
+                          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-xl p-3 shadow-xs flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-955/40 text-blue-500 dark:text-blue-400">
+                              <BookOpen className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                {t("cart.fieldOfStudy") || "Field of Study"}
+                              </p>
+                              <p className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate" title={customer?.fieldOfStudy}>
+                                {customer?.fieldOfStudy || "—"}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Year / Semester */}
+                          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-xl p-3 shadow-xs flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-955/40 text-purple-500 dark:text-purple-400">
+                              <Calendar className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                {t("cart.yearOfStudy") || "Year"} / {t("cart.semester") || "Sem"}
+                              </p>
+                              <p className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">
+                                {customer?.yearOfStudy ? `${customer.yearOfStudy} yr` : "—"} / {customer?.semester ? `${customer.semester} sem` : "—"}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Phone */}
+                          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-xl p-3 shadow-xs flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-955/40 text-emerald-500 dark:text-emerald-400">
+                              <Phone className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                {t("cart.phoneNumber") || "Phone"}
+                              </p>
+                              <p className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">
+                                {customer?.phoneNumber || "—"}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Notes / Purpose */}
+                          {customer?.purpose && (
+                            <div className="col-span-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/85 rounded-xl p-3.5 shadow-xs">
+                              <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                                <Info className="w-3.5 h-3.5 text-indigo-500" />
+                                {t("cart.purpose") || "Purpose / Notes"}
+                              </p>
+                              <p className="text-xs sm:text-sm text-slate-650 dark:text-slate-350 italic bg-slate-50/50 dark:bg-slate-950/40 p-3 rounded-lg border border-slate-100 dark:border-slate-850 leading-relaxed break-words whitespace-normal">
+                                "{customer.purpose}"
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Order groups */}
                     <div className="p-3">
@@ -402,12 +831,30 @@ const Orders = () => {
               })}
           </div>
 
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPrev={() => fetchOrders(Math.max(currentPage - 1, 1), 20, emailFilter, statusFilter)}
-            onNext={() => fetchOrders(Math.min(currentPage + 1, totalPages), 20, emailFilter, statusFilter)}
-          />
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 border-t border-slate-200/60 dark:border-slate-800/80 pt-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500 font-semibold">{language === "pl" ? "Na stronie:" : "Items per page:"}</span>
+              <select
+                value={limit}
+                onChange={(e) => setLimit(parseInt(e.target.value))}
+                className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 px-3 py-1.5 font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 cursor-pointer shadow-sm hover:border-slate-300"
+              >
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPrev={() => fetchOrders(Math.max(currentPage - 1, 1), limit, emailFilter, statusFilter, ownerFilter, sortBy, sortOrder, dateFrom, dateTo)}
+              onNext={() => fetchOrders(Math.min(currentPage + 1, totalPages), limit, emailFilter, statusFilter, ownerFilter, sortBy, sortOrder, dateFrom, dateTo)}
+            />
+            <div className="text-xs text-slate-500 font-semibold">
+              {language === "pl" ? `Razem: ${totalOrders || 0}` : `Total: ${totalOrders || 0}`}
+            </div>
+          </div>
         </>
       )}
 

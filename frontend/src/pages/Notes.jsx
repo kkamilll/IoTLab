@@ -5,17 +5,18 @@ import { useToast } from "../context/ToastContext";
 import { useLanguage } from "../context/LanguageContext";
 import PageHeader from "../components/layout/PageHeader";
 import Btn from "../components/layout/Btn";
+import ConfirmModal from "../components/layout/ConfirmModal";
 
 const MAX_LENGTH = 500;
 const NOTES_PER_PAGE = 6;
 
 /* ── colour palette for note cards ─────────────────────────────── */
 const NOTE_PALETTES = [
-  { bg: "bg-amber-50 dark:bg-amber-950/30", border: "border-amber-200 dark:border-amber-800/50", dot: "bg-amber-400" },
-  { bg: "bg-sky-50 dark:bg-sky-950/30", border: "border-sky-200 dark:border-sky-800/50", dot: "bg-sky-400" },
-  { bg: "bg-emerald-50 dark:bg-emerald-950/30", border: "border-emerald-200 dark:border-emerald-800/50", dot: "bg-emerald-400" },
-  { bg: "bg-violet-50 dark:bg-violet-950/30", border: "border-violet-200 dark:border-violet-800/50", dot: "bg-violet-400" },
-  { bg: "bg-rose-50 dark:bg-rose-950/30", border: "border-rose-200 dark:border-rose-800/50", dot: "bg-rose-400" },
+  { bg: "bg-amber-50 dark:bg-amber-955/20", border: "border-amber-200 dark:border-amber-805/50", dot: "bg-amber-400" },
+  { bg: "bg-sky-50 dark:bg-sky-955/20", border: "border-sky-200 dark:border-sky-805/50", dot: "bg-sky-400" },
+  { bg: "bg-emerald-50 dark:bg-emerald-955/20", border: "border-emerald-200 dark:border-emerald-805/50", dot: "bg-emerald-400" },
+  { bg: "bg-violet-50 dark:bg-violet-955/20", border: "border-violet-200 dark:border-violet-805/50", dot: "bg-violet-400" },
+  { bg: "bg-rose-50 dark:bg-rose-955/20", border: "border-rose-200 dark:border-rose-805/50", dot: "bg-rose-400" },
 ];
 
 const fmt = (d) =>
@@ -99,7 +100,7 @@ const NoteCard = ({
               </>
             ) : (
               <>
-                <button onClick={() => onStartEditing(note)} title="Edytuj" className="p-2 rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-955/40 text-indigo-600 dark:text-indigo-400 transition cursor-pointer">
+                <button onClick={() => onStartEditing(note)} title="Edytuj" className="p-2 rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-955/40 text-indigo-650 dark:text-indigo-450 transition cursor-pointer">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                 </button>
                 <button onClick={() => onDelete(note._id)} title="Usuń" className="p-2 rounded-xl hover:bg-rose-100 dark:hover:bg-rose-955/40 text-rose-500 dark:text-rose-400 transition cursor-pointer">
@@ -124,6 +125,13 @@ const Notes = () => {
   const [editingImportant, setEditingImportant] = useState(false);
   const [authorFilter, setAuthorFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [confirmConfig, setConfirmConfig] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "danger",
+    onConfirm: null,
+  });
   const { token } = useAuth();
   const { showToast } = useToast();
   const { t, language } = useLanguage();
@@ -171,15 +179,23 @@ const Notes = () => {
     } finally { setLoading(false); }
   };
 
-  const deleteNote = async (id) => {
-    if (!window.confirm(t("notes.deleteConfirm"))) return;
-    try {
-      await apiClient.delete(`/notes/${id}`);
-      setNotes((prev) => prev.filter((n) => n._id !== id));
-      showToast(t("notes.deleteSuccess"), "success");
-    } catch (err) {
-      showToast(err.response?.data?.message || t("notes.deleteError"), "error");
-    }
+  const deleteNote = (id) => {
+    setConfirmConfig({
+      isOpen: true,
+      title: t("common.delete") || "Usuń",
+      message: t("notes.deleteConfirm") || "Usunąć tę notatkę?",
+      type: "danger",
+      onConfirm: async () => {
+        setConfirmConfig((prev) => ({ ...prev, isOpen: false }));
+        try {
+          await apiClient.delete(`/notes/${id}`);
+          setNotes((prev) => prev.filter((n) => n._id !== id));
+          showToast(t("notes.deleteSuccess"), "success");
+        } catch (err) {
+          showToast(err.response?.data?.message || t("notes.deleteError"), "error");
+        }
+      }
+    });
   };
 
   const saveEdit = async (id) => {
@@ -309,6 +325,14 @@ const Notes = () => {
         )}
 
       </div>
+      <ConfirmModal
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        type={confirmConfig.type}
+        onConfirm={confirmConfig.onConfirm}
+        onCancel={() => setConfirmConfig((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };
