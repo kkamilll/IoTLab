@@ -160,8 +160,8 @@ const Categories = () => {
       <FilterBar
         searchValue={searchQuery}
         onSearchChange={(e) => setSearchQuery(e.target.value)}
-        searchPlaceholder={t("categories.searchPlaceholder") || "Szukaj kategorii..."}
-        searchLabel={t("categories.searchLabel") || "Wyszukiwarka"}
+        searchPlaceholder={t("categories.searchPlaceholder", "Szukaj kategorii...")}
+        searchLabel={t("categories.searchLabel", "Filtruj")}
       />
 
       <div className="flex-1 overflow-y-auto pr-2 pb-10">

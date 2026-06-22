@@ -188,7 +188,9 @@
     "addSubcategory": "Add Subcategory",
     "noCategories": "No categories created yet.",
     "showDescription": "Show Description",
-    "hideDescription": "Hide Description"
+    "hideDescription": "Hide Description",
+    "searchPlaceholder": "Search categories...",
+    "searchLabel": "Filter"
   },
   "guest": {
     "title": "Browse Objects",

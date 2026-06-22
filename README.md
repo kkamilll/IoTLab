@@ -77,10 +77,18 @@ Start the Vite development server:
 npm run dev
 ```
 
-### 4. Database Seeding (Optional)
-To populate the database with initial admin users, categories, components, templates, and mock data:
+### 4. Database Initialization & Seeding
+
+**For a fresh production deployment (Empty Database):**
+If you want to deploy the application from scratch with only the mandatory Admin user (`admin@gmail.com` / `admin`) and default Email Templates:
 ```bash
-npm run seed
+npm run db:init
+```
+
+**For testing and development (Mock Data):**
+If you want to populate the database with mock categories, components, templates, and test users:
+```bash
+npm run db:seed
 ```
 
 ## 📄 License

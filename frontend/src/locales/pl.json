@@ -188,7 +188,9 @@
     "addSubcategory": "Dodaj podkategorię",
     "noCategories": "Nie utworzono jeszcze żadnych kategorii.",
     "showDescription": "Pokaż opis",
-    "hideDescription": "Ukryj opis"
+    "hideDescription": "Ukryj opis",
+    "searchPlaceholder": "Szukaj kategorii...",
+    "searchLabel": "Filtruj"
   },
   "guest": {
     "title": "Przeglądaj obiekty",

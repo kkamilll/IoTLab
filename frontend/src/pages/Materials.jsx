@@ -3,6 +3,7 @@ import apiClient from "../api/apiClient";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import ConfirmModal from "../components/layout/ConfirmModal";
+import { useLanguage } from "../context/LanguageContext";
 import {
   DndContext,
   closestCenter,
@@ -28,6 +29,7 @@ const SortableItem = ({
   setPreviewImage,
 }) => {
   const { showToast } = useToast();
+  const { t } = useLanguage();
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id: mat._id });
   const style = { transform: CSS.Transform.toString(transform), transition };
@@ -108,15 +110,15 @@ const SortableItem = ({
             await apiClient.patch(`/materials/${mat._id}`, {
               link: currentMaterial.link,
             });
-            showToast("Link updated!", "success");
+            showToast(t("materials.linkUpdated", "Link updated!"), "success");
           } catch (err) {
             console.error(err);
-            showToast("Error updating link", "error");
+            showToast(t("materials.errorLink", "Error updating link"), "error");
           }
         }}
         className="mt-3 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-2 rounded-xl shadow-sm transition"
       >
-        Save
+        {t("common.save", "Save")}
       </button>
     </div>
   );
@@ -124,6 +126,7 @@ const SortableItem = ({
 
 // Main Materials component
 const Materials = () => {
+  const { t } = useLanguage();
   const [materials, setMaterials] = useState([]);
   const [file, setFile] = useState(null);
   const [link, setLink] = useState("");
@@ -194,8 +197,8 @@ const Materials = () => {
   const deleteMaterial = (id) => {
     setConfirmConfig({
       isOpen: true,
-      title: "Usuń zdjęcie",
-      message: "Are you sure you want to delete this image?",
+      title: t("common.delete", "Usuń zdjęcie"),
+      message: t("components.deleteFileConfirm", "Are you sure you want to delete this image?"),
       type: "danger",
       onConfirm: async () => {
         setConfirmConfig((prev) => ({ ...prev, isOpen: false }));
@@ -245,10 +248,10 @@ const Materials = () => {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-slate-200 pb-6 gap-4 w-full">
           <div>
             <h1 className="text-2xl font-black text-slate-900">
-              📸 Your Slider
+              📸 {t("materials.title", "Your Slider")}
             </h1>
             <p className="text-slate-500 text-sm mt-0.5">
-              Upload and organize images for your laboratory slider.
+              {t("materials.subtitle", "Upload and organize images for your laboratory slider.")}
             </p>
           </div>
         </div>
@@ -260,7 +263,7 @@ const Materials = () => {
               htmlFor="image-upload"
               className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2"
             >
-              Upload Image
+              {t("materials.uploadImage", "Upload Image")}
             </label>
             <input
               id="image-upload"
@@ -297,7 +300,7 @@ const Materials = () => {
               htmlFor="material-link"
               className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2"
             >
-              Slider Link
+              {t("materials.sliderLink", "Slider Link")}
             </label>
             <input
               id="material-link"
@@ -317,7 +320,7 @@ const Materials = () => {
               disabled={loading}
               className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-2xl shadow-lg transition-transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold"
             >
-              {loading ? "Adding..." : "Add Image"}
+              {loading ? "..." : t("materials.addImage", "Add Image")}
             </button>
           </div>
         </div>
@@ -325,7 +328,7 @@ const Materials = () => {
         {/* Gallery */}
         {materials.length === 0 ? (
           <div className="text-center text-slate-400 py-16 select-none italic font-medium">
-            No images in slider.
+            {t("materials.noImages", "No images in slider.")}
           </div>
         ) : (
           <DndContext

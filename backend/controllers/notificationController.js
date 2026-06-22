@@ -73,6 +73,19 @@ export const markAllAsRead = asyncHandler(async (req, res) => {
   res.json({ success: true, message: "All notifications marked as read" });
 });
 
+// @desc    Delete all notifications for logged in user
+// @route   DELETE /api/notifications
+// @access  Private
+export const deleteAllNotifications = asyncHandler(async (req, res) => {
+  const query = req.user.role === "admin" && req.query.all === "true" 
+    ? {} 
+    : { user: req.user._id };
+
+  await Notification.deleteMany(query);
+
+  res.json({ success: true, message: "All notifications deleted" });
+});
+
 // Helper function to create a notification (used internally by other controllers)
 export const createNotification = async ({ user, type, title, message, relatedOrder = null, relatedProduct = null }) => {
   try {

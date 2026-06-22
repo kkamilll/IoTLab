@@ -15,13 +15,25 @@ export const LanguageProvider = ({ children }) => {
     localStorage.setItem("language", language);
   }, [language]);
 
-  const t = (key, params = {}) => {
+  const t = (key, options = {}) => {
+    let fallback = key;
+    let params = {};
+    if (typeof options === "string") {
+      fallback = options;
+    } else if (typeof options === "object" && options !== null) {
+      params = options;
+      if (options.defaultValue) fallback = options.defaultValue;
+    }
+
     const keys = key.split(".");
     let value = translations[language];
     for (const k of keys) {
-      if (value === undefined || value === null) return key;
+      if (value === undefined || value === null) return fallback;
       value = value[k];
     }
+    
+    if (value === undefined || value === null) return fallback;
+
     if (typeof value === "string") {
       let str = value;
       Object.entries(params).forEach(([paramKey, paramVal]) => {
@@ -29,7 +41,7 @@ export const LanguageProvider = ({ children }) => {
       });
       return str;
     }
-    return value || key;
+    return value || fallback;
   };
 
   return (

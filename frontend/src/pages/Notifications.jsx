@@ -66,6 +66,20 @@ const Notifications = () => {
     }
   };
 
+  const deleteAll = async () => {
+    if (!window.confirm("Czy na pewno chcesz usunąć całą historię?")) return;
+    try {
+      await apiClient.delete(`/notifications`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setNotifications([]);
+      setTotalPages(1);
+      addToast({ title: "Usunięto całą historię", type: "success" });
+    } catch (err) {
+      addToast({ title: "Błąd podczas usuwania historii", type: "error" });
+    }
+  };
+
   const getTypeStyle = (type) => {
     switch (type) {
       case "ORDER_CREATED":
@@ -83,10 +97,15 @@ const Notifications = () => {
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         <PageHeader title="Historia działań">
-          <Btn onClick={markAllAsRead} variant="outline" className="flex items-center gap-2">
-            <Check size={16} />
-            Oznacz wszystkie jako przeczytane
-          </Btn>
+          <div className="flex gap-2">
+            <Btn onClick={deleteAll} variant="danger" className="flex items-center gap-2">
+              🗑️ Usuń historię
+            </Btn>
+            <Btn onClick={markAllAsRead} variant="outline" className="flex items-center gap-2">
+              <Check size={16} />
+              Oznacz jako przeczytane
+            </Btn>
+          </div>
         </PageHeader>
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
