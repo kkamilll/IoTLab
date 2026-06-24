@@ -1,6 +1,20 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
+export const savePDF = (doc, filename) => {
+  const blob = doc.output("blob");
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  setTimeout(() => {
+    link.remove();
+    URL.revokeObjectURL(url);
+  }, 200);
+};
+
 const fetchFontAsBase64 = async (url) => {
   const response = await fetch(url);
   const blob = await response.blob();
@@ -106,7 +120,7 @@ export const generateProductsPDF = async (filteredProducts, allColumns, hiddenCo
     }
   });
 
-  doc.save(`IoTLab_Inventory_${new Date().toISOString().slice(0, 10)}.pdf`);
+  savePDF(doc, `IoTLab_Inventory_${new Date().toISOString().slice(0, 10)}.pdf`);
 };
 
 export const generateOrdersReportPDF = async (orders, t, language) => {
@@ -194,5 +208,5 @@ export const generateOrdersReportPDF = async (orders, t, language) => {
     }
   });
 
-  doc.save(`IoTLab_Orders_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
+  savePDF(doc, `IoTLab_Orders_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
 };

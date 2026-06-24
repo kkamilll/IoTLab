@@ -7,6 +7,37 @@ import { useTheme } from '../context/ThemeContext';
 import MainSlider from '../components/layout/MainSlider';
 import Btn from '../components/layout/Btn';
 
+/** Quick "Track your order" input displayed in the hero section for guests */
+const TrackOrderBanner = ({ language, navigate }) => {
+  const [uuid, setUuid] = useState("");
+  const handleGo = (e) => {
+    e.preventDefault();
+    const trimmed = uuid.trim();
+    if (!trimmed) return;
+    navigate(`/orderPreview/${trimmed}`);
+  };
+  return (
+    <form
+      onSubmit={handleGo}
+      className="mt-8 flex flex-col sm:flex-row gap-2 justify-center items-center max-w-md mx-auto w-full"
+    >
+      <input
+        type="text"
+        value={uuid}
+        onChange={(e) => setUuid(e.target.value)}
+        placeholder={language === "pl" ? "🔍 Wklej UUID zamówienia…" : "🔍 Paste order UUID…"}
+        className="flex-1 w-full rounded-2xl border border-slate-300 dark:border-slate-700 bg-white/80 dark:bg-slate-900/80 text-slate-900 dark:text-slate-100 px-4 py-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400 transition backdrop-blur-sm"
+      />
+      <button
+        type="submit"
+        className="rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-2.5 text-xs transition cursor-pointer shadow-md whitespace-nowrap"
+      >
+        {language === "pl" ? "Śledź zamówienie" : "Track Order"}
+      </button>
+    </form>
+  );
+};
+
 const WelcomePage = () => {
   const navigate = useNavigate();
   const { token, user, logout } = useAuth();
@@ -240,6 +271,11 @@ const WelcomePage = () => {
                 {t("nav.orderAsGuest")}
               </Btn>
             </div>
+          )}
+
+          {/* Track Order quick-access */}
+          {!user && (
+            <TrackOrderBanner language={language} navigate={navigate} />
           )}
         </div>
       </section>

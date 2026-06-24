@@ -5,6 +5,37 @@ import { Folder, FolderOpen, Info, ArrowLeft, ChevronRight, LayoutGrid, Search, 
 import { buildTree } from "../utils/categoryUtils";
 import { useLanguage } from "../context/LanguageContext";
 
+/** Quick "Track your order" input bar for guest pages */
+const TrackOrderBar = ({ language, navigate }) => {
+  const [uuid, setUuid] = useState("");
+  const handleGo = (e) => {
+    e.preventDefault();
+    const trimmed = uuid.trim();
+    if (!trimmed) return;
+    navigate(`/orderPreview/${trimmed}`);
+  };
+  return (
+    <form
+      onSubmit={handleGo}
+      className="flex flex-col sm:flex-row gap-2 items-center max-w-md w-full z-10"
+    >
+      <input
+        type="text"
+        value={uuid}
+        onChange={(e) => setUuid(e.target.value)}
+        placeholder={language === "pl" ? "🔍 UUID zamówienia — śledź status..." : "🔍 Order UUID — track your order..."}
+        className="flex-1 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 px-3.5 py-3 text-xs font-semibold text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 hover:border-slate-350 dark:hover:border-slate-700 transition shadow-sm"
+      />
+      <button
+        type="submit"
+        className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-3 text-xs transition cursor-pointer shadow-sm whitespace-nowrap"
+      >
+        {language === "pl" ? "Śledź zamówienie" : "Track Order"}
+      </button>
+    </form>
+  );
+};
+
 const MainGuest = () => {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
@@ -119,6 +150,9 @@ const MainGuest = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+
+          {/* Track Order quick-access */}
+          <TrackOrderBar language={language} navigate={navigate} />
         </div>
 
         {/* All Categories Banner */}

@@ -478,9 +478,9 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div className="h-[385px] flex items-center justify-center">
+          <div className="h-[385px] relative">
             {categoryData.length === 0 ? (
-              <p className="text-sm text-slate-400 font-medium">
+              <p className="text-sm text-slate-400 font-medium absolute inset-0 flex items-center justify-center">
                 No data recorded for this status.
               </p>
             ) : (
@@ -578,9 +578,9 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="h-[385px] flex items-center justify-center">
+        <div className="h-[385px] relative">
           {topProductsData.length === 0 ? (
-            <p className="text-sm text-slate-400 font-medium">
+            <p className="text-sm text-slate-400 font-medium absolute inset-0 flex items-center justify-center">
               No top products recorded for this status.
             </p>
           ) : (

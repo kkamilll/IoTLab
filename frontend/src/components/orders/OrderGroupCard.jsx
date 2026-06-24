@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import Btn from "../layout/Btn";
+import ConfirmDialog from "../layout/ConfirmDialog";
 import { useLanguage } from "../../context/LanguageContext";
 import {
   User,
@@ -142,6 +143,23 @@ const OrderGroupCard = ({
   const [isCollapsed, setIsCollapsed] = useState(true);
   const { t, language } = useLanguage();
 
+  // Confirmation dialog state
+  const [confirmDialog, setConfirmDialog] = useState({
+    open: false,
+    title: "",
+    message: "",
+    variant: "danger",
+    onConfirm: null,
+  });
+
+  const openConfirm = ({ title, message, variant = "danger", onConfirm }) => {
+    setConfirmDialog({ open: true, title, message, variant, onConfirm });
+  };
+
+  const closeConfirm = () => {
+    setConfirmDialog((prev) => ({ ...prev, open: false, onConfirm: null }));
+  };
+
   const hasActions =
     !!group.status &&
     (canProcessOrder(group.status) ||
@@ -278,22 +296,74 @@ const OrderGroupCard = ({
                   </Btn>
                 )}
                 {canRejectOrder(group.status) && (
-                  <Btn onClick={() => handleRejectOrder(group)} variant="danger-outline" className="flex-1 min-w-[120px] sm:flex-initial">
+                  <Btn
+                    onClick={() =>
+                      openConfirm({
+                        title: language === "pl" ? "Odrzuć zamówienie?" : "Reject order?",
+                        message: language === "pl"
+                          ? "Czy na pewno chcesz odrzucić to zamówienie? Tej operacji nie można cofnąć."
+                          : "Are you sure you want to reject this order? This action cannot be undone.",
+                        variant: "danger",
+                        onConfirm: () => { closeConfirm(); handleRejectOrder(group); },
+                      })
+                    }
+                    variant="danger-outline"
+                    className="flex-1 min-w-[120px] sm:flex-initial"
+                  >
                     {language === "pl" ? "Odrzuć" : "Reject"}
                   </Btn>
                 )}
                 {canPrepareOrder(group.status) && (
-                  <Btn onClick={() => handlePrepareOrder(group)} variant="primary" className="flex-1 min-w-[120px] sm:flex-initial">
+                  <Btn
+                    onClick={() =>
+                      openConfirm({
+                        title: language === "pl" ? "Przygotuj zamówienie?" : "Prepare order?",
+                        message: language === "pl"
+                          ? "Czy na pewno chcesz oznaczyć to zamówienie jako przygotowane?"
+                          : "Are you sure you want to mark this order as prepared?",
+                        variant: "info",
+                        onConfirm: () => { closeConfirm(); handlePrepareOrder(group); },
+                      })
+                    }
+                    variant="primary"
+                    className="flex-1 min-w-[120px] sm:flex-initial"
+                  >
                     {language === "pl" ? "Przygotuj" : "Prepare"}
                   </Btn>
                 )}
                 {canRentOrder(group.status) && (
-                  <Btn onClick={() => handleRentOrder(group)} variant="success" className="flex-1 min-w-[120px] sm:flex-initial">
+                  <Btn
+                    onClick={() =>
+                      openConfirm({
+                        title: language === "pl" ? "Wypożycz sprzęt?" : "Rent equipment?",
+                        message: language === "pl"
+                          ? "Czy na pewno chcesz wydać sprzęt i zmienić status na 'Wypożyczone'?"
+                          : "Are you sure you want to hand out the equipment and set status to 'Rented'?",
+                        variant: "warning",
+                        onConfirm: () => { closeConfirm(); handleRentOrder(group); },
+                      })
+                    }
+                    variant="success"
+                    className="flex-1 min-w-[120px] sm:flex-initial"
+                  >
                     {language === "pl" ? "Wypożycz" : "Rent"}
                   </Btn>
                 )}
                 {canReturnOrder(group.status) && (
-                  <Btn onClick={() => handleReturnOrder(group)} variant="sky" className="flex-1 min-w-[120px] sm:flex-initial">
+                  <Btn
+                    onClick={() =>
+                      openConfirm({
+                        title: language === "pl" ? "Potwierdź zwrot?" : "Confirm return?",
+                        message: language === "pl"
+                          ? "Czy na pewno chcesz potwierdzić zwrot sprzętu?"
+                          : "Are you sure you want to confirm the equipment return?",
+                        variant: "info",
+                        onConfirm: () => { closeConfirm(); handleReturnOrder(group); },
+                      })
+                    }
+                    variant="sky"
+                    className="flex-1 min-w-[120px] sm:flex-initial"
+                  >
                     {language === "pl" ? "Zwróć" : "Return"}
                   </Btn>
                 )}
@@ -308,6 +378,16 @@ const OrderGroupCard = ({
           )}
         </div>
       )}
+
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        open={confirmDialog.open}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        variant={confirmDialog.variant}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={closeConfirm}
+      />
     </div>
   );
 };

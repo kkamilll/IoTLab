@@ -3,17 +3,23 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import apiClient from "../api/apiClient";
 import { useLanguage } from "../context/LanguageContext";
+import ConfirmDialog from "../components/layout/ConfirmDialog";
+import { CheckCircle, XCircle, Clock, Info } from "lucide-react";
 
 export default function OrderPreview() {
   const { orderUUID } = useParams();
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const [order, setOrder] = useState(null);
   const [isAuthed, setIsAuthed] = useState(false);
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: "", message: "", variant: "info", onConfirm: null });
+
+  const openConfirm = (opts) => setConfirmDialog({ open: true, ...opts });
+  const closeConfirm = () => setConfirmDialog((p) => ({ ...p, open: false, onConfirm: null }));
 
   const fetchOrder = async (secret) => {
     try {
@@ -153,17 +159,31 @@ export default function OrderPreview() {
     return acc;
   }, {});
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "pending":
-        return "text-yellow-600";
-      case "approved":
-        return "text-green-600";
-      case "rejected":
-        return "text-red-600";
-      default:
-        return "text-slate-700";
-    }
+  const STATUS_COLORS = {
+    pending:  "text-yellow-700 dark:text-yellow-300 bg-yellow-50 dark:bg-yellow-950/30 border-yellow-200/50 dark:border-yellow-900/25",
+    approved: "text-lime-700 dark:text-lime-300 bg-lime-50 dark:bg-lime-950/20 border-lime-200/50 dark:border-lime-900/25",
+    prepared: "text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200/50 dark:border-indigo-900/30",
+    rented:   "text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-950/20 border-green-200/50 dark:border-green-900/25",
+    returned: "text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/20 border-blue-200/50 dark:border-blue-900/25",
+    rejected: "text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/40 border-gray-200/50 dark:border-gray-700/50",
+    changed:  "text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-950/40 border-red-200/50 dark:border-red-900/30",
+  };
+
+  const StatusBadge = ({ status }) => {
+    const getIcon = (s) => {
+      switch (s) {
+        case "pending": return <Clock className="w-3.5 h-3.5 flex-shrink-0" />;
+        case "approved": case "rented": case "returned": return <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" />;
+        case "rejected": return <XCircle className="w-3.5 h-3.5 flex-shrink-0" />;
+        default: return <Info className="w-3.5 h-3.5 flex-shrink-0" />;
+      }
+    };
+    return (
+      <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border ${STATUS_COLORS[status] ?? "text-slate-700 bg-slate-50 border-slate-200"}`}>
+        {getIcon(status)}
+        <span>{t(`statuses.${status}`) || status}</span>
+      </span>
+    );
   };
 
   const handleOwnerAction = async (ownerGroup, approval) => {
@@ -253,12 +273,9 @@ export default function OrderPreview() {
                   <h2 className="text-xl font-bold text-slate-900 dark:text-white">
                     {group.owner.name}
                   </h2>
-                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                    {t("orderPreview.groupStatus")}:{" "}
-                    <span className={getStatusColor(group.status)}>
-                      {group.status}
-                    </span>
-                  </p>
+                  <div className="mt-1">
+                    <StatusBadge status={group.status} />
+                  </div>
                 </div>
                 <div className="rounded-full bg-slate-100 dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
                   {group.items.length} {group.items.length !== 1 ? t("cart.items") : t("cart.item")}
@@ -321,13 +338,31 @@ export default function OrderPreview() {
                 group.ownerData.customerApproval == null && (
                   <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                     <button
-                      onClick={() => handleOwnerAction(group, true)}
+                      onClick={() =>
+                        openConfirm({
+                          title: language === "pl" ? "Zaakceptuj zamówienie?" : "Approve order?",
+                          message: language === "pl"
+                            ? "Czy na pewno chcesz zaakceptować to zamówienie? Sprzęt zostanie dla Ciebie przygotowany."
+                            : "Are you sure you want to approve this order? The equipment will be prepared for you.",
+                          variant: "info",
+                          onConfirm: () => { closeConfirm(); handleOwnerAction(group, true); },
+                        })
+                      }
                       className="w-full rounded-2xl bg-green-600 px-5 py-3 text-sm font-semibold text-white hover:bg-green-700 transition cursor-pointer"
                     >
                       {t("orderPreview.approve")}
                     </button>
                     <button
-                      onClick={() => handleOwnerAction(group, false)}
+                      onClick={() =>
+                        openConfirm({
+                          title: language === "pl" ? "Odrzuć zamówienie?" : "Reject order?",
+                          message: language === "pl"
+                            ? "Czy na pewno chcesz odrzucić to zamówienie?"
+                            : "Are you sure you want to reject this order?",
+                          variant: "danger",
+                          onConfirm: () => { closeConfirm(); handleOwnerAction(group, false); },
+                        })
+                      }
                       className="w-full rounded-2xl bg-red-600 px-5 py-3 text-sm font-semibold text-white hover:bg-red-700 transition cursor-pointer"
                     >
                       {t("orderPreview.reject")}
@@ -338,6 +373,16 @@ export default function OrderPreview() {
           ))}
         </div>
       </div>
+
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        open={confirmDialog.open}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        variant={confirmDialog.variant}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={closeConfirm}
+      />
     </div>
   );
 }

@@ -45,25 +45,13 @@ const CollectionFiles = () => {
   };
 
   // Download file
-  const handleDownload = async (fileId, fileName) => {
-    try {
-      const res = await apiClient.get(
-        `/files/component/${collectionId}/${fileId}`,
-        { responseType: "blob" }
-      );
-
-      const downloadURL = URL.createObjectURL(res.data);
-      const link = document.createElement("a");
-      link.href = downloadURL;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(downloadURL);
-    } catch (err) {
-      console.error("Download failed:", err);
-      alert("Failed to download file.");
-    }
+  const handleDownload = (fileId) => {
+    const baseURL = apiClient.defaults.baseURL || "";
+    const link = document.createElement("a");
+    link.href = `${baseURL}/files/component/${collectionId}/${fileId}`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
   };
 
   if (loading) return <div className="text-center mt-10 text-slate-500 font-medium">{t("guest.loading") || "Loading..."}</div>;
@@ -108,7 +96,7 @@ const CollectionFiles = () => {
                     📄 {file.name}
                   </button>
                   <button
-                    onClick={() => handleDownload(file._id, file.originalName || file.name)}
+                    onClick={() => handleDownload(file._id)}
                     className="text-emerald-600 font-semibold hover:text-emerald-700 transition"
                   >
                     {t("components.download")}

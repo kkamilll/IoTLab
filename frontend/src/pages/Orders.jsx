@@ -15,7 +15,7 @@ import { User, Info, Calendar, Hash, Phone, BookOpen } from "lucide-react";
 import { rentalAgreementTemplate } from "../templates/rentalAgreementTemplate";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
-import { generateOrdersReportPDF } from "../utils/pdfGenerator";
+import { generateOrdersReportPDF, savePDF } from "../utils/pdfGenerator";
 
 const getOrderBorderColor = (order) => {
   const statuses = order.ownersData?.map(od => od.status) || [];
@@ -247,7 +247,7 @@ const Orders = () => {
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
     pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-    pdf.save(`RentalAgreement_${owner?.name ?? "Unknown"}.pdf`);
+    savePDF(pdf, `RentalAgreement_${owner?.name ?? "Unknown"}.pdf`);
     document.body.removeChild(container);
   };
 

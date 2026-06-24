@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { Calendar, User, AlertTriangle, Minus, Plus, Trash2, ArrowRight, Check } from "lucide-react";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import TextField from "@mui/material/TextField";
+import ConfirmDialog from "../layout/ConfirmDialog";
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3500";
 
 const isValidDate = (date) => date instanceof Date && !isNaN(date.getTime());
@@ -25,6 +26,15 @@ const CartStepItems = ({
   totalOwners,
   showToast,
 }) => {
+  const [removeConfirm, setRemoveConfirm] = useState({ open: false, productId: null, productName: "" });
+
+  const askRemove = (productId, productName) => setRemoveConfirm({ open: true, productId, productName });
+  const cancelRemove = () => setRemoveConfirm({ open: false, productId: null, productName: "" });
+  const confirmRemove = () => {
+    if (removeConfirm.productId) handleRemove(removeConfirm.productId);
+    cancelRemove();
+  };
+
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_360px] items-start">
       {/* LEFT – Dates Selection & Cart Items */}
@@ -212,7 +222,7 @@ const CartStepItems = ({
                         {/* Remove Button */}
                         <button
                           type="button"
-                          onClick={() => handleRemove(item._id)}
+                          onClick={() => askRemove(item._id, item.name)}
                           className="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 border border-rose-100/30 dark:border-rose-900/30 text-rose-650 dark:text-rose-400 transition cursor-pointer"
                           title={t("cart.remove")}
                         >
@@ -301,6 +311,20 @@ const CartStepItems = ({
           )}
         </div>
       </div>
+
+      {/* Remove item confirmation dialog */}
+      <ConfirmDialog
+        open={removeConfirm.open}
+        title={language === "pl" ? "Usuń z koszyka?" : "Remove from cart?"}
+        message={
+          language === "pl"
+            ? `Czy na pewno chcesz usunąć "${removeConfirm.productName}" z koszyka?`
+            : `Are you sure you want to remove "${removeConfirm.productName}" from the cart?`
+        }
+        variant="danger"
+        onConfirm={confirmRemove}
+        onCancel={cancelRemove}
+      />
     </div>
   );
 };

@@ -221,7 +221,8 @@ const CartPage = () => {
       showToast(t("cart.orderSuccessAlert"), "success");
       setCart([]);
       localStorage.removeItem("cart");
-      navigate("/");
+      // Navigate back to guest products so user can place more orders
+      navigate("/guest-products");
     } catch (error) {
       console.error(error);
       showToast(error.response?.data?.message || error.message || "Order error", "error");
