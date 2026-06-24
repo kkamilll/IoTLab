@@ -352,7 +352,7 @@ export const generateMockData = async () => {
   const templateNewOrder = new Template({
     name: "newOrder",
     subject: "✅ Twoje zamówienie zostało złożone – IoTLab",
-    body: \`<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#fff;border-radius:12px;border:1px solid #e2e8f0;">
+    body: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#fff;border-radius:12px;border:1px solid #e2e8f0;">
 <div style="text-align:center;margin-bottom:24px;">
   <h1 style="color:#4f46e5;font-size:24px;margin:0;">🔬 IoTLab</h1>
   <p style="color:#64748b;font-size:12px;margin:4px 0 0;">Laboratorium Sprzętu Elektronicznego</p>
@@ -374,14 +374,14 @@ export const generateMockData = async () => {
 </div>
 <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;">
 <p style="color:#94a3b8;font-size:11px;text-align:center;">IoTLab · Politechnika · ul. Akademicka 1<br>Ta wiadomość została wygenerowana automatycznie – prosimy nie odpowiadać.</p>
-</div>\`,
+</div>`,
     isDefault: true,
   });
 
   const templateUpdateOrder = new Template({
     name: "updateOrder",
     subject: "🔄 Status Twojego zamówienia został zaktualizowany – IoTLab",
-    body: \`<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#fff;border-radius:12px;border:1px solid #e2e8f0;">
+    body: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#fff;border-radius:12px;border:1px solid #e2e8f0;">
 <div style="text-align:center;margin-bottom:24px;">
   <h1 style="color:#4f46e5;font-size:24px;margin:0;">🔬 IoTLab</h1>
   <p style="color:#64748b;font-size:12px;margin:4px 0 0;">Laboratorium Sprzętu Elektronicznego</p>
@@ -395,14 +395,14 @@ export const generateMockData = async () => {
 <p style="color:#475569;line-height:1.6;">W razie pytań skontaktuj się z opiekunem laboratorium lub odwiedź panel zamówienia.</p>
 <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;">
 <p style="color:#94a3b8;font-size:11px;text-align:center;">IoTLab · Politechnika · ul. Akademicka 1<br>Ta wiadomość została wygenerowana automatycznie – prosimy nie odpowiadać.</p>
-</div>\`,
+</div>`,
     isDefault: true,
   });
 
   const templateResetPassword = new Template({
     name: "resetPassword",
     subject: "🔐 Kod weryfikacyjny do resetowania hasła – IoTLab",
-    body: \`<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#fff;border-radius:12px;border:1px solid #e2e8f0;">
+    body: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#fff;border-radius:12px;border:1px solid #e2e8f0;">
 <div style="text-align:center;margin-bottom:24px;">
   <h1 style="color:#4f46e5;font-size:24px;margin:0;">🔬 IoTLab</h1>
   <p style="color:#64748b;font-size:12px;margin:4px 0 0;">Laboratorium Sprzętu Elektronicznego</p>
@@ -420,7 +420,7 @@ export const generateMockData = async () => {
 <p style="color:#475569;line-height:1.6;">Jeśli nie prosiłeś o reset hasła, zignoruj tę wiadomość – Twoje konto jest bezpieczne.</p>
 <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;">
 <p style="color:#94a3b8;font-size:11px;text-align:center;">IoTLab · Politechnika · ul. Akademicka 1<br>Ta wiadomość została wygenerowana automatycznie – prosimy nie odpowiadać.</p>
-</div>\`,
+</div>`,
     isDefault: true,
   });
 

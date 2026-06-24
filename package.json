@@ -4,6 +4,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon backend/server.js",
+    "db:start": "powershell -Command \"& 'C:\\Program Files\\MongoDB\\Server\\8.3\\bin\\mongod.exe' --dbpath .mongo_data\"",
     "db:seed": "node backend/seed.js",
     "db:init": "node backend/init.js"
   },
