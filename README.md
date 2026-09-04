@@ -99,30 +99,19 @@ It provides:
 
 ## 🔄 Order Lifecycle
 
-```mermaid
-flowchart TD
-    A([🛒 Student submits cart order]) --> B[Status: Pending]
-    B -->|UUID & PIN generated| C[Automated email sent to student]
-    B -->|In-app alert| D{Lecturer Review}
-    
-    D -->|Reject request| E[Status: Rejected]
-    D -->|Adjust dates / Approve| F[Status: Approved]
-    
-    F --> G[Status: Prepared]
-    G --> H[Sign Rental PDF & Hand out items]
-    H --> I[Status: Rented]
-    
-    I --> J[Return hardware & inspect condition]
-    J --> K([Status: Returned])
-
-    style A fill:#4f46e5,stroke:#312e81,color:#fff
-    style B fill:#f59e0b,stroke:#b45309,color:#fff
-    style F fill:#3b82f6,stroke:#1d4ed8,color:#fff
-    style G fill:#06b6d4,stroke:#0e7490,color:#fff
-    style I fill:#8b5cf6,stroke:#6d28d9,color:#fff
-    style K fill:#10b981,stroke:#047857,color:#fff
-    style E fill:#ef4444,stroke:#b91c1c,color:#fff
+```text
+[🛒 Cart Request] ➔ [⏳ Pending] ➔ [✅ Approved] ➔ [📦 Prepared] ➔ [🤝 Rented] ➔ [🔄 Returned]
+                                    ↳ [❌ Rejected]
 ```
+
+| Status | Actor | Description |
+|:---|:---|:---|
+| **Pending** | Student / System | Reservation placed via cart; automated email sent with order UUID and secret PIN. |
+| **Approved** | Lecturer | Supervisor reviews equipment availability and accepts or adjusts dates. |
+| **Prepared** | Lecturer / Lab Staff | Hardware items are verified, gathered, and marked ready for pickup. |
+| **Rented** | Student & Lecturer | Rental Agreement PDF is signed and equipment is officially checked out. |
+| **Returned** | Lecturer | Hardware is inspected, returned to inventory, and stock counts restore automatically. |
+| **Rejected** | Lecturer | Request declined if components are unavailable or conflicting with lab schedules. |
 
 ---
 
