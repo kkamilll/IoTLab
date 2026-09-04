@@ -8,8 +8,7 @@
 [![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose_8-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
 [![License](https://img.shields.io/badge/License-PUT_Educational-005696?style=for-the-badge)](https://put.poznan.pl/)
 
-> 🎓 **Engineering Thesis — Poznań University of Technology (PUT / PP)**  
-> Laboratory inventory and equipment reservation system developed as an Engineering Thesis at Poznań University of Technology (PP). Enables students to request IoT hardware without registration, while providing staff with inventory tracking, timeline scheduling, and automated PDF rental agreements.
+> 🎓 **Laboratory inventory and equipment reservation system (Engineering Thesis at Poznań University of Technology).**
 
 ---
 
