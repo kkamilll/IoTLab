@@ -1,0 +1,38 @@
+{
+  "name": "iotlab",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "predev": "powershell -Command \"Start-Process -FilePath 'C:\\Program Files\\MongoDB\\Server\\8.3\\bin\\mongod.exe' -ArgumentList '--dbpath','.mongo_data','--logpath','.mongo_data/mongod.log','--logappend' -WindowStyle Hidden; Start-Sleep -Seconds 2\"",
+    "dev": "nodemon backend/server.js",
+    "db:start": "powershell -Command \"& 'C:\\Program Files\\MongoDB\\Server\\8.3\\bin\\mongod.exe' --dbpath .mongo_data\"",
+    "db:seed": "node backend/seed.js",
+    "db:init": "node backend/init.js"
+  },
+  "type": "module",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
+    "express": "^5.1.0",
+    "express-session": "^1.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "lucide-react": "^0.544.0",
+    "mongoose": "^8.18.0",
+    "morgan": "^1.10.1",
+    "multer": "^2.0.2",
+    "node-cron": "^4.4.1",
+    "nodemailer": "^7.0.6",
+    "react-router-dom": "^7.7.1",
+    "recharts": "^3.1.2",
+    "svg-captcha": "^1.4.0",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
