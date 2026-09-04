@@ -8,14 +8,14 @@
 [![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose_8-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
 [![License](https://img.shields.io/badge/License-PUT_Educational-005696?style=for-the-badge)](https://put.poznan.pl/)
 
-> 🎓 **Praca Inżynierska / Engineering Thesis — Politechnika Poznańska (PP)**  
-> System inwentaryzacji i rezerwacji sprzętu laboratoryjnego zrealizowany jako praca inżynierska na Politechnice Poznańskiej (PP). Umożliwia studentom zamawianie modułów IoT bez konta, a pracownikom zarządzanie magazynem, kalendarzem i umowami PDF.
+> 🎓 **Engineering Thesis — Poznań University of Technology (PUT / PP)**  
+> Laboratory inventory and equipment reservation system developed as an Engineering Thesis at Poznań University of Technology (PP). Enables students to request IoT hardware without registration, while providing staff with inventory tracking, timeline scheduling, and automated PDF rental agreements.
 
 ---
 
 ## 📑 Table of Contents
 
-- [Overview / O projekcie](#overview--o-projekcie)
+- [Overview](#-overview)
 - [Key Features](#-key-features)
 - [Role-Based Access Control](#-role-based-access-control)
 - [Order Lifecycle](#-order-lifecycle)
@@ -35,9 +35,9 @@
 
 ---
 
-## 📖 Overview / O projekcie
+## 📖 Overview
 
-System inwentaryzacji i rezerwacji sprzętu laboratoryjnego zrealizowany jako praca inżynierska na Politechnice Poznańskiej (PP). Umożliwia studentom zamawianie aparatury i modułów IoT bez rejestracji konta, a pracownikom zarządzanie magazynem, kalendarzem rezerwacji oraz automatyczne generowanie umów wypożyczeń w formacie PDF.
+Laboratory inventory and equipment reservation system developed as an Engineering Thesis at Poznań University of Technology (PP). Enables students to request IoT hardware without registration, while providing staff with inventory tracking, timeline scheduling, and automated PDF rental agreements.
 
 ---
 
@@ -339,5 +339,5 @@ After running `npm run db:seed`, the following accounts are ready to use:
 
 ## 📄 License
 
-Developed for educational and laboratory purposes at **Poznań University of Technology** (*Politechnika Poznańska*).  
+Developed as an Engineering Thesis for educational and laboratory purposes at **Poznań University of Technology** (*Politechnika Poznańska — PP*).  
 All rights reserved.
