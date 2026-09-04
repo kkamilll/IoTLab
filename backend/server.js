@@ -56,8 +56,8 @@ app.use(
   }),
 );
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 // handle wrong JSON requests
 app.use((err, req, res, next) => {
@@ -92,8 +92,18 @@ app.use((req, res) => {
 });
 
 const PORT = process.env.PORT || 3500;
-app.listen(PORT, "0.0.0.0", async () => {
-  await connectDB();
-  console.log(`Server running on port ${PORT}`);
-  startCronJobs();
-});
+
+// Connect to MongoDB FIRST, then start the HTTP server.
+// This prevents "buffering timed out" errors caused by requests arriving
+// before the Mongoose connection is established.
+connectDB()
+  .then(() => {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on port ${PORT}`);
+      startCronJobs();
+    });
+  })
+  .catch((err) => {
+    console.error("Failed to connect to MongoDB, server not started:", err.message);
+    process.exit(1);
+  });

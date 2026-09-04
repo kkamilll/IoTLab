@@ -36,9 +36,9 @@ const CartStepItems = ({
   };
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_360px] items-start">
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,_1fr)_360px] items-start w-full">
       {/* LEFT – Dates Selection & Cart Items */}
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-6 min-w-0">
         {/* Date Selection Card */}
         <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
           <h3 className="text-sm font-bold text-slate-850 dark:text-white mb-4 flex items-center gap-2 select-none border-b border-slate-100 dark:border-slate-800/80 pb-3">

@@ -13,7 +13,7 @@ import ConfirmModal from "../components/layout/ConfirmModal";
 
 const Categories = () => {
   const { token } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { showToast } = useToast();
   const [categories, setCategories] = useState([]);
   const [editCategory, setEditCategory] = useState(null);
@@ -27,7 +27,7 @@ const Categories = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryData, setCategoryData] = useState({
-    name: "", description: "", parent: null, isVisible: false,
+    name: "", nameEn: "", description: "", descriptionEn: "", parent: null, isVisible: false,
   });
 
   const MAX_LENGTH = 50;
@@ -38,7 +38,9 @@ const Categories = () => {
     () => categories.map((c) => ({
       _id: c._id.toString(),
       name: c.name,
-      description: c.description,
+      nameEn: c.nameEn || "",
+      description: c.description || "",
+      descriptionEn: c.descriptionEn || "",
       parent: c.parent?._id?.toString() || null,
       isVisible: c.isVisible || false,
     })),
@@ -53,13 +55,13 @@ const Categories = () => {
     
     const filterNodes = (nodes) => {
       return nodes.map(node => {
-        const isMatch = node.name.toLowerCase().includes(lowerQuery) || node.description?.toLowerCase().includes(lowerQuery);
+        const isMatch = node.name.toLowerCase().includes(lowerQuery) || 
+                        node.nameEn?.toLowerCase().includes(lowerQuery) ||
+                        node.description?.toLowerCase().includes(lowerQuery) ||
+                        node.descriptionEn?.toLowerCase().includes(lowerQuery);
         const filteredChildren = filterNodes(node.children || []);
         
         if (isMatch || filteredChildren.length > 0) {
-          // If parent matches, should we show all children? 
-          // Let's just show all children if parent matches to see the whole branch,
-          // OR we can strictly filter children too. Usually strict filter is better.
           return { ...node, children: isMatch ? node.children : filteredChildren };
         }
         return null;
@@ -85,7 +87,7 @@ const Categories = () => {
   };
 
   const handleAdd = (selectedCategory) => {
-    setCategoryData({ name: "", description: "", parent: selectedCategory?._id?.toString() || null, isVisible: false });
+    setCategoryData({ name: "", nameEn: "", description: "", descriptionEn: "", parent: selectedCategory?._id?.toString() || null, isVisible: false });
     setEditCategory(null);
     setModalOpen(true);
   };
@@ -93,7 +95,9 @@ const Categories = () => {
   const handleEdit = (selectedCategory) => {
     setCategoryData({
       name: selectedCategory.name || "",
+      nameEn: selectedCategory.nameEn || "",
       description: selectedCategory.description || "",
+      descriptionEn: selectedCategory.descriptionEn || "",
       parent: selectedCategory?.parent?.toString() || null,
       isVisible: selectedCategory?.isVisible || false,
     });
@@ -104,7 +108,7 @@ const Categories = () => {
   const closeModal = () => {
     setModalOpen(false);
     setEditCategory(null);
-    setCategoryData({ name: "", description: "", parent: null, isVisible: false });
+    setCategoryData({ name: "", nameEn: "", description: "", descriptionEn: "", parent: null, isVisible: false });
   };
 
   const handleSubmitCategory = async (e) => {
@@ -202,26 +206,59 @@ const Categories = () => {
               </div>
 
               <div className="mb-4">
-                <label className="block mb-1 text-xs font-semibold text-slate-400 dark:text-slate-550 uppercase tracking-wider">Name:</label>
+                <label className="block mb-1 text-xs font-semibold text-slate-400 dark:text-slate-550 uppercase tracking-wider">
+                  {language === "pl" ? "Nazwa (PL):" : "Name (PL):"}
+                </label>
                 <input
                   type="text"
                   value={categoryData.name}
                   onChange={(e) => setCategoryData((prev) => ({ ...prev, name: e.target.value.slice(0, MAX_LENGTH) }))}
                   maxLength={MAX_LENGTH}
                   className="w-full border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2 text-sm bg-slate-50/50 dark:bg-slate-950 text-slate-850 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                  placeholder="e.g., Electronics"
+                  placeholder="np. Elektronika"
                 />
                 <p className="text-right text-[10px] text-slate-400 dark:text-slate-550 mt-1 font-bold">
                   {categoryData.name.length} / {MAX_LENGTH}
                 </p>
               </div>
 
-              <div className="mb-6">
-                <label className="block mb-1 text-xs font-semibold text-slate-400 dark:text-slate-550 uppercase tracking-wider">Description:</label>
+              <div className="mb-4">
+                <label className="block mb-1 text-xs font-semibold text-slate-400 dark:text-slate-550 uppercase tracking-wider">
+                  {language === "pl" ? "Nazwa (EN):" : "Name (EN):"}
+                </label>
+                <input
+                  type="text"
+                  value={categoryData.nameEn}
+                  onChange={(e) => setCategoryData((prev) => ({ ...prev, nameEn: e.target.value.slice(0, MAX_LENGTH) }))}
+                  maxLength={MAX_LENGTH}
+                  className="w-full border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2 text-sm bg-slate-50/50 dark:bg-slate-950 text-slate-850 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  placeholder="e.g., Electronics"
+                />
+                <p className="text-right text-[10px] text-slate-400 dark:text-slate-550 mt-1 font-bold">
+                  {categoryData.nameEn.length} / {MAX_LENGTH}
+                </p>
+              </div>
+
+              <div className="mb-4">
+                <label className="block mb-1 text-xs font-semibold text-slate-400 dark:text-slate-550 uppercase tracking-wider">
+                  {language === "pl" ? "Opis (PL):" : "Description (PL):"}
+                </label>
                 <textarea
                   value={categoryData.description}
                   onChange={(e) => setCategoryData((prev) => ({ ...prev, description: e.target.value }))}
-                  className="w-full border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2 text-sm bg-slate-50/50 dark:bg-slate-950 text-slate-850 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 min-h-[100px]"
+                  className="w-full border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2 text-sm bg-slate-50/50 dark:bg-slate-950 text-slate-850 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 min-h-[80px]"
+                  placeholder="np. Telefony, Laptopy..."
+                />
+              </div>
+
+              <div className="mb-6">
+                <label className="block mb-1 text-xs font-semibold text-slate-400 dark:text-slate-550 uppercase tracking-wider">
+                  {language === "pl" ? "Opis (EN):" : "Description (EN):"}
+                </label>
+                <textarea
+                  value={categoryData.descriptionEn}
+                  onChange={(e) => setCategoryData((prev) => ({ ...prev, descriptionEn: e.target.value }))}
+                  className="w-full border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2 text-sm bg-slate-50/50 dark:bg-slate-950 text-slate-850 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 min-h-[80px]"
                   placeholder="e.g., Phones, Laptops..."
                 />
               </div>

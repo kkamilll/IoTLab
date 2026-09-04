@@ -99,8 +99,8 @@ const ProductPreview = () => {
 
   useEffect(() => {
     if (!product) return;
-    setCategoryNames((product.categories || []).map((cat) => cat?.name).filter(Boolean));
-  }, [product]);
+    setCategoryNames((product.categories || []).map((cat) => language === "en" && cat?.nameEn ? cat.nameEn : cat?.name).filter(Boolean));
+  }, [product, language]);
 
   useEffect(() => {
     setCartQuantities((prev) => {

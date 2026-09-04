@@ -55,8 +55,8 @@ export const createCategory = async (req, res, next) => {
     if (!req.body) {
       return next(new BadRequestError("Request body is missing"));
     }
-    const { name, description, parent, isVisible } = req.body;
-    const updateData = { name, description, parent, isVisible };
+    const { name, nameEn, description, descriptionEn, parent, isVisible } = req.body;
+    const updateData = { name, nameEn, description, descriptionEn, parent, isVisible };
 
     // validateRequiredFields(Category, updateData);
 
@@ -97,7 +97,7 @@ export const updateCategory = async (req, res, next) => {
       return next(new ValidationError("Invalid product ID"));
     }
 
-    const { name, description, isVisible } = req.body;
+    const { name, nameEn, description, descriptionEn, isVisible } = req.body;
     const parent = req.body.parent ? req.body.parent : null;
 
     if (parent) {
@@ -117,7 +117,7 @@ export const updateCategory = async (req, res, next) => {
 
     const category = await Category.findByIdAndUpdate(
       categoryId,
-      { name, description, parent, isVisible },
+      { name, nameEn, description, descriptionEn, parent, isVisible },
       { new: true, runValidators: true },
     );
     res.status(200).json({ success: true, category });

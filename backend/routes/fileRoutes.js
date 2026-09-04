@@ -30,28 +30,43 @@ router.get('/:schema/:itemId/:fileId', async (req, res, next) => {
     const item = await Model.findById(itemId);
     if (!item) return res.status(404).send(`${schema} not found`);
 
-    let file = {};
+    let filePath = "";
+    let originalName = "";
+
     switch (schema) {
-        case "product":
-            file = (item.attachments || []).find(f => f._id.toString() === fileId && f.isVisible) ||
-                 (item.images || []).find(f => f._id.toString() === fileId && f.isVisible);
-        break;
+        case "product": {
+            const foundFile = (item.attachments || []).find(f => f._id.toString() === fileId && f.isVisible) ||
+                              (item.images || []).find(f => f._id.toString() === fileId && f.isVisible);
+            if (foundFile) {
+                filePath = foundFile.path;
+                originalName = foundFile.originalName;
+            }
+            break;
+        }
 
-        case "material":
-            file = (item.path?.toString());
-        break;
+        case "material": {
+            filePath = item.path;
+            originalName = item.filename;
+            break;
+        }
 
-        case "component": 
-            file = (item.files || []).find(f => f._id.toString() === fileId);
-        break;
+        case "component": {
+            const foundFile = (item.files || []).find(f => f._id.toString() === fileId);
+            if (foundFile) {
+                filePath = foundFile.path;
+                originalName = foundFile.name;
+            }
+            break;
+        }
 
-        default: throw next(new BadRequestError("Schema not found"));
+        default: 
+            return next(new BadRequestError("Schema not found"));
     }
     
-    if (!file) return res.status(404).send('File not found');
+    if (!filePath) return res.status(404).send('File not found');
 
-    if (!fs.existsSync(file.path)) return res.status(404).send('File missing on disk');
-    res.download(file.path, file.originalName);
+    if (!fs.existsSync(filePath)) return res.status(404).send('File missing on disk');
+    res.download(filePath, originalName);
   } catch (err) {
     console.error(err);
     res.status(500).send('Server error');

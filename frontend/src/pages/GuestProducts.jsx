@@ -257,9 +257,9 @@ const GuestProducts = () => {
         </div>
 
         {/* Filters and Stats Row */}
-        <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,_1fr)_300px] w-full">
           {/* Filters card */}
-          <div className="rounded-[1.8rem] border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col gap-5">
+          <div className="min-w-0 rounded-[1.8rem] border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col gap-5">
             <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1.5 select-none">
               <Filter className="w-3.5 h-3.5" />
               {language === "pl" ? "Filtry katalogu" : "Catalog Filters"}

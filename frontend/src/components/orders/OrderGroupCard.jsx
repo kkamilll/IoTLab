@@ -139,8 +139,12 @@ const OrderGroupCard = ({
   handleRentOrder,
   handleReturnOrder,
   downloadRentalAgreement,
+  isCollapsed: propCollapsed,
+  onToggleCollapse,
 }) => {
-  const [isCollapsed, setIsCollapsed] = useState(true);
+  const [localCollapsed, setLocalCollapsed] = useState(true);
+  const isCollapsed = propCollapsed !== undefined ? propCollapsed : localCollapsed;
+  const handleToggle = onToggleCollapse || (() => setLocalCollapsed(!localCollapsed));
   const { t, language } = useLanguage();
 
   // Confirmation dialog state
@@ -174,7 +178,7 @@ const OrderGroupCard = ({
       {/* Compact header – always visible */}
       <button
         className="w-full flex items-center justify-between gap-3 px-4 py-3.5 hover:bg-slate-100/60 dark:hover:bg-slate-800/40 transition-colors cursor-pointer text-left border-0 bg-transparent rounded-t-2xl"
-        onClick={() => setIsCollapsed((v) => !v)}
+        onClick={handleToggle}
         aria-expanded={!isCollapsed}
       >
         <div className="flex-1 min-w-0 flex flex-wrap items-center gap-2.5">

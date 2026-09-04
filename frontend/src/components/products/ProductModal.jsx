@@ -117,57 +117,57 @@ const ProductModal = ({
         {/* Scrollable Container to prevent scrollbar corner bleeding */}
         <div id="product-modal-scroll-wrapper" className="overflow-y-auto flex-1 flex flex-col">
           {/* Tab Selection Navigation Bar */}
-          <div className="flex border-b border-slate-100 dark:border-slate-800 px-6 bg-slate-50/50 dark:bg-slate-950/20 sticky top-0 z-10 backdrop-blur-sm">
-          <button
-            type="button"
-            onClick={() => setActiveTab("basic")}
-            className={`px-4 py-3.5 text-xs font-bold uppercase tracking-wider border-b-2 transition cursor-pointer ${
-              activeTab === "basic"
-                ? "border-indigo-650 text-indigo-700 dark:text-indigo-405"
-                : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
-            }`}
-          >
-            {t("productModal.tabInfo")}
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("inventory")}
-            className={`px-4 py-3.5 text-xs font-bold uppercase tracking-wider border-b-2 transition cursor-pointer ${
-              activeTab === "inventory"
-                ? "border-indigo-650 text-indigo-700 dark:text-indigo-405"
-                : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
-            }`}
-          >
-            {t("productModal.tabInventory")}
-          </button>
-          {extraColumns && extraColumns.length > 0 && (
+          <div className="flex w-full border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 sticky top-0 z-10 backdrop-blur-sm">
             <button
               type="button"
-              onClick={() => setActiveTab("custom")}
-              className={`px-4 py-3.5 text-xs font-bold uppercase tracking-wider border-b-2 transition cursor-pointer ${
-                activeTab === "custom"
+              onClick={() => setActiveTab("basic")}
+              className={`flex-1 py-3.5 text-center text-xs font-bold uppercase tracking-wider border-b-2 transition cursor-pointer ${
+                activeTab === "basic"
                   ? "border-indigo-650 text-indigo-700 dark:text-indigo-405"
                   : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
               }`}
             >
-              {t("productModal.tabCustom")}
+              {t("productModal.tabInfo")}
             </button>
-          )}
-          <button
-            type="button"
-            onClick={() => setActiveTab("media")}
-            className={`px-4 py-3.5 text-xs font-bold uppercase tracking-wider border-b-2 transition cursor-pointer ${
-              activeTab === "media"
-                ? "border-indigo-650 text-indigo-700 dark:text-indigo-405"
-                : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
-            }`}
-          >
-            {t("productModal.tabMedia")}
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={() => setActiveTab("inventory")}
+              className={`flex-1 py-3.5 text-center text-xs font-bold uppercase tracking-wider border-b-2 transition cursor-pointer ${
+                activeTab === "inventory"
+                  ? "border-indigo-650 text-indigo-700 dark:text-indigo-405"
+                  : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+              }`}
+            >
+              {t("productModal.tabInventory")}
+            </button>
+            {extraColumns && extraColumns.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setActiveTab("custom")}
+                className={`flex-1 py-3.5 text-center text-xs font-bold uppercase tracking-wider border-b-2 transition cursor-pointer ${
+                  activeTab === "custom"
+                    ? "border-indigo-650 text-indigo-700 dark:text-indigo-405"
+                    : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                }`}
+              >
+                {t("productModal.tabCustom")}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setActiveTab("media")}
+              className={`flex-1 py-3.5 text-center text-xs font-bold uppercase tracking-wider border-b-2 transition cursor-pointer ${
+                activeTab === "media"
+                  ? "border-indigo-650 text-indigo-700 dark:text-indigo-405"
+                  : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+              }`}
+            >
+              {t("productModal.tabMedia")}
+            </button>
+          </div>
 
         {/* Modal Form */}
-        <form className="p-6 md:p-8 flex flex-col gap-6" onSubmit={handleLocalSubmit}>
+        <form className="p-6 md:p-8 flex flex-col gap-6 min-h-[550px] flex-1" onSubmit={handleLocalSubmit}>
           {hasErrors && (
             <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 text-red-650 dark:text-red-400 rounded-xl p-4 text-sm font-semibold shadow-sm">
               {t("productModal.errorsHeader")}
@@ -395,7 +395,7 @@ const ProductModal = ({
                   <span>📂</span>
                   {t("productModal.fieldCategories")}
                 </h3>
-                <div className="border border-slate-200 dark:border-slate-800 rounded-xl p-3 bg-white dark:bg-slate-900 max-h-56 overflow-y-auto shadow-inner">
+                <div className="border border-slate-200 dark:border-slate-800 rounded-xl p-4 bg-white dark:bg-slate-950/20 max-h-64 overflow-y-auto shadow-xs">
                   <CategorySelector
                     categoryTree={categoryTree}
                     flatCategories={normalizedCategories}
@@ -614,7 +614,7 @@ const ProductModal = ({
           )}
 
           {/* Modal Footer Actions */}
-          <div className="flex justify-end gap-3 pt-6 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex justify-end gap-3 pt-6 border-t border-slate-100 dark:border-slate-800 mt-auto">
             <button
               type="button"
               onClick={closeModal}

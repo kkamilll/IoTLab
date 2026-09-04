@@ -8,9 +8,10 @@ import OrderModal from "../components/orders/OrderModal";
 import OrderGroupCard from "../components/orders/OrderGroupCard";
 import OrdersCalendar from "../components/orders/OrdersCalendar";
 import PageHeader from "../components/layout/PageHeader";
+import ConfirmModal from "../components/layout/ConfirmModal";
 import FilterBar from "../components/layout/FilterBar";
 import Pagination from "../components/layout/Pagination";
-import { User, Info, Calendar, Hash, Phone, BookOpen } from "lucide-react";
+import { User, Info, Calendar, Hash, Phone, BookOpen, ClipboardList, Clock, CheckCircle2, AlertCircle, ChevronDown, Trash2 } from "lucide-react";
 
 import { rentalAgreementTemplate } from "../templates/rentalAgreementTemplate";
 import jsPDF from "jspdf";
@@ -64,6 +65,29 @@ const Orders = () => {
   }, [location, navigate]);
   const [expanded, setExpanded] = useState({});
   const [expandedCustomer, setExpandedCustomer] = useState({});
+  const [stats, setStats] = useState({ total: 0, pending: 0, rented: 0, late: 0 });
+  const [collapsedGroups, setCollapsedGroups] = useState({});
+
+  const toggleGroupCollapse = (orderId, ownerId) => {
+    const key = `${orderId}-${ownerId}`;
+    setCollapsedGroups((prev) => ({ ...prev, [key]: !(prev[key] ?? true) }));
+  };
+
+  const toggleAllGroupsInOrder = (orderId, itemsByOwner, forceExpand) => {
+    setCollapsedGroups((prev) => {
+      const nextState = { ...prev };
+      Object.keys(itemsByOwner).forEach((ownerId) => {
+        nextState[`${orderId}-${ownerId}`] = !forceExpand;
+      });
+      return nextState;
+    });
+  };
+
+  const areAllGroupsExpanded = (orderId, itemsByOwner) => {
+    return Object.keys(itemsByOwner).every(
+      (ownerId) => !(collapsedGroups[`${orderId}-${ownerId}`] ?? true)
+    );
+  };
 
   const toggleCustomer = (orderId) => {
     setExpandedCustomer((prev) => ({ ...prev, [orderId]: !prev[orderId] }));
@@ -78,6 +102,13 @@ const Orders = () => {
   const [stockStatus, setStockStatus] = useState(null);
   const [openModal, setOpenModal] = useState(false);
   const [validationError, setValidationError] = useState("");
+  const [confirmConfig, setConfirmConfig] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "danger",
+    onConfirm: null,
+  });
 
   const processableStatuses = ["pending", "approved", "prepared"];
   const rejectableStatuses = ["pending", "approved", "prepared"];
@@ -116,6 +147,7 @@ const Orders = () => {
         setTotalPages(res.data.totalPages);
         setCurrentPage(res.data.page);
         setTotalOrders(res.data.totalOrders || 0);
+        setStats(res.data.stats || { total: 0, pending: 0, rented: 0, late: 0 });
       }
     } catch (error) { console.error("Error fetching orders:", error); }
   };
@@ -222,6 +254,35 @@ const Orders = () => {
     handleUpdateOrderItems(g, (i) => i.status === "prepared", "rented");
   };
   const handleReturnOrder  = (g) => handleUpdateOrderItems(g, (i) => returnableStatuses.includes(i.status), "returned");
+
+  const handleDeleteOrder = (orderId) => {
+    setConfirmConfig({
+      isOpen: true,
+      title: language === "pl" ? "Usuń zamówienie" : "Delete order",
+      message: language === "pl"
+        ? "Czy na pewno chcesz trwale usunąć to zamówienie? Spowoduje to również cofnięcie rezerwacji i aktualizację stanów magazynowych."
+        : "Are you sure you want to permanently delete this order? This will also revert product reservations and update stock counts.",
+      type: "danger",
+      onConfirm: async () => {
+        setConfirmConfig((prev) => ({ ...prev, isOpen: false }));
+        try {
+          const res = await apiClient.delete(`/orders/${orderId}`);
+          if (res.data.success) {
+            showToast(
+              language === "pl" ? "Zamówienie zostało usunięte." : "Order deleted successfully.",
+              "success"
+            );
+            fetchOrders(1);
+          } else {
+            showToast(res.data.message || "Operation failed", "error");
+          }
+        } catch (error) {
+          console.error(error);
+          showToast(error?.response?.data?.message || error.message || "Unknown error", "error");
+        }
+      },
+    });
+  };
 
   const downloadRentalAgreement = async (orderGroup) => {
     const { customerInfo, owner, items, dates } = orderGroup;
@@ -354,6 +415,85 @@ const Orders = () => {
           title={"📋 " + (language === "pl" ? "Zarządzanie Zamówieniami" : "Order Management")}
           subtitle={language === "pl" ? "Śledź, przeglądaj, zatwierdzaj i finalizuj wynajem sprzętu" : "Track, review, approve, and finalize equipment rentals"}
         />
+
+        {/* Panel statystyk */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+          {/* Wszystkie zamówienia */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-indigo-50 to-indigo-100/50 dark:from-indigo-950/20 dark:to-indigo-900/10 border border-indigo-100 dark:border-indigo-900/30 rounded-2xl p-5 flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-300 group hover:-translate-y-0.5">
+            <div className="flex flex-col gap-1 min-w-0">
+              <span className="text-[11px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-wider select-none">
+                {language === "pl" ? "Wszystkie zamówienia" : "Total Orders"}
+              </span>
+              <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                {stats.total ?? 0}
+              </span>
+            </div>
+            <div className="p-3 bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 rounded-2xl shadow-xs group-hover:scale-110 transition-transform duration-300">
+              <ClipboardList className="w-6 h-6" />
+            </div>
+            <div className="absolute right-0 bottom-0 w-24 h-24 bg-indigo-500/5 dark:bg-indigo-400/5 rounded-full translate-x-8 translate-y-8 select-none pointer-events-none" />
+          </div>
+
+          {/* Oczekujące */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/20 dark:to-amber-900/10 border border-amber-100 dark:border-amber-900/30 rounded-2xl p-5 flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-300 group hover:-translate-y-0.5">
+            <div className="flex flex-col gap-1 min-w-0">
+              <span className="text-[11px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-wider select-none">
+                {language === "pl" ? "Oczekujące" : "Pending Approval"}
+              </span>
+              <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                {stats.pending ?? 0}
+              </span>
+            </div>
+            <div className="p-3 bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 rounded-2xl shadow-xs group-hover:scale-110 transition-transform duration-300">
+              <Clock className="w-6 h-6" />
+            </div>
+            <div className="absolute right-0 bottom-0 w-24 h-24 bg-amber-500/5 dark:bg-amber-400/5 rounded-full translate-x-8 translate-y-8 select-none pointer-events-none" />
+          </div>
+
+          {/* Wypożyczone */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/20 dark:to-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl p-5 flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-300 group hover:-translate-y-0.5">
+            <div className="flex flex-col gap-1 min-w-0">
+              <span className="text-[11px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-wider select-none">
+                {language === "pl" ? "Wypożyczone" : "Active Rentals"}
+              </span>
+              <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                {stats.rented ?? 0}
+              </span>
+            </div>
+            <div className="p-3 bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-500 rounded-2xl shadow-xs group-hover:scale-110 transition-transform duration-300">
+              <CheckCircle2 className="w-6 h-6" />
+            </div>
+            <div className="absolute right-0 bottom-0 w-24 h-24 bg-emerald-500/5 dark:bg-emerald-400/5 rounded-full translate-x-8 translate-y-8 select-none pointer-events-none" />
+          </div>
+
+          {/* Opóźnione */}
+          <div className={`relative overflow-hidden bg-gradient-to-br border rounded-2xl p-5 flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-300 group hover:-translate-y-0.5 ${
+            (stats.late ?? 0) > 0 
+              ? "from-rose-50 to-rose-100 dark:from-rose-950/30 dark:to-rose-900/20 border-rose-200 dark:border-rose-900/40"
+              : "from-slate-50 to-slate-100/50 dark:from-slate-900/40 dark:to-slate-905/20 border-slate-200 dark:border-slate-800"
+          }`}>
+            <div className="flex flex-col gap-1 min-w-0">
+              <span className={`text-[11px] font-black uppercase tracking-wider select-none ${
+                (stats.late ?? 0) > 0 ? "text-rose-600 dark:text-rose-400" : "text-slate-500 dark:text-slate-400"
+              }`}>
+                {language === "pl" ? "Opóźnione" : "Overdue / Late"}
+              </span>
+              <span className={`text-3xl font-black tracking-tight ${
+                (stats.late ?? 0) > 0 ? "text-rose-700 dark:text-rose-450" : "text-slate-900 dark:text-white"
+              }`}>
+                {stats.late ?? 0}
+              </span>
+            </div>
+            <div className={`p-3 rounded-2xl shadow-xs group-hover:scale-110 transition-transform duration-300 ${
+              (stats.late ?? 0) > 0 
+                ? "bg-white dark:bg-slate-900 text-rose-650 dark:text-rose-400" 
+                : "bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400"
+            }`}>
+              <AlertCircle className="w-6 h-6" />
+            </div>
+            <div className="absolute right-0 bottom-0 w-24 h-24 bg-rose-500/5 dark:bg-rose-400/5 rounded-full translate-x-8 translate-y-8 select-none pointer-events-none" />
+          </div>
+        </div>
 
         <FilterBar
         searchValue={emailFilter}
@@ -715,6 +855,12 @@ const Orders = () => {
                     <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-slate-200/60 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/70">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
+                          {order.ownersData?.some(od => od.status === "late") && (
+                            <span className="relative flex h-2 w-2 mr-0.5" title={language === "pl" ? "Opóźniony zwrot!" : "Overdue rental!"}>
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-450 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                            </span>
+                          )}
                           <span className="inline-flex items-center text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/35">
                             {language === "pl" ? "Student" : "Student"}
                           </span>
@@ -733,6 +879,24 @@ const Orders = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
+                        {Object.keys(itemsByOwner).length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => toggleAllGroupsInOrder(order._id, itemsByOwner, !areAllGroupsExpanded(order._id, itemsByOwner))}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer shadow-xs ${
+                              areAllGroupsExpanded(order._id, itemsByOwner)
+                                ? "bg-purple-50 dark:bg-purple-950/40 text-purple-650 dark:text-purple-400 border-purple-200/60 dark:border-purple-900/35"
+                                : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-350 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-855"
+                            }`}
+                          >
+                            <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${areAllGroupsExpanded(order._id, itemsByOwner) ? "rotate-180" : ""}`} />
+                            <span className="hidden sm:inline">
+                              {areAllGroupsExpanded(order._id, itemsByOwner)
+                                ? (language === "pl" ? "Zwiń grupy" : "Collapse groups")
+                                : (language === "pl" ? "Rozwiń grupy" : "Expand groups")}
+                            </span>
+                          </button>
+                        )}
                         <button
                           onClick={() => toggleCustomer(order._id)}
                           className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer shadow-xs ${
@@ -746,6 +910,19 @@ const Orders = () => {
                             {expandedCustomer[order._id] ? (language === "pl" ? "Ukryj dane" : "Hide info") : (language === "pl" ? "Pokaż dane" : "Show info")}
                           </span>
                         </button>
+                        {user?.role === "admin" && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteOrder(order._id)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border border-rose-200 dark:border-rose-900/30 bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-all cursor-pointer shadow-xs"
+                            title={language === "pl" ? "Usuń zamówienie" : "Delete order"}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">
+                              {language === "pl" ? "Usuń" : "Delete"}
+                            </span>
+                          </button>
+                        )}
                         <span className="inline-flex items-center px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800/80 text-slate-650 dark:text-slate-350 border border-slate-200/50 dark:border-slate-700/60">
                           {totalItems} {language === "pl" ? (totalItems === 1 ? "przedmiot" : "przedmioty/ów") : `item${totalItems !== 1 ? "s" : ""}`}
                         </span>
@@ -853,6 +1030,8 @@ const Orders = () => {
                           handleRentOrder={handleRentOrder}
                           handleReturnOrder={handleReturnOrder}
                           downloadRentalAgreement={downloadRentalAgreement}
+                          isCollapsed={collapsedGroups[`${order._id}-${group.owner?._id || "unknown"}`] ?? true}
+                          onToggleCollapse={() => toggleGroupCollapse(order._id, group.owner?._id || "unknown")}
                         />
                       ))}
                     </div>
@@ -867,7 +1046,7 @@ const Orders = () => {
               <select
                 value={limit}
                 onChange={(e) => setLimit(parseInt(e.target.value))}
-                className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 px-3 py-1.5 font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 cursor-pointer shadow-sm hover:border-slate-300"
+                className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 pl-3 pr-8 py-1.5 font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 cursor-pointer shadow-sm hover:border-slate-300"
               >
                 <option value="10">10</option>
                 <option value="20">20</option>
@@ -908,6 +1087,15 @@ const Orders = () => {
           setValidationError={setValidationError}
         />
       )}
+
+      <ConfirmModal
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        type={confirmConfig.type}
+        onConfirm={confirmConfig.onConfirm}
+        onCancel={() => setConfirmConfig((prev) => ({ ...prev, isOpen: false }))}
+      />
       </div>
     </div>
   );

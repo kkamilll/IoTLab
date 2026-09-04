@@ -23,6 +23,7 @@ const CategoryNode = ({
   toggleDescription,
   t,
 }) => {
+  const { language } = useLanguage();
   const hasChildren = category.children && category.children.length > 0;
   const isExpanded = expandedIds.has(category._id);
   const showDescription = showDescriptionIds.has(category._id);
@@ -87,7 +88,7 @@ const CategoryNode = ({
 
             {/* Category Name - wraps gracefully, does not truncate */}
             <span className="font-extrabold text-slate-850 dark:text-slate-100 text-sm sm:text-base break-words whitespace-normal leading-snug flex-1 min-w-[120px] pr-2">
-              {category.name}
+              {language === "en" && category.nameEn ? category.nameEn : category.name}
             </span>
 
             {/* Level Badge */}
@@ -109,7 +110,7 @@ const CategoryNode = ({
 
           <div className="flex items-center gap-1.5 flex-shrink-0">
             {/* Description Details Toggle */}
-            {category.description && (
+            {(language === "en" ? category.descriptionEn || category.description : category.description) && (
               <button
                 onClick={() => toggleDescription(category._id)}
                 className={`p-1.5 rounded-lg transition-colors flex items-center justify-center cursor-pointer border-0 ${
@@ -148,9 +149,9 @@ const CategoryNode = ({
         </div>
 
         {/* Description Panel */}
-        {showDescription && category.description && (
+        {showDescription && (language === "en" ? category.descriptionEn || category.description : category.description) && (
           <div className="p-3 bg-slate-50/60 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-850/80 rounded-xl text-slate-650 dark:text-slate-350 text-xs sm:text-sm leading-relaxed shadow-inner">
-            {category.description}
+            {language === "en" && category.descriptionEn ? category.descriptionEn : category.description}
           </div>
         )}
       </div>

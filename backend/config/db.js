@@ -3,7 +3,7 @@ import Template from "../models/Template.js";
 
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI);
+    const conn = await mongoose.connect(process.env.MONGO_URI);
     console.log("Connection created successfully");
 
     // Seed default templates if they don't exist
@@ -35,6 +35,7 @@ const connectDB = async () => {
         console.log(`Seeded default template: ${t.name}`);
       }
     }
+    return conn;
   } catch (error) {
     console.error("Connection failed:", error.message);
     process.exit(1);

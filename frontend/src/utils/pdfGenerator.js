@@ -1,46 +1,49 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { robotoNormalBase64 } from "./robotoFont";
+
+const getBaseURL = () => {
+  const ip = import.meta.env.VITE_API_IP || "";
+  const port = import.meta.env.VITE_API_PORT || "";
+  const postfix = import.meta.env.VITE_API_POSTFIX || "";
+  return `${ip}${port}${postfix}`;
+};
 
 export const savePDF = (doc, filename) => {
-  const blob = doc.output("blob");
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  setTimeout(() => {
-    link.remove();
-    URL.revokeObjectURL(url);
-  }, 200);
+  const base64Data = doc.output("datauristring").split(",")[1];
+
+  const form = document.createElement("form");
+  form.method = "POST";
+  form.action = `${getBaseURL()}/orders/download-pdf`;
+  form.style.display = "none";
+
+  const inputData = document.createElement("input");
+  inputData.type = "hidden";
+  inputData.name = "base64Data";
+  inputData.value = base64Data;
+  form.appendChild(inputData);
+
+  const inputName = document.createElement("input");
+  inputName.type = "hidden";
+  inputName.name = "filename";
+  inputName.value = filename;
+  form.appendChild(inputName);
+
+  document.body.appendChild(form);
+  form.submit();
+  document.body.removeChild(form);
 };
 
-const fetchFontAsBase64 = async (url) => {
-  const response = await fetch(url);
-  const blob = await response.blob();
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64data = reader.result.split(",")[1];
-      resolve(base64data);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-};
-
-export const generateProductsPDF = async (filteredProducts, allColumns, hiddenColumns, t) => {
+export const generateProductsPDF = (filteredProducts, allColumns, hiddenColumns, t) => {
   // Landscape (poziomo)
   const doc = new jsPDF({ orientation: "landscape" });
 
-  // Dynamic Font Load for Polish Characters
+  // Register Roboto font supporting Polish characters for normal and bold styles
   let hasCustomFont = false;
   try {
-    // Fetch Roboto-Regular TTF font supporting Latin-Extended (Polish letters)
-    const fontUrl = "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Regular.ttf";
-    const fontBase64 = await fetchFontAsBase64(fontUrl);
-    doc.addFileToVFS("Roboto-Regular.ttf", fontBase64);
+    doc.addFileToVFS("Roboto-Regular.ttf", robotoNormalBase64);
     doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
+    doc.addFont("Roboto-Regular.ttf", "Roboto", "bold");
     doc.setFont("Roboto");
     hasCustomFont = true;
   } catch (err) {
@@ -123,15 +126,15 @@ export const generateProductsPDF = async (filteredProducts, allColumns, hiddenCo
   savePDF(doc, `IoTLab_Inventory_${new Date().toISOString().slice(0, 10)}.pdf`);
 };
 
-export const generateOrdersReportPDF = async (orders, t, language) => {
+export const generateOrdersReportPDF = (orders, t, language) => {
   const doc = new jsPDF({ orientation: "landscape" });
 
+  // Register Roboto font supporting Polish characters for normal and bold styles
   let hasCustomFont = false;
   try {
-    const fontUrl = "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Regular.ttf";
-    const fontBase64 = await fetchFontAsBase64(fontUrl);
-    doc.addFileToVFS("Roboto-Regular.ttf", fontBase64);
+    doc.addFileToVFS("Roboto-Regular.ttf", robotoNormalBase64);
     doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
+    doc.addFont("Roboto-Regular.ttf", "Roboto", "bold");
     doc.setFont("Roboto");
     hasCustomFont = true;
   } catch (err) {
@@ -157,7 +160,7 @@ export const generateOrdersReportPDF = async (orders, t, language) => {
       ? `${order.customer.firstName} ${order.customer.lastName}`
       : order.customer?.email || "Unknown";
 
-    const uuidShort = `#${order.uuid.substring(0, 6)}`;
+    const uuidShort = order.uuid ? `#${order.uuid.substring(0, 6)}` : "—";
 
     order.items.forEach((item) => {
       const ownerData = order.ownersData?.find(od => od.owner?.toString() === item.responsibleOwner?._id?.toString() || od.owner?.toString() === item.responsibleOwner?.toString());

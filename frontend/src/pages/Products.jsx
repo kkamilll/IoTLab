@@ -886,7 +886,8 @@ const Products = () => {
                   <ul className="py-1 overflow-y-auto flex-1">
                     {getSortedHierarchicalCategories(categories)
                       .filter((category) =>
-                        category.name.toLowerCase().includes(categorySearch.toLowerCase())
+                        category.name.toLowerCase().includes(categorySearch.toLowerCase()) ||
+                        category.nameEn?.toLowerCase().includes(categorySearch.toLowerCase())
                       )
                       .map((category) => {
                         const isVisible = !categorySearch ? isCategoryVisible(category, categories, expandedCategories) : true;
@@ -935,7 +936,7 @@ const Products = () => {
                                   }}
                                   className="accent-indigo-650 w-3.5 h-3.5 rounded"
                                 />
-                                <span>{category.name}</span>
+                                <span>{language === "en" && category.nameEn ? category.nameEn : category.name}</span>
                               </label>
                             </div>
                           </li>
@@ -1151,7 +1152,7 @@ const Products = () => {
                   key={catId}
                   className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-55 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-100/40 dark:border-indigo-900/30 rounded-lg text-xs font-semibold shadow-sm"
                 >
-                  {category?.name || catId}
+                  {language === "en" && category?.nameEn ? category.nameEn : (category?.name || catId)}
                   <button
                     type="button"
                     onClick={() => handleCategorySelect(catId)}

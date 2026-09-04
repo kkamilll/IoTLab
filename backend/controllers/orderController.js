@@ -10,6 +10,7 @@ import {
   ResourceNotFoundError,
   ConflictError,
   ServerError,
+  PermissionError,
 } from "../errors/CustomErrors.js";
 import { sendOrderEmail, sendOwnerNotificationEmail } from "../utils/sendEmail.js";
 import { createNotification } from "./notificationController.js";
@@ -280,7 +281,21 @@ export const getOrders = asyncHandler(async (req, res, next) => {
     if (dateTo) filter.requestedStartDate.$lte = new Date(dateTo);
   }
 
-  const [orders, totalOrders] = await Promise.all([
+  const buildStatusFilter = (targetStatus) => {
+    const statFilter = { ...filter };
+    if (role === "admin") {
+      if (ownerId && mongoose.Types.ObjectId.isValid(ownerId)) {
+        statFilter.ownersData = { $elemMatch: { owner: new mongoose.Types.ObjectId(String(ownerId)), status: targetStatus } };
+      } else {
+        statFilter.ownersData = { $elemMatch: { status: targetStatus } };
+      }
+    } else {
+      statFilter.ownersData = { $elemMatch: { owner: new mongoose.Types.ObjectId(String(userId)), status: targetStatus } };
+    }
+    return statFilter;
+  };
+
+  const [orders, totalOrders, pendingCount, rentedCount, lateCount] = await Promise.all([
     Order.find(filter)
       .sort({ [sortBy]: sortOrder })
       .skip(skip)
@@ -292,6 +307,9 @@ export const getOrders = asyncHandler(async (req, res, next) => {
       })
       .lean(),
     Order.countDocuments(filter),
+    Order.countDocuments(buildStatusFilter("pending")),
+    Order.countDocuments(buildStatusFilter("rented")),
+    Order.countDocuments(buildStatusFilter("late")),
   ]);
 
   const personalizedOrders = orders.map((order) => {
@@ -320,6 +338,12 @@ export const getOrders = asyncHandler(async (req, res, next) => {
     page,
     totalPages,
     totalOrders,
+    stats: {
+      total: totalOrders,
+      pending: pendingCount,
+      rented: rentedCount,
+      late: lateCount,
+    },
   });
 });
 
@@ -461,11 +485,30 @@ export const createOrder = asyncHandler(async (req, res, next) => {
         if (owner.email) {
           await sendOwnerNotificationEmail(owner.email, order);
         }
+        
+        const ownerItems = enrichedItems.filter(
+          (i) => i.responsibleOwner?.toString() === owner._id.toString()
+        );
+        const itemDetails = ownerItems
+          .map((item) => {
+            const product = products.find((p) => p._id.toString() === item.product.toString());
+            return `${product ? product.name : "Nieznany produkt"} (ilość: ${item.requestedQuantity})`;
+          })
+          .join(", ");
+
+        const startDateFormatted = new Date(requestedStartDate).toLocaleDateString("pl-PL");
+        const endDateFormatted = new Date(requestedEndDate).toLocaleDateString("pl-PL");
+
+        const richMessage = `Otrzymałeś nowe zamówienie od ${customer.firstName} ${customer.lastName} (${customer.email}).\n` +
+          `Sprzęt: ${itemDetails}.\n` +
+          `Termin: ${startDateFormatted} do ${endDateFormatted}.\n` +
+          `Cel wypożyczenia: ${customer.purpose || "Nie podano"}.`;
+
         await createNotification({
           user: owner._id,
           type: "ORDER_CREATED",
           title: "Nowe zamówienie",
-          message: `Otrzymałeś nowe zamówienie od ${customer.firstName} ${customer.lastName} (${customer.email}).`,
+          message: richMessage,
           relatedOrder: order._id,
         });
       }
@@ -671,13 +714,26 @@ export const updateOrder = asyncHandler(async (req, res, next) => {
       }
     }
 
-    await createNotification({
-      user: req.user._id,
-      type: "STATUS_CHANGED",
-      title: "Zmiana statusu",
-      message: statusMsg,
-      relatedOrder: order._id,
-    });
+    const adminUsers = await User.find({ role: "admin" }, "_id").lean();
+    const adminIds = adminUsers.map((a) => a._id.toString());
+
+    const ownersToNotify = new Set([
+      ...order.items.map((i) => i.responsibleOwner?.toString()).filter(Boolean),
+      ...adminIds,
+      req.user._id.toString()
+    ]);
+
+    const finalStatusMsg = `Użytkownik ${req.user.name} zmienił status w zamówieniu (ID: ${order.uuid.substring(0, 8)}...).\n${statusMsg}`;
+
+    for (const userId of ownersToNotify) {
+      await createNotification({
+        user: userId,
+        type: "STATUS_CHANGED",
+        title: "Zmiana statusu",
+        message: finalStatusMsg,
+        relatedOrder: order._id,
+      });
+    }
 
     return res.status(200).json({ success: true, order });
   } catch (error) {
@@ -686,6 +742,10 @@ export const updateOrder = asyncHandler(async (req, res, next) => {
 });
 
 export const hardDeleteOrder = asyncHandler(async (req, res, next) => {
+  if (req.user.role !== "admin") {
+    return next(new PermissionError("Only admins can delete orders"));
+  }
+
   const { orderId } = req.params;
   if (!mongoose.Types.ObjectId.isValid(orderId)) {
     return next(new BadRequestError("Invalid order ID"));
@@ -816,4 +876,15 @@ export const customerUpdateOrder = asyncHandler(async (req, res, next) => {
   await order.save();
 
   return res.status(200).json({ success: true, order });
+});
+
+export const downloadPDF = asyncHandler(async (req, res, next) => {
+  const { base64Data, filename } = req.body;
+  if (!base64Data || !filename) {
+    return next(new BadRequestError("Missing base64Data or filename"));
+  }
+  const buffer = Buffer.from(base64Data, "base64");
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(filename)}"`);
+  return res.send(buffer);
 });

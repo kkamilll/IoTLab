@@ -230,12 +230,12 @@ const MainGuest = () => {
                     </div>
                     
                     <h3 className="font-extrabold text-lg text-slate-850 dark:text-white group-hover:text-indigo-650 dark:group-hover:text-indigo-400 transition-colors">
-                      {category.name}
+                      {language === "en" && category.nameEn ? category.nameEn : category.name}
                     </h3>
                     
-                    {showDescription && category.description && (
+                    {showDescription && (language === "en" ? category.descriptionEn || category.description : category.description) && (
                       <div className="mt-3 text-xs font-medium text-slate-500 dark:text-slate-400 leading-relaxed bg-slate-50 dark:bg-slate-950/50 p-3 rounded-xl border border-slate-100 dark:border-slate-850 animate-fadeIn">
-                        {category.description}
+                        {language === "en" && category.descriptionEn ? category.descriptionEn : category.description}
                       </div>
                     )}
                   </div>
@@ -256,8 +256,8 @@ const MainGuest = () => {
                             }}
                             className="inline-flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-350 hover:border-indigo-300 dark:hover:border-indigo-700 hover:text-indigo-650 dark:hover:text-indigo-400 px-3 py-1.5 rounded-lg text-[10px] font-extrabold transition duration-100 cursor-pointer shadow-xs"
                           >
-                            <FolderOpen className="w-3 h-3 opacity-60" />
-                            {sub.name}
+                             <FolderOpen className="w-3.5 h-3.5 opacity-60" />
+                             {language === "en" && sub.nameEn ? sub.nameEn : sub.name}
                           </button>
                         ))}
                         {category.children.length > 5 && !expandedDescIds.has(`sub_${category._id}`) && (

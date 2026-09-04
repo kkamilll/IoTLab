@@ -58,43 +58,55 @@ export const generateMockData = async () => {
   console.log("Seeding Categories...");
 
   const catMicro = new Category({
-    name: "Microcontrollers",
-    description: "Arduino, ESP32, STM32 and other programmable boards.",
+    name: "Mikrokontrolery",
+    nameEn: "Microcontrollers",
+    description: "Płytki Arduino, ESP32, STM32 i inne programowalne układy.",
+    descriptionEn: "Arduino, ESP32, STM32 and other programmable boards.",
     isVisible: true,
     parent: null,
   });
 
   const catSensors = new Category({
-    name: "Sensors",
-    description: "Temperature, humidity, motion, distance and gas sensors.",
+    name: "Czujniki",
+    nameEn: "Sensors",
+    description: "Czujniki temperatury, wilgotności, ruchu, odległości i gazu.",
+    descriptionEn: "Temperature, humidity, motion, distance and gas sensors.",
     isVisible: true,
     parent: null,
   });
 
   const catActuators = new Category({
-    name: "Actuators",
-    description: "Servo motors, relays, solenoids, and stepper motors.",
+    name: "Aktuatory (Elementy wykonawcze)",
+    nameEn: "Actuators",
+    description: "Serwomechanizmy, przekaźniki, elektromagnesy i silniki krokowe.",
+    descriptionEn: "Servo motors, relays, solenoids, and stepper motors.",
     isVisible: true,
     parent: null,
   });
 
   const catSBC = new Category({
-    name: "Single Board Computers",
-    description: "Raspberry Pi, BeagleBone, Orange Pi, etc.",
+    name: "Komputery jednoukładowe",
+    nameEn: "Single Board Computers",
+    description: "Raspberry Pi, BeagleBone, Orange Pi itp.",
+    descriptionEn: "Raspberry Pi, BeagleBone, Orange Pi, etc.",
     isVisible: true,
     parent: null,
   });
 
   const catNetworking = new Category({
-    name: "Networking Modules",
-    description: "WiFi, Bluetooth, Zigbee, LoRa and Ethernet modules.",
+    name: "Moduły sieciowe",
+    nameEn: "Networking Modules",
+    description: "Moduły WiFi, Bluetooth, Zigbee, LoRa i Ethernet.",
+    descriptionEn: "WiFi, Bluetooth, Zigbee, LoRa and Ethernet modules.",
     isVisible: true,
     parent: null,
   });
 
   const catPower = new Category({
-    name: "Power & Supplies",
-    description: "Power supplies, voltage regulators, batteries and UPS modules.",
+    name: "Zasilanie i akcesoria",
+    nameEn: "Power & Supplies",
+    description: "Zasilacze, regulatory napięcia, akumulatory i moduły UPS.",
+    descriptionEn: "Power supplies, voltage regulators, batteries and UPS modules.",
     isVisible: false,
     parent: null,
   });
@@ -108,29 +120,37 @@ export const generateMockData = async () => {
 
   // Seed Subcategories
   const cat8Bit = new Category({
-    name: "8-bit Microcontrollers",
-    description: "AVR, PIC, and other 8-bit programmable chips.",
+    name: "Mikrokontrolery 8-bitowe",
+    nameEn: "8-bit Microcontrollers",
+    description: "Układy AVR, PIC i inne 8-bitowe programowalne układy scalone.",
+    descriptionEn: "AVR, PIC, and other 8-bit programmable chips.",
     isVisible: true,
     parent: catMicro._id,
   });
 
   const cat32Bit = new Category({
-    name: "32-bit Microcontrollers",
-    description: "ESP32, STM32, ARM Cortex, and other advanced microcontrollers.",
+    name: "Mikrokontrolery 32-bitowe",
+    nameEn: "32-bit Microcontrollers",
+    description: "ESP32, STM32, ARM Cortex i inne zaawansowane mikrokontrolery.",
+    descriptionEn: "ESP32, STM32, ARM Cortex, and other advanced microcontrollers.",
     isVisible: true,
     parent: catMicro._id,
   });
 
   const catEnvSensors = new Category({
-    name: "Environmental Sensors",
-    description: "Sensors for measuring temperature, humidity, air quality, pressure, etc.",
+    name: "Czujniki środowiskowe",
+    nameEn: "Environmental Sensors",
+    description: "Czujniki do pomiaru temperatury, wilgotności, jakości powietrza, ciśnienia itp.",
+    descriptionEn: "Sensors for measuring temperature, humidity, air quality, pressure, etc.",
     isVisible: true,
     parent: catSensors._id,
   });
 
   const catDistSensors = new Category({
-    name: "Distance & Motion Sensors",
-    description: "Ultrasonic, infrared, LIDAR, and accelerometer sensors.",
+    name: "Czujniki odległości i ruchu",
+    nameEn: "Distance & Motion Sensors",
+    description: "Czujniki ultradźwiękowe, podczerwieni, LIDAR i akcelerometry.",
+    descriptionEn: "Ultrasonic, infrared, LIDAR, and accelerometer sensors.",
     isVisible: true,
     parent: catSensors._id,
   });
