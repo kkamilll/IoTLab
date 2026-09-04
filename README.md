@@ -8,10 +8,8 @@
 [![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose_8-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
 [![License](https://img.shields.io/badge/License-PUT_Educational-005696?style=for-the-badge)](https://put.poznan.pl/)
 
-> 🎓 **Praca Inżynierska / Engineering Thesis**  
-> **Politechnika Poznańska (PP)** — *Poznań University of Technology*  
-> 
-> A modern, full-stack web platform designed to streamline laboratory asset tracking, dynamic hardware inventory, and end-to-end equipment reservations for university laboratories.
+> 🎓 **Praca Inżynierska / Engineering Thesis — Politechnika Poznańska (PP)**  
+> System inwentaryzacji i rezerwacji sprzętu laboratoryjnego zrealizowany jako praca inżynierska na Politechnice Poznańskiej (PP). Umożliwia studentom zamawianie modułów IoT bez konta, a pracownikom zarządzanie magazynem, kalendarzem i umowami PDF.
 
 ---
 
@@ -39,15 +37,7 @@
 
 ## 📖 Overview / O projekcie
 
-Projekt zrealizowany jako **praca inżynierska** na **Politechnice Poznańskiej (PP)** (*Poznań University of Technology*).
-
-Głównym celem systemu jest kompleksowa cyfryzacja i automatyzacja ewidencji aparatury pomiarowej, zestawów deweloperskich oraz komponentów elektronicznych w laboratorium uczelnianym, a także usprawnienie pełnego procesu ich wypożyczania przez studentów.
-
-The platform replaces manual paperwork and scattered email communication with a modern, role-based workflow offering:
-- **Public Equipment Catalog**: Instant searching and filtering without mandatory account registration.
-- **PIN-Protected Order Tracking**: Fast 2-step checkout with unique UUID tracking and email confirmations.
-- **Supervisor Dashboard & Calendar**: Visual timeline for managing equipment reservations and room assignments.
-- **Automated PDF Rental Agreements**: Printable checkout agreements generated directly in the browser.
+System inwentaryzacji i rezerwacji sprzętu laboratoryjnego zrealizowany jako praca inżynierska na Politechnice Poznańskiej (PP). Umożliwia studentom zamawianie aparatury i modułów IoT bez rejestracji konta, a pracownikom zarządzanie magazynem, kalendarzem rezerwacji oraz automatyczne generowanie umów wypożyczeń w formacie PDF.
 
 ---
 
