@@ -8,13 +8,16 @@
 [![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose_8-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
 [![License](https://img.shields.io/badge/License-PUT_Educational-005696?style=for-the-badge)](https://put.poznan.pl/)
 
+> 🎓 **Praca Inżynierska / Engineering Thesis**  
+> **Politechnika Poznańska (PP)** — *Poznań University of Technology*  
+> 
 > A modern, full-stack web platform designed to streamline laboratory asset tracking, dynamic hardware inventory, and end-to-end equipment reservations for university laboratories.
 
 ---
 
 ## 📑 Table of Contents
 
-- [Overview](#-overview)
+- [Overview / O projekcie](#overview--o-projekcie)
 - [Key Features](#-key-features)
 - [Role-Based Access Control](#-role-based-access-control)
 - [Order Lifecycle](#-order-lifecycle)
@@ -34,15 +37,17 @@
 
 ---
 
-## 📖 Overview
+## 📖 Overview / O projekcie
 
-The **IoT Lab Inventory System** was developed for the **Poznań University of Technology** to replace manual paperwork and uncoordinated emails with a unified digital workflow. 
+Projekt zrealizowany jako **praca inżynierska** na **Politechnice Poznańskiej (PP)** (*Poznań University of Technology*).
 
-It provides:
-- A public, searchable hardware catalog accessible without registration.
-- A secure reservation system using unique UUIDs and access PIN codes.
-- An interactive administrative panel with calendar scheduling for laboratory supervisors.
-- Automated email dispatch and dynamically generated PDF Rental Agreements.
+Głównym celem systemu jest kompleksowa cyfryzacja i automatyzacja ewidencji aparatury pomiarowej, zestawów deweloperskich oraz komponentów elektronicznych w laboratorium uczelnianym, a także usprawnienie pełnego procesu ich wypożyczania przez studentów.
+
+The platform replaces manual paperwork and scattered email communication with a modern, role-based workflow offering:
+- **Public Equipment Catalog**: Instant searching and filtering without mandatory account registration.
+- **PIN-Protected Order Tracking**: Fast 2-step checkout with unique UUID tracking and email confirmations.
+- **Supervisor Dashboard & Calendar**: Visual timeline for managing equipment reservations and room assignments.
+- **Automated PDF Rental Agreements**: Printable checkout agreements generated directly in the browser.
 
 ---
 
