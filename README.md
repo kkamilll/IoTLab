@@ -14,23 +14,23 @@
 
 ## 📑 Table of Contents
 
-- [Overview](#-overview)
-- [Key Features](#-key-features)
-- [Role-Based Access Control](#-role-based-access-control)
-- [Order Lifecycle](#-order-lifecycle)
-- [Tech Stack](#-tech-stack)
-- [Project Structure](#-project-structure)
-- [Getting Started](#-getting-started)
+- [Overview](#overview)
+- [Key Features](#key-features)
+- [Role-Based Access Control](#role-based-access-control)
+- [Order Lifecycle](#order-lifecycle)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
   - [1. Clone Repository](#1-clone-repository)
   - [2. Environment Configuration](#2-environment-configuration)
   - [3. Backend Setup](#3-backend-setup)
   - [4. Frontend Setup](#4-frontend-setup)
   - [5. Database Seeding & Initialization](#5-database-seeding--initialization)
-- [Test Credentials](#-test-credentials)
-- [Application Routes](#-application-routes)
-- [NPM Scripts Reference](#-npm-scripts-reference)
-- [License](#-license)
+- [Test Credentials](#test-credentials)
+- [Application Routes](#application-routes)
+- [NPM Scripts Reference](#npm-scripts-reference)
+- [License](#license)
 
 ---
 
