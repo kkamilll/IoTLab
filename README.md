@@ -1,8 +1,4 @@
-<div align="center">
-
-# 🔬 System Inwentaryzacji i Rezerwacji Sprzętu — IoT Lab
-
-**Nowoczesna, kompleksowa platforma webowa wspomagająca zarządzanie zasobami laboratoryjnymi, dynamiczną inwentaryzację oraz pełny obieg rezerwacji i wypożyczeń sprzętu badawczo-dydaktycznego.**
+# 🔬 IoT Lab — Laboratory Inventory & Reservation System
 
 [![React](https://img.shields.io/badge/React-19.1-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
@@ -10,103 +6,114 @@
 [![Node.js](https://img.shields.io/badge/Node.js-18+-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![Express.js](https://img.shields.io/badge/Express-5.x-000000?style=for-the-badge&logo=express&logoColor=white)](https://expressjs.com/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose_8-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
-[![License](https://img.shields.io/badge/Licencja-Politechnika_Poznańska-005696?style=for-the-badge)](https://put.poznan.pl/)
+[![License](https://img.shields.io/badge/License-PUT_Educational-005696?style=for-the-badge)](https://put.poznan.pl/)
+
+> A modern, full-stack web platform designed to streamline laboratory asset tracking, dynamic hardware inventory, and end-to-end equipment reservations for university laboratories.
 
 ---
 
-[📖 O projekcie](#o-projekcie) •
-[✨ Funkcjonalności](#kluczowe-funkcjonalności) •
-[👥 Role w systemie](#role-w-systemie) •
-[🔄 Obieg zamówień](#cykl-życia-zamówienia) •
-[💻 Stos technologiczny](#stos-technologiczny) •
-[📁 Struktura projektu](#struktura-katalogów) •
-[🚀 Szybki start](#instalacja-i-uruchomienie) •
-[🔑 Konta testowe](#konta-testowe) •
-[🗺️ Trasy aplikacji](#wykaz-tras-routing)
+## 📑 Table of Contents
+
+- [Overview](#-overview)
+- [Key Features](#-key-features)
+- [Role-Based Access Control](#-role-based-access-control)
+- [Order Lifecycle](#-order-lifecycle)
+- [Tech Stack](#-tech-stack)
+- [Project Structure](#-project-structure)
+- [Getting Started](#-getting-started)
+  - [Prerequisites](#prerequisites)
+  - [1. Clone Repository](#1-clone-repository)
+  - [2. Environment Configuration](#2-environment-configuration)
+  - [3. Backend Setup](#3-backend-setup)
+  - [4. Frontend Setup](#4-frontend-setup)
+  - [5. Database Seeding & Initialization](#5-database-seeding--initialization)
+- [Test Credentials](#-test-credentials)
+- [Application Routes](#-application-routes)
+- [NPM Scripts Reference](#-npm-scripts-reference)
+- [License](#-license)
 
 ---
 
-</div>
+## 📖 Overview
 
-## 📖 O projekcie
+The **IoT Lab Inventory System** was developed for the **Poznań University of Technology** to replace manual paperwork and uncoordinated emails with a unified digital workflow. 
 
-**System Inwentaryzacyjny IoT Lab** powstał w celu zautomatyzowania i usprawnienia procesów ewidencji, katalogowania oraz wypożyczania komponentów i aparatury pomiarowo-laboratoryjnej dla studentów, doktorantów oraz pracowników naukowo-dydaktycznych.
-
-Aplikacja eliminuje papierowy obieg dokumentów i chaotyczną komunikację mailową, oferując:
-- Przejrzysty katalog sprzętu dostępny dla każdego bez konieczności rejestracji konta,
-- Bezpieczny mechanizm rezerwacji z kodem PIN i unikalnym identyfikatorem UUID,
-- Dedykowany panel opiekuna sprzętu i administratora z kalendarzem rezerwacji,
-- Automatyczne powiadomienia e-mail oraz generowanie umów wypożyczenia w formacie PDF.
+It provides:
+- A public, searchable hardware catalog accessible without registration.
+- A secure reservation system using unique UUIDs and access PIN codes.
+- An interactive administrative panel with calendar scheduling for laboratory supervisors.
+- Automated email dispatch and dynamically generated PDF Rental Agreements.
 
 ---
 
-## ✨ Kluczowe funkcjonalności
+## ✨ Key Features
 
-### 📦 Ewidencja i Magazyn Sprzętu
-- **Elastyczny schemat danych (Custom Extra Fields)** – możliwość definiowania dowolnych atrybutów technicznych (np. napięcie, interfejs, obudowa) per kategoria/produkt.
-- **Wielopoziomowe kategorie i tagi** – dynamiczne drzewo kategorii z obsługą przeciągania elementów (*drag and drop*).
-- **Komponenty i zestawy** – grupowanie drobnych elementów powiązanych ze stanowiskami laboratoryjnymi.
-- **Filtrowanie i wyszukiwanie na żywo** – natychmiastowe wyszukiwanie wg nazwy, sali, opiekuna, tagów oraz dostępności magazynowej.
-- **Raporty PDF** – generowanie zestawień inwentaryzacyjnych magazynu do plików PDF.
+### 📦 Dynamic Inventory & Hardware Catalog
+- **Custom Extra Fields**: Dynamic schema support per category/item (e.g., voltage, pinout, interfaces, package type).
+- **Hierarchical Categories & Tags**: Nested categories with intuitive drag-and-drop (`@dnd-kit`) reordering.
+- **Components & Bundles**: Group minor electronic parts into lab bench kits.
+- **Live Search & Multi-filter**: Real-time filtering by item name, room, lecturer, tags, and stock availability.
+- **PDF Inventory Reports**: One-click generation of printable equipment inventory audits.
 
-### 🛒 Rezerwacje i Koszyk (Dla Studentów / Gości)
-- **Brak wymogu zakładania konta** – szybki 2-etapowy proces składania zamówienia przez formularz koszyka.
-- **Zabezpieczenie Captcha** – ochrona przed automatycznym spamowaniem rezerwacji (Google reCAPTCHA v2 / SVG captcha).
-- **Prywatny kod śledzenia (UUID + Secret Code)** – po złożeniu zamówienia student otrzymuje unikalny link oraz kod dostępu do podglądu zamówienia.
-- **Akceptacja terminów przez studenta** – możliwość potwierdzenia lub odrzucenia skorygowanych przez prowadzącego dat odbioru.
+### 🛒 Seamless Guest Checkout & Tracking
+- **No Mandatory Account**: Students and guests can submit rental requests directly via a 2-step cart checkout.
+- **Bot Protection**: Integration with Google reCAPTCHA v2 / SVG captcha.
+- **Private Order Tracker**: Each order receives a unique UUID and a secret access code sent via email.
+- **Student Date Negotiation**: Students can review, approve, or reject modified pickup/return dates suggested by the lecturer.
 
-### 📅 Zarządzanie Zamówieniami i Kalendarz
-- **Interaktywny kalendarz rezerwacji** – wizualizacja terminów wypożyczeń na osi czasu (`React Big Calendar`) z filtrowaniem po statusach i salach.
-- **Dialogi potwierdzenia akcji** – zabezpieczenie przed przypadkową zmianą statusu (zatwierdzenie, przygotowanie, wydanie, zwrot, odrzucenie).
-- **Generowanie Umowy Wypożyczenia (PDF)** – automatyczne wygenerowanie gotowego do druku dokumentu z danymi studenta, wykazem sprzętu, regulaminem i miejscem na podpisy.
-- **Kalkulacja dostępności sprzętu** – dynamiczne zliczanie zapotrzebowania w danym przedziale czasowym.
+### 📅 Order Management & Interactive Calendar
+- **Interactive Timeline Calendar**: Built with `React Big Calendar` for visualizing reservations across different rooms and date ranges.
+- **Safe State Transitions**: Confirmation dialogs on critical operations (approve, prepare, rent, return, reject).
+- **Rental Agreement PDF**: Automatically generates signed rental contracts complete with student details, asset serials, terms of use, and signature blocks.
+- **Real-Time Stock Forecasting**: Prevents double-booking by calculating overlapping reservation windows.
 
-### 🔔 Komunikacja i Powiadomienia
-- **Centrum powiadomień w aplikacji (Notification Hub)** – prowadzący otrzymują natychmiastowe powiadomienia o zapotrzebowaniu na przedmioty przypisane do ich sal.
-- **Automatyczne wiadomości e-mail** – moduł `Nodemailer` wysyłający wiadomości z dynamicznie renderowanymi szablonami (nowe zamówienie, zmiana statusu, reset hasła).
-- **Edytor szablonów e-mail** – administrator ma możliwość edycji treści szablonów bezpośrednio z poziomu panelu.
+### 🔔 Notifications & Communication
+- **In-App Notification Hub**: Real-time alerts for lecturers when items in their assigned rooms are requested.
+- **Automated Email Dispatch**: Powered by `Nodemailer` with customizable HTML templates for new orders, status changes, and password resets.
+- **Template Management**: In-app WYSIWYG editor for email templates with dynamic placeholder injection (`${CustomerName}`, `${UUID}`).
 
-### 🎨 Doświadczenie Użytkownika (UX/UI)
-- **Ciemny motyw (Dark Mode)** – pełna obsługa trybu jasnego i ciemnego ze spójną paletą kolorów TailwindCSS.
-- **Wielojęzyczność (i18n)** – natychmiastowe przełączanie języka interfejsu (Polski / Angielski).
-- **Tablica ogłoszeń** – możliwość publikacji komunikatów dla studentów na stronie powitalnej.
+### 🎨 User Experience (UX/UI)
+- **Dark & Light Mode**: Native theme switching styled with TailwindCSS v4.
+- **Internationalization (i18n)**: Instant language switching between English (EN) and Polish (PL).
+- **Public Announcement Board**: Admins can post notices and lab news directly on the home page.
 
 ---
 
-## 👥 Role w systemie
+## 👥 Role-Based Access Control
 
-| Uprawnienie / Funkcja | Gość / Student | Prowadzący (Lecturer) | Administrator |
+| Permission / Action | Guest / Student | Lecturer (Owner) | Administrator |
 |:---|:---:|:---:|:---:|
-| Przeglądanie katalogu i parametrów sprzętu | ✅ | ✅ | ✅ |
-| Składanie zamówień przez koszyk | ✅ | ✅ | ✅ |
-| Śledzenie zamówienia dedykowanym kodem | ✅ | ✅ | ✅ |
-| Zarządzanie własnym sprzętem i salami | ❌ | ✅ | ✅ |
-| Otrzymywanie powiadomień o rezerwacjach | ❌ | ✅ | ✅ |
-| Zmiana statusów zamówień i generowanie umów PDF | ❌ | ✅ | ✅ |
-| Widok kalendarza rezerwacji | ❌ | ✅ | ✅ |
-| Zarządzanie użytkownikami i uprawnieniami | ❌ | ❌ | ✅ |
-| Tworzenie kategorii, tagów i szablonów e-mail | ❌ | ❌ | ✅ |
-| Publikacja ogłoszeń na stronie głównej | ❌ | ❌ | ✅ |
+| Browse public equipment catalog | ✅ | ✅ | ✅ |
+| Submit rental requests via cart | ✅ | ✅ | ✅ |
+| Track orders via UUID & PIN code | ✅ | ✅ | ✅ |
+| Manage assigned room items & equipment | ❌ | ✅ | ✅ |
+| Receive in-app reservation notifications | ❌ | ✅ | ✅ |
+| Approve / Prepare / Rent / Return orders | ❌ | ✅ | ✅ |
+| Generate Rental Agreement PDFs | ❌ | ✅ | ✅ |
+| View reservation calendar | ❌ | ✅ | ✅ |
+| Manage user accounts & permissions | ❌ | ❌ | ✅ |
+| Edit dynamic categories & email templates | ❌ | ❌ | ✅ |
+| Publish announcements on home page | ❌ | ❌ | ✅ |
 
 ---
 
-## 🔄 Cykl życia zamówienia
+## 🔄 Order Lifecycle
 
 ```mermaid
 flowchart TD
-    A([🛒 Student składa zamówienie w koszyku]) --> B[Status: Oczekujące / Pending]
-    B -->|Generowanie UUID + Kod PIN| C[Wysłanie maila do studenta z linkiem do śledzenia]
-    B -->|Powiadomienie opiekuna| D{Decyzja Prowadzącego}
+    A([🛒 Student submits cart order]) --> B[Status: Pending]
+    B -->|UUID & PIN generated| C[Automated email sent to student]
+    B -->|In-app alert| D{Lecturer Review}
     
-    D -->|Odrzucenie| E[Status: Odrzucone / Rejected]
-    D -->|Korekta dat / Akceptacja| F[Status: Zaakceptowane / Approved]
+    D -->|Reject request| E[Status: Rejected]
+    D -->|Adjust dates / Approve| F[Status: Approved]
     
-    F --> G[Status: Przygotowane / Prepared]
-    G --> H[Podpisanie umowy PDF i wydanie sprzętu]
-    H --> I[Status: Wypożyczone / Rented]
+    F --> G[Status: Prepared]
+    G --> H[Sign Rental PDF & Hand out items]
+    H --> I[Status: Rented]
     
-    I --> J[Zwrot sprzętu i weryfikacja stanu]
-    J --> K([Status: Zwrócone / Returned])
+    I --> J[Return hardware & inspect condition]
+    J --> K([Status: Returned])
 
     style A fill:#4f46e5,stroke:#312e81,color:#fff
     style B fill:#f59e0b,stroke:#b45309,color:#fff
@@ -119,75 +126,75 @@ flowchart TD
 
 ---
 
-## 💻 Stos technologiczny
+## 💻 Tech Stack
 
 ### Frontend
-- **Biblioteka bazowa:** [React 19](https://react.dev/) + [Vite 6](https://vitejs.dev/)
-- **Stylowanie:** [TailwindCSS v4](https://tailwindcss.com/) + CSS Variables
-- **Komponenty i ikony:** [Material UI (MUI)](https://mui.com/), [Lucide React](https://lucide.dev/), [React Icons](https://react-icons.github.io/react-icons/)
+- **Framework:** [React 19](https://react.dev/) + [Vite 6](https://vitejs.dev/)
+- **Styling:** [TailwindCSS v4](https://tailwindcss.com/) + CSS Variables
+- **UI Components & Icons:** [Material UI (MUI)](https://mui.com/), [Lucide React](https://lucide.dev/), [React Icons](https://react-icons.github.io/react-icons/)
 - **Routing:** [React Router v7](https://reactrouter.com/)
-- **Kalendarz:** [React Big Calendar](https://jquense.github.io/react-big-calendar/) + [Date-fns](https://date-fns.org/)
-- **Przeciąganie elementów (DnD):** `@dnd-kit/core`, `@dnd-kit/sortable`
-- **Generowanie dokumentów PDF:** [jsPDF](https://github.com/parallax/jsPDF) + `jspdf-autotable`
-- **Wykresy i analityka:** [Recharts](https://recharts.org/)
+- **Calendar:** [React Big Calendar](https://jquense.github.io/react-big-calendar/) + [Date-fns](https://date-fns.org/)
+- **Drag & Drop:** `@dnd-kit/core`, `@dnd-kit/sortable`
+- **PDF Generation:** [jsPDF](https://github.com/parallax/jsPDF) + `jspdf-autotable`
+- **Charts:** [Recharts](https://recharts.org/)
 
 ### Backend
-- **Środowisko uruchomieniowe:** [Node.js](https://nodejs.org/) (ES Modules)
-- **Framework API:** [Express 5](https://expressjs.com/)
-- **Baza danych:** [MongoDB](https://www.mongodb.com/) z ODM [Mongoose 8](https://mongoosejs.com/)
-- **Uwierzytelnianie i sesja:** JSON Web Tokens (`jsonwebtoken`) + `bcrypt`
-- **Poczta e-mail:** [Nodemailer](https://nodemailer.com/) (obsługa Gmail SMTP / custom host)
-- **Obsługa plików i multimediów:** `multer`
-- **Zadania cykliczne (Cron):** `node-cron`
-- **Logowanie i bezpieczeństwo:** `morgan`, `cors`, `svg-captcha`
+- **Runtime:** [Node.js](https://nodejs.org/) (ES Modules)
+- **API Framework:** [Express 5](https://expressjs.com/)
+- **Database:** [MongoDB](https://www.mongodb.com/) with [Mongoose 8](https://mongoosejs.com/) ODM
+- **Authentication:** JSON Web Tokens (`jsonwebtoken`) + `bcrypt`
+- **Email Delivery:** [Nodemailer](https://nodemailer.com/) (Gmail SMTP / Custom SMTP)
+- **File Uploads:** `multer`
+- **Scheduled Tasks:** `node-cron`
+- **Security & Utilities:** `morgan`, `cors`, `svg-captcha`
 
 ---
 
-## 📁 Struktura katalogów
+## 📁 Project Structure
 
 ```plaintext
 IoTLab/
-├── backend/                  # Warstwa serwerowa (Node.js & Express)
-│   ├── config/               # Połączenie z bazą danych (MongoDB)
-│   ├── controllers/          # Logika biznesowa (Order, Product, User, Category itp.)
-│   ├── middleware/           # Autoryzacja JWT, walidacja ról, upload plików
-│   ├── models/               # Schematy Mongoose (User, Product, Order, Template, etc.)
-│   ├── routes/               # Definicje endpointów REST API
-│   ├── services/             # Serwisy pomocnicze (np. wysyłka maili)
-│   ├── utils/                # Generatory danych testowych, mocki
-│   ├── uploads/              # Przechowalnia przesłanych zdjęć sprzętu
-│   ├── init.js               # Skrypt czyszczenia i inicjalizacji bazy produkcyjnej
-│   ├── seed.js               # Skrypt zasilenia danymi demonstracyjnymi
-│   └── server.js             # Główny punkt startowy serwera Express
+├── backend/                  # Server-side application (Node.js & Express)
+│   ├── config/               # Database connection (MongoDB)
+│   ├── controllers/          # Business logic (Order, Product, User, Category, etc.)
+│   ├── middleware/           # JWT auth, role validation, file upload middleware
+│   ├── models/               # Mongoose schemas (User, Product, Order, Template, etc.)
+│   ├── routes/               # REST API route endpoints
+│   ├── services/             # Helper services (email dispatcher)
+│   ├── utils/                # Mock data generators & utility functions
+│   ├── uploads/              # Uploaded hardware images & assets
+│   ├── init.js               # Clean production database initialization script
+│   ├── seed.js               # Development mock data seeding script
+│   └── server.js             # Main Express server entry point
 │
-├── frontend/                 # Aplikacja kliencka (React + Vite)
+├── frontend/                 # Client-side application (React + Vite)
 │   ├── src/
-│   │   ├── components/       # Komponenty UI (Orders, Products, Categories, Cart, Auth)
-│   │   ├── context/          # Konteksty React (Język, Motyw Dark/Light, Powiadomienia)
-│   │   ├── pages/            # Widoki aplikacji (Dashboard, Orders, Products, Cart itp.)
-│   │   ├── utils/            # Generatory PDF, translacje i18n, guardy routingu
-│   │   ├── App.jsx           # Główny komponent z definicją tras
-│   │   └── main.jsx          # Punkt wejścia React
-│   ├── public/               # Zasoby statyczne
-│   └── package.json          # Zależności frontendu
+│   │   ├── components/       # Reusable UI components (Orders, Products, Cart, Auth)
+│   │   ├── context/          # React Contexts (Language, Theme, Auth, Toast)
+│   │   ├── pages/            # Application views (Dashboard, Orders, Catalog, etc.)
+│   │   ├── utils/            # PDF generators, i18n dictionaries, route guards
+│   │   ├── App.jsx           # Master routing setup
+│   │   └── main.jsx          # React DOM entry point
+│   ├── public/               # Static web assets
+│   └── package.json          # Frontend dependencies
 │
-├── .env                      # Zmienne środowiskowe (niecommitowane)
-├── package.json              # Główne skrypty i zależności backendu
-└── README.md                 # Główna dokumentacja projektu
+├── .env                      # Environment variables (git-ignored)
+├── package.json              # Backend scripts & root dependencies
+└── README.md                 # Project documentation
 ```
 
 ---
 
-## 🚀 Instalacja i uruchomienie
+## 🚀 Getting Started
 
-### Wymagania wstępne
-- **Node.js** w wersji `v18.0.0` lub nowszej
-- **npm** (lub pnpm / yarn)
-- Działająca instancja **MongoDB** (lokalnie lub w chmurze [MongoDB Atlas](https://www.mongodb.com/cloud/atlas))
+### Prerequisites
+- **Node.js** `v18.0.0` or newer
+- **npm** (or pnpm / yarn)
+- **MongoDB** instance running locally or via [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
 
 ---
 
-### Krok 1: Klonowanie repozytorium
+### 1. Clone Repository
 ```bash
 git clone https://github.com/kkamilll/IoTLab.git
 cd IoTLab
@@ -195,138 +202,138 @@ cd IoTLab
 
 ---
 
-### Krok 2: Konfiguracja zmiennych środowiskowych
-W głównym katalogu projektu utwórz plik `.env` i uzupełnij go:
+### 2. Environment Configuration
+Create a `.env` file in the root directory:
 
 ```env
-# Port serwera backendowego
+# Server Port
 PORT=3500
 
-# Połączenie z bazą danych MongoDB
+# MongoDB Connection String
 MONGO_URI="mongodb://127.0.0.1:27017/iotlab_db"
 
-# Klucz do podpisywania tokenów sesyjnych
-JWT_SECRET="twoj_tajny_bezpieczny_klucz_jwt_12345"
+# JWT Secret for session authentication
+JWT_SECRET="your_secure_jwt_secret_key_here"
 
-# Konfiguracja skrzynki pocztowej (Nodemailer)
+# Email Configuration (Nodemailer)
 SMTP_HOST=smtp.gmail.com
 SMTP_SERVICE=gmail
 SMTP_PORT=587
-SMTP_MAIL=twoj_adres_email@gmail.com
-SMTP_PASSWORD=twoje_haslo_aplikacji_gmail
+SMTP_MAIL=your_email@gmail.com
+SMTP_PASSWORD=your_gmail_app_password
 
-# Opcjonalnie: Google reCAPTCHA v2
-# VITE_RECAPTCHA_PUBLIC_KEY=twoj_klucz_publiczny
-# RECAPTCHA_SECRET_KEY=twoj_klucz_prywatny
+# Optional: Google reCAPTCHA v2
+# VITE_RECAPTCHA_PUBLIC_KEY=your_recaptcha_site_key
+# RECAPTCHA_SECRET_KEY=your_recaptcha_secret_key
 ```
 
 ---
 
-### Krok 3: Instalacja zależności i uruchomienie backendu
-Z poziomu głównego katalogu (`IoTLab`):
+### 3. Backend Setup
+From the **root directory** (`IoTLab`):
 
 ```bash
-# Instalacja paczek backendu
+# Install backend dependencies
 npm install
 
-# Uruchomienie serwera API w trybie deweloperskim (nodemon na porcie 3500)
+# Run backend API server with nodemon (port 3500)
 npm run dev
 ```
 
-> **Wskazówka:** Jeśli korzystasz z lokalnego serwera MongoDB w domyślnej ścieżce Windows, możesz uruchomić bazę dedykowanym poleceniem:
+> **Tip (Windows):** If using local MongoDB in the default path, you can start the database with:
 > ```bash
 > npm run db:start
 > ```
 
 ---
 
-### Krok 4: Instalacja zależności i uruchomienie frontendu
-Otwórz **drugie okno terminala** i przejdź do katalogu `frontend`:
+### 4. Frontend Setup
+Open a **new terminal window** and navigate to `frontend`:
 
 ```bash
 cd frontend
 
-# Instalacja paczek frontendu
+# Install frontend dependencies
 npm install
 
-# Uruchomienie aplikacji deweloperskiej Vite
+# Start Vite development server
 npm run dev
 ```
 
-Aplikacja będzie dostępna w przeglądarce pod adresem:  
+The application will be accessible at:  
 👉 **http://localhost:5173**
 
 ---
 
-## 🗄️ Inicjalizacja i zasilenie bazy danych
+### 5. Database Seeding & Initialization
 
-Projekt wyposażony jest w zautomatyzowane skrypty do zarządzania stanem bazy danych (uruchamiane z głównego katalogu):
+Execute either command from the root directory:
 
-### Opcja A: Świeża baza danych (Init)
-Czyści kolekcje i tworzy tylko konto Administratora oraz domyślne szablony e-mail:
+#### Option A: Fresh Database (Production Init)
+Clears all collections and creates only the Administrator user and default email templates:
 ```bash
 npm run db:init
 ```
 
-### Opcja B: Pełne dane demonstracyjne (Seed – Zalecane do testów)
-Czyści bazę i generuje przykładowych użytkowników (Admin, 3 wykładowców), 6 kategorii, 11 produktów, komponenty, materiały oraz zamówienia w różnych stanach:
+#### Option B: Mock Data Seeding (Recommended for Development)
+Fills the database with mock categories, products, test orders, and user accounts:
 ```bash
 npm run db:seed
 ```
 
 ---
 
-## 🔑 Konta testowe
+## 🔑 Test Credentials
 
-Po wykonaniu `npm run db:seed` w systemie dostępne są następujące konta:
+After running `npm run db:seed`, the following accounts are ready to use:
 
-| Rola | Adres E-mail | Hasło | Przypisane sale |
+| Role | Email | Password | Assigned Rooms |
 |:---|:---|:---|:---|
-| **Administrator** | `admin@gmail.com` | `admin` | Sala 101, 102 (Pełny dostęp) |
-| **Prowadzący 1** | `lecturer1@gmail.com` | `password` | Dedykowane zasoby |
-| **Prowadzący 2** | `lecturer2@gmail.com` | `password` | Dedykowane zasoby |
-| **Prowadzący 3** | `lecturer3@gmail.com` | `password` | Dedykowane zasoby |
+| **Administrator** | `admin@gmail.com` | `admin` | Room 101, 102 (Full Access) |
+| **Lecturer 1** | `lecturer1@gmail.com` | `password` | Assigned room inventory |
+| **Lecturer 2** | `lecturer2@gmail.com` | `password` | Assigned room inventory |
+| **Lecturer 3** | `lecturer3@gmail.com` | `password` | Assigned room inventory |
 
 ---
 
-## 🗺️ Wykaz tras (Routing)
+## 🗺️ Application Routes
 
-### Strefa Publiczna (Studenci / Goście)
-- `/` – Strona główna z tablicą ogłoszeń, banerem i wyszukiwarką zamówień
-- `/mainguest` – Widok powitalny gościa z szybkim dostępem do katalogu
-- `/guest-products` – Pełny katalog sprzętu z filtrami i możliwością dodawania do koszyka
-- `/cart` – Koszyk zamówień z 2-krokowym formularzem zgłoszenia
-- `/orderPreview/:uuid` – Podgląd statusu zamówienia (wymaga wpisania kodu PIN)
-- `/login` – Formularz logowania dla pracowników i administratorów
+### Public Zone (Students & Guests)
+- `/` — Welcome landing page with lab announcements and order tracker
+- `/mainguest` — Guest portal with quick catalog access
+- `/guest-products` — Searchable equipment catalog with cart integration
+- `/cart` — Two-step checkout request form
+- `/orderPreview/:uuid` — Order tracker page (requires secret PIN code)
+- `/login` — Staff & administrator authentication
 
-### Strefa Panelu Pracowniczego (`/admin-dashboard`)
-- `/admin-dashboard` – Główny pulpit ze statystykami i szybkimi metrykami
-- `/admin-dashboard/orders` – Zarządzanie zamówieniami oraz widok kalendarza wypożyczeń
-- `/admin-dashboard/products` – Zarządzanie bazą sprzętową, stanami i parametrami
-- `/admin-dashboard/categories` *(Tylko Admin)* – Dynamiczne drzewo kategorii sprzętu
-- `/admin-dashboard/users` *(Tylko Admin)* – Zarządzanie kontami wykładowców i administratorów
-- `/admin-dashboard/templates` *(Tylko Admin)* – Edytor szablonów korespondencji e-mail
-- `/admin-dashboard/notifications` – Centrum powiadomień dla zalogowanego użytkownika
-
----
-
-## 📜 Skrypty npm
-
-### Główny katalog (`/`):
-- `npm run dev` – Uruchamia backend za pomocą `nodemon` z automatycznym przeładowaniem.
-- `npm run db:seed` – Zasila bazę danych pełnym zestawem danych testowych.
-- `npm run db:init` – Inicjalizuje czystą bazę z kontem administratora.
-- `npm run db:start` – Uruchamia lokalny proces `mongod` (Windows).
-
-### Katalog frontendu (`/frontend`):
-- `npm run dev` – Uruchamia serwer developerski Vite (`http://localhost:5173`).
-- `npm run build` – Buduje zoptymalizowaną paczkę produkcyjną do folderu `dist`.
-- `npm run preview` – Podgląd zbudowanej wersji produkcyjnej lokalnie.
-- `npm run lint` – Weryfikacja kodu za pomocą ESLint.
+### Staff & Admin Zone (`/admin-dashboard`)
+- `/admin-dashboard` — Overview metrics, recent activities, and statistics
+- `/admin-dashboard/orders` — Order management table and interactive calendar
+- `/admin-dashboard/products` — Equipment catalog management and extra fields
+- `/admin-dashboard/categories` *(Admin only)* — Hierarchical category manager
+- `/admin-dashboard/users` *(Admin only)* — Lecturer and admin accounts
+- `/admin-dashboard/templates` *(Admin only)* — Email template customization
+- `/admin-dashboard/notifications` — Notification center for the current user
 
 ---
 
-## 📄 Licencja
+## 📜 NPM Scripts Reference
 
-Projekt zrealizowany w celach naukowo-dydaktycznych na **Politechnice Poznańskiej** (*Poznań University of Technology*).  
-Wszelkie prawa zastrzeżone.
+### Root Directory (`/`):
+- `npm run dev` — Starts backend API server with nodemon.
+- `npm run db:seed` — Seeds MongoDB with complete development mock data.
+- `npm run db:init` — Resets database with base admin account and email templates.
+- `npm run db:start` — Launches local Windows mongod daemon.
+
+### Frontend Directory (`/frontend`):
+- `npm run dev` — Starts Vite development server (`http://localhost:5173`).
+- `npm run build` — Compiles production bundle to `dist/`.
+- `npm run preview` — Previews production build locally.
+- `npm run lint` — Runs ESLint checks across frontend code.
+
+---
+
+## 📄 License
+
+Developed for educational and laboratory purposes at **Poznań University of Technology** (*Politechnika Poznańska*).  
+All rights reserved.
