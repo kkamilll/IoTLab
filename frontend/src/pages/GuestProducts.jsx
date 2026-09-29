@@ -279,17 +279,17 @@ const GuestProducts = () => {
                 </div>
               </div>
 
-              {/* Category Slider */}
+              {/* Category Badges */}
               <div className="flex flex-col gap-1.5">
                 <span className="text-[10px] font-bold text-slate-550 dark:text-slate-400 uppercase tracking-wider pl-1 select-none">
                   {language === "pl" ? "Kategorie" : "Categories"}
                 </span>
-                <div className="flex overflow-x-auto pb-1 -mx-1 px-1 gap-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                <div className="flex flex-wrap items-center gap-2 pt-0.5 max-w-full">
                   <button
                     onClick={() => setActiveCategory("")}
-                    className={`flex-shrink-0 px-4 py-2 rounded-xl text-[11px] font-extrabold transition-all cursor-pointer ${
+                    className={`px-3.5 py-1.5 rounded-xl text-[11px] font-extrabold transition-all cursor-pointer ${
                       activeCategory === "" 
-                        ? "bg-indigo-600 text-white shadow-md border border-indigo-600" 
+                        ? "bg-indigo-600 text-white shadow-xs border border-indigo-600" 
                         : "bg-slate-50 dark:bg-slate-950/40 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
                     }`}
                   >
@@ -299,9 +299,9 @@ const GuestProducts = () => {
                     <button
                       key={cat._id}
                       onClick={() => setActiveCategory(cat._id)}
-                      className={`flex-shrink-0 px-4 py-2 rounded-xl text-[11px] font-extrabold transition-all cursor-pointer ${
+                      className={`px-3.5 py-1.5 rounded-xl text-[11px] font-extrabold transition-all cursor-pointer ${
                         activeCategory === cat._id 
-                          ? "bg-indigo-600 text-white shadow-md border border-indigo-600" 
+                          ? "bg-indigo-600 text-white shadow-xs border border-indigo-600" 
                           : "bg-slate-50 dark:bg-slate-950/40 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
                       }`}
                     >

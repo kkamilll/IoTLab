@@ -823,14 +823,27 @@ const Orders = () => {
             {orders
               .map((order) => {
                 const itemsByOwner = order.items.reduce((acc, item) => {
-                  const ownerId = item?.responsibleOwner?._id?.toString() || "unknown";
-                  const ownerData = order.ownersData.find((od) => od.owner?.toString() === ownerId);
+                  const rawOwnerId = item?.responsibleOwner?._id
+                    ? item.responsibleOwner._id.toString()
+                    : (item?.responsibleOwner ? item.responsibleOwner.toString() : null);
+
+                  let ownerData = order.ownersData?.find((od) =>
+                    rawOwnerId && od.owner?.toString() === rawOwnerId
+                  );
+
+                  if (!ownerData && order.ownersData?.length > 0) {
+                    ownerData = order.ownersData[0];
+                  }
+
+                  const ownerId = rawOwnerId || (ownerData?.owner ? ownerData.owner.toString() : "unknown");
+
                   if (!acc[ownerId]) {
                     acc[ownerId] = {
                       orderId: order._id, items: [],
                       customerInfo: order.customer,
-                      owner: item?.responsibleOwner || { name: language === "pl" ? "Nieznany opiekun" : "Unknown owner" },
-                      ownerData, status: ownerData?.status,
+                      owner: item?.responsibleOwner || { name: language === "pl" ? "Nieznany/Usunięty opiekun" : "Unknown/Deleted owner" },
+                      ownerData,
+                      status: ownerData?.status || item?.status || "pending",
                       dates: {
                         requestedStartDate: order.requestedStartDate,
                         requestedEndDate: order.requestedEndDate,
@@ -852,87 +865,123 @@ const Orders = () => {
                 return (
                   <div key={order._id} className={`bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 border-l-4 ${getOrderBorderColor(order)} shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden`}>
                     {/* Order header */}
-                    <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-slate-200/60 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/70">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
+                    <div className="px-5 py-3.5 border-b border-slate-200/60 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 flex flex-col gap-1.5">
+                      {/* Line 1: Student Badge & Name (Left) + Action Toolbar (Right) */}
+                      <div className="flex items-center justify-between gap-3 min-w-0">
+                        {/* Left: Badge, Order # & Full Name */}
+                        <div className="flex items-center gap-2 min-w-0 flex-wrap sm:flex-nowrap">
                           {order.ownersData?.some(od => od.status === "late") && (
-                            <span className="relative flex h-2 w-2 mr-0.5" title={language === "pl" ? "Opóźniony zwrot!" : "Overdue rental!"}>
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-450 opacity-75"></span>
-                              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                            <span className="relative flex h-2.5 w-2.5 shrink-0" title={language === "pl" ? "Opóźniony zwrot!" : "Overdue rental!"}>
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
                             </span>
                           )}
-                          <span className="inline-flex items-center text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/35">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-black tracking-wide px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-350 border border-indigo-200/60 dark:border-indigo-900/40 shrink-0 select-all font-mono">
+                            <Hash className="w-3 h-3 text-indigo-500 shrink-0" />
+                            <span>#{(order.uuid ? order.uuid.slice(0, 8) : order._id.slice(-8)).toUpperCase()}</span>
+                          </span>
+                          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-900/40 shrink-0 select-none">
                             {language === "pl" ? "Student" : "Student"}
                           </span>
-                          <span className="text-sm font-black text-slate-850 dark:text-slate-100 truncate">
+                          <span className="text-sm font-black text-slate-900 dark:text-white truncate">
                             {customer?.firstName && customer?.lastName
                               ? `${customer.firstName} ${customer.lastName}`
                               : customer?.email || (language === "pl" ? "Nieznany student" : "Unknown customer")}
                           </span>
-                          {customer?.email && customer?.firstName && (
-                            <span className="text-xs text-slate-500 dark:text-slate-400 truncate">{customer.email}</span>
+                        </div>
+
+                        {/* Right: Action Buttons Toolbar */}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="inline-flex items-center px-2 py-0.5 text-xs font-extrabold bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-md select-none mr-0.5">
+                            {totalItems} {language === "pl" ? (totalItems === 1 ? "przedmiot" : "przedmioty") : `item${totalItems !== 1 ? "s" : ""}`}
+                          </span>
+
+                          {Object.keys(itemsByOwner).length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => toggleAllGroupsInOrder(order._id, itemsByOwner, !areAllGroupsExpanded(order._id, itemsByOwner))}
+                              className={`p-1.5 rounded-lg border transition cursor-pointer shadow-2xs ${
+                                areAllGroupsExpanded(order._id, itemsByOwner)
+                                  ? "bg-purple-50 dark:bg-purple-950/40 text-purple-650 dark:text-purple-400 border-purple-200/60 dark:border-purple-900/35"
+                                  : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
+                              }`}
+                              title={areAllGroupsExpanded(order._id, itemsByOwner) ? (language === "pl" ? "Zwiń wszystkie grupy" : "Collapse groups") : (language === "pl" ? "Rozwiń wszystkie grupy" : "Expand groups")}
+                            >
+                              <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${areAllGroupsExpanded(order._id, itemsByOwner) ? "rotate-180" : ""}`} />
+                            </button>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => toggleCustomer(order._id)}
+                            className={`p-1.5 rounded-lg border transition cursor-pointer shadow-2xs ${
+                              expandedCustomer[order._id]
+                                ? "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 border-indigo-200/60 dark:border-indigo-900/35"
+                                : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
+                            }`}
+                            title={language === "pl" ? "Pokaż/ukryj dane studenta" : "Toggle customer details"}
+                          >
+                            <User className="w-4 h-4" />
+                          </button>
+
+                          {user?.role === "admin" && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteOrder(order._id)}
+                              className="p-1.5 rounded-lg border border-rose-200 dark:border-rose-900/40 bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/50 transition cursor-pointer shadow-2xs"
+                              title={language === "pl" ? "Usuń zamówienie" : "Delete order"}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           )}
                         </div>
-                        <div className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-                          📅 {reqStart} → {reqEnd}
-                          {customer?.fieldOfStudy && <span className="ml-2 text-slate-400 font-medium">· {customer.fieldOfStudy}</span>}
-                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {Object.keys(itemsByOwner).length > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => toggleAllGroupsInOrder(order._id, itemsByOwner, !areAllGroupsExpanded(order._id, itemsByOwner))}
-                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer shadow-xs ${
-                              areAllGroupsExpanded(order._id, itemsByOwner)
-                                ? "bg-purple-50 dark:bg-purple-950/40 text-purple-650 dark:text-purple-400 border-purple-200/60 dark:border-purple-900/35"
-                                : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-350 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-855"
-                            }`}
-                          >
-                            <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${areAllGroupsExpanded(order._id, itemsByOwner) ? "rotate-180" : ""}`} />
-                            <span className="hidden sm:inline">
-                              {areAllGroupsExpanded(order._id, itemsByOwner)
-                                ? (language === "pl" ? "Zwiń grupy" : "Collapse groups")
-                                : (language === "pl" ? "Rozwiń grupy" : "Expand groups")}
-                            </span>
-                          </button>
-                        )}
-                        <button
-                          onClick={() => toggleCustomer(order._id)}
-                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer shadow-xs ${
-                            expandedCustomer[order._id]
-                              ? "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 border-indigo-200/60 dark:border-indigo-900/35"
-                              : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-350 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
-                          }`}
-                        >
-                          <User className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">
-                            {expandedCustomer[order._id] ? (language === "pl" ? "Ukryj dane" : "Hide info") : (language === "pl" ? "Pokaż dane" : "Show info")}
-                          </span>
-                        </button>
-                        {user?.role === "admin" && (
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteOrder(order._id)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border border-rose-200 dark:border-rose-900/30 bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-all cursor-pointer shadow-xs"
-                            title={language === "pl" ? "Usuń zamówienie" : "Delete order"}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span className="hidden sm:inline">
-                              {language === "pl" ? "Usuń" : "Delete"}
-                            </span>
-                          </button>
-                        )}
-                        <span className="inline-flex items-center px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800/80 text-slate-650 dark:text-slate-350 border border-slate-200/50 dark:border-slate-700/60">
-                          {totalItems} {language === "pl" ? (totalItems === 1 ? "przedmiot" : "przedmioty/ów") : `item${totalItems !== 1 ? "s" : ""}`}
+
+                      {/* Metadata Badges */}
+                      <div className="flex flex-col lg:flex-row items-start lg:items-center gap-2 mt-0.5 text-xs">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono text-[11px] font-bold select-all" title={language === "pl" ? `Pełne ID: ${order.uuid || order._id}` : `Full ID: ${order.uuid || order._id}`}>
+                          <Hash className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                          <span>{language === "pl" ? "Zamówienie" : "Order"} #{(order.uuid ? order.uuid.slice(0, 8) : order._id.slice(-8)).toUpperCase()}</span>
                         </span>
+
+                        {customer?.email && customer?.firstName && (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium">
+                            <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span>{customer.email}</span>
+                          </span>
+                        )}
+
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-semibold border border-indigo-100 dark:border-indigo-900/30 whitespace-nowrap">
+                          <Calendar className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                          <span>{reqStart} → {reqEnd}</span>
+                        </span>
+
+                        {customer?.fieldOfStudy && (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 font-semibold border border-purple-100 dark:border-purple-900/30 whitespace-nowrap">
+                            🎓 {customer.fieldOfStudy}
+                          </span>
+                        )}
                       </div>
                     </div>
 
                     {/* Collapsible Customer Details */}
                     {expandedCustomer[order._id] && (
                       <div className="bg-slate-50/40 dark:bg-slate-950/20 border-b border-slate-100 dark:border-slate-800 p-4 transition-all duration-250">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+                          {/* Order ID / UUID */}
+                          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-xl p-3 shadow-xs flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-500 dark:text-indigo-400">
+                              <Hash className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                {language === "pl" ? "Identyfikator" : "Order ID"}
+                              </p>
+                              <p className="text-xs font-mono font-bold text-slate-800 dark:text-slate-100 truncate select-all" title={order.uuid || order._id}>
+                                {order.uuid || order._id}
+                              </p>
+                            </div>
+                          </div>
                           {/* Student Index */}
                           <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-xl p-3 shadow-xs flex items-center gap-3">
                             <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-500 dark:text-indigo-400">

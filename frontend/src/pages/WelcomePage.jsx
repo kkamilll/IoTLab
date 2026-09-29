@@ -449,7 +449,7 @@ const WelcomePage = () => {
                 <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {paginatedNotes.map(note => (
                     <li key={note._id} className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-850 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-[1.02] flex flex-col justify-between">
-                      <p className="text-slate-700 dark:text-slate-200 text-sm leading-relaxed font-semibold whitespace-pre-wrap break-words break-all">
+                      <p className="text-slate-700 dark:text-slate-200 text-sm leading-relaxed font-semibold whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
                         {note.text}
                       </p>
                       <div className="mt-4 text-slate-500 dark:text-slate-400 text-xs font-semibold italic border-t border-slate-250 dark:border-slate-800 pt-3">

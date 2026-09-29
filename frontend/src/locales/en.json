@@ -122,7 +122,7 @@
     "fillField": "Please fill in your {field}!",
     "recaptchaAlert": "Please verify that you are human!",
     "phoneDigitsAlert": "Phone number must be 9–10 digits",
-    "indexDigitsAlert": "Index must be exactly 6 digits",
+    "indexDigitsAlert": "Index number must be at least 5 digits",
     "emailValidAlert": "Please enter a valid email address",
     "selectDatesAlert": "Please select start and end dates for the order!",
     "startDatePastAlert": "Start date cannot be in the past!",

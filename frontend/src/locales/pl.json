@@ -122,7 +122,7 @@
     "fillField": "Proszę wypełnić pole: {field}!",
     "recaptchaAlert": "Proszę zweryfikować, że nie jesteś robotem!",
     "phoneDigitsAlert": "Numer telefonu musi składać się z 9–10 cyfr",
-    "indexDigitsAlert": "Numer indeksu musi składać się z dokładnie 6 cyfr",
+    "indexDigitsAlert": "Numer indeksu musi składać się z co najmniej 5 cyfr",
     "emailValidAlert": "Proszę podać poprawny adres e-mail",
     "selectDatesAlert": "Proszę wybrać datę rozpoczęcia i zakończenia zamówienia!",
     "startDatePastAlert": "Data rozpoczęcia nie może być w przeszłości!",

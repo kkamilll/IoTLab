@@ -340,6 +340,24 @@ export const deleteUser = async (req, res, next) => {
       );
     }
 
+    // Sprawdź, czy użytkownik jest powiązany z istniejącymi zamówieniami
+    const associatedOrders = await Order.find({
+      $or: [
+        { "ownersData.owner": userId },
+        { "items.responsibleOwner": userId }
+      ]
+    });
+    if (associatedOrders.length > 0) {
+      const isPl = req.headers["accept-language"]?.includes("pl");
+      return next(
+        new BadRequestError(
+          isPl
+            ? "Nie można usunąć użytkownika: jest on przypisany do istniejących zamówień. Najpierw usuń te zamówienia."
+            : "Cannot delete user: they are assigned to existing orders. Please delete those orders first."
+        )
+      );
+    }
+
     const deletedUser = await User.findByIdAndDelete(userId);
     if (!deletedUser) return next(new ResourceNotFoundError("User"));
     if (deletedUser.profileImage) {

@@ -396,9 +396,15 @@ export const createOrder = asyncHandler(async (req, res, next) => {
     throw new BadRequestError("Invalid email address");
   }
 
-  const indexRegex = /^\d{6}$/;
+  const indexRegex = /^\d{5,}$/;
   if (!indexRegex.test(customer.index)) {
-    throw new BadRequestError("Index must be only 6 digits");
+    throw new BadRequestError("Index must be at least 5 digits");
+  }
+
+  if (customer.phoneNumber) {
+    customer.phoneNumber = String(customer.phoneNumber).trim().replace(/[\s\-\(\)\.]/g, "");
+    if (customer.phoneNumber.startsWith("+48")) customer.phoneNumber = customer.phoneNumber.slice(3);
+    else if (customer.phoneNumber.startsWith("0048")) customer.phoneNumber = customer.phoneNumber.slice(4);
   }
 
   const phoneRegex = /^\d{9,10}$/;

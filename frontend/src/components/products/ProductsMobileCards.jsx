@@ -2,6 +2,35 @@ import React from "react";
 import { useLanguage } from "../../context/LanguageContext";
 import { Edit2, Eye, Trash2, Plus, Minus, User, Package, ShoppingCart } from "lucide-react";
 
+const API_BASE = `${import.meta.env.VITE_API_IP || ""}${import.meta.env.VITE_API_PORT || ""}${import.meta.env.VITE_API_POSTFIX || ""}`;
+
+const getImageUrl = (product) => {
+  if (!product || !product.images || !Array.isArray(product.images) || product.images.length === 0) {
+    return null;
+  }
+  const imgObj = product.images.find((i) => i && (i.isVisible || i.visible)) || product.images[0];
+  if (!imgObj) return null;
+
+  let rawPath = "";
+  if (typeof imgObj === "string") {
+    rawPath = imgObj;
+  } else if (typeof imgObj === "object") {
+    rawPath = imgObj.filename || imgObj.path || imgObj.url || imgObj.src || imgObj.originalName || "";
+  }
+
+  if (!rawPath) return null;
+  if (rawPath.startsWith("http://") || rawPath.startsWith("https://")) {
+    return rawPath;
+  }
+
+  const fileName = rawPath.includes("/") || rawPath.includes("\\")
+    ? rawPath.split(/[\/\\]/).pop()
+    : rawPath;
+
+  if (!fileName) return null;
+  return `${API_BASE}/uploads/products/${fileName}`;
+};
+
 const ProductsMobileCards = ({
   paginatedProducts,
   cartQuantities,
@@ -30,22 +59,51 @@ const ProductsMobileCards = ({
             handlePreview(product._id);
           }}
         >
-          {/* Name */}
+          {/* Name & Thumbnail */}
           <div className="flex justify-between items-center py-1 border-b border-slate-100 dark:border-slate-800/60 last:border-b-0 min-w-0">
             <span className="font-bold text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-wider">{t("products.columns.name")}:</span>
             <label 
-              className="flex items-center gap-2 max-w-[65%] min-w-0 justify-end cursor-pointer select-none"
+              className="flex items-center gap-2 max-w-[75%] min-w-0 justify-end cursor-pointer select-none"
               onClick={(e) => e.stopPropagation()}
             >
               <input
                 type="checkbox"
                 checked={selectedProductIds.includes(product._id)}
                 onChange={() => handleToggleSelect(product._id)}
-                className="w-3.5 h-3.5 rounded accent-indigo-650 cursor-pointer"
+                className="w-3.5 h-3.5 rounded accent-indigo-650 cursor-pointer shrink-0"
               />
-              <span className="text-indigo-650 dark:text-indigo-400 font-bold truncate text-sm text-right" title={product.name}>
-                {product.name}
-              </span>
+              <div className="flex items-center gap-2 min-w-0">
+                {(() => {
+                  const imgUrl = getImageUrl(product);
+                  return imgUrl ? (
+                    <>
+                      <img
+                        src={imgUrl}
+                        alt={product.name}
+                        className="w-8 h-8 rounded-lg object-cover border border-slate-200 dark:border-slate-700 shrink-0"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                          const fallback = e.currentTarget.nextElementSibling;
+                          if (fallback) fallback.style.display = "flex";
+                        }}
+                      />
+                      <div
+                        className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs shrink-0 select-none border border-slate-200 dark:border-slate-700"
+                        style={{ display: "none" }}
+                      >
+                        📦
+                      </div>
+                    </>
+                  ) : (
+                    <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs shrink-0 select-none border border-slate-200 dark:border-slate-700">
+                      📦
+                    </div>
+                  );
+                })()}
+                <span className="text-indigo-650 dark:text-indigo-400 font-bold truncate text-sm text-right" title={product.name}>
+                  {product.name}
+                </span>
+              </div>
             </label>
           </div>
 

@@ -16,6 +16,14 @@ import { Calendar, User, ArrowLeft, ArrowRight, Trash2, Plus, Minus, Check, Shop
 import CartStepItems from "../components/cart/CartStepItems";
 import CartStepForm from "../components/cart/CartStepForm";
 
+const normalizePhoneNumber = (phone) => {
+  if (!phone) return "";
+  let cleaned = String(phone).trim().replace(/[\s\-\(\)\.]/g, "");
+  if (cleaned.startsWith("+48")) cleaned = cleaned.slice(3);
+  else if (cleaned.startsWith("0048")) cleaned = cleaned.slice(4);
+  return cleaned;
+};
+
 const phoneRegex = /^\d{9,10}$/;
 const isValidDate = (date) => date instanceof Date && !isNaN(date.getTime());
 
@@ -147,12 +155,13 @@ const CartPage = () => {
         return;
       }
 
-      if (orderCustomer.phoneNumber && !phoneRegex.test(orderCustomer.phoneNumber)) {
+      const cleanPhone = normalizePhoneNumber(orderCustomer.phoneNumber);
+      if (cleanPhone && !phoneRegex.test(cleanPhone)) {
         showToast(t("cart.phoneDigitsAlert"), "error");
         return;
       }
 
-      const indexRegex = /^\d{6}$/;
+      const indexRegex = /^\d{5,}$/;
       if (orderCustomer.index && !indexRegex.test(orderCustomer.index)) {
         showToast(t("cart.indexDigitsAlert"), "error");
         return;
@@ -212,7 +221,10 @@ const CartPage = () => {
 
       await apiClient.post("/orders/create", {
         token: captchaToken || "",
-        customer: orderCustomer,
+        customer: {
+          ...orderCustomer,
+          phoneNumber: cleanPhone,
+        },
         items,
         requestedStartDate: orderDates.startDate,
         requestedEndDate: orderDates.endDate,

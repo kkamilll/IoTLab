@@ -5,7 +5,34 @@ import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import TextField from "@mui/material/TextField";
 import ConfirmDialog from "../layout/ConfirmDialog";
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3500";
+const API_BASE = `${import.meta.env.VITE_API_IP || ""}${import.meta.env.VITE_API_PORT || ""}${import.meta.env.VITE_API_POSTFIX || ""}`;
+
+const getImageUrl = (item) => {
+  if (!item || !item.images || !Array.isArray(item.images) || item.images.length === 0) {
+    return null;
+  }
+  const imgObj = item.images.find((i) => i && (i.isVisible || i.visible)) || item.images[0];
+  if (!imgObj) return null;
+
+  let rawPath = "";
+  if (typeof imgObj === "string") {
+    rawPath = imgObj;
+  } else if (typeof imgObj === "object") {
+    rawPath = imgObj.filename || imgObj.path || imgObj.url || imgObj.src || imgObj.originalName || "";
+  }
+
+  if (!rawPath) return null;
+  if (rawPath.startsWith("http://") || rawPath.startsWith("https://")) {
+    return rawPath;
+  }
+
+  const fileName = rawPath.includes("/") || rawPath.includes("\\")
+    ? rawPath.split(/[\/\\]/).pop()
+    : rawPath;
+
+  if (!fileName) return null;
+  return `${API_BASE}/uploads/products/${fileName}`;
+};
 
 const isValidDate = (date) => date instanceof Date && !isNaN(date.getTime());
 
@@ -157,18 +184,34 @@ const CartStepItems = ({
                       className="flex flex-col sm:flex-row sm:items-center gap-4 rounded-xl border border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-950/20 p-4 hover:border-slate-200 dark:hover:border-slate-700 transition"
                     >
                       {/* Product Thumbnail */}
-                      <div className="flex-shrink-0">
-                        {item.images?.length ? (
-                          <img
-                            src={`${API_BASE}/uploads/products/${item.images.find(i => i.isVisible)?.filename || item.images[0].filename}`}
-                            alt={item.name}
-                            className="h-16 w-16 rounded-xl object-cover border border-slate-200 dark:border-slate-700"
-                          />
-                        ) : (
-                          <div className="h-16 w-16 rounded-xl bg-gradient-to-tr from-indigo-50 to-slate-200 dark:from-slate-850 dark:to-slate-800 flex items-center justify-center text-xl select-none">
-                            📦
-                          </div>
-                        )}
+                      <div className="flex-shrink-0 relative">
+                        {(() => {
+                          const imgUrl = getImageUrl(item);
+                          return imgUrl ? (
+                            <>
+                              <img
+                                src={imgUrl}
+                                alt={item.name}
+                                className="h-16 w-16 rounded-xl object-cover border border-slate-200 dark:border-slate-700"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = "none";
+                                  const fallback = e.currentTarget.nextElementSibling;
+                                  if (fallback) fallback.style.display = "flex";
+                                }}
+                              />
+                              <div
+                                className="h-16 w-16 rounded-xl bg-gradient-to-tr from-indigo-50 to-slate-200 dark:from-slate-850 dark:to-slate-800 flex items-center justify-center text-xl select-none border border-slate-200 dark:border-slate-700"
+                                style={{ display: "none" }}
+                              >
+                                📦
+                              </div>
+                            </>
+                          ) : (
+                            <div className="h-16 w-16 rounded-xl bg-gradient-to-tr from-indigo-50 to-slate-200 dark:from-slate-850 dark:to-slate-800 flex items-center justify-center text-xl select-none border border-slate-200 dark:border-slate-700">
+                              📦
+                            </div>
+                          );
+                        })()}
                       </div>
 
                       {/* Product Info */}

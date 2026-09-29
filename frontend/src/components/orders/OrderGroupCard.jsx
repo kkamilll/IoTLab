@@ -255,29 +255,58 @@ const OrderGroupCard = ({
             )}
           </div>
 
-          {/* Items */}
+          {/* Items Table */}
           {group.items.length > 0 && (
             <div className="mb-4">
               <div className="flex items-center gap-1.5 mb-2.5">
                 <span className="p-1 rounded bg-slate-100 dark:bg-slate-900 text-slate-400 dark:text-slate-500">
                   <Package className="w-3.5 h-3.5" />
                 </span>
-                <p className="font-extrabold text-[10px] text-slate-400 dark:text-slate-550 uppercase tracking-wider">
-                  {language === "pl" ? "Przedmioty" : "Items"}
+                <p className="font-extrabold text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                  {language === "pl" ? "Przedmioty w zamówieniu" : "Order Items"}
                 </p>
               </div>
-              <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 shadow-xs">
-                <ul className="list-none p-0 m-0">
-                  {group.items.map((item, i) => (
-                    <OrderItemDetails
-                      key={i}
-                      item={item}
-                      expanded={expanded}
-                      setExpanded={setExpanded}
-                      orderId={order._id}
-                    />
-                  ))}
-                </ul>
+
+              <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-2xs">
+                <table className="w-full text-left text-xs border-collapse min-w-[480px]">
+                  <thead>
+                    <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                      <th className="py-2.5 px-4">{language === "pl" ? "Sprzęt / Przedmiot" : "Equipment / Item"}</th>
+                      <th className="py-2.5 px-3 text-center">{language === "pl" ? "Wnioskowane" : "Requested"}</th>
+                      <th className="py-2.5 px-3 text-center">{language === "pl" ? "Przydzielone" : "Assigned"}</th>
+                      <th className="py-2.5 px-4 text-center">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-850">
+                    {group.items.map((item, i) => (
+                      <tr key={i} className="hover:bg-slate-50/60 dark:hover:bg-slate-900/40 transition-colors">
+                        <td className="py-3 px-4">
+                          <span className="font-black text-slate-850 dark:text-slate-100 text-sm">
+                            {item?.product?.name || (language === "pl" ? "Usunięty produkt" : "Deleted product")}
+                          </span>
+                          {item?.product?.tags?.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {item.product.tags.map((tag, tIdx) => (
+                                <span key={tIdx} className="text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded-md border border-slate-200/40 dark:border-slate-700/40">
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-3 px-3 text-center font-bold text-slate-700 dark:text-slate-300">
+                          {item.requestedQuantity ?? 1} {language === "pl" ? "szt." : "pcs"}
+                        </td>
+                        <td className="py-3 px-3 text-center font-bold text-slate-700 dark:text-slate-300">
+                          {item.assignedQuantity ?? item.requestedQuantity ?? 1} {language === "pl" ? "szt." : "pcs"}
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <StatusBadge status={item.status} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}

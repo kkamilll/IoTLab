@@ -19,24 +19,24 @@ export const rentalAgreementTemplate = ({ customerInfo, items, startDate, endDat
     <div style="display: flex; flex-wrap: wrap; margin-bottom: 15px;">
       <div style="flex: 1; min-width: 250px; padding-right: 20px;">
         <p>
-          <b>First and last name</b>: ${customerInfo.firstName} ${customerInfo.lastName}<br/>
-          <b>Index</b>: ${customerInfo.index}<br/>
-          <b>Semester</b>: ${customerInfo.semester}<br/>
-          <b>Year of study</b>: ${customerInfo.yearOfStudy}
+          <b>First and last name</b>: ${customerInfo?.firstName || ''} ${customerInfo?.lastName || ''}<br/>
+          <b>Index</b>: ${customerInfo?.index || '—'}<br/>
+          <b>Semester</b>: ${customerInfo?.semester || '—'}<br/>
+          <b>Year of study</b>: ${customerInfo?.yearOfStudy || '—'}
         </p>
       </div>
       <div style="flex: 1; min-width: 250px;">
         <p>
-          <b>Specialization</b>: ${customerInfo.specialization}<br/>
-          <b>Field of study</b>: ${customerInfo.fieldOfStudy}<br/>
-          <b>Phone</b>: ${customerInfo.phoneNumber}<br/>
-          <b>Email</b>: ${customerInfo.email}
+          <b>Specialization</b>: ${customerInfo?.specialization || '—'}<br/>
+          <b>Field of study</b>: ${customerInfo?.fieldOfStudy || '—'}<br/>
+          <b>Phone</b>: ${customerInfo?.phoneNumber || '—'}<br/>
+          <b>Email</b>: ${customerInfo?.email || '—'}
         </p>
       </div>
     </div>
 
     <p style="margin: 10px 0;">
-      This agreement certifies that on <b>${today}</b>, the Borrower received from the Laboratory the following equipment:
+      This agreement certifies that on <b>${today || ''}</b>, the Borrower received from the Laboratory the following equipment:
     </p>
 
     <table style="width:100%; border-collapse: collapse; border-spacing:0; font-size:11px;">
@@ -47,18 +47,18 @@ export const rentalAgreementTemplate = ({ customerInfo, items, startDate, endDat
         </tr>
       </thead>
       <tbody>
-        ${items.map(i => `
+        ${(items || []).map(i => `
           <tr>
-            <td style="padding:8px; border:1px solid #000;">${i.productName}</td>
-            <td style="padding:8px; border:1px solid #000; text-align:center;">${i.quantity}</td>
+            <td style="padding:8px; border:1px solid #000;">${i.productName || i.product?.name || i.name || "Usunięty obiekt / Deleted Product"}</td>
+            <td style="padding:8px; border:1px solid #000; text-align:center;">${i.quantity ?? i.assignedQuantity ?? i.requestedQuantity ?? 1}</td>
           </tr>
         `).join("")}
       </tbody>
     </table>
 
     <ol style="margin: 20px 0; padding: 0 0 0 20px; font-size: 12px;">
-      <li>The above-mentioned items were borrowed for the purpose of: <b>${customerInfo.purpose}</b>.</li>
-      <li>I agree to return the requested items by: <b>${endDate}</b>.</li>
+      <li>The above-mentioned items were borrowed for the purpose of: <b>${customerInfo?.purpose || '—'}</b>.</li>
+      <li>I agree to return the requested items by: <b>${endDate || '—'}</b>.</li>
       <li>In the event of loss of the borrowed equipment, I agree to repurchase it.</li>
     </ol>
 
