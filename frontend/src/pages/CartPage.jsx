@@ -6,10 +6,7 @@ import { useLanguage } from "../context/LanguageContext";
 import { useTheme } from "../context/ThemeContext";
 import { useToast } from "../context/ToastContext";
 
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
-import TextField from "@mui/material/TextField";
+
 
 import ReCAPTCHA from "react-google-recaptcha";
 import { Calendar, User, ArrowLeft, ArrowRight, Trash2, Plus, Minus, Check, ShoppingCart, Moon, Sun, AlertTriangle, Info, HelpCircle } from "lucide-react";
@@ -201,15 +198,17 @@ const CartPage = () => {
       }
 
       const now = new Date();
+      now.setHours(0, 0, 0, 0);
       const start = new Date(orderDates.startDate);
+      start.setHours(0, 0, 0, 0);
       const end = new Date(orderDates.endDate);
-      const bufferTime = new Date(now.getTime() - 60000);
+      end.setHours(0, 0, 0, 0);
 
-      if (start < bufferTime) {
+      if (start < now) {
         showToast(t("cart.startDatePastAlert"), "error");
         return;
       }
-      if (end <= start) {
+      if (end < start) {
         showToast(t("cart.endDateBeforeStartAlert"), "error");
         return;
       }

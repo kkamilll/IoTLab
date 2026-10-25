@@ -37,11 +37,18 @@ export const getCollectionById = async (req, res, next) => {
 // Dodaj kategorię
 export const createCollection = async (req, res, next) => {
   try {
-    const { name, logo } = req.body;
+    const { name, logo, isDirectLink, directUrl } = req.body;
     const userId = req.user._id;
     if (!name) return next(new BadRequestError("Collection name required"));
 
-    const collection = new Component({ name, logo, files: [], author: userId });
+    const collection = new Component({
+      name,
+      logo,
+      files: [],
+      author: userId,
+      isDirectLink: Boolean(isDirectLink),
+      directUrl: directUrl ? String(directUrl).trim() : "",
+    });
     await collection.save();
     await collection.populate("author", "name email");
 
@@ -178,7 +185,7 @@ export const deleteFile = async (req, res, next) => {
 export const editCollection = async (req, res, next) => {
   try {
     const { collectionId } = req.params;
-    const { name, logo } = req.body;
+    const { name, logo, isDirectLink, directUrl } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(collectionId))
       return next(new BadRequestError("Invalid collection ID"));
@@ -189,7 +196,9 @@ export const editCollection = async (req, res, next) => {
     if (!collection) return next(new ResourceNotFoundError("Collection"));
 
     collection.name = name;
-    if(logo) collection.logo = logo;
+    if (logo !== undefined) collection.logo = logo;
+    if (isDirectLink !== undefined) collection.isDirectLink = Boolean(isDirectLink);
+    if (directUrl !== undefined) collection.directUrl = directUrl ? String(directUrl).trim() : "";
 
     await collection.save();
 

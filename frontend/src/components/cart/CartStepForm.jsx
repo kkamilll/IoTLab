@@ -131,8 +131,8 @@ const CartStepForm = ({
 
           <div className="text-[10px] leading-relaxed bg-slate-50 dark:bg-slate-950/40 p-3 rounded-xl border border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400 mt-1 font-mono">
             <span className="font-sans block font-bold text-slate-400 uppercase tracking-wider text-[8px] mb-1">{language === "pl" ? "Wybrany termin" : "Selected dates"}</span>
-            <span>Pocz: {new Date(orderDates.startDate).toLocaleString()}</span>
-            <span className="block mt-0.5">Koniec: {new Date(orderDates.endDate).toLocaleString()}</span>
+            <span>Pocz: {new Date(orderDates.startDate).toLocaleDateString()}</span>
+            <span className="block mt-0.5">Koniec: {new Date(orderDates.endDate).toLocaleDateString()}</span>
           </div>
         </div>
 

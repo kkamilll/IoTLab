@@ -234,8 +234,8 @@ const OrderGroupCard = ({
               <div className="min-w-0">
                 <p className="text-[10px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider">{language === "pl" ? "Wnioskowane daty" : "Requested Dates"}</p>
                 <p className="text-xs font-bold text-slate-700 dark:text-slate-305 mt-1">
-                  {new Date(group.dates?.requestedStartDate).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" })} →{" "}
-                  {new Date(group.dates?.requestedEndDate).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" })}
+                  {new Date(group.dates?.requestedStartDate).toLocaleDateString("pl-PL")} →{" "}
+                  {new Date(group.dates?.requestedEndDate).toLocaleDateString("pl-PL")}
                 </p>
               </div>
             </div>
@@ -247,8 +247,8 @@ const OrderGroupCard = ({
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold text-indigo-500 dark:text-indigo-400 uppercase tracking-wider">{language === "pl" ? "Przydzielone daty" : "Assigned Dates"}</p>
                   <p className="text-xs font-bold text-indigo-700 dark:text-indigo-305 mt-1">
-                    {new Date(group.dates?.assignedStartDate).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" })} →{" "}
-                    {new Date(group.dates?.assignedEndDate).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" })}
+                    {new Date(group.dates?.assignedStartDate).toLocaleDateString("pl-PL")} →{" "}
+                    {new Date(group.dates?.assignedEndDate).toLocaleDateString("pl-PL")}
                   </p>
                 </div>
               </div>

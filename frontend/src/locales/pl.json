@@ -276,6 +276,9 @@
     "createNewCollection": "Utwórz nową kolekcję",
     "collectionNamePlaceholder": "Nazwa kolekcji (np. Mikrokontrolery)...",
     "logoEmojiPlaceholder": "Opcjonalne logo emoji",
+    "directLinkCheckbox": "Bezpośredni link (przekierowanie po kliknięciu)",
+    "directUrlPlaceholder": "Adres URL (np. https://example.com lub /guest-products)...",
+    "directLinkBadge": "Bezpośredni link",
     "noCollections": "Brak kolekcji. Dodaj kolekcję powyżej, aby zacząć.",
     "noCollectionsDesc": "Dodaj kolekcję powyżej, aby zacząć organizować pliki i linki.",
     "linkText": "Tekst",
@@ -304,7 +307,7 @@
     "download": "Pobierz ↓",
     "preview": "Podgląd",
     "hide": "Ukryj ×",
-    "backHome": "← Powrót do główny"
+    "backHome": "← Powrót do strony głównej"
   },
   "templates": {
     "title": "Szablony wiadomości e-mail",

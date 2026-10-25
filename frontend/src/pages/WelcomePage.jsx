@@ -130,8 +130,19 @@ const WelcomePage = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const handleCollectionClick = (id) => {
-    navigate(`/components/${id}`); // jeśli zalogowany → pokaz pliki
+  const handleCollectionClick = (collection) => {
+    if (collection?.isDirectLink && collection?.directUrl) {
+      const url = collection.directUrl.trim();
+      if (/^https?:\/\//i.test(url)) {
+        window.open(url, "_blank", "noopener,noreferrer");
+      } else if (url.startsWith("/")) {
+        navigate(url);
+      } else {
+        window.open(`https://${url}`, "_blank", "noopener,noreferrer");
+      }
+      return;
+    }
+    navigate(`/components/${collection._id}`);
   };
 
   // Handlers
@@ -244,10 +255,7 @@ const WelcomePage = () => {
         ></div>
         <div className="absolute inset-0 bg-gradient-to-b from-slate-100/40 via-slate-50/60 to-slate-50 dark:from-slate-950/40 dark:via-slate-900/60 dark:to-slate-900"></div>
         <div className="relative z-10 max-w-3xl text-center px-6">
-          <span className="text-xs font-extrabold uppercase tracking-widest text-indigo-600 dark:text-indigo-400 px-3 py-1 bg-indigo-100 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 rounded-full">
-            {t("welcome.reservationSystem")}
-          </span>
-          <h1 className="text-5xl md:text-7xl font-black mb-3 mt-4 leading-tight text-slate-900 dark:text-white tracking-tight">
+          <h1 className="text-5xl md:text-7xl font-black mb-3 leading-tight text-slate-900 dark:text-white tracking-tight">
             IoTLab
           </h1>
           <p className="text-base md:text-xl mb-8 font-medium text-slate-600 dark:text-slate-300 max-w-xl mx-auto">
@@ -309,9 +317,18 @@ const WelcomePage = () => {
                 {collections.slice(collectionIndex, collectionIndex + visibleCount).map(collection => (
                   <div
                     key={collection._id}
-                    onClick={() => handleCollectionClick(collection._id)}
-                    className="bg-white dark:bg-slate-800/45 border border-slate-200 dark:border-slate-700/50 hover:border-indigo-500 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-[1.02] flex flex-col items-center text-center flex-shrink-0 w-[220px] cursor-pointer"
+                    onClick={() => handleCollectionClick(collection)}
+                    className="relative group bg-white dark:bg-slate-800/45 border border-slate-200 dark:border-slate-700/50 hover:border-indigo-500 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-[1.02] flex flex-col items-center text-center flex-shrink-0 w-[220px] cursor-pointer"
                   >
+                    {collection.isDirectLink && (
+                      <span
+                        className="absolute top-3 right-3 text-slate-400 group-hover:text-indigo-600 dark:text-slate-500 dark:group-hover:text-indigo-400 transition text-xs font-bold"
+                        title={collection.directUrl}
+                      >
+                        ↗
+                      </span>
+                    )}
+
                     <div
                       className="w-14 h-14 rounded-xl text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 text-lg font-medium flex items-center justify-center mb-4 truncate"
                       title={collection.logo}

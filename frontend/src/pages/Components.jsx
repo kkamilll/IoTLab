@@ -20,6 +20,8 @@ const Components = () => {
   const [collections, setCollections] = useState([]);
   const [newCollection, setNewCollection] = useState("");
   const [newCollectionLogo, setNewCollectionLogo] = useState("");
+  const [newCollectionIsDirectLink, setNewCollectionIsDirectLink] = useState(false);
+  const [newCollectionDirectUrl, setNewCollectionDirectUrl] = useState("");
   const [expanded, setExpanded] = useState(null);
 
   const [linkInputs, setLinkInputs] = useState({});
@@ -32,6 +34,8 @@ const Components = () => {
   const [editingId, setEditingId] = useState(null);
   const [editingName, setEditingName] = useState("");
   const [editingLogo, setEditingLogo] = useState("");
+  const [editingIsDirectLink, setEditingIsDirectLink] = useState(false);
+  const [editingDirectUrl, setEditingDirectUrl] = useState("");
 
   // Fetch collections
   const fetchCollections = async () => {
@@ -48,7 +52,11 @@ const Components = () => {
     if (!newCollection.trim()) return;
 
     try {
-      const payload = { name: newCollection };
+      const payload = {
+        name: newCollection,
+        isDirectLink: newCollectionIsDirectLink,
+        directUrl: newCollectionIsDirectLink ? newCollectionDirectUrl.trim() : "",
+      };
       if (newCollectionLogo.trim()) payload.logo = newCollectionLogo;
 
       await apiClient.post("/components/create", payload);
@@ -56,6 +64,8 @@ const Components = () => {
 
       setNewCollection("");
       setNewCollectionLogo("");
+      setNewCollectionIsDirectLink(false);
+      setNewCollectionDirectUrl("");
     } catch {
       showToast(t("components.addLinkError"), "error");
     }
@@ -86,7 +96,11 @@ const Components = () => {
     if (!editingName.trim()) return;
 
     try {
-      const payload = { name: editingName };
+      const payload = {
+        name: editingName,
+        isDirectLink: editingIsDirectLink,
+        directUrl: editingIsDirectLink ? editingDirectUrl.trim() : "",
+      };
       if (editingLogo.trim()) payload.logo = editingLogo;
 
       await apiClient.patch(`/components/${collectionId}`, payload);
@@ -95,6 +109,8 @@ const Components = () => {
       setEditingId(null);
       setEditingName("");
       setEditingLogo("");
+      setEditingIsDirectLink(false);
+      setEditingDirectUrl("");
     } catch {
       showToast(t("components.editCollectionError"), "error");
     }
@@ -255,11 +271,32 @@ const Components = () => {
                 />
                 <button
                   onClick={addCollection}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-sm transition"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-sm transition cursor-pointer"
                 >
                   {t("common.add") || "Add"}
                 </button>
               </div>
+            </div>
+
+            {/* Direct link toggle and url input */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-2 border-t border-slate-200/50">
+              <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700 select-none">
+                <input
+                  type="checkbox"
+                  checked={newCollectionIsDirectLink}
+                  onChange={(e) => setNewCollectionIsDirectLink(e.target.checked)}
+                  className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                />
+                <span>{t("components.directLinkCheckbox")}</span>
+              </label>
+              {newCollectionIsDirectLink && (
+                <input
+                  value={newCollectionDirectUrl}
+                  onChange={(e) => setNewCollectionDirectUrl(e.target.value)}
+                  placeholder={t("components.directUrlPlaceholder")}
+                  className="flex-1 border border-slate-200 rounded-xl px-3.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                />
+              )}
             </div>
           </div>
 
@@ -280,7 +317,7 @@ const Components = () => {
               >
                 <div className="flex justify-between items-center">
                   {editingId === collection._id ? (
-                    <div className="flex-1 flex flex-col gap-2">
+                    <div className="flex-1 flex flex-col gap-2.5">
                       <input
                         value={editingName}
                         onChange={(e) => setEditingName(e.target.value)}
@@ -293,6 +330,28 @@ const Components = () => {
                         className="flex-1 border border-slate-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                         placeholder={t("components.logoString")}
                       />
+
+                      {/* Direct link in edit mode */}
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 py-1 bg-slate-50/70 p-2.5 rounded-xl border border-slate-200/60">
+                        <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700 select-none">
+                          <input
+                            type="checkbox"
+                            checked={editingIsDirectLink}
+                            onChange={(e) => setEditingIsDirectLink(e.target.checked)}
+                            className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                          />
+                          <span>{t("components.directLinkCheckbox")}</span>
+                        </label>
+                        {editingIsDirectLink && (
+                          <input
+                            value={editingDirectUrl}
+                            onChange={(e) => setEditingDirectUrl(e.target.value)}
+                            placeholder={t("components.directUrlPlaceholder")}
+                            className="flex-1 border border-slate-200 rounded-xl px-3 py-1 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                          />
+                        )}
+                      </div>
+
                       <div className="flex gap-2">
                         <button
                           onClick={() => editCollection(collection._id)}
@@ -305,6 +364,8 @@ const Components = () => {
                             setEditingId(null);
                             setEditingName("");
                             setEditingLogo("");
+                            setEditingIsDirectLink(false);
+                            setEditingDirectUrl("");
                           }}
                           className="bg-slate-100 text-slate-700 text-xs font-bold px-3 py-1.5 rounded-xl hover:bg-slate-200 transition"
                         >
@@ -338,13 +399,23 @@ const Components = () => {
                         </span>
                       )}
 
-                      {/* Name: truncated */}
-                      <span
-                        className="flex-1 min-w-0 font-bold text-slate-800 text-sm sm:text-base truncate"
-                        title={collection.name}
-                      >
-                        {collection.name}
-                      </span>
+                      {/* Name: truncated + direct link badge */}
+                      <div className="flex-1 min-w-0 flex items-center gap-2">
+                        <span
+                          className="font-bold text-slate-800 text-sm sm:text-base truncate"
+                          title={collection.name}
+                        >
+                          {collection.name}
+                        </span>
+                        {collection.isDirectLink && (
+                          <span
+                            className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200 flex-shrink-0"
+                            title={collection.directUrl}
+                          >
+                            🔗 {collection.directUrl || t("components.directLinkBadge")}
+                          </span>
+                        )}
+                      </div>
 
                       {/* Action buttons */}
                       <div className="flex gap-1.5 flex-shrink-0">
@@ -353,6 +424,8 @@ const Components = () => {
                             setEditingId(collection._id);
                             setEditingName(collection.name);
                             setEditingLogo(collection.logo || "");
+                            setEditingIsDirectLink(Boolean(collection.isDirectLink));
+                            setEditingDirectUrl(collection.directUrl || "");
                           }}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition text-sm"
                         >

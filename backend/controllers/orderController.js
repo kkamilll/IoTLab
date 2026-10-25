@@ -433,14 +433,17 @@ export const createOrder = asyncHandler(async (req, res, next) => {
       };
     });
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const start = new Date(requestedStartDate);
+    start.setHours(0, 0, 0, 0);
     const end = new Date(requestedEndDate);
-    const bufferTime = new Date(Date.now() - 60000); // 1-minute buffer
+    end.setHours(0, 0, 0, 0);
 
-    if (start < bufferTime) {
+    if (start < today) {
       throw new ValidationError(`Start date cannot be in the past`);
     }
-    if (end <= start) {
+    if (end < start) {
       throw new ValidationError(`Start date must be before end date`);
     }
 

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Calendar, User, AlertTriangle, Minus, Plus, Trash2, ArrowRight, Check } from "lucide-react";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import TextField from "@mui/material/TextField";
 import ConfirmDialog from "../layout/ConfirmDialog";
 const API_BASE = `${import.meta.env.VITE_API_IP || ""}${import.meta.env.VITE_API_PORT || ""}${import.meta.env.VITE_API_POSTFIX || ""}`;
@@ -76,18 +76,23 @@ const CartStepItems = ({
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="flex flex-col gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 {t("cart.startDate")}
-                <DateTimePicker
+                <DatePicker
                   value={orderDates.startDate ? new Date(orderDates.startDate) : null}
-                  onChange={(newValue) =>
+                  onChange={(newValue) => {
+                    if (!newValue || !isValidDate(newValue)) {
+                      setOrderDates((prev) => ({ ...prev, startDate: "" }));
+                      return;
+                    }
+                    const d = new Date(newValue);
+                    d.setHours(0, 0, 0, 0);
                     setOrderDates((prev) => ({
                       ...prev,
-                      startDate: newValue && isValidDate(newValue) ? newValue.toISOString() : "",
-                    }))
-                  }
-                  ampm={false}
-                  minDateTime={new Date()}
-                  maxDateTime={orderDates.endDate ? new Date(orderDates.endDate) : null}
-                  format="dd/MM/yyyy HH:mm"
+                      startDate: d.toISOString(),
+                    }));
+                  }}
+                  minDate={new Date()}
+                  maxDate={orderDates.endDate ? new Date(orderDates.endDate) : null}
+                  format="dd/MM/yyyy"
                   renderInput={(params) => (
                     <TextField
                       {...params}
@@ -115,17 +120,22 @@ const CartStepItems = ({
               </div>
               <div className="flex flex-col gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 {t("cart.endDate")}
-                <DateTimePicker
+                <DatePicker
                   value={orderDates.endDate ? new Date(orderDates.endDate) : null}
-                  onChange={(newValue) =>
+                  onChange={(newValue) => {
+                    if (!newValue || !isValidDate(newValue)) {
+                      setOrderDates((prev) => ({ ...prev, endDate: "" }));
+                      return;
+                    }
+                    const d = new Date(newValue);
+                    d.setHours(23, 59, 59, 999);
                     setOrderDates((prev) => ({
                       ...prev,
-                      endDate: newValue && isValidDate(newValue) ? newValue.toISOString() : "",
-                    }))
-                  }
-                  ampm={false}
-                  minDateTime={orderDates.startDate ? new Date(orderDates.startDate) : new Date()}
-                  format="dd/MM/yyyy HH:mm"
+                      endDate: d.toISOString(),
+                    }));
+                  }}
+                  minDate={orderDates.startDate ? new Date(orderDates.startDate) : new Date()}
+                  format="dd/MM/yyyy"
                   renderInput={(params) => (
                     <TextField
                       {...params}
@@ -310,8 +320,8 @@ const CartStepItems = ({
           {orderDates.startDate && orderDates.endDate && (
             <div className="text-[10px] leading-relaxed bg-slate-50 dark:bg-slate-950/40 p-3 rounded-xl border border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400 mt-1 font-mono">
               <span className="font-sans block font-bold text-slate-400 uppercase tracking-wider text-[8px] mb-1">{language === "pl" ? "Wybrany termin" : "Selected dates"}</span>
-              <span>Pocz: {new Date(orderDates.startDate).toLocaleString()}</span>
-              <span className="block mt-0.5">Koniec: {new Date(orderDates.endDate).toLocaleString()}</span>
+              <span>Pocz: {new Date(orderDates.startDate).toLocaleDateString()}</span>
+              <span className="block mt-0.5">Koniec: {new Date(orderDates.endDate).toLocaleDateString()}</span>
             </div>
           )}
         </div>

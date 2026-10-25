@@ -1,5 +1,5 @@
 import React from "react";
-import { LocalizationProvider, DateTimePicker } from '@mui/x-date-pickers';
+import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import TextField from '@mui/material/TextField';
 import { useTheme } from "../../context/ThemeContext";
@@ -70,21 +70,26 @@ const OrderModal = ({
               {/* Date Handler */}
               <LocalizationProvider dateAdapter={AdapterDateFns}>
                 {/* Start Date */}
-                <DateTimePicker
+                <DatePicker
                   label={language === "pl" ? "Data rozpoczęcia" : "Start Date"}
                   value={datesUpdateData.assignedStartDate ? new Date(datesUpdateData.assignedStartDate) : null}
                   onChange={(newValue) => {
                     if (setValidationError) setValidationError("");
                     const isValid = newValue instanceof Date && !isNaN(newValue.getTime());
+                    if (!newValue || !isValid) {
+                      setDatesUpdateData(prev => ({ ...prev, assignedStartDate: null }));
+                      return;
+                    }
+                    const d = new Date(newValue);
+                    d.setHours(0, 0, 0, 0);
                     setDatesUpdateData(prev => ({
                       ...prev,
-                      assignedStartDate: newValue && isValid ? newValue.toISOString() : null
+                      assignedStartDate: d.toISOString()
                     }));
                   }}
-                  ampm={false}
-                  minDateTime={new Date()}
-                  maxDateTime={datesUpdateData.assignedEndDate ? new Date(datesUpdateData.assignedEndDate) : null}
-                  format="dd/MM/yyyy HH:mm"
+                  minDate={new Date()}
+                  maxDate={datesUpdateData.assignedEndDate ? new Date(datesUpdateData.assignedEndDate) : null}
+                  format="dd/MM/yyyy"
                   renderInput={(params) => (
                     <TextField
                       {...params}
@@ -117,20 +122,25 @@ const OrderModal = ({
                 />
 
                 {/* End Date */}
-                <DateTimePicker
+                <DatePicker
                   label={language === "pl" ? "Data zakończenia" : "End Date"}
                   value={datesUpdateData.assignedEndDate ? new Date(datesUpdateData.assignedEndDate) : null}
                   onChange={(newValue) => {
                     if (setValidationError) setValidationError("");
                     const isValid = newValue instanceof Date && !isNaN(newValue.getTime());
+                    if (!newValue || !isValid) {
+                      setDatesUpdateData(prev => ({ ...prev, assignedEndDate: null }));
+                      return;
+                    }
+                    const d = new Date(newValue);
+                    d.setHours(23, 59, 59, 999);
                     setDatesUpdateData(prev => ({
                       ...prev,
-                      assignedEndDate: newValue && isValid ? newValue.toISOString() : null
+                      assignedEndDate: d.toISOString()
                     }));
                   }}
-                  ampm={false}
-                  minDateTime={datesUpdateData.assignedStartDate ? new Date(datesUpdateData.assignedStartDate) : new Date()}
-                  format="dd/MM/yyyy HH:mm"
+                  minDate={datesUpdateData.assignedStartDate ? new Date(datesUpdateData.assignedStartDate) : new Date()}
+                  format="dd/MM/yyyy"
                   renderInput={(params) => (
                     <TextField
                       {...params}
@@ -241,12 +251,12 @@ const OrderModal = ({
 
                         <p className="text-slate-400 dark:text-slate-550">{language === "pl" ? "Data rozpoczęcia" : "Start Date"}</p>
                         <p className="text-slate-800 dark:text-slate-200 font-extrabold">
-                          {new Date(datesUpdateData.requestedStartDate).toLocaleString("pl-PL")}
+                          {new Date(datesUpdateData.requestedStartDate).toLocaleDateString("pl-PL")}
                         </p>
 
                         <p className="text-slate-400 dark:text-slate-550">{language === "pl" ? "Data zakończenia" : "End Date"}</p>
                         <p className="text-slate-800 dark:text-slate-200 font-extrabold">
-                          {new Date(datesUpdateData.requestedEndDate).toLocaleString("pl-PL")}
+                          {new Date(datesUpdateData.requestedEndDate).toLocaleDateString("pl-PL")}
                         </p>
                       </div>
                     </div>

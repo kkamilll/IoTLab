@@ -81,7 +81,7 @@ The application will be live immediately at:
 
 **IoTLab** is an end-to-end web management platform designed to streamline the reservation, tracking, and auditing of laboratory equipment (microcontrollers such as Arduino, Raspberry Pi, ESP32, sensors, development kits, and discrete electronic components) in university environments.
 
-- **For Students & Guests:** Intuitive hardware catalog with rich dynamic attributes, cart-based checkout without mandatory account registration, real-time private order tracking via UUID & secret PIN, and interactive negotiation of pickup/return dates.
+- **For Students & Guests:** Intuitive hardware catalog with rich dynamic attributes, cart-based checkout without mandatory account registration, calendar date reservation (`DD/MM/YYYY`), real-time private order tracking via UUID & secret PIN, and interactive negotiation of pickup/return dates.
 - **For Academic Staff & Administrators:** Multi-room inventory allocation, interactive visual timeline calendar preventing overlapping reservations, one-click PDF rental agreement generation, and automated in-app and email notifications.
 
 ---
@@ -127,14 +127,15 @@ graph TD
 
 ### 📦 Dynamic Inventory & Hardware Catalog
 - **Custom Extra Fields:** Dynamic schema support per category or item (e.g., supply voltage, pinout specifications, communication protocols like I2C/SPI, package type).
-- **Hierarchical Categories & Tags:** Nested category hierarchy with drag-and-drop reordering powered by `@dnd-kit`.
+- **Hierarchical Categories & Tags:** Nested category hierarchy with intuitive management and filtering.
 - **Component Bundles & Bench Kits:** Aggregate discrete electronic parts and accessories into structured laboratory kits.
 - **Live Search & Multi-Filter:** Instant client/server filtering by title, assigned room, lecturer, stock status, and custom tags.
 - **Printable Inventory Audits:** One-click generation of printable equipment inventory audit sheets in PDF format.
 
 ### 🛒 Seamless Guest Checkout & Tracking
 - **Account-Free Requests:** Students and visiting researchers submit hardware checkout requests directly via a streamlined 2-step cart.
-- **Bot Protection:** Form verification using SVG Captchas and Google reCAPTCHA v2.
+- **Day-Based Date Reservations:** Clean calendar day selection (`DD/MM/YYYY`) without confusing hourly constraints, supporting single-day and multi-day bookings.
+- **Bot Protection:** Form verification using SVG Captchas and optional Google reCAPTCHA v2.
 - **Private Order Tracker:** Every order is issued a cryptographically secure UUID and a private PIN access code delivered via email.
 - **Interactive Schedule Negotiation:** Students can review, approve, or decline alternative pickup and return dates proposed by the lecturer.
 
@@ -146,8 +147,8 @@ graph TD
 
 ### 🔔 Notifications & Automated Communication
 - **In-App Notification Hub:** Real-time alert notifications for faculty members whenever equipment in their assigned rooms is requested.
-- **Automated Email Dispatch:** Modular HTML email dispatch (`Nodemailer`) supporting dynamic runtime placeholders (`${CustomerName}`, `${orderId}`, `${orderLink}`, `${orderPassword}`).
-- **Template Management:** Built-in WYSIWYG email template editor allowing administrators to customize layouts or revert to production defaults.
+- **Automated Email Dispatch:** Modular HTML email dispatch (`Nodemailer`) supporting dynamic runtime placeholders (`${CustomerName}`, `${orderId}`, `${orderLink}`, `${orderPassword}`, `${startDate}`, `${endDate}`).
+- **Template Management:** Built-in email template editor allowing administrators to customize layouts or revert to production defaults.
 
 ### 🎨 User Experience (UX/UI)
 - **Dark & Light Mode:** Native responsive theming powered by TailwindCSS v4 variables.
@@ -217,7 +218,7 @@ flowchart TD
 ### Frontend
 - **Framework:** [React 19](https://react.dev/) + [Vite 6](https://vitejs.dev/)
 - **Styling:** [TailwindCSS v4](https://tailwindcss.com/) + CSS Design Tokens
-- **UI Components & Icons:** [Material UI (MUI)](https://mui.com/), [Lucide React](https://lucide.dev/), [React Icons](https://react-icons.github.io/react-icons/)
+- **UI Components & Icons:** [Material UI (MUI)](https://mui.com/) (`@mui/material`, `@mui/x-date-pickers`), [Lucide React](https://lucide.dev/), [React Icons](https://react-icons.github.io/react-icons/)
 - **Routing:** [React Router v7](https://reactrouter.com/)
 - **Calendar & Dates:** [React Big Calendar](https://jquense.github.io/react-big-calendar/) + [Date-fns](https://date-fns.org/)
 - **Drag & Drop:** `@dnd-kit/core`, `@dnd-kit/sortable`
@@ -265,11 +266,11 @@ IoTLab/
 │   └── server.js             # Express API entry point (port 3500)
 │
 ├── frontend/                 # Client-side source code (React + Vite)
-│   ├── .env                  # Frontend environment variables (VITE_API_IP, VITE_API_PORT)
+│   ├── .env                  # Frontend environment variables (VITE_API_IP, VITE_API_PORT, VITE_API_BASE_URL)
 │   ├── .env.example          # Frontend environment template
 │   ├── src/
 │   │   ├── api/              # Axios instance configured with auto JWT header injection
-│   │   ├── components/       # Reusable UI modules (Orders, Products, Cart, Auth)
+│   │   ├── components/       # Reusable UI modules (Orders, Products, Cart, Auth, Layout)
 │   │   ├── context/          # State providers (Auth, Language, Theme, Toast)
 │   │   ├── pages/            # Application views (Dashboard, Orders, Catalog, etc.)
 │   │   ├── utils/            # PDF generators, i18n localization dicts, route guards
@@ -287,7 +288,7 @@ IoTLab/
 
 ### Prerequisites
 1. **Node.js**: Version `v18.0.0` or higher ([Download Node.js](https://nodejs.org/)).
-2. **MongoDB**: Local MongoDB community instance running on port `27017` or a [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) cluster.
+2. **MongoDB**: Local MongoDB instance running on port `27017` (e.g. as a Windows Service) or a [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) cluster.
 3. **Package Manager**: `npm` (bundled with Node.js).
 
 ---
@@ -406,48 +407,90 @@ All endpoints are hosted at `http://localhost:3500`.
 | Category | HTTP Method | Endpoint | Required Role | Description |
 |:---|:---:|:---|:---:|:---|
 | **Auth** | `POST` | `/auth/login` | Public | Authenticates credentials and returns JWT session token |
-| | `POST` | `/auth/forgot-password` | Public | Generates and sends a 15-minute password reset code |
+| | `POST` | `/auth/forgot-password` | Public | Generates and sends a 15-minute password reset verification code |
 | | `POST` | `/auth/reset-password` | Public | Resets user password using the verification code |
-| **Products** | `GET` | `/products/public` | Public | Retrieves all active equipment available for guest reservation |
-| | `GET` | `/products/private` | Lecturer / Admin | Full inventory view filtered by room assignment |
-| | `POST` | `/products/create` | Lecturer / Admin | Adds a new piece of equipment (with image upload) |
-| | `PUT` | `/products/:id` | Lecturer / Admin | Updates hardware specifications and stock counts |
-| | `DELETE`| `/products/:id` | Lecturer / Admin | Soft/hard deletes a product from the database |
-| | `POST` | `/products/stockStatus`| Authenticated | Calculates stock availability across given reservation dates |
-| **Orders** | `POST` | `/orders` | Public | Submits a new guest cart reservation |
-| | `GET` | `/orders/customerOrder/:uuid`| Public (PIN) | Fetches order summary for student verification |
-| | `POST` | `/orders/customerOrder/:uuid/respond`| Public (PIN) | Accepts or rejects lecturer date modifications |
+| **Orders** | `POST` | `/orders/create` | Public | Submits a new guest cart reservation request |
+| | `GET` | `/orders/customerOrder/:orderUUID`| Public | Fetches order summary for student tracking |
+| | `POST` | `/orders/customerUpdate/:orderId` | Public (PIN) | Student accepts or declines proposed reservation dates |
 | | `GET` | `/orders` | Lecturer / Admin | Paginated list of reservations with multi-filtering |
-| | `PUT` | `/orders/updateOrder/:id`| Lecturer / Admin | Updates order state (Approve, Prepare, Rent, Return) |
-| | `GET` | `/orders/stats` | Lecturer / Admin | Returns reservation statistics and analytics |
-| **Categories**| `GET` | `/categories/public`| Public | Fetches hierarchical category tree |
-| | `PUT` | `/categories/reorder` | Administrator | Saves drag-and-drop category display order |
-| **Users** | `GET` | `/users` | Administrator | Retrieves faculty member list and room allocations |
+| | `PUT` | `/orders/updateOrder/:orderId` | Lecturer / Admin | Updates order statuses and assigned reservation dates |
+| | `GET` | `/orders/stats` | Lecturer / Admin | Returns aggregated reservation analytics |
+| | `GET` | `/orders/statuses` | Lecturer / Admin | Returns all valid order status definitions |
+| | `POST` | `/orders/download-pdf` | Lecturer / Admin | Generates and downloads rental agreement PDF |
+| | `DELETE`| `/orders/:orderId` | Lecturer / Admin | Permanently deletes an order record |
+| **Products** | `GET` | `/products/public` | Public | Retrieves all active equipment available for guest reservation |
+| | `GET` | `/products/publicId/:productId` | Public | Retrieves public details for a single product |
+| | `POST` | `/products/available` | Public | Calculates real-time available stock across given reservation dates |
+| | `GET` | `/products/private` | Lecturer / Admin | Full inventory view filtered by room assignment |
+| | `GET` | `/products/privateId/:productId` | Lecturer / Admin | Full product specifications including private attachments |
+| | `POST` | `/products/create` | Lecturer / Admin | Adds a new piece of equipment (with image and attachment uploads) |
+| | `PUT` | `/products/:productId` | Lecturer / Admin | Updates hardware specifications and stock counts |
+| | `DELETE`| `/products/:productId` | Lecturer / Admin | Soft/hard deletes a product from the database |
+| | `POST` | `/products/stockStatus` | Lecturer / Admin | Detailed stock breakdown (reserved vs rented vs in-demand) |
+| | `DELETE`| `/products/extraField/:key` | Lecturer / Admin | Removes a dynamic extra attribute field across all products |
+| **Categories**| `GET` | `/categories/public` | Public | Fetches category tree for public navigation |
+| | `GET` | `/categories/private` | Lecturer / Admin | Fetches category hierarchy for management |
+| | `POST` | `/categories/create` | Administrator | Adds a new category |
+| | `PATCH` | `/categories/:categoryId` | Administrator | Updates category name and details |
+| | `DELETE`| `/categories/:categoryId` | Administrator | Deletes a category |
+| **Users** | `GET` | `/users/profile` | Authenticated | Retrieves current user profile data |
+| | `PUT` | `/users/profile` | Authenticated | Updates current user profile details and password |
+| | `GET` | `/users` | Administrator | Retrieves faculty member list and room allocations |
 | | `POST` | `/users/create` | Administrator | Registers a new lecturer or administrator account |
+| | `PUT` | `/users/:userId` | Administrator | Updates user credentials and room assignments |
+| | `DELETE`| `/users/:userId` | Administrator | Deletes a user account |
+| **Notifications** | `GET` | `/notifications` | Lecturer / Admin | Retrieves in-app alerts for pending orders and updates |
+| | `PATCH` | `/notifications/read-all` | Lecturer / Admin | Marks all user notifications as read |
+| | `PATCH` | `/notifications/:id/read` | Lecturer / Admin | Marks a single notification as read |
+| | `DELETE`| `/notifications` | Lecturer / Admin | Clears all user notifications |
 | **Templates** | `GET` | `/templates` | Administrator | Retrieves all customizable HTML email templates |
-| | `PUT` | `/templates/:id` | Administrator | Saves modifications to email template content |
+| | `GET` | `/templates/names` | Administrator | Retrieves template identifier names |
+| | `GET` | `/templates/:templateId` | Administrator | Fetches single template content |
+| | `POST` | `/templates/create` | Administrator | Creates a new email template |
+| | `PUT` | `/templates/update/:templateId` | Administrator | Saves modifications to email template content |
+| | `DELETE`| `/templates/delete/:templateId` | Administrator | Deletes a custom email template |
 | **Notes** | `GET` | `/notes` | Public | Fetches announcements displayed on the landing page |
+| | `POST` | `/notes/create` | Lecturer / Admin | Publishes a new bulletin announcement |
+| | `PUT` | `/notes/:noteId` | Lecturer / Admin | Updates announcement content |
+| | `DELETE`| `/notes/:noteId` | Lecturer / Admin | Removes an announcement |
+| **Materials** | `GET` | `/materials` | Public | Fetches landing page hero carousel banner slides |
+| | `POST` | `/materials` | Administrator | Uploads new slide media |
+| | `PATCH` | `/materials/reorder` | Administrator | Reorders banner slide display order |
+| | `PATCH` | `/materials/:id` | Administrator | Updates banner slide link |
+| | `DELETE`| `/materials/:id` | Administrator | Deletes a banner slide |
+| **Components** | `GET` | `/components` | Public | Lists laboratory component kits and bundles |
+| | `GET` | `/components/:collectionId`| Public | Fetches component bundle details and files |
+| | `POST` | `/components/create` | Administrator | Creates a component bundle collection |
+| | `POST` | `/components/:collectionId/links` | Administrator | Adds external documentation link to a bundle |
+| | `POST` | `/components/:collectionId/files` | Administrator | Attaches reference files to a bundle |
 
 ---
 
 ## 🗺️ Application Routes
 
 ### Public Zone (Students & Guests)
-- `/` — Landing page featuring lab news, announcements, and quick order tracking.
-- `/mainguest` — Student portal with direct category navigation.
-- `/guest-products` — Searchable hardware catalog with dynamic attribute filters and cart drawer.
-- `/cart` — Two-step guest checkout and date selection form.
-- `/orderPreview/:uuid` — Dedicated order tracking page (requires private PIN validation).
+- `/` — Landing page featuring lab news, announcements, carousel banners, and quick order tracking.
+- `/mainguest` — Student portal with category cards and hardware navigation.
+- `/guest-products/:menuCategory?` — Searchable hardware catalog with dynamic attribute filters and cart drawer.
+- `/cart` — Two-step guest checkout, calendar date selection (`DD/MM/YYYY`), and verification.
+- `/orderPreview/:orderUUID` — Dedicated order tracking page (requires private PIN validation).
+- `/components/:collectionId` — Public view of component kits, bundle parts, and documentation.
+- `/preview` — Equipment specification preview modal.
+- `/forgot-password` — Password reset workflow for faculty members.
 - `/login` — Faculty and administrative authentication gateway.
 
 ### Administrative Zone (`/admin-dashboard`)
 - `/admin-dashboard` — Main metrics overview, occupancy charts, and activity log.
 - `/admin-dashboard/orders` — Order status management table and interactive reservation calendar.
 - `/admin-dashboard/products` — Equipment catalog management, stock control, and dynamic field configuration.
+- `/admin-dashboard/profile` — Faculty profile settings, contact info, and password change.
+- `/admin-dashboard/notes` — Laboratory announcements and bulletin board management.
+- `/admin-dashboard/notifications` — In-app notification center for pending requests and status changes.
 - `/admin-dashboard/categories` *(Admin Only)* — Hierarchical category and tag management.
 - `/admin-dashboard/users` *(Admin Only)* — Staff user accounts and laboratory room assignments.
+- `/admin-dashboard/materials` *(Admin Only)* — Hero banner slides and media carousel management.
+- `/admin-dashboard/components` *(Admin Only)* — Component kits and laboratory bundle management.
 - `/admin-dashboard/templates` *(Admin Only)* — Email notification template visual editor.
-- `/admin-dashboard/notifications` — In-app notification center for pending requests.
 
 ---
 
@@ -486,10 +529,11 @@ All endpoints are hosted at `http://localhost:3500`.
 <summary><b>2. Error: Connection failed / MongoServerError: connect ECONNREFUSED?</b></summary>
 
 - Ensure your MongoDB server is active.
-- On Windows, verify the service status with:  
+- On Windows, verify the service status with PowerShell:  
   `Get-Service -Name MongoDB`
 - If it is stopped, start it via:  
   `Start-Service -Name MongoDB`
+- Alternatively, start a local data directory instance with `npm run db:start`.
 </details>
 
 <details>

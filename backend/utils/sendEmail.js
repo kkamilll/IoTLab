@@ -121,8 +121,8 @@ export const sendOrderEmail = async (order, customerKey = null, uuid = null) => 
     const CustomerName = `${order.customer.firstName} ${order.customer.lastName}`;
     const orderLink = `${process.env.FRONTEND_IP}${process.env.FRONTEND_PORT}${process.env.FRONTEND_ORDER_PATH}/${uuid || order.uuid}`;
     const orderPassword = customerKey;
-    const startDate = new Date(order.requestedStartDate).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" });
-    const endDate = new Date(order.requestedEndDate).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" });
+    const startDate = new Date(order.requestedStartDate).toLocaleDateString("pl-PL");
+    const endDate = new Date(order.requestedEndDate).toLocaleDateString("pl-PL");
     const templateVariables = { orderId, CustomerName, orderLink, orderPassword, startDate, endDate };
 
     const template = await Template.findOne({ name: type, isDefault: true }).lean();

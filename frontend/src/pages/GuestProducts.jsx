@@ -1,10 +1,60 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import apiClient from "../api/apiClient";
 import { useNavigate, useParams } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
-import { Search, Filter, ShoppingCart, ArrowLeft, Grid, List, Plus, Minus, Info, Box, Check, AlertTriangle, Eye, HelpCircle } from "lucide-react";
+import {
+  Search,
+  Filter,
+  ShoppingCart,
+  ArrowLeft,
+  Grid,
+  List,
+  Plus,
+  Minus,
+  Box,
+  Check,
+  AlertTriangle,
+  Eye,
+  HelpCircle,
+  ChevronDown,
+  ChevronsUpDown,
+  Folder,
+  FolderOpen,
+  Layers,
+  X,
+  FolderTree,
+  ListTree,
+  Package,
+} from "lucide-react";
 
 const API_BASE = `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}`;
+
+const getImageUrl = (product) => {
+  if (!product || !product.images || !Array.isArray(product.images) || product.images.length === 0) {
+    return null;
+  }
+  const imgObj = product.images.find((i) => i && (i.isVisible || i.visible)) || product.images[0];
+  if (!imgObj) return null;
+
+  let rawPath = "";
+  if (typeof imgObj === "string") {
+    rawPath = imgObj;
+  } else if (typeof imgObj === "object") {
+    rawPath = imgObj.filename || imgObj.path || imgObj.url || imgObj.src || imgObj.originalName || "";
+  }
+
+  if (!rawPath) return null;
+  if (rawPath.startsWith("http://") || rawPath.startsWith("https://")) {
+    return rawPath;
+  }
+
+  const fileName = rawPath.includes("/") || rawPath.includes("\\")
+    ? rawPath.split(/[\/\\]/).pop()
+    : rawPath;
+
+  if (!fileName) return null;
+  return `${API_BASE}/uploads/products/${fileName}`;
+};
 
 const GuestProducts = () => {
   const { t, language } = useLanguage();
@@ -23,6 +73,137 @@ const GuestProducts = () => {
   );
   const [cartQuantities, setCartQuantities] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
+  const [expandedCategories, setExpandedCategories] = useState({});
+  const [categoryViewMode, setCategoryViewMode] = useState("accordion"); // "accordion" | "dropdown"
+
+  // Build hierarchical category tree from categories array
+  const categoryTree = useMemo(() => {
+    const map = new Map();
+    const roots = [];
+
+    categories.forEach((cat) => {
+      const id = cat._id.toString();
+      const parentId = cat.parent?._id
+        ? cat.parent._id.toString()
+        : typeof cat.parent === "string"
+        ? cat.parent
+        : null;
+
+      map.set(id, {
+        _id: id,
+        name: cat.name,
+        nameEn: cat.nameEn || "",
+        parentId,
+        children: [],
+      });
+    });
+
+    map.forEach((node) => {
+      if (node.parentId && map.has(node.parentId)) {
+        map.get(node.parentId).children.push(node);
+      } else {
+        roots.push(node);
+      }
+    });
+
+    const sortNodes = (nodes) => {
+      nodes.sort((a, b) => {
+        const nameA = (language === "en" && a.nameEn ? a.nameEn : a.name) || "";
+        const nameB = (language === "en" && b.nameEn ? b.nameEn : b.name) || "";
+        return nameA.localeCompare(nameB);
+      });
+      nodes.forEach((n) => {
+        if (n.children.length > 0) sortNodes(n.children);
+      });
+    };
+    sortNodes(roots);
+
+    return roots;
+  }, [categories, language]);
+
+  // Recursively collect descendant IDs
+  const categoryDescendantsMap = useMemo(() => {
+    const map = {};
+    const getDescendants = (id) => {
+      const list = [];
+      categories.forEach((c) => {
+        const pId = c.parent?._id
+          ? c.parent._id.toString()
+          : typeof c.parent === "string"
+          ? c.parent
+          : null;
+        if (pId === id) {
+          list.push(c._id.toString());
+          list.push(...getDescendants(c._id.toString()));
+        }
+      });
+      return list;
+    };
+
+    categories.forEach((cat) => {
+      const id = cat._id.toString();
+      map[id] = [id, ...getDescendants(id)];
+    });
+    return map;
+  }, [categories]);
+
+  // Calculate product count for each category (including products tagged with descendant categories)
+  const categoryCounts = useMemo(() => {
+    const counts = {};
+    categories.forEach((cat) => {
+      const id = cat._id.toString();
+      const targetIds = categoryDescendantsMap[id] || [id];
+      const count = products.filter((p) =>
+        p.categories?.some((c) => targetIds.includes(c._id?.toString())),
+      ).length;
+      counts[id] = count;
+    });
+    return counts;
+  }, [products, categories, categoryDescendantsMap]);
+
+  // Currently active category object
+  const activeCategoryObj = useMemo(() => {
+    return categories.find((c) => c._id.toString() === activeCategory);
+  }, [activeCategory, categories]);
+
+  // Automatically expand parent of active category if a child is selected
+  useEffect(() => {
+    if (!activeCategory) return;
+    const cat = categories.find((c) => c._id.toString() === activeCategory);
+    const parentId = cat?.parent?._id
+      ? cat.parent._id.toString()
+      : typeof cat?.parent === "string"
+      ? cat.parent
+      : null;
+    if (parentId) {
+      setExpandedCategories((prev) => ({ ...prev, [parentId]: true }));
+    }
+  }, [activeCategory, categories]);
+
+  const toggleCategory = (id) => {
+    setExpandedCategories((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
+  const allExpanded = useMemo(() => {
+    const parentNodes = categoryTree.filter((r) => r.children.length > 0);
+    if (parentNodes.length === 0) return false;
+    return parentNodes.every((r) => expandedCategories[r._id]);
+  }, [categoryTree, expandedCategories]);
+
+  const toggleAllExpanded = () => {
+    if (allExpanded) {
+      setExpandedCategories({});
+    } else {
+      const newExpanded = {};
+      categoryTree.forEach((r) => {
+        if (r.children.length > 0) newExpanded[r._id] = true;
+      });
+      setExpandedCategories(newExpanded);
+    }
+  };
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState("grid"); // "grid" or "list"
   const itemsPerPage = 12; // 12 fits grid layouts perfectly (3 or 4 columns)
@@ -123,8 +304,9 @@ const GuestProducts = () => {
     });
 
     if (activeCategory) {
+      const targetIds = categoryDescendantsMap[activeCategory] || [activeCategory];
       filtered = filtered.filter((p) =>
-        p.categories?.some((cat) => cat._id === activeCategory),
+        p.categories?.some((cat) => targetIds.includes(cat._id?.toString())),
       );
     }
 
@@ -140,7 +322,7 @@ const GuestProducts = () => {
 
     setFilteredProducts(filtered);
     setCurrentPage(1);
-  }, [products, searchTerm, sortConfig, activeCategory]);
+  }, [products, searchTerm, sortConfig, activeCategory, categoryDescendantsMap]);
 
   const handleSort = (key) => {
     let direction = "asc";
@@ -256,10 +438,8 @@ const GuestProducts = () => {
           </div>
         </div>
 
-        {/* Filters and Stats Row */}
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,_1fr)_300px] w-full">
-          {/* Filters card */}
-          <div className="min-w-0 rounded-[1.8rem] border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col gap-5">
+        {/* Filters Card */}
+        <div className="w-full rounded-[1.8rem] border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col gap-5">
             <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1.5 select-none">
               <Filter className="w-3.5 h-3.5" />
               {language === "pl" ? "Filtry katalogu" : "Catalog Filters"}
@@ -279,66 +459,265 @@ const GuestProducts = () => {
                 </div>
               </div>
 
-              {/* Category Badges */}
-              <div className="flex flex-col gap-1.5">
-                <span className="text-[10px] font-bold text-slate-550 dark:text-slate-400 uppercase tracking-wider pl-1 select-none">
-                  {language === "pl" ? "Kategorie" : "Categories"}
-                </span>
-                <div className="flex flex-wrap items-center gap-2 pt-0.5 max-w-full">
-                  <button
-                    onClick={() => setActiveCategory("")}
-                    className={`px-3.5 py-1.5 rounded-xl text-[11px] font-extrabold transition-all cursor-pointer ${
-                      activeCategory === "" 
-                        ? "bg-indigo-600 text-white shadow-xs border border-indigo-600" 
-                        : "bg-slate-50 dark:bg-slate-950/40 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
-                    }`}
-                  >
-                    {t("guest.allCategories")}
-                  </button>
-                  {categories.map((cat) => (
+              {/* Category Collapsible Section (Listy zwijane) */}
+              <div className="flex flex-col gap-2.5">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-slate-550 dark:text-slate-400 uppercase tracking-wider pl-1 select-none flex items-center gap-1.5">
+                      <FolderTree className="w-3.5 h-3.5 text-indigo-500" />
+                      {language === "pl" ? "Kategorie" : "Categories"}
+                    </span>
+                    {activeCategory && (
+                      <button
+                        type="button"
+                        onClick={() => setActiveCategory("")}
+                        className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-900/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition cursor-pointer"
+                        title={language === "pl" ? "Wyczyść filtr kategorii" : "Clear category filter"}
+                      >
+                        <span className="truncate max-w-[140px]">
+                          {activeCategoryObj
+                            ? language === "en" && activeCategoryObj.nameEn
+                              ? activeCategoryObj.nameEn
+                              : activeCategoryObj.name
+                            : ""}
+                        </span>
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    {/* Expand / Collapse all toggle */}
+                    {categoryViewMode === "accordion" && categoryTree.some((r) => r.children.length > 0) && (
+                      <button
+                        type="button"
+                        onClick={toggleAllExpanded}
+                        className="text-[10px] font-bold text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer flex items-center gap-1"
+                      >
+                        <ChevronsUpDown className="w-3 h-3" />
+                        {allExpanded
+                          ? language === "pl" ? "Zwiń wszystkie" : "Collapse all"
+                          : language === "pl" ? "Rozwiń wszystkie" : "Expand all"}
+                      </button>
+                    )}
+
+                    {/* View Switcher: Accordion vs Dropdown */}
+                    <div className="flex items-center bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
+                      <button
+                        type="button"
+                        onClick={() => setCategoryViewMode("accordion")}
+                        className={`p-1 rounded-md text-[10px] font-bold transition cursor-pointer ${
+                          categoryViewMode === "accordion"
+                            ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-2xs"
+                            : "text-slate-500 hover:text-slate-700 dark:text-slate-400"
+                        }`}
+                        title={language === "pl" ? "Widok list zwijanych" : "Collapsible lists view"}
+                      >
+                        <ListTree className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCategoryViewMode("dropdown")}
+                        className={`p-1 rounded-md text-[10px] font-bold transition cursor-pointer ${
+                          categoryViewMode === "dropdown"
+                            ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-2xs"
+                            : "text-slate-500 hover:text-slate-700 dark:text-slate-400"
+                        }`}
+                        title={language === "pl" ? "Lista rozwijana" : "Dropdown list view"}
+                      >
+                        <ChevronDown className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* View 1: Accordion / Collapsible Lists (Listy zwijane) */}
+                {categoryViewMode === "accordion" ? (
+                  <div className="flex flex-col gap-2">
+                    {/* All Categories Option */}
                     <button
-                      key={cat._id}
-                      onClick={() => setActiveCategory(cat._id)}
-                      className={`px-3.5 py-1.5 rounded-xl text-[11px] font-extrabold transition-all cursor-pointer ${
-                        activeCategory === cat._id 
-                          ? "bg-indigo-600 text-white shadow-xs border border-indigo-600" 
-                          : "bg-slate-50 dark:bg-slate-950/40 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
+                      type="button"
+                      onClick={() => setActiveCategory("")}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl border text-left transition cursor-pointer group ${
+                        activeCategory === ""
+                          ? "border-indigo-600 bg-indigo-600 text-white shadow-xs"
+                          : "border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/40 text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-100/70 dark:hover:bg-slate-900/60"
                       }`}
                     >
-                      {cat.name}
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Layers className={`w-4 h-4 shrink-0 ${activeCategory === "" ? "text-white" : "text-indigo-500"}`} />
+                        <span className="text-xs font-extrabold truncate">
+                          {t("guest.allCategories")}
+                        </span>
+                      </div>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
+                        activeCategory === ""
+                          ? "bg-indigo-700 text-white"
+                          : "bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
+                      }`}>
+                        {products.length}
+                      </span>
                     </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
 
-          {/* Quick info card */}
-          <div className="rounded-[1.8rem] border border-slate-200/80 dark:border-slate-800 bg-gradient-to-br from-indigo-650 to-indigo-700 text-white dark:from-slate-900 dark:to-slate-900/60 dark:text-slate-300 p-6 shadow-sm flex flex-col justify-between gap-4">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-200 dark:text-indigo-400 select-none flex items-center gap-1.5">
-                <Info className="w-3.5 h-3.5" />
-                {t("guest.quickInfo")}
-              </p>
-              <div className="mt-4 grid grid-cols-2 gap-2 text-xs font-semibold">
-                <div className="bg-white/10 dark:bg-slate-950/30 p-2.5 rounded-xl border border-white/5 dark:border-slate-850/60">
-                  <span className="text-[9px] block text-indigo-200 dark:text-slate-500 uppercase tracking-wider mb-0.5">{language === "pl" ? "Pasujących" : "Matched"}</span>
-                  <span className="text-base font-extrabold text-white dark:text-slate-200">{filteredProducts.length} {t("guest.items")}</span>
-                </div>
-                <div className="bg-white/10 dark:bg-slate-950/30 p-2.5 rounded-xl border border-white/5 dark:border-slate-900/60">
-                  <span className="text-[9px] block text-indigo-200 dark:text-slate-500 uppercase tracking-wider mb-0.5">{t("guest.totalInCart")}</span>
-                  <span className="text-base font-extrabold text-white dark:text-slate-200">
-                    {cart.reduce((sum, item) => sum + item.quantity, 0)}
-                  </span>
-                </div>
+                    {/* Collapsible Category Cards Container */}
+                    <div className="max-h-80 overflow-y-auto pr-1 flex flex-col gap-2">
+                      {categoryTree.map((rootCat) => {
+                        const hasChildren = rootCat.children && rootCat.children.length > 0;
+                        const isExpanded = !!expandedCategories[rootCat._id];
+                        const isActive = activeCategory === rootCat._id;
+                        const isDescendantActive =
+                          hasChildren &&
+                          (categoryDescendantsMap[rootCat._id] || []).includes(activeCategory) &&
+                          !isActive;
+                        const rootCount = categoryCounts[rootCat._id] ?? 0;
+                        const catDisplayName = language === "en" && rootCat.nameEn ? rootCat.nameEn : rootCat.name;
+
+                        return (
+                          <div
+                            key={rootCat._id}
+                            className={`rounded-xl border transition-all ${
+                              isActive
+                                ? "border-indigo-500/80 dark:border-indigo-700 bg-indigo-50/50 dark:bg-indigo-950/25 shadow-2xs"
+                                : isDescendantActive
+                                ? "border-indigo-300/60 dark:border-indigo-900/50 bg-indigo-50/20 dark:bg-indigo-950/10"
+                                : "border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 hover:border-slate-300 dark:hover:border-slate-700"
+                            }`}
+                          >
+                            {/* Main Category Header Row */}
+                            <div className="flex items-center justify-between p-1.5 sm:p-2 gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setActiveCategory(rootCat._id)}
+                                className="flex items-center gap-2 flex-1 text-left min-w-0 cursor-pointer py-0.5 px-1 rounded-lg group"
+                              >
+                                {isExpanded ? (
+                                  <FolderOpen className={`w-4 h-4 shrink-0 transition-colors ${
+                                    isActive || isDescendantActive ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 group-hover:text-indigo-500"
+                                  }`} />
+                                ) : (
+                                  <Folder className={`w-4 h-4 shrink-0 transition-colors ${
+                                    isActive || isDescendantActive ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 group-hover:text-indigo-500"
+                                  }`} />
+                                )}
+                                <span className={`text-xs truncate ${
+                                  isActive
+                                    ? "font-black text-indigo-700 dark:text-indigo-300"
+                                    : isDescendantActive
+                                    ? "font-bold text-indigo-600 dark:text-indigo-400"
+                                    : "font-bold text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400"
+                                }`}>
+                                  {catDisplayName}
+                                </span>
+                                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-400 shrink-0">
+                                  {rootCount}
+                                </span>
+                              </button>
+
+                              {/* Toggle Chevron for Subcategories */}
+                              {hasChildren && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleCategory(rootCat._id);
+                                  }}
+                                  className={`p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-all duration-200 cursor-pointer ${
+                                    isExpanded ? "rotate-180 text-indigo-600 dark:text-indigo-400 bg-indigo-100/50 dark:bg-indigo-950/60" : ""
+                                  }`}
+                                  title={isExpanded ? (language === "pl" ? "Zwiń podkategorie" : "Collapse subcategories") : (language === "pl" ? "Rozwiń podkategorie" : "Expand subcategories")}
+                                >
+                                  <ChevronDown className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+
+                            {/* Subcategories Collapsible List (Lista zwijana) */}
+                            {hasChildren && isExpanded && (
+                              <div className="px-3 pb-2.5 pt-1 border-t border-slate-200/70 dark:border-slate-800/80 flex flex-wrap gap-1.5 animate-in fade-in duration-200">
+                                <button
+                                  type="button"
+                                  onClick={() => setActiveCategory(rootCat._id)}
+                                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                                    isActive
+                                      ? "bg-indigo-600 text-white shadow-2xs"
+                                      : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-indigo-300 hover:text-indigo-600"
+                                  }`}
+                                >
+                                  <span>{language === "pl" ? "Wszystkie w tej grupie" : "All in this group"}</span>
+                                  <span className={`text-[9px] px-1 py-0.2 rounded font-black ${
+                                    isActive ? "bg-indigo-700 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-500"
+                                  }`}>
+                                    {rootCount}
+                                  </span>
+                                </button>
+
+                                {rootCat.children.map((child) => {
+                                  const isChildSelected = activeCategory === child._id;
+                                  const childCount = categoryCounts[child._id] ?? 0;
+                                  const childDisplayName = language === "en" && child.nameEn ? child.nameEn : child.name;
+
+                                  return (
+                                    <button
+                                      key={child._id}
+                                      type="button"
+                                      onClick={() => setActiveCategory(child._id)}
+                                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                                        isChildSelected
+                                          ? "bg-indigo-600 text-white shadow-2xs"
+                                          : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-300"
+                                      }`}
+                                    >
+                                      <span>{childDisplayName}</span>
+                                      <span className={`text-[9px] px-1 py-0.2 rounded font-black ${
+                                        isChildSelected ? "bg-indigo-700 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-500"
+                                      }`}>
+                                        {childCount}
+                                      </span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  /* View 2: Dropdown Select List (Lista rozwijana) */
+                  <div className="relative">
+                    <select
+                      value={activeCategory}
+                      onChange={(e) => setActiveCategory(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 px-3.5 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition cursor-pointer"
+                    >
+                      <option value="">
+                        {t("guest.allCategories")} ({products.length})
+                      </option>
+                      {categoryTree.map((root) => {
+                        const rootDisplayName = language === "en" && root.nameEn ? root.nameEn : root.name;
+                        return (
+                          <React.Fragment key={root._id}>
+                            <option value={root._id} className="font-bold">
+                              📁 {rootDisplayName} ({categoryCounts[root._id] ?? 0})
+                            </option>
+                            {root.children?.map((child) => {
+                              const childDisplayName = language === "en" && child.nameEn ? child.nameEn : child.name;
+                              return (
+                                <option key={child._id} value={child._id}>
+                                  &nbsp;&nbsp;&nbsp;&nbsp;↳ {childDisplayName} ({categoryCounts[child._id] ?? 0})
+                                </option>
+                              );
+                            })}
+                          </React.Fragment>
+                        );
+                      })}
+                    </select>
+                  </div>
+                )}
               </div>
             </div>
-            
-            <p className="text-[10px] text-indigo-100 dark:text-slate-450 leading-relaxed italic select-none">
-              {t("guest.useFilters")}
-            </p>
           </div>
-        </div>
 
         {/* Loading and Catalog Listing */}
         {loading ? (
@@ -373,17 +752,28 @@ const GuestProducts = () => {
                 >
                   {/* Image Area */}
                   <div className="relative aspect-video w-full overflow-hidden bg-slate-100 dark:bg-slate-950/80 border-b border-slate-100 dark:border-slate-800/80 flex-shrink-0">
-                    {p.images && p.images.length > 0 ? (
-                      <img
-                        src={`${API_BASE}/uploads/products/${p.images.find(i => i.isVisible)?.filename || p.images[0].filename}`}
-                        alt={p.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-tr from-indigo-500/10 to-purple-650/15 dark:from-indigo-950/20 dark:to-purple-950/20 flex items-center justify-center text-slate-400 text-3xl select-none group-hover:scale-105 transition-transform duration-500">
-                        📦
-                      </div>
-                    )}
+                    {(() => {
+                      const imgUrl = getImageUrl(p);
+                      return imgUrl ? (
+                        <img
+                          src={imgUrl}
+                          alt={p.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                            if (e.currentTarget.nextElementSibling) {
+                              e.currentTarget.nextElementSibling.style.display = "flex";
+                            }
+                          }}
+                        />
+                      ) : null;
+                    })()}
+                    <div
+                      className="w-full h-full bg-gradient-to-tr from-indigo-500/10 to-purple-650/15 dark:from-indigo-950/20 dark:to-purple-950/20 flex items-center justify-center text-slate-400 text-3xl select-none group-hover:scale-105 transition-transform duration-500"
+                      style={{ display: getImageUrl(p) ? "none" : "flex" }}
+                    >
+                      📦
+                    </div>
                     
                     {/* Status Badge */}
                     <div className="absolute top-2.5 right-2.5 z-10">
@@ -545,15 +935,52 @@ const GuestProducts = () => {
                           if (e.target.closest("button, select, input, option, a")) return;
                           handlePreview(p._id);
                         }}
-                        className="hover:bg-slate-50/60 dark:hover:bg-slate-850/40 transition cursor-pointer"
+                        className="hover:bg-slate-50/60 dark:hover:bg-slate-850/40 transition cursor-pointer group"
                       >
                         {/* Render all table cells */}
                         {allColumns.map((col) => (
-                          <td key={col} className="p-4 text-xs font-medium text-slate-700 dark:text-slate-350 max-w-[200px] truncate">
+                          <td
+                            key={col}
+                            className={`p-3.5 text-xs font-medium text-slate-700 dark:text-slate-350 ${
+                              col === "name" ? "min-w-[240px] max-w-[340px]" : "max-w-[200px] truncate"
+                            }`}
+                          >
                             {col === "name" ? (
-                              <span className="font-extrabold text-slate-900 dark:text-white group-hover:text-indigo-650 hover:underline">
-                                {p.name}
-                              </span>
+                              <div className="flex items-center gap-3">
+                                {/* Small Product Thumbnail */}
+                                {(() => {
+                                  const imgUrl = getImageUrl(p);
+                                  return (
+                                    <div className="w-11 h-11 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 flex-shrink-0 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform duration-200">
+                                      {imgUrl ? (
+                                        <img
+                                          src={imgUrl}
+                                          alt={p.name}
+                                          className="w-full h-full object-cover"
+                                          onError={(e) => {
+                                            e.currentTarget.style.display = "none";
+                                            if (e.currentTarget.nextElementSibling) {
+                                              e.currentTarget.nextElementSibling.style.display = "flex";
+                                            }
+                                          }}
+                                        />
+                                      ) : null}
+                                      <div
+                                        className="w-full h-full flex items-center justify-center text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800"
+                                        style={{ display: imgUrl ? "none" : "flex" }}
+                                      >
+                                        <Package className="w-5 h-5 text-slate-400 dark:text-slate-500" />
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
+                                <span
+                                  className="font-extrabold text-slate-900 dark:text-white group-hover:text-indigo-650 dark:group-hover:text-indigo-400 hover:underline line-clamp-2 leading-snug"
+                                  title={p.name}
+                                >
+                                  {p.name}
+                                </span>
+                              </div>
                             ) : col === "available" ? (
                               <span className={`inline-flex items-center px-2 py-0.5 rounded-lg border text-[10px] font-bold ${
                                 availableQty <= 0

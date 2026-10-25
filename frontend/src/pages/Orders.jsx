@@ -383,8 +383,11 @@ const Orders = () => {
         ["approved", "prepared", "rented"].includes(item.newStatus)
       );
       if (hasActiveStatus) {
-        const bufferTime = new Date(Date.now() - 60000);
-        if (new Date(startDate) < bufferTime) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const startDay = new Date(startDate);
+        startDay.setHours(0, 0, 0, 0);
+        if (startDay < today) {
           setValidationError("Start date cannot be in the past for active orders!");
           return;
         }
@@ -859,8 +862,8 @@ const Orders = () => {
 
                 const totalItems = order.items.length;
                 const customer = order.customer;
-                const reqStart = new Date(order.requestedStartDate).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" });
-                const reqEnd = new Date(order.requestedEndDate).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" });
+                const reqStart = new Date(order.requestedStartDate).toLocaleDateString("pl-PL");
+                const reqEnd = new Date(order.requestedEndDate).toLocaleDateString("pl-PL");
 
                 return (
                   <div key={order._id} className={`bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 border-l-4 ${getOrderBorderColor(order)} shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden`}>

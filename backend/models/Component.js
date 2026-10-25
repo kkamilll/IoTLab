@@ -16,6 +16,8 @@ const componentSchema = new mongoose.Schema({
   logo: { type: String, default: "" },
   links: { type: [linkSchema], default: [] },
   files: { type: [fileSchema], default: [] },
+  isDirectLink: { type: Boolean, default: false },
+  directUrl: { type: String, default: "" },
   author: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
 }, { timestamps: true });
 
