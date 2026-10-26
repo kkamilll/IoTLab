@@ -4,6 +4,7 @@ import apiClient from "../api/apiClient";
 import { Folder, FolderOpen, Info, ArrowLeft, ChevronRight, LayoutGrid, Search, Layers } from "lucide-react";
 import { buildTree } from "../utils/categoryUtils";
 import { useLanguage } from "../context/LanguageContext";
+import Btn from "../components/layout/Btn";
 
 /** Quick "Track your order" input bar for guest pages */
 const TrackOrderBar = ({ language, navigate }) => {
@@ -115,29 +116,29 @@ const MainGuest = () => {
           {/* Decorative Background Blob */}
           <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-indigo-500/10 dark:bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
 
-          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6 relative z-10">
-            <div className="flex flex-col gap-2">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-650 dark:text-indigo-400 select-none flex items-center gap-1.5">
-                <LayoutGrid className="w-3.5 h-3.5" />
-                {t("guest.subtitle") || "Katalog sprzętu"}
-              </p>
-              <h1 className="text-3xl font-black text-slate-900 dark:text-white">
+          <div className="flex flex-col gap-4 relative z-10">
+            {/* Back button on the left */}
+            <div>
+              <Btn
+                onClick={() => navigate("/")}
+                variant="secondary"
+                className="py-1.5 px-3.5 text-xs font-bold shadow-2xs gap-1.5 inline-flex"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>{t("common.back")}</span>
+              </Btn>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
                 {t("categories.title")}
               </h1>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-lg leading-relaxed">
+              <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xl leading-relaxed">
                 {language === "pl" 
                   ? "Przeglądaj naszą strukturę katalogową, aby szybko znaleźć urządzenia, narzędzia i materiały, których potrzebujesz." 
                   : "Browse our catalog structure to quickly find the devices, tools, and materials you need."}
               </p>
             </div>
-            
-            <button
-              onClick={() => navigate("/")}
-              className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 hover:bg-slate-105 dark:bg-slate-900 dark:hover:bg-slate-800 px-5 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-300 shadow-sm transition duration-100 cursor-pointer flex items-center gap-2 self-start flex-shrink-0"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              {t("common.back")}
-            </button>
           </div>
 
           {/* Search Bar */}

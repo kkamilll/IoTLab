@@ -169,8 +169,17 @@ const ProductsMobileCards = ({
           <div className="flex justify-between items-center py-1 border-b border-slate-100 dark:border-slate-800/60 last:border-b-0 min-w-0">
             <span className="font-bold text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-wider">{t("products.columns.owner")}:</span>
             <div className="flex items-center gap-1.5 max-w-[65%] truncate">
-              <div className="w-5 h-5 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex items-center justify-center flex-shrink-0">
-                <User className="w-2.5 h-2.5 text-slate-450 dark:text-slate-400" />
+              <div className="w-5 h-5 rounded-full overflow-hidden bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex items-center justify-center flex-shrink-0 shadow-2xs">
+                {product.owner?.profileImage ? (
+                  <img
+                    src={`${API_BASE}/uploads/users/${product.owner.profileImage}`}
+                    alt={product.owner?.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  />
+                ) : (
+                  <User className="w-2.5 h-2.5 text-slate-450 dark:text-slate-400" />
+                )}
               </div>
               <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate">{product.owner?.name ?? product.owner}</span>
             </div>

@@ -9,6 +9,7 @@ import {
   FaTag,
 } from "react-icons/fa";
 import { FaUserShield, FaUserLock } from "react-icons/fa6";
+import { Globe, Lock } from "lucide-react";
 import CategorySelector from "../categories/CategorySelector";
 import { useLanguage } from "../../context/LanguageContext";
 
@@ -20,6 +21,7 @@ const ProductModal = ({
   handleChange,
   handleSubmit,
   extraColumns,
+  columnConfigs = {},
   handleExtraFieldChange,
   categoryTree,
   normalizedCategories,
@@ -485,9 +487,29 @@ const ProductModal = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {extraColumns.map((col, idx) => (
                   <div key={idx} className="flex flex-col">
-                    <label htmlFor={`extra-${col}`} className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5" title={col}>
-                      {col.length > 30 ? col.slice(0, 27) + "…" : col}
-                    </label>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label htmlFor={`extra-${col}`} className="block text-sm font-semibold text-slate-700 dark:text-slate-300" title={col}>
+                        {col.length > 25 ? col.slice(0, 22) + "…" : col}
+                      </label>
+                      <span
+                        title={
+                          columnConfigs?.[col.toLowerCase()]
+                            ? (language === "pl" ? "Widoczna dla gości" : "Visible to guests")
+                            : (language === "pl" ? "Widoczna tylko dla admina" : "Admin only")
+                        }
+                        className={`p-1 rounded-md border select-none inline-flex items-center justify-center ${
+                          columnConfigs?.[col.toLowerCase()]
+                            ? "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/40"
+                            : "bg-slate-100 text-slate-400 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700"
+                        }`}
+                      >
+                        {columnConfigs?.[col.toLowerCase()] ? (
+                          <Globe className="w-3.5 h-3.5" />
+                        ) : (
+                          <Lock className="w-3.5 h-3.5" />
+                        )}
+                      </span>
+                    </div>
                     <textarea
                       id={`extra-${col}`}
                       name={col}

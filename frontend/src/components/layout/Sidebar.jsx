@@ -4,6 +4,8 @@ import { useAuth } from "../../context/AuthContext";
 import { useLanguage } from "../../context/LanguageContext";
 import { useTheme } from "../../context/ThemeContext";
 
+const API_BASE = `${import.meta.env.VITE_API_IP || ""}${import.meta.env.VITE_API_PORT || ""}${import.meta.env.VITE_API_POSTFIX || ""}`;
+
 const Sidebar = ({ isCollapsed, toggleCollapse }) => {
   const { user } = useAuth();
   const { language, setLanguage, t } = useLanguage();
@@ -313,34 +315,77 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
           )}
         </div>
 
-        <div className={`border-t border-slate-200 dark:border-slate-800 text-center text-xs bg-slate-50 dark:bg-slate-950/40 text-slate-600 dark:text-slate-400 transition-all duration-300 flex flex-col items-center justify-center min-h-[4rem] ${isCollapsed ? "md:p-2 p-4" : "p-4"}`}>
+        <div className={`border-t border-slate-200 dark:border-slate-800 text-xs bg-slate-50 dark:bg-slate-950/40 text-slate-600 dark:text-slate-400 transition-all duration-300 flex items-center justify-center min-h-[4rem] ${isCollapsed ? "md:p-2 p-3.5" : "p-3.5"}`}>
           {user ? (
             isCollapsed ? (
               <>
                 {/* Desktop Collapsed Avatar */}
-                <span className="hidden md:flex w-8 h-8 rounded-full bg-indigo-550/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold items-center justify-center border border-indigo-200/50 dark:border-indigo-800/40 text-[10px]" title={user.name || user.email}>
-                  {(user.name || user.email || "U").slice(0, 2).toUpperCase()}
-                </span>
+                <div className="hidden md:flex w-9 h-9 rounded-full overflow-hidden items-center justify-center border border-indigo-200/60 dark:border-indigo-800/60 shadow-xs flex-shrink-0" title={user.name || user.email}>
+                  {user.profileImage ? (
+                    <img
+                      src={`${API_BASE}/uploads/users/${user.profileImage}`}
+                      alt={user.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    />
+                  ) : (
+                    <span className="w-full h-full bg-indigo-550/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold flex items-center justify-center text-[11px]">
+                      {(user.name || user.email || "U").slice(0, 2).toUpperCase()}
+                    </span>
+                  )}
+                </div>
                 {/* Mobile Expanded Avatar Details */}
-                <div className="flex md:hidden flex-col items-center justify-center w-full">
-                  <p className="font-semibold text-slate-700 dark:text-slate-200 truncate w-full">{user.name || user.email}</p>
-                  <p className="text-slate-500 capitalize mt-0.5">{user.role}</p>
+                <div className="flex md:hidden items-center gap-3 w-full">
+                  <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 border border-slate-200 dark:border-slate-700 shadow-2xs">
+                    {user.profileImage ? (
+                      <img
+                        src={`${API_BASE}/uploads/users/${user.profileImage}`}
+                        alt={user.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs">
+                        {(user.name || user.email || "U").slice(0, 2).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex flex-col min-w-0 text-left">
+                    <p className="font-bold text-slate-800 dark:text-slate-200 truncate">{user.name || user.email}</p>
+                    <p className="text-[10px] text-slate-400 capitalize">{user.role}</p>
+                  </div>
                 </div>
               </>
             ) : (
-              <>
-                <p className="font-semibold text-slate-700 dark:text-slate-200 truncate w-full">{user.name || user.email}</p>
-                <p className="text-slate-500 capitalize mt-0.5">{user.role}</p>
-              </>
+              <div className="flex items-center gap-3 w-full">
+                <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 border border-slate-200 dark:border-slate-700 shadow-2xs">
+                  {user.profileImage ? (
+                    <img
+                      src={`${API_BASE}/uploads/users/${user.profileImage}`}
+                      alt={user.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs">
+                      {(user.name || user.email || "U").slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col min-w-0 text-left flex-1">
+                  <p className="font-bold text-slate-800 dark:text-slate-200 truncate">{user.name || user.email}</p>
+                  <p className="text-[10px] text-slate-400 capitalize font-medium">{user.role}</p>
+                </div>
+              </div>
             )
           ) : (
             isCollapsed ? (
               <>
                 <p className="hidden md:block text-slate-500">👤</p>
-                <p className="block md:hidden text-slate-500">{t("common.notLoggedIn")}</p>
+                <p className="block md:hidden text-slate-500 text-center">{t("common.notLoggedIn")}</p>
               </>
             ) : (
-              <p className="text-slate-500">{t("common.notLoggedIn")}</p>
+              <p className="text-slate-500 text-center">{t("common.notLoggedIn")}</p>
             )
           )}
         </div>

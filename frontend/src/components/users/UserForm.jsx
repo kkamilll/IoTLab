@@ -69,7 +69,7 @@ const UserForm = ({
         {/* Profile Image Section */}
         <div className="flex flex-col gap-2 py-1">
           <label className="text-[10px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider pl-1">
-            {language === "pl" ? "Zdjęcie profilowe" : "Profile Picture"}
+            {t("users.profileImage") || (language === "pl" ? "Zdjęcie profilowe" : "Profile Picture")}
           </label>
           <div className="flex items-center gap-4 w-full">
             <div className="relative w-14 h-14 rounded-full overflow-hidden border-2 border-dashed border-slate-250 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex items-center justify-center flex-shrink-0">
@@ -84,9 +84,14 @@ const UserForm = ({
                   src={`${API_BASE}/uploads/users/${formData.profileImage}`}
                   alt="Profile"
                   className="w-full h-full object-cover"
+                  onError={(e) => { e.currentTarget.style.display = "none"; }}
                 />
               ) : (
-                <span className="text-[10px] text-slate-400 dark:text-slate-600 font-semibold uppercase">{language === "pl" ? "Brak" : "None"}</span>
+                <span className="text-xs text-indigo-600 dark:text-indigo-400 font-black">
+                  {formData.name
+                    ? formData.name.trim().split(/\s+/).slice(0, 2).map((n) => n[0]).join("").toUpperCase()
+                    : "👤"}
+                </span>
               )}
             </div>
             <div className="flex flex-col gap-1 flex-1 min-w-0">
@@ -99,6 +104,7 @@ const UserForm = ({
                   if (file) {
                     handleChange({ target: { name: "profileImageFile", value: file } });
                   }
+                  e.target.value = "";
                 }}
                 className="hidden"
               />

@@ -9,7 +9,7 @@ import { useToast } from "../context/ToastContext";
 const API_BASE = `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}`;
 
 const Profile = () => {
-  const { token } = useAuth();
+  const { token, updateUser: updateAuthUser } = useAuth();
   const { t, language } = useLanguage();
   const { showToast } = useToast();
 
@@ -82,6 +82,8 @@ const Profile = () => {
       formData.append("labRooms", JSON.stringify(user.labRooms || []));
       if (user.profileImageFile) {
         formData.append("profileImage", user.profileImageFile);
+      } else if (user.profileImage === "") {
+        formData.append("profileImage", "");
       }
 
       const config = { headers: { "Content-Type": "multipart/form-data" } };
@@ -89,12 +91,20 @@ const Profile = () => {
       if (res.data.success) {
         showToast(t("profile.successUpdate") || "Profile updated successfully!", "success");
         setEditMode(false);
+        const updatedImg = res.data.user.profileImage ?? "";
         setUser((prev) => ({
           ...prev,
           password: "",
-          profileImage: res.data.user.profileImage || prev.profileImage,
+          profileImage: updatedImg,
           profileImageFile: null,
         }));
+        if (updateAuthUser) {
+          updateAuthUser({
+            name: res.data.user.name,
+            email: res.data.user.email,
+            profileImage: updatedImg,
+          });
+        }
       }
     } catch (err) {
       console.error(err.response?.data || err.message);
@@ -274,16 +284,45 @@ const Profile = () => {
 
               {/* Profile Image upload (Only Edit Mode) */}
               {editMode && (
-                <div className="flex flex-col gap-1.5 md:col-span-2">
+                <div className="flex flex-col gap-2 md:col-span-2">
                   <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1 select-none">
                     {language === "pl" ? "Zdjęcie profilowe:" : "Profile Picture:"}
                   </label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-950/40 px-3.5 py-2 font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 w-full cursor-pointer file:mr-4 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 dark:file:bg-indigo-950/40 dark:file:text-indigo-400"
-                  />
+                  <div className="flex flex-wrap items-center gap-3">
+                    <input
+                      type="file"
+                      id="profileImageInput"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                    <label
+                      htmlFor="profileImageInput"
+                      className="px-4 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl transition duration-150 cursor-pointer shadow-xs inline-flex items-center gap-1.5"
+                    >
+                      📁 {language === "pl" ? "Wybierz plik" : "Choose File"}
+                    </label>
+                    {(user.profileImageFile || user.profileImage) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUser((prev) => ({
+                            ...prev,
+                            profileImageFile: null,
+                            profileImage: "",
+                          }));
+                        }}
+                        className="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/30 text-xs font-bold rounded-xl transition duration-150 cursor-pointer inline-flex items-center gap-1"
+                      >
+                        🗑️ {language === "pl" ? "Usuń zdjęcie" : "Remove Photo"}
+                      </button>
+                    )}
+                    {user.profileImageFile && (
+                      <span className="text-[11px] text-slate-500 font-medium truncate max-w-xs">
+                        {user.profileImageFile.name}
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
 

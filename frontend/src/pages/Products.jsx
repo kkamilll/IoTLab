@@ -14,7 +14,7 @@ import CategoryTree from "../components/categories/CategoryTree";
 import PageHeader from "../components/layout/PageHeader";
 import Btn from "../components/layout/Btn";
 import Pagination from "../components/layout/Pagination";
-import { FileDown, Plus, ShoppingCart, LayoutGrid, Search, ChevronDown, ChevronRight } from "lucide-react";
+import { FileDown, Plus, ShoppingCart, LayoutGrid, Search, ChevronDown, ChevronRight, Globe, Lock } from "lucide-react";
 
 const MEGA_BYTE = 1024 * 1024;
 const MAX_FILE_SIZE = 50 * MEGA_BYTE;
@@ -35,6 +35,8 @@ const Products = () => {
   const [users, setUsers] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [extraColumns, setExtraColumns] = useState([]);
+  const [columnConfigs, setColumnConfigs] = useState({});
+  const [newColGuestVisible, setNewColGuestVisible] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -167,6 +169,7 @@ const Products = () => {
     fetchCategories();
     fetchProducts();
     fetchUsers();
+    fetchColumnConfigs();
 
     setCartQuantities((prev) => {
       const cart = JSON.parse(localStorage.getItem("cart")) || [];
@@ -263,7 +266,7 @@ const Products = () => {
         return;
       }
 
-      const allExtraKeys = new Set(extraColumns);
+      const allExtraKeys = new Set();
       res.data.products.forEach((p) => {
         if (p.extraFields)
           Object.keys(p.extraFields).forEach((k) => allExtraKeys.add(k));
@@ -283,6 +286,45 @@ const Products = () => {
     } catch (err) {
       console.error(err);
       showToast(err.response?.data?.message || err.message || "Error fetching products", "error");
+    }
+  };
+
+  const fetchColumnConfigs = async () => {
+    try {
+      const res = await apiClient.get("/products/columns/config");
+      if (res.data?.success && Array.isArray(res.data.columns)) {
+        const map = {};
+        res.data.columns.forEach((c) => {
+          map[c.name.toLowerCase()] = c.guestVisible;
+        });
+        setColumnConfigs(map);
+      }
+    } catch (e) {
+      console.error("Error fetching column configs:", e);
+    }
+  };
+
+  const toggleColumnGuestVisibility = async (col) => {
+    const cleanKey = col.toLowerCase();
+    const current = Boolean(columnConfigs[cleanKey]);
+    const nextVal = !current;
+    try {
+      await apiClient.post("/products/columns/config", {
+        name: cleanKey,
+        guestVisible: nextVal,
+      });
+      setColumnConfigs((prev) => ({ ...prev, [cleanKey]: nextVal }));
+      showToast(
+        language === "pl"
+          ? `Kolumna "${col}" jest teraz ${nextVal ? "widoczna dla gości" : "widoczna tylko dla administratora"}.`
+          : `Column "${col}" is now ${nextVal ? "visible to guests" : "admin only"}.`,
+        "success"
+      );
+    } catch (err) {
+      showToast(
+        language === "pl" ? "Błąd zmiany widoczności kolumny" : "Failed to change column visibility",
+        "error"
+      );
     }
   };
 
@@ -546,12 +588,29 @@ const Products = () => {
         ...prev,
         extraFields: { ...prev.extraFields, [key]: "" },
       }));
+
+      // Save column visibility config to server
+      apiClient
+        .post("/products/columns/config", {
+          name: key,
+          guestVisible: newColGuestVisible,
+        })
+        .then(() => {
+          setColumnConfigs((prev) => ({ ...prev, [key]: newColGuestVisible }));
+        })
+        .catch((err) => {
+          console.error("Failed to save column config:", err);
+        });
+
       setIsAddColModalOpen(false);
       setNewColName("");
+      const wasGuest = newColGuestVisible;
+      setNewColGuestVisible(false);
+
       showToast(
         language === "pl"
-          ? `Kolumna "${key}" została dodana pomyślnie.`
-          : `Column "${key}" added successfully.`,
+          ? `Kolumna "${key}" została dodana (${wasGuest ? "widoczna dla gości" : "tylko dla admina"}).`
+          : `Column "${key}" added (${wasGuest ? "visible to guests" : "admin only"}).`,
         "success"
       );
     } else {
@@ -574,6 +633,11 @@ const Products = () => {
 
           if (res.data.success) {
             setExtraColumns((prev) => prev.filter((col) => col !== key));
+            setColumnConfigs((prev) => {
+              const updated = { ...prev };
+              delete updated[key.toLowerCase()];
+              return updated;
+            });
             setProducts((prev) =>
               prev.map((p) => {
                 const newExtra = { ...p.extraFields };
@@ -780,7 +844,10 @@ const Products = () => {
 
   const handlePreview = (productId) => {
     if (!productId) return;
-    navigate("/admin-dashboard/preview", { state: { productId } });
+    try {
+      sessionStorage.setItem("last_preview_product_id", productId);
+    } catch (e) {}
+    navigate(`/admin-dashboard/preview?id=${productId}`, { state: { productId } });
   };
 
   const handleCategorySelect = (catId) => {
@@ -1060,7 +1127,7 @@ const Products = () => {
               </button>
 
               {columnsDropdownOpen && (
-                <div className="absolute mt-2 w-full rounded-xl shadow-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 z-30 overflow-y-auto max-h-80 w-64 py-1.5 flex flex-col">
+                <div className="absolute mt-2 rounded-xl shadow-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 z-30 overflow-y-auto max-h-80 w-72 py-1.5 flex flex-col">
                   {/* Dropdown Header Actions */}
                   <div className="flex justify-between items-center px-4 py-2 border-b border-slate-100 dark:border-slate-800 text-[10px] font-bold text-slate-400">
                     <span>{t("products.columnsHeader")}</span>
@@ -1111,22 +1178,47 @@ const Products = () => {
                     {/* Custom Columns Group */}
                     {extraColumns.length > 0 && (
                       <>
-                        <div className="px-4 py-1 text-[9px] font-extrabold text-slate-400 uppercase tracking-wider select-none bg-slate-50/55 dark:bg-slate-950/20 border-t border-slate-100 dark:border-slate-800 mt-1">
-                          {t("products.columnsCustomGroup") || "CUSTOM"}
+                        <div className="px-4 py-1.5 text-[9px] font-extrabold text-slate-400 uppercase tracking-wider select-none bg-slate-50/55 dark:bg-slate-950/20 border-t border-slate-100 dark:border-slate-800 mt-1 flex items-center justify-between">
+                          <span>{t("products.columnsCustomGroup") || "CUSTOM"}</span>
+                          <span className="text-[8px] font-normal text-slate-400 lowercase">
+                            {language === "pl" ? "widoczność" : "visibility"}
+                          </span>
                         </div>
                         {extraColumns.map((col) => {
+                          const isGuest = Boolean(columnConfigs[col.toLowerCase()]);
                           return (
-                            <li key={col}>
-                              <label className="flex items-center gap-2.5 px-4 py-1.5 text-xs text-slate-650 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition font-medium">
+                            <li key={col} className="flex items-center justify-between px-4 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 transition">
+                              <label className="flex items-center gap-2.5 text-xs text-slate-650 dark:text-slate-300 cursor-pointer font-medium flex-1 truncate select-none">
                                 <input
                                   type="checkbox"
                                   checked={!hiddenColumns.includes(col)}
                                   onChange={() => toggleColumn(col)}
                                   className="accent-indigo-650 w-3.5 h-3.5 rounded"
                                 />
-                                <span className="truncate max-w-[120px]">{col}</span>
-                                <span className="text-[8px] bg-indigo-50 dark:bg-indigo-950/50 text-indigo-500 dark:text-indigo-400 px-1 rounded ml-auto">custom</span>
+                                <span className="truncate max-w-[110px]" title={col}>{col}</span>
                               </label>
+
+                              {/* Guest vs Admin visibility toggle button (compact icon-only) */}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  toggleColumnGuestVisibility(col);
+                                }}
+                                title={
+                                  isGuest
+                                    ? (language === "pl" ? "Widoczna dla gości. Kliknij, aby ukryć przed gośćmi (tylko admin)." : "Visible to guests. Click to make admin only.")
+                                    : (language === "pl" ? "Tylko dla admina. Kliknij, aby udostępnić gościom." : "Admin only. Click to make visible to guests.")
+                                }
+                                className={`p-1 rounded-md transition cursor-pointer select-none shrink-0 border flex items-center justify-center ${
+                                  isGuest
+                                    ? "bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/40"
+                                    : "bg-slate-100 text-slate-400 border-slate-200 hover:bg-slate-200 hover:text-slate-600 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700"
+                                }`}
+                              >
+                                {isGuest ? <Globe className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
+                              </button>
                             </li>
                           );
                         })}
@@ -1206,6 +1298,8 @@ const Products = () => {
           user={user}
           extraColumns={extraColumns}
           removeExtraField={removeExtraField}
+          columnConfigs={columnConfigs}
+          toggleColumnGuestVisibility={toggleColumnGuestVisibility}
           handlePreview={handlePreview}
           handleEdit={handleEdit}
           handleDelete={handleDelete}
@@ -1277,6 +1371,7 @@ const Products = () => {
           handleChange={handleChange}
           handleSubmit={handleSubmit}
           extraColumns={extraColumns}
+          columnConfigs={columnConfigs}
           handleExtraFieldChange={handleExtraFieldChange}
           categoryTree={categoryTree}
           normalizedCategories={normalizedCategories}
@@ -1326,6 +1421,55 @@ const Products = () => {
                   autoFocus
                 />
               </div>
+
+              {/* Visibility Choice */}
+              <div className="flex flex-col gap-2">
+                <span className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                  {language === "pl" ? "Widoczność nowej kolumny:" : "New column visibility:"}
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setNewColGuestVisible(false)}
+                    className={`flex items-start gap-2.5 p-3 rounded-xl border text-left transition cursor-pointer ${
+                      !newColGuestVisible
+                        ? "border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/30 text-indigo-900 dark:text-indigo-200 ring-2 ring-indigo-500/20"
+                        : "border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30 text-slate-600 dark:text-slate-400 hover:border-slate-300"
+                    }`}
+                  >
+                    <Lock className="w-4 h-4 mt-0.5 shrink-0" />
+                    <div>
+                      <div className="text-xs font-bold text-slate-900 dark:text-white">
+                        {language === "pl" ? "Tylko admin" : "Admin only"}
+                      </div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
+                        {language === "pl" ? "Kolumna widoczna wyłącznie w panelu administratora" : "Visible only in admin management view"}
+                      </div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setNewColGuestVisible(true)}
+                    className={`flex items-start gap-2.5 p-3 rounded-xl border text-left transition cursor-pointer ${
+                      newColGuestVisible
+                        ? "border-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-200 ring-2 ring-emerald-500/20"
+                        : "border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30 text-slate-600 dark:text-slate-400 hover:border-slate-300"
+                    }`}
+                  >
+                    <Globe className="w-4 h-4 mt-0.5 shrink-0" />
+                    <div>
+                      <div className="text-xs font-bold text-slate-900 dark:text-white">
+                        {language === "pl" ? "Gość i Admin" : "Guest & Admin"}
+                      </div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
+                        {language === "pl" ? "Widoczna również w publicznym katalogu gościa" : "Also visible in the public guest catalog"}
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
               <div className="flex justify-end gap-3 pt-2">
                 <button
                   type="button"

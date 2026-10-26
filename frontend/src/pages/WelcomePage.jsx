@@ -6,6 +6,9 @@ import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import MainSlider from '../components/layout/MainSlider';
 import Btn from '../components/layout/Btn';
+import NavArrowBtn from '../components/layout/NavArrowBtn';
+
+const API_BASE = `${import.meta.env.VITE_API_IP || ""}${import.meta.env.VITE_API_PORT || ""}${import.meta.env.VITE_API_POSTFIX || ""}`;
 
 /** Quick "Track your order" input displayed in the hero section for guests */
 const TrackOrderBanner = ({ language, navigate }) => {
@@ -98,7 +101,13 @@ const WelcomePage = () => {
     (async () => {
       try {
         const res = await apiClient.get('/components');
-        if (res.data.success) setCollections(res.data.data);
+        if (res.data.success) {
+          // Do not duplicate product catalog in collections since it's already in the hero section
+          const filtered = res.data.data.filter(
+            c => !c.name?.toLowerCase().includes('katalog') && c.directUrl !== '/guest-products' && c.directUrl !== '/mainguest'
+          );
+          setCollections(filtered);
+        }
       } catch (err) {
         console.error("Error fetching collections:", err);
       }
@@ -158,57 +167,102 @@ const WelcomePage = () => {
 
       {/* TOPBAR */}
       <div className="w-full py-3.5 px-6 text-slate-600 dark:text-slate-300 text-xs font-semibold tracking-wide flex flex-col md:flex-row md:items-center md:justify-between gap-3 border-b border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-950/20 backdrop-blur-sm transition-colors duration-300">
-        <span className="text-slate-500 dark:text-slate-400 font-mono">
-          {`${currentTime.getDate().toString().padStart(2, '0')}.${(currentTime.getMonth() + 1).toString().padStart(2, '0')}.${currentTime.getFullYear()} ${currentTime.getHours().toString().padStart(2, '0')}:${currentTime.getMinutes().toString().padStart(2, '0')}:${currentTime.getSeconds().toString().padStart(2, '0')}`}
-        </span>
+        {/* Left Side: Live Clock, Theme Switcher & Language Switcher */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Live Clock & Date Badge */}
+          <div
+            className="inline-flex items-center gap-2 sm:gap-2.5 px-3 py-1.5 rounded-full bg-white/80 dark:bg-slate-900/80 border border-slate-200/90 dark:border-slate-750 shadow-2xs backdrop-blur-md select-none transition-all duration-200 hover:border-slate-300 dark:hover:border-slate-700"
+            title={language === "pl" ? "Aktualny czas systemowy" : "Current system time"}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-3.5 w-3.5 text-indigo-500 dark:text-indigo-400 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+              aria-hidden="true"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
 
-        <div className="flex flex-wrap items-center gap-4 w-full md:w-auto md:justify-end">
-          {/* Theme Switcher Toggle */}
+            <span className="text-slate-600 dark:text-slate-300 font-medium text-[11px] sm:text-xs">
+              {`${currentTime.getDate().toString().padStart(2, '0')}.${(currentTime.getMonth() + 1).toString().padStart(2, '0')}.${currentTime.getFullYear()}`}
+            </span>
+
+            <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700" aria-hidden="true"></span>
+
+            <span className="font-mono font-bold text-slate-800 dark:text-slate-100 tracking-wider text-[11px] sm:text-xs bg-slate-100 dark:bg-slate-800/90 px-2 py-0.5 rounded-md border border-slate-200/70 dark:border-slate-700/70 shadow-2xs">
+              {`${currentTime.getHours().toString().padStart(2, '0')}:${currentTime.getMinutes().toString().padStart(2, '0')}:${currentTime.getSeconds().toString().padStart(2, '0')}`}
+            </span>
+          </div>
+
+          {/* Theme Switcher Toggle (next to the clock) */}
           <button
             onClick={toggleTheme}
-            className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors bg-white dark:bg-slate-900 cursor-pointer"
+            className="flex items-center justify-center w-8 h-8 rounded-full border border-slate-200/90 dark:border-slate-750 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200 bg-white/80 dark:bg-slate-900/80 shadow-2xs backdrop-blur-md cursor-pointer hover:border-slate-300 dark:hover:border-slate-700 active:scale-95"
             title={theme === "dark" ? (language === "pl" ? "Przełącz na tryb jasny" : "Switch to Light Mode") : (language === "pl" ? "Przełącz na tryb ciemny" : "Switch to Dark Mode")}
+            aria-label="Toggle theme"
           >
             {theme === "dark" ? (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4.5 w-4.5 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 9h-1m14.071-5.071l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M14 12a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
             ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4.5 w-4.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
               </svg>
             )}
           </button>
 
           {/* Language Switcher Toggle */}
-          <div className="flex items-center rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden bg-white/50 dark:bg-slate-900/50">
+          <div className="flex items-center rounded-full border border-slate-200/90 dark:border-slate-750 overflow-hidden bg-white/80 dark:bg-slate-900/80 shadow-2xs backdrop-blur-md p-0.5">
             <button
               onClick={() => setLanguage("pl")}
-              className={`px-2.5 py-1 text-[10px] font-bold uppercase transition-colors cursor-pointer ${
+              className={`px-2.5 py-1 text-[10px] font-bold uppercase transition-all duration-200 rounded-full cursor-pointer ${
                 language === "pl"
-                  ? "bg-indigo-600 text-white"
-                  : "text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  ? "bg-indigo-600 text-white shadow-xs"
+                  : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
               }`}
             >
               PL
             </button>
             <button
               onClick={() => setLanguage("en")}
-              className={`px-2.5 py-1 text-[10px] font-bold uppercase transition-colors cursor-pointer ${
+              className={`px-2.5 py-1 text-[10px] font-bold uppercase transition-all duration-200 rounded-full cursor-pointer ${
                 language === "en"
-                  ? "bg-indigo-600 text-white"
-                  : "text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  ? "bg-indigo-600 text-white shadow-xs"
+                  : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
               }`}
             >
               EN
             </button>
           </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto md:justify-end">
 
           {user ? (
             <div className="flex flex-col sm:flex-row items-center gap-3 text-slate-650 dark:text-slate-200 text-xs font-semibold w-full sm:w-auto">
-              <span className="truncate max-w-[140px] sm:max-w-none text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-850 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-800">
-                {user.name}
-              </span>
+              <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-850 px-2.5 py-1 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs">
+                <div className="w-5 h-5 rounded-full overflow-hidden flex-shrink-0 border border-slate-200 dark:border-slate-700 shadow-2xs">
+                  {user.profileImage ? (
+                    <img
+                      src={`${API_BASE}/uploads/users/${user.profileImage}`}
+                      alt={user.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    />
+                  ) : (
+                    <span className="w-full h-full bg-gradient-to-tr from-indigo-500 to-purple-600 text-white font-bold text-[9px] flex items-center justify-center">
+                      {(user.name || "U")[0].toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <span className="truncate max-w-[140px] sm:max-w-none">
+                  {user.name}
+                </span>
+              </div>
 
               {/* Back button */}
               <Btn
@@ -262,7 +316,30 @@ const WelcomePage = () => {
             {t("welcome.subtitle")}
           </p>
 
-          {!user && (
+          {user ? (
+            <div className="flex flex-col sm:flex-row justify-center gap-4 mt-6">
+              <Btn
+                onClick={() => navigate('/guest-products')}
+                variant="primary"
+                className="px-8 py-3.5 text-sm font-bold shadow-lg inline-flex items-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+                {t("welcome.productCatalog")}
+              </Btn>
+              <Btn
+                onClick={handleBackToSidebar}
+                variant="secondary"
+                className="px-8 py-3.5 text-sm font-bold shadow-lg inline-flex items-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                {t("welcome.adminDashboard")}
+              </Btn>
+            </div>
+          ) : (
             <div className="flex flex-col sm:flex-row justify-center gap-4 mt-6">
               <Btn
                 onClick={handleLoginClick}
@@ -272,11 +349,14 @@ const WelcomePage = () => {
                 {t("nav.loginAccount")}
               </Btn>
               <Btn
-                onClick={() => navigate('/mainguest')}
+                onClick={() => navigate('/guest-products')}
                 variant="secondary"
-                className="px-8 py-3.5 text-sm font-bold shadow-lg"
+                className="px-8 py-3.5 text-sm font-bold shadow-lg inline-flex items-center gap-2"
               >
-                {t("nav.orderAsGuest")}
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+                {t("welcome.productCatalog")}
               </Btn>
             </div>
           )}
@@ -288,14 +368,11 @@ const WelcomePage = () => {
         </div>
       </section>
 
-      <section className="py-16 bg-slate-100/30 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 px-6 md:px-12">
+      <section className="py-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 md:px-12 transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-          <h2 className="text-2xl font-black mb-1.5 text-center tracking-tight text-slate-900 dark:text-white">
+          <h2 className="text-2xl sm:text-3xl font-black mb-8 text-center tracking-tight text-slate-900 dark:text-white">
             {t("nav.explore")}
           </h2>
-          <p className="text-slate-500 dark:text-slate-400 text-xs text-center mb-8">
-            {t("welcome.exploreSubtitle")}
-          </p>
 
           {collections.length === 0 ? (
             <p className="text-center text-sm opacity-80 font-semibold text-slate-500">
@@ -304,13 +381,14 @@ const WelcomePage = () => {
           ) : (
             <div className="relative flex items-center justify-center">
               {/* Left arrow */}
-              <button
+              <NavArrowBtn
+                direction="left"
                 onClick={() => setCollectionIndex(prev => Math.max(prev - 1, 0))}
-                className="absolute left-0 z-10 w-9 h-9 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-full shadow-md text-slate-800 dark:text-white font-bold transition disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
                 disabled={collectionIndex === 0}
-              >
-                ←
-              </button>
+                className="absolute -left-2 sm:-left-4 z-10"
+                title={language === "pl" ? "Poprzednie kolekcje" : "Previous collections"}
+                ariaLabel="Previous collections"
+              />
 
               {/* Cards */}
               <div className="flex gap-6 overflow-hidden px-2">
@@ -318,7 +396,7 @@ const WelcomePage = () => {
                   <div
                     key={collection._id}
                     onClick={() => handleCollectionClick(collection)}
-                    className="relative group bg-white dark:bg-slate-800/45 border border-slate-200 dark:border-slate-700/50 hover:border-indigo-500 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-[1.02] flex flex-col items-center text-center flex-shrink-0 w-[220px] cursor-pointer"
+                    className="relative group bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 hover:border-indigo-500 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-[1.02] flex flex-col items-center text-center flex-shrink-0 w-[220px] cursor-pointer"
                   >
                     {collection.isDirectLink && (
                       <span
@@ -347,17 +425,18 @@ const WelcomePage = () => {
               </div>
 
               {/* Right arrow */}
-              <button
+              <NavArrowBtn
+                direction="right"
                 onClick={() =>
                   setCollectionIndex(prev =>
                     Math.min(prev + 1, collections.length - visibleCount)
                   )
                 }
-                className="absolute right-0 z-10 w-9 h-9 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-full shadow-md text-slate-800 dark:text-white font-bold transition disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
                 disabled={collectionIndex >= collections.length - visibleCount}
-              >
-                →
-              </button>
+                className="absolute -right-2 sm:-right-4 z-10"
+                title={language === "pl" ? "Następne kolekcje" : "Next collections"}
+                ariaLabel="Next collections"
+              />
             </div>
           )}
         </div>
@@ -365,19 +444,11 @@ const WelcomePage = () => {
 
       {/* LABORATORY FEATURES GRID - shown only if no materials and no notes exist */}
       {materials.length === 0 && notes.length === 0 && (
-        <section className="py-20 bg-white dark:bg-slate-950/20 px-6 md:px-12 border-b border-slate-200 dark:border-slate-800 transition-colors duration-300">
+        <section className="py-16 bg-white dark:bg-slate-900 px-6 md:px-12 border-b border-slate-200 dark:border-slate-800 transition-colors duration-300">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-            <span className="block text-center text-xs font-extrabold uppercase tracking-widest text-indigo-650 dark:text-indigo-400 mb-2">
-              {language === "pl" ? "Możliwości IoTLab" : "IoTLab Features"}
-            </span>
-            <h2 className="text-3xl font-black mb-3 text-center tracking-tight text-slate-900 dark:text-white">
-              {language === "pl" ? "Co oferuje nasze laboratorium?" : "What does our lab offer?"}
+            <h2 className="text-2xl sm:text-3xl font-black mb-8 text-center tracking-tight text-slate-900 dark:text-white">
+              {language === "pl" ? "Możliwości laboratorium" : "Laboratory Features"}
             </h2>
-            <p className="text-slate-555 dark:text-slate-400 text-sm text-center max-w-2xl mx-auto mb-12">
-              {language === "pl" 
-                ? "IoTLab to przestrzeń stworzona do rozwoju projektów z zakresu internetu rzeczy, systemów wbudowanych oraz elektroniki."
-                : "IoTLab is a space designed for developing projects in the Internet of Things, embedded systems, and electronics."}
-            </p>
 
             <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
               <div className="bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/80 rounded-3xl p-6 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] flex flex-col gap-4">
@@ -447,12 +518,9 @@ const WelcomePage = () => {
       {(notesLoading || notesError || notes.length > 0) && (
         <section className="py-16 bg-white dark:bg-slate-900 px-6 md:px-12 border-b border-slate-200 dark:border-slate-800 transition-colors duration-300">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-            <h2 className="text-2xl font-black mb-1.5 text-center tracking-tight text-slate-900 dark:text-white">
+            <h2 className="text-2xl sm:text-3xl font-black mb-8 text-center tracking-tight text-slate-900 dark:text-white">
               {t("nav.announcements")}
             </h2>
-            <p className="text-slate-500 dark:text-slate-400 text-xs text-center mb-8">
-              {t("welcome.notesSubtitle")}
-            </p>
 
             {notesLoading && (
               <p className="text-center text-sm text-slate-400 font-semibold">
@@ -469,35 +537,49 @@ const WelcomePage = () => {
                       <p className="text-slate-700 dark:text-slate-200 text-sm leading-relaxed font-semibold whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
                         {note.text}
                       </p>
-                      <div className="mt-4 text-slate-500 dark:text-slate-400 text-xs font-semibold italic border-t border-slate-250 dark:border-slate-800 pt-3">
-                        {t("welcome.addedBy")} <strong className="text-indigo-600 dark:text-indigo-400">{note.author?.name || t("welcome.anonymous")}</strong> •{' '}
-                        {`${new Date(note.createdAt).getDate().toString().padStart(2, '0')}.${(new Date(note.createdAt).getMonth() + 1).toString().padStart(2, '0')}.${new Date(note.createdAt).getFullYear()} ${new Date(note.createdAt).getHours().toString().padStart(2, '0')}:${new Date(note.createdAt).getMinutes().toString().padStart(2, '0')}`}
+                      <div className="mt-4 flex items-center gap-2.5 text-slate-500 dark:text-slate-400 text-xs font-semibold italic border-t border-slate-250 dark:border-slate-800 pt-3">
+                        <div className="w-5 h-5 rounded-full overflow-hidden flex-shrink-0 not-italic border border-slate-200 dark:border-slate-700 shadow-2xs">
+                          {note.author?.profileImage ? (
+                            <img
+                              src={`${API_BASE}/uploads/users/${note.author.profileImage}`}
+                              alt={note.author.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                            />
+                          ) : (
+                            <span className="w-full h-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 text-[9px] font-bold flex items-center justify-center">
+                              {(note.author?.name || "A")[0].toUpperCase()}
+                            </span>
+                          )}
+                        </div>
+                        <span>
+                          {t("welcome.addedBy")} <strong className="text-indigo-600 dark:text-indigo-400 not-italic">{note.author?.name || t("welcome.anonymous")}</strong> •{' '}
+                          {`${new Date(note.createdAt).getDate().toString().padStart(2, '0')}.${(new Date(note.createdAt).getMonth() + 1).toString().padStart(2, '0')}.${new Date(note.createdAt).getFullYear()} ${new Date(note.createdAt).getHours().toString().padStart(2, '0')}:${new Date(note.createdAt).getMinutes().toString().padStart(2, '0')}`}
+                        </span>
                       </div>
                     </li>
                   ))}
                 </ul>
 
                 {/* Pagination */}
-                <div className="flex justify-center items-center gap-4 mt-8">
-                  <Btn
+                <div className="flex justify-center items-center gap-3.5 mt-8">
+                  <NavArrowBtn
+                    direction="left"
                     onClick={() => setNotesPage(prev => Math.max(prev - 1, 1))}
                     disabled={notesPage === 1}
-                    variant="secondary"
-                    className="px-4 py-2"
-                  >
-                    {t("welcome.previous")}
-                  </Btn>
-                  <span className="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-850">
+                    title={t("welcome.previous")}
+                    ariaLabel={t("welcome.previous")}
+                  />
+                  <span className="px-4 py-2 bg-white/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-full border border-slate-200 dark:border-slate-700 shadow-2xs backdrop-blur-sm">
                     {notesPage} / {totalPages}
                   </span>
-                  <Btn
+                  <NavArrowBtn
+                    direction="right"
                     onClick={() => setNotesPage(prev => Math.min(prev + 1, totalPages))}
                     disabled={notesPage === totalPages}
-                    variant="secondary"
-                    className="px-4 py-2"
-                  >
-                    {t("welcome.next")}
-                  </Btn>
+                    title={t("welcome.next")}
+                    ariaLabel={t("welcome.next")}
+                  />
                 </div>
               </>
             )}

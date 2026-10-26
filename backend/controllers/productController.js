@@ -1,4 +1,5 @@
 import Product from "../models/Product.js";
+import ColumnConfig from "../models/ColumnConfig.js";
 import mongoose from "mongoose";
 import {
   AppError,
@@ -221,21 +222,37 @@ const getOrderQuantity = async ({
 };
 
 export const getProductsPublic = asyncHandler(async (req, res, next) => {
+  const guestConfigs = await ColumnConfig.find({ guestVisible: true }).lean();
+  const guestAllowedKeys = new Set(guestConfigs.map((c) => c.name.toLowerCase()));
+
   const products = await Product.find({ isVisible: true, isDeleted: false })
     .select("-__v -isDeleted")
     .sort({ name: 1 })
     .populate([
       { path: "categories", select: "name" },
-      { path: "owner", select: "name" },
+      { path: "owner", select: "name profileImage" },
     ])
     .lean();
-  const productsImagesFiltered =
-    products?.map((product) => ({
-      ...product,
-      images: product.images?.filter((img) => img.isVisible) || [],
-    })) || [];
 
-  res.json({ success: true, products: productsImagesFiltered });
+  const productsSanitized =
+    products?.map((product) => {
+      let filteredExtraFields = {};
+      if (product.extraFields && typeof product.extraFields === "object") {
+        Object.entries(product.extraFields).forEach(([k, v]) => {
+          if (guestAllowedKeys.has(k.toLowerCase())) {
+            filteredExtraFields[k] = v;
+          }
+        });
+      }
+
+      return {
+        ...product,
+        extraFields: filteredExtraFields,
+        images: product.images?.filter((img) => img.isVisible) || [],
+      };
+    }) || [];
+
+  res.json({ success: true, products: productsSanitized });
 });
 
 export const getProductsPrivate = asyncHandler(async (req, res, next) => {
@@ -257,7 +274,7 @@ export const getProductsPrivate = asyncHandler(async (req, res, next) => {
     .sort({ name: 1 })
     .populate([
       { path: "categories", select: "name" },
-      { path: "owner", select: "name" },
+      { path: "owner", select: "name profileImage" },
     ])
     .lean();
 
@@ -286,6 +303,19 @@ export const getProductByIdPublic = asyncHandler(async (req, res, next) => {
     product.images = product.images?.filter((image) => image.isVisible) || [];
     product.attachments =
       product.attachments?.filter((attachment) => attachment.isVisible) || [];
+
+    const guestConfigs = await ColumnConfig.find({ guestVisible: true }).lean();
+    const guestAllowedKeys = new Set(guestConfigs.map((c) => c.name.toLowerCase()));
+
+    if (product.extraFields && typeof product.extraFields === "object") {
+      const sanitized = {};
+      Object.entries(product.extraFields).forEach(([k, v]) => {
+        if (guestAllowedKeys.has(k.toLowerCase())) {
+          sanitized[k] = v;
+        }
+      });
+      product.extraFields = sanitized;
+    }
 
     // Send response
     return res.status(200).json({ success: true, product });
@@ -519,6 +549,7 @@ export const hardDeleteProduct = asyncHandler(async (req, res, next) => {
 export const deleteExtraField = asyncHandler(async (req, res, next) => {
   const { key } = req.params;
   await Product.updateMany({}, { $unset: { [`extraFields.${key}`]: "" } });
+  await ColumnConfig.deleteOne({ name: key.toLowerCase() });
 
   return res
     .status(200)
@@ -622,3 +653,24 @@ export const getProductStockStatus = asyncHandler(async (req, res, next) => {
     rentedQuantity,
   });
 });
+
+export const getColumnConfigs = asyncHandler(async (req, res, next) => {
+  const columns = await ColumnConfig.find().sort({ name: 1 }).lean();
+  return res.status(200).json({ success: true, columns });
+});
+
+export const saveColumnConfig = asyncHandler(async (req, res, next) => {
+  const { name, guestVisible } = req.body;
+  if (!name || typeof name !== "string") {
+    return next(new BadRequestError("Column name is required"));
+  }
+  const cleanName = name.trim().toLowerCase();
+  const column = await ColumnConfig.findOneAndUpdate(
+    { name: cleanName },
+    { guestVisible: Boolean(guestVisible) },
+    { upsert: true, new: true, setDefaultsOnInsert: true }
+  ).lean();
+
+  return res.status(200).json({ success: true, column });
+});
+

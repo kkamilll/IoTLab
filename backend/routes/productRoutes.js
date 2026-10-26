@@ -1,9 +1,25 @@
 import express from "express";
 import authMiddleware from "../middleware/authMiddleware.js";
-import { getProductsPublic, getProductsPrivate, getProductByIdPublic, getProductByIdPrivate, createProduct, updateProduct, hardDeleteProduct, deleteExtraField, getProductAvailability, getProductStockStatus } from "../controllers/productController.js";
+import {
+  getProductsPublic,
+  getProductsPrivate,
+  getProductByIdPublic,
+  getProductByIdPrivate,
+  createProduct,
+  updateProduct,
+  hardDeleteProduct,
+  deleteExtraField,
+  getProductAvailability,
+  getProductStockStatus,
+  getColumnConfigs,
+  saveColumnConfig,
+} from "../controllers/productController.js";
 import { filesUploadProduct } from "../middleware/fileUpload.js";
 
 const router = express.Router();
+
+router.get("/columns/config", getColumnConfigs);
+router.post("/columns/config", authMiddleware, saveColumnConfig);
 
 router.get("/public", getProductsPublic);
 router.get("/private", authMiddleware, getProductsPrivate);

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import apiClient from "../api/apiClient";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
 import {
   Search,
@@ -26,6 +26,8 @@ import {
   ListTree,
   Package,
 } from "lucide-react";
+import Btn from "../components/layout/Btn";
+import NavArrowBtn from "../components/layout/NavArrowBtn";
 
 const API_BASE = `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}`;
 
@@ -59,13 +61,24 @@ const getImageUrl = (product) => {
 const GuestProducts = () => {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
+  const location = useLocation();
   const { menuCategory } = useParams();
+
+  const queryParams = new URLSearchParams(location.search);
+  const initialSearch = queryParams.get("search") || location.state?.search || "";
 
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [extraColumns, setExtraColumns] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState(initialSearch);
+
+  useEffect(() => {
+    const q = new URLSearchParams(location.search).get("search");
+    if (q !== null && q !== searchTerm) {
+      setSearchTerm(q);
+    }
+  }, [location.search]);
   const [activeCategory, setActiveCategory] = useState(menuCategory || "");
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [cart, setCart] = useState(
@@ -205,8 +218,14 @@ const GuestProducts = () => {
     }
   };
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState("grid"); // "grid" or "list"
+  const [viewMode, setViewMode] = useState(() => {
+    return localStorage.getItem("guest_products_view_mode") || "list";
+  });
   const itemsPerPage = 12; // 12 fits grid layouts perfectly (3 or 4 columns)
+
+  useEffect(() => {
+    localStorage.setItem("guest_products_view_mode", viewMode);
+  }, [viewMode]);
 
   const allColumns = [
     "name",
@@ -223,14 +242,17 @@ const GuestProducts = () => {
 
   const handlePreview = (productId) => {
     if (!productId) return;
-    navigate("/preview", { state: { productId } });
+    try {
+      sessionStorage.setItem("last_preview_product_id", productId);
+    } catch (e) {}
+    navigate(`/preview?id=${productId}`, { state: { productId } });
   };
 
   const fetchProducts = async () => {
     setLoading(true);
     try {
       const res = await apiClient.get("/products/public");
-      const allExtraKeys = new Set(extraColumns);
+      const allExtraKeys = new Set();
 
       res.data.products.forEach((p) => {
         if (p.extraFields)
@@ -297,6 +319,13 @@ const GuestProducts = () => {
       if (
         Object.values(p.extraFields || {}).some((val) =>
           val.toString().toLowerCase().includes(searchLower),
+        )
+      )
+        return true;
+      if (
+        Array.isArray(p.tags) &&
+        p.tags.some(
+          (t) => typeof t === "string" && t.toLowerCase().includes(searchLower),
         )
       )
         return true;
@@ -380,53 +409,52 @@ const GuestProducts = () => {
       <div className="mx-auto max-w-7xl flex flex-col gap-6">
         
         {/* Main Card Header */}
-        <div className="rounded-[1.8rem] border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-6 transition duration-200">
+        <div className="rounded-[1.8rem] border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col gap-4 transition duration-200">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-indigo-650 dark:text-indigo-400 select-none">
-              {t("guest.subtitle")}
-            </p>
-            <h1 className="text-3xl font-black text-slate-900 dark:text-white mt-1">
-              {t("guest.title")}
-            </h1>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            {/* View Mode Toggle (Grid/List) */}
-            <div className="flex border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden bg-slate-50 dark:bg-slate-950/60 p-1 flex-shrink-0">
-              <button
-                type="button"
-                onClick={() => setViewMode("grid")}
-                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                  viewMode === "grid" 
-                    ? "bg-indigo-600 text-white shadow-xs" 
-                    : "text-slate-505 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-250"
-                }`}
-                title={language === "pl" ? "Siatka" : "Grid"}
-              >
-                <Grid className="w-4 h-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode("list")}
-                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                  viewMode === "list" 
-                    ? "bg-indigo-600 text-white shadow-xs" 
-                    : "text-slate-505 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-250"
-                }`}
-                title={language === "pl" ? "Lista" : "List"}
-              >
-                <List className="w-4 h-4" />
-              </button>
-            </div>
-
-            <button
+            <Btn
               onClick={() => navigate("/")}
-              className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900/60 dark:hover:bg-slate-800 px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 transition duration-100 cursor-pointer flex items-center gap-1.5"
+              variant="secondary"
+              className="py-1.5 px-3.5 text-xs font-bold shadow-2xs gap-1.5 inline-flex"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              {t("guest.backHome")}
-            </button>
-            <button
-              onClick={() => navigate("/cart")}
+              <span>{t("guest.backHome")}</span>
+            </Btn>
+          </div>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <h1 className="text-3xl font-black text-slate-900 dark:text-white">
+              {t("guest.title")}
+            </h1>
+            <div className="flex flex-wrap items-center gap-3">
+              {/* View Mode Toggle (Grid/List) */}
+              <div className="flex border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden bg-slate-50 dark:bg-slate-950/60 p-1 flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setViewMode("grid")}
+                  className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                    viewMode === "grid" 
+                      ? "bg-indigo-600 text-white shadow-xs" 
+                      : "text-slate-505 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-250"
+                  }`}
+                  title={language === "pl" ? "Siatka" : "Grid"}
+                >
+                  <Grid className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode("list")}
+                  className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                    viewMode === "list" 
+                      ? "bg-indigo-600 text-white shadow-xs" 
+                      : "text-slate-505 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-250"
+                  }`}
+                  title={language === "pl" ? "Lista" : "List"}
+                >
+                  <List className="w-4 h-4" />
+                </button>
+              </div>
+
+              <button
+                onClick={() => navigate("/cart")}
               className="rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2 text-xs font-bold text-white shadow-md hover:shadow-lg transition duration-100 cursor-pointer flex items-center gap-2"
             >
               <ShoppingCart className="w-4 h-4" />
@@ -437,287 +465,317 @@ const GuestProducts = () => {
             </button>
           </div>
         </div>
+      </div>
 
         {/* Filters Card */}
         <div className="w-full rounded-[1.8rem] border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col gap-5">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
             <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1.5 select-none">
               <Filter className="w-3.5 h-3.5" />
               {language === "pl" ? "Filtry katalogu" : "Catalog Filters"}
             </h3>
-            
-            <div className="flex flex-col gap-4">
-              {/* Search text field */}
-              <div className="flex flex-col gap-1.5 relative w-full">
-                <div className="relative w-full">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />
-                  <input
-                    type="text"
-                    placeholder={t("guest.searchPlaceholder")}
-                    className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 pl-10 pr-4 py-2.5 text-xs text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 hover:border-slate-350 dark:hover:border-slate-700 transition"
-                    onChange={(e) => setSearchTerm(e.target.value.toLowerCase())}
-                  />
-                </div>
+
+            {(activeCategory || searchTerm) && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                  {language === "pl" ? "Znaleziono:" : "Found:"}{" "}
+                  <strong className="text-slate-900 dark:text-white font-black">{filteredProducts.length}</strong>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveCategory("");
+                    setSearchTerm("");
+                  }}
+                  className="text-xs font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 cursor-pointer ml-1"
+                >
+                  {language === "pl" ? "Wyczyść filtry" : "Clear filters"}
+                </button>
               </div>
+            )}
+          </div>
+          
+          <div className="flex flex-col gap-4">
+            {/* Search text field */}
+            <div className="flex flex-col gap-1.5 relative w-full">
+              <div className="relative w-full">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder={t("guest.searchPlaceholder")}
+                  value={searchTerm}
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 pl-10 pr-9 py-2.5 text-xs text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 hover:border-slate-350 dark:hover:border-slate-700 transition"
+                  onChange={(e) => setSearchTerm(e.target.value.toLowerCase())}
+                />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchTerm("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
 
-              {/* Category Collapsible Section (Listy zwijane) */}
-              <div className="flex flex-col gap-2.5">
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-slate-550 dark:text-slate-400 uppercase tracking-wider pl-1 select-none flex items-center gap-1.5">
-                      <FolderTree className="w-3.5 h-3.5 text-indigo-500" />
-                      {language === "pl" ? "Kategorie" : "Categories"}
-                    </span>
-                    {activeCategory && (
-                      <button
-                        type="button"
-                        onClick={() => setActiveCategory("")}
-                        className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-900/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition cursor-pointer"
-                        title={language === "pl" ? "Wyczyść filtr kategorii" : "Clear category filter"}
-                      >
-                        <span className="truncate max-w-[140px]">
-                          {activeCategoryObj
-                            ? language === "en" && activeCategoryObj.nameEn
-                              ? activeCategoryObj.nameEn
-                              : activeCategoryObj.name
-                            : ""}
-                        </span>
-                        <X className="w-3 h-3" />
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-1.5">
-                    {/* Expand / Collapse all toggle */}
-                    {categoryViewMode === "accordion" && categoryTree.some((r) => r.children.length > 0) && (
-                      <button
-                        type="button"
-                        onClick={toggleAllExpanded}
-                        className="text-[10px] font-bold text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer flex items-center gap-1"
-                      >
-                        <ChevronsUpDown className="w-3 h-3" />
-                        {allExpanded
-                          ? language === "pl" ? "Zwiń wszystkie" : "Collapse all"
-                          : language === "pl" ? "Rozwiń wszystkie" : "Expand all"}
-                      </button>
-                    )}
-
-                    {/* View Switcher: Accordion vs Dropdown */}
-                    <div className="flex items-center bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
-                      <button
-                        type="button"
-                        onClick={() => setCategoryViewMode("accordion")}
-                        className={`p-1 rounded-md text-[10px] font-bold transition cursor-pointer ${
-                          categoryViewMode === "accordion"
-                            ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-2xs"
-                            : "text-slate-500 hover:text-slate-700 dark:text-slate-400"
-                        }`}
-                        title={language === "pl" ? "Widok list zwijanych" : "Collapsible lists view"}
-                      >
-                        <ListTree className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setCategoryViewMode("dropdown")}
-                        className={`p-1 rounded-md text-[10px] font-bold transition cursor-pointer ${
-                          categoryViewMode === "dropdown"
-                            ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-2xs"
-                            : "text-slate-500 hover:text-slate-700 dark:text-slate-400"
-                        }`}
-                        title={language === "pl" ? "Lista rozwijana" : "Dropdown list view"}
-                      >
-                        <ChevronDown className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* View 1: Accordion / Collapsible Lists (Listy zwijane) */}
-                {categoryViewMode === "accordion" ? (
-                  <div className="flex flex-col gap-2">
-                    {/* All Categories Option */}
+            {/* Category Collapsible Section (Listy zwijane) */}
+            <div className="flex flex-col gap-2.5">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1 select-none flex items-center gap-1.5">
+                    <FolderTree className="w-3.5 h-3.5 text-indigo-500" />
+                    {language === "pl" ? "Kategorie" : "Categories"}
+                  </span>
+                  {activeCategory && activeCategoryObj && (
                     <button
                       type="button"
                       onClick={() => setActiveCategory("")}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl border text-left transition cursor-pointer group ${
-                        activeCategory === ""
-                          ? "border-indigo-600 bg-indigo-600 text-white shadow-xs"
-                          : "border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/40 text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-100/70 dark:hover:bg-slate-900/60"
-                      }`}
+                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-900/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition cursor-pointer"
+                      title={language === "pl" ? "Wyczyść filtr kategorii" : "Clear category filter"}
                     >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <Layers className={`w-4 h-4 shrink-0 ${activeCategory === "" ? "text-white" : "text-indigo-500"}`} />
-                        <span className="text-xs font-extrabold truncate">
-                          {t("guest.allCategories")}
-                        </span>
-                      </div>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
-                        activeCategory === ""
-                          ? "bg-indigo-700 text-white"
-                          : "bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
-                      }`}>
-                        {products.length}
+                      <span className="truncate max-w-[140px]">
+                        {language === "en" && activeCategoryObj.nameEn
+                          ? activeCategoryObj.nameEn
+                          : activeCategoryObj.name}
                       </span>
+                      <X className="w-3 h-3" />
                     </button>
+                  )}
+                </div>
 
-                    {/* Collapsible Category Cards Container */}
-                    <div className="max-h-80 overflow-y-auto pr-1 flex flex-col gap-2">
-                      {categoryTree.map((rootCat) => {
-                        const hasChildren = rootCat.children && rootCat.children.length > 0;
-                        const isExpanded = !!expandedCategories[rootCat._id];
-                        const isActive = activeCategory === rootCat._id;
-                        const isDescendantActive =
-                          hasChildren &&
-                          (categoryDescendantsMap[rootCat._id] || []).includes(activeCategory) &&
-                          !isActive;
-                        const rootCount = categoryCounts[rootCat._id] ?? 0;
-                        const catDisplayName = language === "en" && rootCat.nameEn ? rootCat.nameEn : rootCat.name;
+                <div className="flex items-center gap-1.5">
+                  {/* Expand / Collapse all toggle */}
+                  {categoryViewMode === "accordion" && categoryTree.some((r) => r.children.length > 0) && (
+                    <button
+                      type="button"
+                      onClick={toggleAllExpanded}
+                      className="text-[10px] font-bold text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer flex items-center gap-1"
+                    >
+                      <ChevronsUpDown className="w-3 h-3" />
+                      {allExpanded
+                        ? language === "pl" ? "Zwiń wszystkie" : "Collapse all"
+                        : language === "pl" ? "Rozwiń wszystkie" : "Expand all"}
+                    </button>
+                  )}
 
-                        return (
-                          <div
-                            key={rootCat._id}
-                            className={`rounded-xl border transition-all ${
-                              isActive
-                                ? "border-indigo-500/80 dark:border-indigo-700 bg-indigo-50/50 dark:bg-indigo-950/25 shadow-2xs"
-                                : isDescendantActive
-                                ? "border-indigo-300/60 dark:border-indigo-900/50 bg-indigo-50/20 dark:bg-indigo-950/10"
-                                : "border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 hover:border-slate-300 dark:hover:border-slate-700"
-                            }`}
-                          >
-                            {/* Main Category Header Row */}
-                            <div className="flex items-center justify-between p-1.5 sm:p-2 gap-1.5">
+                  {/* View Switcher: Accordion vs Dropdown */}
+                  <div className="flex items-center bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
+                    <button
+                      type="button"
+                      onClick={() => setCategoryViewMode("accordion")}
+                      className={`p-1 rounded-md text-[10px] font-bold transition cursor-pointer ${
+                        categoryViewMode === "accordion"
+                          ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-2xs"
+                          : "text-slate-500 hover:text-slate-700 dark:text-slate-400"
+                      }`}
+                      title={language === "pl" ? "Widok list zwijanych" : "Collapsible lists view"}
+                    >
+                      <ListTree className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCategoryViewMode("dropdown")}
+                      className={`p-1 rounded-md text-[10px] font-bold transition cursor-pointer ${
+                        categoryViewMode === "dropdown"
+                          ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-2xs"
+                          : "text-slate-500 hover:text-slate-700 dark:text-slate-400"
+                      }`}
+                      title={language === "pl" ? "Lista rozwijana" : "Dropdown list view"}
+                    >
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* View 1: Accordion / Collapsible Lists (Listy zwijane) */}
+              {categoryViewMode === "accordion" ? (
+                <div className="flex flex-col gap-2">
+                  {/* All Categories Option */}
+                  <button
+                    type="button"
+                    onClick={() => setActiveCategory("")}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl border text-left transition cursor-pointer group ${
+                      activeCategory === ""
+                        ? "border-indigo-600 bg-indigo-600 text-white shadow-xs"
+                        : "border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/40 text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-100/70 dark:hover:bg-slate-900/60"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Layers className={`w-4 h-4 shrink-0 ${activeCategory === "" ? "text-white" : "text-indigo-500"}`} />
+                      <span className="text-xs font-extrabold truncate">
+                        {t("guest.allCategories")}
+                      </span>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
+                      activeCategory === ""
+                        ? "bg-indigo-700 text-white"
+                        : "bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
+                    }`}>
+                      {products.length}
+                    </span>
+                  </button>
+
+                  {/* Collapsible Category Cards Container */}
+                  <div className="max-h-80 overflow-y-auto pr-1 flex flex-col gap-2">
+                    {categoryTree.map((rootCat) => {
+                      const hasChildren = rootCat.children && rootCat.children.length > 0;
+                      const isExpanded = !!expandedCategories[rootCat._id];
+                      const isActive = activeCategory === rootCat._id;
+                      const isDescendantActive =
+                        hasChildren &&
+                        (categoryDescendantsMap[rootCat._id] || []).includes(activeCategory) &&
+                        !isActive;
+                      const rootCount = categoryCounts[rootCat._id] ?? 0;
+                      const catDisplayName = language === "en" && rootCat.nameEn ? rootCat.nameEn : rootCat.name;
+
+                      return (
+                        <div
+                          key={rootCat._id}
+                          className={`rounded-xl border transition-all ${
+                            isActive
+                              ? "border-indigo-500/80 dark:border-indigo-700 bg-indigo-50/50 dark:bg-indigo-950/25 shadow-2xs"
+                              : isDescendantActive
+                              ? "border-indigo-300/60 dark:border-indigo-900/50 bg-indigo-50/20 dark:bg-indigo-950/10"
+                              : "border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 hover:border-slate-300 dark:hover:border-slate-700"
+                          }`}
+                        >
+                          {/* Main Category Header Row */}
+                          <div className="flex items-center justify-between p-1.5 sm:p-2 gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setActiveCategory(rootCat._id)}
+                              className="flex items-center gap-2 flex-1 text-left min-w-0 cursor-pointer py-0.5 px-1 rounded-lg group"
+                            >
+                              {isExpanded ? (
+                                <FolderOpen className={`w-4 h-4 shrink-0 transition-colors ${
+                                  isActive || isDescendantActive ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 group-hover:text-indigo-500"
+                                }`} />
+                              ) : (
+                                <Folder className={`w-4 h-4 shrink-0 transition-colors ${
+                                  isActive || isDescendantActive ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 group-hover:text-indigo-500"
+                                }`} />
+                              )}
+                              <span className={`text-xs truncate ${
+                                isActive
+                                  ? "font-black text-indigo-700 dark:text-indigo-300"
+                                  : isDescendantActive
+                                  ? "font-bold text-indigo-600 dark:text-indigo-400"
+                                  : "font-bold text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400"
+                              }`}>
+                                {catDisplayName}
+                              </span>
+                              <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-400 shrink-0">
+                                {rootCount}
+                              </span>
+                            </button>
+
+                            {/* Toggle Chevron for Subcategories */}
+                            {hasChildren && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleCategory(rootCat._id);
+                                }}
+                                className={`p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-all duration-200 cursor-pointer ${
+                                  isExpanded ? "rotate-180 text-indigo-600 dark:text-indigo-400 bg-indigo-100/50 dark:bg-indigo-950/60" : ""
+                                }`}
+                                title={isExpanded ? (language === "pl" ? "Zwiń podkategorie" : "Collapse subcategories") : (language === "pl" ? "Rozwiń podkategorie" : "Expand subcategories")}
+                              >
+                                <ChevronDown className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Subcategories Collapsible List (Lista zwijana) */}
+                          {hasChildren && isExpanded && (
+                            <div className="px-3 pb-2.5 pt-1 border-t border-slate-200/70 dark:border-slate-800/80 flex flex-wrap gap-1.5 animate-in fade-in duration-200">
                               <button
                                 type="button"
                                 onClick={() => setActiveCategory(rootCat._id)}
-                                className="flex items-center gap-2 flex-1 text-left min-w-0 cursor-pointer py-0.5 px-1 rounded-lg group"
-                              >
-                                {isExpanded ? (
-                                  <FolderOpen className={`w-4 h-4 shrink-0 transition-colors ${
-                                    isActive || isDescendantActive ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 group-hover:text-indigo-500"
-                                  }`} />
-                                ) : (
-                                  <Folder className={`w-4 h-4 shrink-0 transition-colors ${
-                                    isActive || isDescendantActive ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 group-hover:text-indigo-500"
-                                  }`} />
-                                )}
-                                <span className={`text-xs truncate ${
+                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer flex items-center gap-1.5 ${
                                   isActive
-                                    ? "font-black text-indigo-700 dark:text-indigo-300"
-                                    : isDescendantActive
-                                    ? "font-bold text-indigo-600 dark:text-indigo-400"
-                                    : "font-bold text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400"
+                                    ? "bg-indigo-600 text-white shadow-2xs"
+                                    : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-indigo-300 hover:text-indigo-600"
+                                }`}
+                              >
+                                <span>{language === "pl" ? "Wszystkie w tej grupie" : "All in this group"}</span>
+                                <span className={`text-[9px] px-1 py-0.2 rounded font-black ${
+                                  isActive ? "bg-indigo-700 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-500"
                                 }`}>
-                                  {catDisplayName}
-                                </span>
-                                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-400 shrink-0">
                                   {rootCount}
                                 </span>
                               </button>
 
-                              {/* Toggle Chevron for Subcategories */}
-                              {hasChildren && (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleCategory(rootCat._id);
-                                  }}
-                                  className={`p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-all duration-200 cursor-pointer ${
-                                    isExpanded ? "rotate-180 text-indigo-600 dark:text-indigo-400 bg-indigo-100/50 dark:bg-indigo-950/60" : ""
-                                  }`}
-                                  title={isExpanded ? (language === "pl" ? "Zwiń podkategorie" : "Collapse subcategories") : (language === "pl" ? "Rozwiń podkategorie" : "Expand subcategories")}
-                                >
-                                  <ChevronDown className="w-3.5 h-3.5" />
-                                </button>
-                              )}
+                              {rootCat.children.map((child) => {
+                                const isChildSelected = activeCategory === child._id;
+                                const childCount = categoryCounts[child._id] ?? 0;
+                                const childDisplayName = language === "en" && child.nameEn ? child.nameEn : child.name;
+
+                                return (
+                                  <button
+                                    key={child._id}
+                                    type="button"
+                                    onClick={() => setActiveCategory(child._id)}
+                                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                                      isChildSelected
+                                        ? "bg-indigo-600 text-white shadow-2xs"
+                                        : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-300"
+                                    }`}
+                                  >
+                                    <span>{childDisplayName}</span>
+                                    <span className={`text-[9px] px-1 py-0.2 rounded font-black ${
+                                      isChildSelected ? "bg-indigo-700 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-500"
+                                    }`}>
+                                      {childCount}
+                                    </span>
+                                  </button>
+                                );
+                              })}
                             </div>
-
-                            {/* Subcategories Collapsible List (Lista zwijana) */}
-                            {hasChildren && isExpanded && (
-                              <div className="px-3 pb-2.5 pt-1 border-t border-slate-200/70 dark:border-slate-800/80 flex flex-wrap gap-1.5 animate-in fade-in duration-200">
-                                <button
-                                  type="button"
-                                  onClick={() => setActiveCategory(rootCat._id)}
-                                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer flex items-center gap-1.5 ${
-                                    isActive
-                                      ? "bg-indigo-600 text-white shadow-2xs"
-                                      : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-indigo-300 hover:text-indigo-600"
-                                  }`}
-                                >
-                                  <span>{language === "pl" ? "Wszystkie w tej grupie" : "All in this group"}</span>
-                                  <span className={`text-[9px] px-1 py-0.2 rounded font-black ${
-                                    isActive ? "bg-indigo-700 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-500"
-                                  }`}>
-                                    {rootCount}
-                                  </span>
-                                </button>
-
-                                {rootCat.children.map((child) => {
-                                  const isChildSelected = activeCategory === child._id;
-                                  const childCount = categoryCounts[child._id] ?? 0;
-                                  const childDisplayName = language === "en" && child.nameEn ? child.nameEn : child.name;
-
-                                  return (
-                                    <button
-                                      key={child._id}
-                                      type="button"
-                                      onClick={() => setActiveCategory(child._id)}
-                                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer flex items-center gap-1.5 ${
-                                        isChildSelected
-                                          ? "bg-indigo-600 text-white shadow-2xs"
-                                          : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-300"
-                                      }`}
-                                    >
-                                      <span>{childDisplayName}</span>
-                                      <span className={`text-[9px] px-1 py-0.2 rounded font-black ${
-                                        isChildSelected ? "bg-indigo-700 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-500"
-                                      }`}>
-                                        {childCount}
-                                      </span>
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                ) : (
-                  /* View 2: Dropdown Select List (Lista rozwijana) */
-                  <div className="relative">
-                    <select
-                      value={activeCategory}
-                      onChange={(e) => setActiveCategory(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 px-3.5 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition cursor-pointer"
-                    >
-                      <option value="">
-                        {t("guest.allCategories")} ({products.length})
-                      </option>
-                      {categoryTree.map((root) => {
-                        const rootDisplayName = language === "en" && root.nameEn ? root.nameEn : root.name;
-                        return (
-                          <React.Fragment key={root._id}>
-                            <option value={root._id} className="font-bold">
-                              📁 {rootDisplayName} ({categoryCounts[root._id] ?? 0})
-                            </option>
-                            {root.children?.map((child) => {
-                              const childDisplayName = language === "en" && child.nameEn ? child.nameEn : child.name;
-                              return (
-                                <option key={child._id} value={child._id}>
-                                  &nbsp;&nbsp;&nbsp;&nbsp;↳ {childDisplayName} ({categoryCounts[child._id] ?? 0})
-                                </option>
-                              );
-                            })}
-                          </React.Fragment>
-                        );
-                      })}
-                    </select>
-                  </div>
-                )}
-              </div>
+                </div>
+              ) : (
+                /* View 2: Dropdown Select List (Lista rozwijana) */
+                <div className="relative">
+                  <select
+                    value={activeCategory}
+                    onChange={(e) => setActiveCategory(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 px-3.5 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition cursor-pointer"
+                  >
+                    <option value="">
+                      {t("guest.allCategories")} ({products.length})
+                    </option>
+                    {categoryTree.map((root) => {
+                      const rootDisplayName = language === "en" && root.nameEn ? root.nameEn : root.name;
+                      return (
+                        <React.Fragment key={root._id}>
+                          <option value={root._id} className="font-bold">
+                            📁 {rootDisplayName} ({categoryCounts[root._id] ?? 0})
+                          </option>
+                          {root.children?.map((child) => {
+                            const childDisplayName = language === "en" && child.nameEn ? child.nameEn : child.name;
+                            return (
+                              <option key={child._id} value={child._id}>
+                                &nbsp;&nbsp;&nbsp;&nbsp;↳ {childDisplayName} ({categoryCounts[child._id] ?? 0})
+                              </option>
+                            );
+                          })}
+                        </React.Fragment>
+                      );
+                    })}
+                  </select>
+                </div>
+              )}
             </div>
           </div>
+        </div>
 
         {/* Loading and Catalog Listing */}
         {loading ? (
@@ -1049,25 +1107,26 @@ const GuestProducts = () => {
         )}
 
         {/* Footer Pagination */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t border-slate-100 dark:border-slate-800/85 bg-white dark:bg-slate-905 rounded-2xl shadow-sm">
-          <div className="text-xs font-bold text-slate-450 dark:text-slate-505">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border border-slate-100 dark:border-slate-800/85 bg-white dark:bg-slate-900 rounded-2xl shadow-sm">
+          <div className="text-xs font-bold text-slate-500 dark:text-slate-400">
             {language === "pl"
               ? `Razem: ${filteredProducts.length} produktów`
               : `Total: ${filteredProducts.length} products`}
           </div>
 
-          <div className="flex items-center gap-1.5">
-            <button
+          <div className="flex items-center gap-2">
+            <NavArrowBtn
+              direction="left"
               onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
-              className="px-4 py-2 border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-extrabold rounded-xl transition duration-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-            >
-              {t("common.prev")}
-            </button>
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 px-3">
+              title={t("common.prev")}
+              ariaLabel="Previous page"
+            />
+            <span className="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-full border border-slate-200 dark:border-slate-700">
               {currentPage} / {Math.max(1, Math.ceil(filteredProducts.length / itemsPerPage))}
             </span>
-            <button
+            <NavArrowBtn
+              direction="right"
               onClick={() =>
                 setCurrentPage((prev) =>
                   Math.min(
@@ -1077,10 +1136,9 @@ const GuestProducts = () => {
                 )
               }
               disabled={currentPage === Math.max(1, Math.ceil(filteredProducts.length / itemsPerPage))}
-              className="px-4 py-2 border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-extrabold rounded-xl transition duration-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-            >
-              {t("common.next")}
-            </button>
+              title={t("common.next")}
+              ariaLabel="Next page"
+            />
           </div>
         </div>
 

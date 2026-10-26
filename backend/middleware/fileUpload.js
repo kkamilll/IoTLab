@@ -47,10 +47,20 @@ const storageUser = multer.diskStorage({
   destination: (req, file, cb) => {
     const dir = path.join("uploads", "users");
     fs.mkdir(dir, { recursive: true }, (error) => {
-      if (error) cb(error);
+      if (error) return cb(error);
       cb(null, dir);
-    })
+    });
   },
   filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
 });
-export const filesUploadUser = multer({ storage: storageUser });
+export const filesUploadUser = multer({
+  storage: storageUser,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only images are allowed"));
+    }
+  }
+});

@@ -8,6 +8,7 @@ import {
   Routes,
   Route,
   useLocation,
+  Navigate,
 } from "react-router-dom";
 
 // Pages
@@ -82,7 +83,7 @@ function App() {
               path="/guest-products/:menuCategory?"
               element={<GuestProducts />}
             />
-            <Route path="/mainguest" element={<MainGuest />} />
+            <Route path="/mainguest" element={<Navigate to="/guest-products" replace />} />
             <Route path="/preview" element={<ProductPreview />} />
             <Route path="/orderPreview/:orderUUID" element={<OrderPreview />} />
             <Route

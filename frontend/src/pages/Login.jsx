@@ -56,22 +56,23 @@ const Login = () => {
         {/* Centered Login Card */}
         <div className="rounded-[2rem] bg-white dark:bg-slate-900 p-8 sm:p-10 shadow-2xl border border-slate-200/80 dark:border-slate-800 transition-colors duration-300">
           
-          {/* Top Bar: Back Link & Settings (Theme & Language) */}
-          <div className="flex items-center justify-between mb-8">
+          {/* Top Bar: Back Button & Settings (Theme & Language) */}
+          <div className="flex items-center justify-between mb-8 gap-3">
             <button
               onClick={() => navigate("/")}
+              className="flex items-center gap-1.5 h-8 px-3 rounded-full border border-slate-200/90 dark:border-slate-700 bg-white/80 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-750 text-slate-650 dark:text-slate-200 text-xs font-semibold transition-all cursor-pointer shadow-2xs active:scale-95"
               type="button"
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition cursor-pointer"
+              title={t("common.backToHome")}
             >
-              <ArrowLeft className="w-4 h-4" />
-              <span>{t("common.backToHome")}</span>
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>{t("common.back")}</span>
             </button>
 
             <div className="flex items-center gap-2">
               {/* Theme switcher */}
               <button
                 onClick={toggleTheme}
-                className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-650 dark:text-slate-200 transition-colors cursor-pointer shadow-2xs"
+                className="flex items-center justify-center w-8 h-8 rounded-full border border-slate-200/90 dark:border-slate-700 bg-white/80 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-750 text-slate-650 dark:text-slate-200 transition-all cursor-pointer shadow-2xs active:scale-95"
                 title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
                 type="button"
               >
@@ -83,13 +84,13 @@ const Login = () => {
               </button>
 
               {/* Language Switcher */}
-              <div className="flex items-center rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden bg-slate-100 dark:bg-slate-800 text-[10px] font-bold">
+              <div className="flex items-center rounded-full border border-slate-200/90 dark:border-slate-700 overflow-hidden bg-white/80 dark:bg-slate-800 shadow-2xs p-0.5">
                 <button
                   onClick={() => setLanguage("pl")}
-                  className={`px-2 py-1 uppercase transition-colors cursor-pointer ${
+                  className={`px-2.5 py-1 text-[10px] font-bold uppercase transition-all duration-200 rounded-full cursor-pointer ${
                     language === "pl"
-                      ? "bg-indigo-600 text-white shadow-2xs"
-                      : "text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700"
+                      ? "bg-indigo-600 text-white shadow-xs"
+                      : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
                   }`}
                   type="button"
                 >
@@ -97,10 +98,10 @@ const Login = () => {
                 </button>
                 <button
                   onClick={() => setLanguage("en")}
-                  className={`px-2 py-1 uppercase transition-colors cursor-pointer ${
+                  className={`px-2.5 py-1 text-[10px] font-bold uppercase transition-all duration-200 rounded-full cursor-pointer ${
                     language === "en"
-                      ? "bg-indigo-600 text-white shadow-2xs"
-                      : "text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700"
+                      ? "bg-indigo-600 text-white shadow-xs"
+                      : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
                   }`}
                   type="button"
                 >

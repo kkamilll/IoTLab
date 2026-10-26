@@ -24,7 +24,7 @@
   },
   "nav": {
     "welcome": "Witaj",
-    "explore": "Przeglądaj kolekcje",
+    "explore": "Kolekcje",
     "announcements": "Ogłoszenia i notatki",
     "guestShop": "Sklep gościa",
     "orderAsGuest": "Zamów jako gość",
@@ -44,6 +44,8 @@
   "welcome": {
     "reservationSystem": "System rezerwacji",
     "subtitle": "System Zarządzania Laboratorium i Sprzętem",
+    "productCatalog": "Katalog produktów",
+    "adminDashboard": "Panel administracyjny",
     "exploreSubtitle": "Wybierz kategorię kolekcji, aby wyświetlić dokumenty i linki",
     "noCollections": "Brak dostępnych kolekcji.",
     "notesSubtitle": "Najnowsze aktualizacje i powiadomienia od administracji",
@@ -53,7 +55,7 @@
     "previous": "Poprzedni",
     "next": "Następny",
     "footerText": "System Zarządzania Pokojami Laboratoryjnymi. Wszelkie prawa zastrzeżone.",
-    "latestMaterials": "Najnowsze materiały",
+    "latestMaterials": "Materiały",
     "noMaterials": "Brak dostępnych materiałów w tym momencie.",
     "anonymous": "Anonim",
     "notesDemoBanner": "Brak ogłoszeń lub notatek w bazie w tym momencie."
@@ -193,7 +195,7 @@
     "searchLabel": "Filtruj"
   },
   "guest": {
-    "title": "Przeglądaj obiekty",
+    "title": "Katalog produktów",
     "subtitle": "Sklep gościa",
     "backHome": "Powrót",
     "viewCart": "Zobacz koszyk",
@@ -358,6 +360,7 @@
     "name": "Nazwa",
     "email": "E-mail",
     "role": "Rola",
+    "profileImage": "Zdjęcie profilowe",
     "status": "Status",
     "labRooms": "Pokoje",
     "productCount": "Obiekty",

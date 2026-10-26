@@ -6,7 +6,7 @@ import asyncHandler from "../middleware/asyncHandler.js";
 // Pobierz wszystkie notatki (ważne na górze)
 export const getNotes = asyncHandler(async (req, res, next) => {
   const notes = await Note.find()
-    .populate("author", "name email role")
+    .populate("author", "name email role profileImage")
     .sort({ important: -1, createdAt: -1 });
   res.status(200).json({ success: true, data: notes });
 });
@@ -25,7 +25,7 @@ export const createNote = asyncHandler(async (req, res, next) => {
   });
 
   await newNote.save();
-  await newNote.populate("author", "name email");
+  await newNote.populate("author", "name email role profileImage");
   res.status(201).json({ success: true, data: newNote });
 });
 

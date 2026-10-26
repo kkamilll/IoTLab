@@ -9,6 +9,7 @@ import ConfirmModal from "../components/layout/ConfirmModal";
 
 const MAX_LENGTH = 500;
 const NOTES_PER_PAGE = 6;
+const API_BASE = `${import.meta.env.VITE_API_IP || ""}${import.meta.env.VITE_API_PORT || ""}${import.meta.env.VITE_API_POSTFIX || ""}`;
 
 /* ── colour palette for note cards ─────────────────────────────── */
 const NOTE_PALETTES = [
@@ -83,9 +84,25 @@ const NoteCard = ({
 
       {/* Footer */}
       <div className="flex items-end justify-between gap-2 pt-3 border-t border-black/5 dark:border-white/5">
-        <div>
-          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">{note.author?.name || "Anonim"}</p>
-          <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">{fmt(note.updatedAt || note.createdAt)}</p>
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 border border-slate-200 dark:border-slate-700 shadow-2xs">
+            {note.author?.profileImage ? (
+              <img
+                src={`${API_BASE}/uploads/users/${note.author.profileImage}`}
+                alt={note.author.name}
+                className="w-full h-full object-cover"
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
+            ) : (
+              <span className="w-full h-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold text-xs flex items-center justify-center">
+                {(note.author?.name || "A")[0].toUpperCase()}
+              </span>
+            )}
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 leading-tight">{note.author?.name || "Anonim"}</p>
+            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">{fmt(note.updatedAt || note.createdAt)}</p>
+          </div>
         </div>
         {canEditOrDelete && (
           <div className="flex items-center gap-1">

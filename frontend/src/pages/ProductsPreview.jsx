@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import apiClient from "../api/apiClient";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useToast } from "../context/ToastContext";
+import Btn from "../components/layout/Btn";
 import {
   FaFilePdf,
   FaFileWord,
@@ -11,21 +12,32 @@ import {
   FaFileImage,
   FaFileAlt,
   FaFile,
-  FaShoppingCart,
 } from "react-icons/fa";
 import {
   ArrowLeft,
   Info,
-  Folder,
   User,
   MapPin,
   Tag,
-  Cpu,
   Layers,
   ChevronLeft,
   ChevronRight,
   FileText,
   ShoppingCart,
+  CheckCircle2,
+  AlertTriangle,
+  XCircle,
+  Package,
+  Building,
+  ShieldCheck,
+  Download,
+  Cpu,
+  Mail,
+  Search,
+  ChevronDown,
+  ChevronUp,
+  X,
+  ArrowUpRight,
 } from "lucide-react";
 
 const ProductPreview = () => {
@@ -34,22 +46,118 @@ const ProductPreview = () => {
   const { token } = useAuth();
   const { t, language } = useLanguage();
   const { showToast } = useToast();
-  const { productId } = location.state || {};
+
   const [product, setProduct] = useState(null);
   const [categoryNames, setCategoryNames] = useState([]);
   const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const [cartQuantities, setCartQuantities] = useState({});
   const [localQty, setLocalQty] = useState(0);
   const totalInCart = Object.values(cartQuantities).reduce((acc, qty) => acc + (qty || 0), 0);
 
+  const [isTagsExpanded, setIsTagsExpanded] = useState(false);
+  const [tagSearchQuery, setTagSearchQuery] = useState("");
+
+  const API_URL = `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}`;
+
+  // Robust image URL generator
+  const getImageUrl = (imgObj) => {
+    if (!imgObj) return null;
+    let rawPath = "";
+    if (typeof imgObj === "string") {
+      rawPath = imgObj;
+    } else if (typeof imgObj === "object") {
+      rawPath = imgObj.filename || imgObj.path || imgObj.url || imgObj.src || imgObj.originalName || "";
+    }
+    if (!rawPath) return null;
+    if (rawPath.startsWith("http://") || rawPath.startsWith("https://")) {
+      return rawPath;
+    }
+    const fileName = rawPath.includes("/") || rawPath.includes("\\")
+      ? rawPath.split(/[\/\\]/).pop()
+      : rawPath;
+    if (!fileName) return null;
+    return `${API_URL}/uploads/products/${fileName}`;
+  };
+
+  const getAvailableStockForProduct = (prod) => {
+    if (!prod) return 0;
+    return Math.max(
+      0,
+      Number(prod.stockForRent || 0) -
+        Number(prod.stockRentedOut || 0) -
+        Number(prod.stockReserved || 0),
+    );
+  };
+
+  // Determine effective product ID from state, query param, or session storage
+  const queryParams = new URLSearchParams(location.search);
+  const requestedId =
+    location.state?.productId ||
+    queryParams.get("id") ||
+    sessionStorage.getItem("last_preview_product_id");
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchProductData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        let activeId = requestedId;
+
+        // If no ID was supplied at all (direct URL visit), load first public product as fallback
+        if (!activeId) {
+          const listRes = await apiClient.get("/products/public");
+          if (listRes.data?.products?.length > 0) {
+            activeId = listRes.data.products[0]._id;
+          } else {
+            if (isMounted) setError(t("productPreview.productNotFound") || "Obiekt nie został znaleziony");
+            return;
+          }
+        }
+
+        const url = token
+          ? `/products/privateId/${activeId}`
+          : `/products/publicId/${activeId}`;
+
+        const res = await apiClient.get(url);
+
+        if (res.data?.success && res.data.product) {
+          if (isMounted) {
+            setProduct(res.data.product);
+            try {
+              sessionStorage.setItem("last_preview_product_id", res.data.product._id);
+            } catch (e) {}
+          }
+        } else {
+          if (isMounted) setError(t("productPreview.productNotFound") || "Obiekt nie został znaleziony");
+        }
+      } catch (err) {
+        console.error(err);
+        if (isMounted) {
+          setError(
+            err.response?.data?.message || err.message || t("productPreview.productNotFound"),
+          );
+        }
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    fetchProductData();
+    return () => {
+      isMounted = false;
+    };
+  }, [requestedId, token, t]);
 
   useEffect(() => {
     if (product) {
       const cart = JSON.parse(localStorage.getItem("cart")) || [];
       const item = cart.find((p) => p._id === product._id);
-      setLocalQty(item ? item.quantity : 0);
+      const stock = getAvailableStockForProduct(product);
+      setLocalQty(item ? item.quantity : (stock > 0 ? 1 : 0));
     }
   }, [product]);
 
@@ -61,67 +169,71 @@ const ProductPreview = () => {
     setLocalQty(qty);
   };
 
-  useEffect(() => setCurrentImageIndex(0), [productId]);
-  const getAvailableStockForProduct = (product) =>
-    Math.max(
-      0,
-      Number(product.stockForRent || 0) -
-        Number(product.stockRentedOut || 0) -
-        Number(product.stockReserved || 0),
-    );
+  const handleSaveToCart = () => {
+    if (!product) return;
+    const previousInCart = cartQuantities[product._id] || 0;
+    handleQuantityChange(product._id, localQty, product);
+    if (localQty > 0) {
+      showToast(
+        language === "pl"
+          ? (previousInCart > 0 ? "Zaktualizowano ilość w koszyku!" : "Dodano do koszyka!")
+          : (previousInCart > 0 ? "Cart updated!" : "Added to cart!"),
+        "success"
+      );
+    } else {
+      showToast(
+        language === "pl" ? "Przedmiot usunięty z koszyka" : "Item removed from cart",
+        "info"
+      );
+    }
+  };
 
   useEffect(() => {
-    if (!productId) {
-      setError("No product ID provided");
-      return;
-    }
-
-    const fetchProduct = async () => {
-      try {
-        const url = token
-          ? `/products/privateId/${productId}`
-          : `/products/publicId/${productId}`;
-
-        const res = await apiClient.get(url);
-
-        if (res.data.success) setProduct(res.data.product);
-        else setError("Product not found");
-      } catch (err) {
-        console.error(err);
-        setError(
-          `Error fetching product: ${err.response?.data?.message || err.message}`,
-        );
-      }
-    };
-
-    fetchProduct();
-  }, [productId, token]);
+    setCurrentImageIndex(0);
+  }, [product?._id]);
 
   useEffect(() => {
     if (!product) return;
-    setCategoryNames((product.categories || []).map((cat) => language === "en" && cat?.nameEn ? cat.nameEn : cat?.name).filter(Boolean));
+    setCategoryNames(
+      (product.categories || [])
+        .map((cat) => (language === "en" && cat?.nameEn ? cat.nameEn : cat?.name))
+        .filter(Boolean),
+    );
   }, [product, language]);
 
   useEffect(() => {
-    setCartQuantities((prev) => {
+    setCartQuantities(() => {
       const cart = JSON.parse(localStorage.getItem("cart")) || [];
       const newQuantities = {};
-      cart.forEach(
-        (cartItem) => (newQuantities[cartItem._id] = cartItem.quantity),
-      );
+      cart.forEach((cartItem) => {
+        newQuantities[cartItem._id] = cartItem.quantity;
+      });
       return newQuantities;
     });
   }, []);
 
-  const handleAddToCart = (product) => {
-    const cart = JSON.parse(localStorage.getItem("cart")) || [];
-    const existingIndex = cart.findIndex((p) => p._id === product._id);
+  const handleQuantityChange = (prodId, value, prod) => {
+    let qty = parseInt(value, 10);
+    if (isNaN(qty) || qty < 0) qty = 0;
+    const maxQty = getAvailableStockForProduct(prod);
+    if (qty > maxQty) qty = maxQty;
 
-    if (existingIndex !== -1) cart[existingIndex].quantity += 1;
-    else cart.push({ ...product, quantity: 1 });
+    setCartQuantities((prev) => ({ ...prev, [prodId]: qty }));
+
+    const cart = JSON.parse(localStorage.getItem("cart")) || [];
+    const existingIndex = cart.findIndex((p) => p._id === prodId);
+
+    if (qty === 0) {
+      if (existingIndex !== -1) cart.splice(existingIndex, 1);
+    } else {
+      if (existingIndex !== -1) {
+        cart[existingIndex].quantity = qty;
+      } else {
+        cart.push({ ...prod, quantity: qty });
+      }
+    }
 
     localStorage.setItem("cart", JSON.stringify(cart));
-    showToast(`${product.name} has been added to the cart!`, "success");
   };
 
   const showPrevImage = () => {
@@ -138,10 +250,9 @@ const ProductPreview = () => {
     );
   };
 
-  // Funkcja pomocnicza do wyświetlania ikony w zależności od typu pliku
   const getFileIcon = (filename) => {
     if (!filename || typeof filename !== "string") {
-      return <FaFile className="inline-block mr-2 text-gray-400" />;
+      return <FaFile className="inline-block mr-2 text-slate-400" />;
     }
     const ext = filename.split(".").pop()?.toLowerCase();
     switch (ext) {
@@ -152,237 +263,662 @@ const ProductPreview = () => {
         return <FaFileWord className="inline-block mr-2 text-blue-600" />;
       case "xls":
       case "xlsx":
-        return <FaFileExcel className="inline-block mr-2 text-green-600" />;
+        return <FaFileExcel className="inline-block mr-2 text-emerald-600" />;
       case "txt":
-        return <FaFileAlt className="inline-block mr-2 text-gray-600" />;
+      case "md":
+        return <FaFileAlt className="inline-block mr-2 text-slate-500" />;
       default:
-        return <FaFile className="inline-block mr-2 text-gray-400" />;
+        return <FaFile className="inline-block mr-2 text-slate-400" />;
     }
   };
 
-  if (error) {
+  if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-red-500">
-        <p className="mb-4">{error}</p>
-        <button
-          onClick={() => navigate(-1)}
-          className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition"
-        >
-          ← Back
-        </button>
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-6 text-slate-500">
+        <svg className="animate-spin w-10 h-10 text-indigo-600 mb-4" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+        </svg>
+        <p className="text-sm font-bold text-slate-600 dark:text-slate-400">
+          {t("productPreview.loadingProduct") || "Ładowanie danych przedmiotu..."}
+        </p>
       </div>
     );
   }
 
-  const handleQuantityChange = (productId, value, product) => {
-    let qty = parseInt(value, 10);
+  if (error || !product) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-14 h-14 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/40 flex items-center justify-center text-red-500 mb-4 shadow-sm">
+          <AlertTriangle className="w-7 h-7" />
+        </div>
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+          {error || t("productPreview.productNotFound")}
+        </h2>
+        <p className="text-xs text-slate-500 max-w-sm mb-6">
+          {language === "pl"
+            ? "Nie udało się odnaleźć tego obiektu lub został on usunięty z bazy."
+            : "This object could not be found or has been removed from the database."}
+        </p>
+        <Btn onClick={() => navigate(-1)} variant="secondary" className="px-5 py-2 text-xs font-bold gap-2">
+          <ArrowLeft className="w-4 h-4" />
+          <span>{t("common.back")}</span>
+        </Btn>
+      </div>
+    );
+  }
 
-    // minimalna ilość 0, maksymalna = dostępny stock
-    if (isNaN(qty) || qty < 0) qty = 0;
-    if (qty > getAvailableStockForProduct(product))
-      qty = getAvailableStockForProduct(product);
+  const availableStock = getAvailableStockForProduct(product);
+  const itemInCart = cartQuantities[product?._id] || 0;
+  const imagesList = Array.isArray(product.images) ? product.images.filter(Boolean) : [];
+  const hasImages = imagesList.length > 0;
+  const currentImageUrl = hasImages ? getImageUrl(imagesList[currentImageIndex] || imagesList[0]) : null;
 
-    // aktualizacja stanu koszyka
-    setCartQuantities((prev) => ({ ...prev, [productId]: qty }));
+  const hasDescription = !!product.description && product.description.trim().length > 0;
 
-    // aktualizacja localStorage
-    const cart = JSON.parse(localStorage.getItem("cart")) || [];
-    const existingIndex = cart.findIndex((p) => p._id === productId);
+  const validTags = Array.isArray(product?.tags)
+    ? product.tags.filter((t) => typeof t === "string" && t.trim().length > 0)
+    : [];
+  const hasTags = validTags.length > 0;
 
-    if (qty === 0) {
-      if (existingIndex !== -1) cart.splice(existingIndex, 1);
-    } else {
-      if (existingIndex !== -1) {
-        cart[existingIndex].quantity = qty;
-      } else {
-        cart.push({ ...product, quantity: qty });
-      }
-    }
+  const filteredTags = tagSearchQuery.trim()
+    ? validTags.filter((t) => t.toLowerCase().includes(tagSearchQuery.trim().toLowerCase()))
+    : validTags;
 
-    localStorage.setItem("cart", JSON.stringify(cart));
-  };
+  const MAX_VISIBLE_TAGS = 14;
+  const showExpandButton = !tagSearchQuery.trim() && validTags.length > MAX_VISIBLE_TAGS;
+  const displayedTags = showExpandButton && !isTagsExpanded
+    ? filteredTags.slice(0, MAX_VISIBLE_TAGS)
+    : filteredTags;
 
-  if (!product)
-    return <div className="p-6 text-center">{t("productPreview.loadingProduct") || "Loading product..."}</div>;
+  const validExtraFields = (product?.extraFields && typeof product.extraFields === "object")
+    ? Object.entries(product.extraFields).filter(
+        ([_, val]) => val !== null && val !== undefined && String(val).trim() !== ""
+      )
+    : [];
+  const hasExtraFields = validExtraFields.length > 0;
 
-  const API_URL = `${import.meta.env.VITE_API_IP}${import.meta.env.VITE_API_PORT}${import.meta.env.VITE_API_POSTFIX}`;
+  const validAttachments = Array.isArray(product?.attachments)
+    ? product.attachments.filter((att) => !!att && (att.filename || att.originalName))
+    : [];
+  const hasAttachments = validAttachments.length > 0;
 
-  const hasImages = product.images && product.images.length > 0;
-  const hasDescription = !!product.description;
-  const hasTags = product.tags && product.tags.length > 0;
-  const hasExtraFields = product.extraFields && Object.keys(product.extraFields).length > 0;
-  const hasAttachments = product.attachments && product.attachments.length > 0;
+  const hasOwner = !!product?.owner?.name && product.owner.name.trim().length > 0;
+  const hasRoom = !!product?.labRoom && String(product.labRoom).trim().length > 0;
+  const hasAssignmentInfo = hasOwner || hasRoom;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 py-8 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
-      <div className="mx-auto max-w-7xl">
-        <button
-          onClick={() => navigate(-1)}
-          className="group mb-8 inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-sm transition-all cursor-pointer"
-        >
-          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          <span>{t("common.back")}</span>
-        </button>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 py-8 px-4 sm:px-6 lg:px-8 transition-colors duration-200">
+      {/* Centered Single-Column Vertical Container */}
+      <div className="mx-auto max-w-4xl flex flex-col gap-6">
 
-        <div className="mb-8 pb-6 border-b border-slate-200/60 dark:border-slate-800/80">
-          <span className="text-xs uppercase tracking-[0.2em] font-extrabold text-indigo-650 dark:text-indigo-400">
-            {categoryNames.join(" / ") || t("productPreview.uncategorized")}
-          </span>
-          <div className="mt-2 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <h1 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white leading-tight">
+        {/* 1. Top Bar: Back Button & Cart Shortcut */}
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <Btn
+            onClick={() => navigate(-1)}
+            variant="secondary"
+            className="py-1.5 px-3.5 text-xs font-bold shadow-2xs gap-1.5 inline-flex"
+            type="button"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>{t("common.back")}</span>
+          </Btn>
+
+          {totalInCart > 0 && (
+            <button
+              type="button"
+              onClick={() => navigate("/cart")}
+              className="rounded-xl bg-indigo-600 hover:bg-indigo-700 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:shadow-md transition duration-150 cursor-pointer flex items-center gap-2"
+            >
+              <ShoppingCart className="w-3.5 h-3.5" />
+              <span>{t("guest.viewCart")}</span>
+              <span className="bg-indigo-700 text-white font-black px-1.5 py-0.2 rounded-md text-[10px]">
+                {totalInCart}
+              </span>
+            </button>
+          )}
+        </div>
+
+        {/* 2. Product Header Section */}
+        <div className="rounded-[1.8rem] border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm flex flex-col gap-4">
+          {categoryNames.length > 0 && (
+            <span className="text-xs uppercase tracking-[0.2em] font-extrabold text-indigo-600 dark:text-indigo-400">
+              {categoryNames.join("  /  ")}
+            </span>
+          )}
+
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white leading-tight break-words [overflow-wrap:anywhere] min-w-0">
               {product.name}
             </h1>
-            {getAvailableStockForProduct(product) === 0 ? (
-              <span className="inline-flex items-center gap-1.5 bg-red-50 dark:bg-red-950/25 text-red-600 dark:text-red-400 text-xs font-bold px-3.5 py-1.5 rounded-lg border border-red-100/50 dark:border-red-900/30 shadow-sm w-max">
-                {t("products.statusUnavailable") || "Niedostępne"}
-              </span>
-            ) : getAvailableStockForProduct(product) <= 2 ? (
-              <span className="inline-flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/25 text-amber-600 dark:text-amber-400 text-xs font-bold px-3.5 py-1.5 rounded-lg border border-amber-100/50 dark:border-amber-900/30 shadow-sm w-max">
-                {(t("products.statusLowStock") || "Niski zapas") + `: ${getAvailableStockForProduct(product)}`}
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/25 text-emerald-700 dark:text-emerald-400 text-xs font-bold px-3.5 py-1.5 rounded-lg border border-emerald-100/50 dark:border-emerald-900/30 shadow-sm w-max">
-                {t("productPreview.available")}: {getAvailableStockForProduct(product)}
-              </span>
-            )}
+
+            {/* Availability & Rentability Badges */}
+            <div className="flex items-center gap-2 flex-wrap shrink-0">
+              {availableStock === 0 && (
+                <span className="inline-flex items-center gap-1.5 bg-red-50 dark:bg-red-950/40 text-red-650 dark:text-red-400 text-xs font-extrabold px-3 py-1.5 rounded-xl border border-red-200/80 dark:border-red-900/40 shadow-2xs">
+                  <XCircle className="w-4 h-4 text-red-500 shrink-0" />
+                  <span>{t("products.statusUnavailable") || "Niedostępne"}</span>
+                </span>
+              )}
+
+              {product.isRentable ? (
+                <span className="inline-flex items-center gap-1.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-xs font-bold px-3 py-1.5 rounded-xl border border-indigo-200/80 dark:border-indigo-900/40 shadow-2xs">
+                  <ShieldCheck className="w-4 h-4 text-indigo-500 shrink-0" />
+                  <span>{language === "pl" ? "Możliwość wypożyczenia" : "Rentable"}</span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 text-slate-650 dark:text-slate-300 text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs">
+                  <Building className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span>{language === "pl" ? "Tylko w laboratorium" : "Lab use only"}</span>
+                </span>
+              )}
+            </div>
           </div>
-          <p className="mt-2 text-sm text-slate-400 dark:text-slate-405">
-            {t("productPreview.subtitle")}
-          </p>
+
+          {/* Key Lab Metrics Bar */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-slate-100 dark:border-slate-800/80">
+            <div className="flex flex-col p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/70 dark:border-slate-800/80">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                {language === "pl" ? "Dostępne w labie" : "Available"}
+              </span>
+              <span className="text-sm sm:text-base font-black text-slate-900 dark:text-white mt-0.5">
+                {availableStock} <span className="text-xs font-bold text-slate-400">/ {product.stockTotal || availableStock} szt.</span>
+              </span>
+            </div>
+
+            <div className="flex flex-col p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/70 dark:border-slate-800/80">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                {language === "pl" ? "Wypożyczone" : "Rented out"}
+              </span>
+              <span className="text-sm sm:text-base font-black text-slate-900 dark:text-white mt-0.5">
+                {product.stockRentedOut || 0} <span className="text-xs font-bold text-slate-400">szt.</span>
+              </span>
+            </div>
+
+            <div className="flex flex-col p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/70 dark:border-slate-800/80 min-w-0">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                {language === "pl" ? "Lokalizacja" : "Lab Room"}
+              </span>
+              <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white mt-1 truncate" title={product.labRoom || "Laboratorium"}>
+                {product.labRoom || "Laboratorium"}
+              </span>
+            </div>
+
+            <div className="flex flex-col p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/70 dark:border-slate-800/80 min-w-0">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                {language === "pl" ? "Opiekun sprzętu" : "Caretaker"}
+              </span>
+              <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white mt-1 truncate" title={product.owner?.name || "Katedra IoT"}>
+                {product.owner?.name || "Katedra IoT"}
+              </span>
+            </div>
+          </div>
         </div>
 
-        <div className="grid gap-8 lg:grid-cols-12 items-start">
-          <div className="lg:col-span-7 flex flex-col gap-4">
-            {hasImages ? (
-              <div className="relative group overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-800 shadow-md bg-white dark:bg-slate-900">
-                <div className="aspect-[4/3] w-full relative overflow-hidden flex items-center justify-center bg-slate-100 dark:bg-slate-950">
-                  <img
-                    src={`${API_URL}/uploads/products/${(product.images[currentImageIndex] || product.images[0])?.filename}`}
-                    alt={`${product.name} ${currentImageIndex + 1}`}
-                    className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-                  />
-                </div>
-                {product.images.length > 1 && (
-                  <>
-                    <button onClick={showPrevImage} className="absolute left-4 top-1/2 -translate-y-1/2 rounded-2xl bg-white/90 dark:bg-slate-900/90 p-3 text-slate-900 dark:text-slate-100 shadow-md hover:bg-white dark:hover:bg-slate-800 transition cursor-pointer flex items-center justify-center border border-slate-200/50 dark:border-slate-700/50">
-                      <ChevronLeft className="w-5 h-5" />
-                    </button>
-                    <button onClick={showNextImage} className="absolute right-4 top-1/2 -translate-y-1/2 rounded-2xl bg-white/90 dark:bg-slate-900/90 p-3 text-slate-900 dark:text-slate-100 shadow-md hover:bg-white dark:hover:bg-slate-800 transition cursor-pointer flex items-center justify-center border border-slate-200/50 dark:border-slate-700/50">
-                      <ChevronRight className="w-5 h-5" />
-                    </button>
-                  </>
-                )}
+        {/* 3. Image / Gallery Block (Rendered if images exist) */}
+        {hasImages && (
+          <div className="rounded-[1.8rem] border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-6 shadow-sm flex flex-col gap-4">
+            <div className="relative group overflow-hidden rounded-2xl bg-slate-100 dark:bg-slate-950 aspect-[16/10] sm:aspect-[16/9] max-h-[520px] w-full flex items-center justify-center">
+              {currentImageUrl ? (
+                <img
+                  src={currentImageUrl}
+                  alt={`${product.name} ${currentImageIndex + 1}`}
+                  className="w-full h-full object-contain sm:object-cover transition-transform duration-500 hover:scale-[1.02]"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                    if (e.currentTarget.nextElementSibling) {
+                      e.currentTarget.nextElementSibling.style.display = "flex";
+                    }
+                  }}
+                />
+              ) : null}
+
+              <div
+                className="w-full h-full flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-950"
+                style={{ display: currentImageUrl ? "none" : "flex" }}
+              >
+                <Package className="w-12 h-12 mb-2 text-slate-400" />
+                <span className="text-xs font-bold">{t("productPreview.noImages")}</span>
               </div>
-            ) : (
-              <div className="relative overflow-hidden rounded-3xl border border-dashed border-slate-250 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900/40 p-12 flex flex-col items-center justify-center text-center aspect-[4/3] min-h-[300px]">
-                {/* Subtle background glow */}
-                <div className="absolute -right-10 -top-10 w-40 h-40 bg-indigo-500/10 dark:bg-indigo-400/5 rounded-full blur-3xl pointer-events-none"></div>
-                <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-slate-500/10 dark:bg-slate-400/5 rounded-full blur-3xl pointer-events-none"></div>
-                
-                <div className="w-20 h-20 rounded-2xl bg-slate-100 dark:bg-slate-850 flex items-center justify-center mb-4 border border-slate-200 dark:border-slate-800 shadow-inner">
-                  <FaFileImage className="w-10 h-10 text-slate-400 dark:text-slate-550" />
-                </div>
-                <h4 className="text-base font-bold text-slate-700 dark:text-slate-350">
-                  {t("productPreview.noImages") || "Brak wgranych zdjęć dla tego obiektu"}
-                </h4>
-                <p className="mt-1.5 text-xs text-slate-450 dark:text-slate-500 max-w-xs leading-normal">
-                  {language === "pl" 
-                    ? "Ten obiekt nie posiada zdjęć. Szczegółowe specyfikacje i dokumenty znajdziesz poniżej."
-                    : "This object does not have any images. Detailed specifications and documents are available below."}
-                </p>
+
+              {/* Navigation Chevrons */}
+              {imagesList.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={showPrevImage}
+                    aria-label="Previous image"
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 dark:bg-slate-900/90 hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 shadow-md flex items-center justify-center border border-slate-200/80 dark:border-slate-700 transition active:scale-95 cursor-pointer"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={showNextImage}
+                    aria-label="Next image"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 dark:bg-slate-900/90 hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 shadow-md flex items-center justify-center border border-slate-200/80 dark:border-slate-700 transition active:scale-95 cursor-pointer"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+
+                  <div className="absolute bottom-3.5 right-3.5 px-3 py-1 rounded-full bg-slate-900/80 text-white backdrop-blur-md text-xs font-bold border border-white/10 select-none shadow-sm">
+                    {currentImageIndex + 1} / {imagesList.length}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Thumbnail Row */}
+            {imagesList.length > 1 && (
+              <div className="flex items-center gap-2.5 overflow-x-auto p-1 scrollbar-thin">
+                {imagesList.map((img, idx) => {
+                  const thumbUrl = getImageUrl(img);
+                  const isSelected = idx === currentImageIndex;
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setCurrentImageIndex(idx)}
+                      className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden p-1 bg-white dark:bg-slate-900 border-2 transition-all cursor-pointer shrink-0 shadow-2xs ${
+                        isSelected
+                          ? "border-indigo-600 ring-4 ring-indigo-500/20 scale-102"
+                          : "border-slate-200 dark:border-slate-800 opacity-60 hover:opacity-100 hover:border-slate-350 dark:hover:border-slate-700"
+                      }`}
+                    >
+                      {thumbUrl ? (
+                        <img
+                          src={thumbUrl}
+                          alt={`Thumbnail ${idx + 1}`}
+                          className="w-full h-full object-cover rounded-xl"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-400">
+                          <Package className="w-5 h-5" />
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
+        )}
 
-          <div className="lg:col-span-5 flex flex-col gap-6">
-            {product.isRentable && (
-              <div className="rounded-3xl bg-gradient-to-br from-white to-slate-50/50 dark:from-slate-900 dark:to-slate-950 p-6 shadow-md border border-indigo-100/30 dark:border-slate-800 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 dark:bg-indigo-400/5 rounded-full blur-2xl pointer-events-none"></div>
-                <h3 className="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-3">
-                  <Layers className="w-4 h-4 text-indigo-500" />
-                  {t("productPreview.addToCart")}
-                </h3>
-                <div className="flex flex-wrap items-center gap-3 mt-4">
-                  <div className="flex items-center border border-slate-200 dark:border-slate-850 rounded-xl overflow-hidden h-12 bg-white dark:bg-slate-950 shadow-inner">
-                    <button onClick={() => handleLocalQtyChange(localQty - 1)} disabled={localQty <= 0} className="w-12 h-full bg-transparent hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-500 dark:text-slate-400 transition disabled:opacity-40 disabled:pointer-events-none text-lg font-bold cursor-pointer">−</button>
-                    <input type="number" min="0" max={getAvailableStockForProduct(product)} value={localQty} onChange={(e) => handleLocalQtyChange(e.target.value)} className="w-14 text-center bg-transparent border-0 outline-none focus:ring-0 text-base font-extrabold text-slate-800 dark:text-slate-200" />
-                    <button onClick={() => handleLocalQtyChange(localQty + 1)} disabled={localQty >= getAvailableStockForProduct(product)} className="w-12 h-full bg-transparent hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-500 dark:text-slate-400 transition disabled:opacity-40 disabled:pointer-events-none text-lg font-bold cursor-pointer">+</button>
-                  </div>
-                  <button onClick={() => { handleQuantityChange(product._id, localQty, product); showToast(t("productPreview.cartUpdatedAlert"), "success"); }} className="flex-1 h-12 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 shadow-sm hover:shadow transition-all cursor-pointer text-sm">{t("productPreview.confirm")}</button>
+        {/* 4. Booking Card (Rendered only if rentable) */}
+        {product.isRentable && (
+          <div className="rounded-[1.8rem] border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-7 shadow-sm flex flex-col gap-5">
+            {/* Top row: Title, Stock & Cart Status */}
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/60 dark:border-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                  <ShoppingCart className="w-4 h-4" />
                 </div>
-                <p className="mt-3 text-xs text-slate-400 dark:text-slate-500 leading-normal">{t("productPreview.updateCartHelp")}</p>
-                <div className="mt-6 pt-5 border-t border-slate-200/50 dark:border-slate-800/80 flex items-center justify-between gap-3">
-                  <button onClick={() => navigate("/cart")} className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-650 dark:text-indigo-400 hover:text-indigo-850 dark:hover:text-indigo-300 transition-colors"><span>{t("productPreview.viewCart")}</span><span>→</span></button>
-                  <button onClick={() => navigate("/cart")} className="px-4 py-2.5 rounded-xl bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold shadow hover:shadow-md transition-all cursor-pointer text-xs flex items-center gap-2"><span>{t("productPreview.viewCartCheckout")}</span><span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-slate-900 dark:text-slate-900 font-extrabold text-[10px] shadow-sm">{totalInCart}</span></button>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                    {t("productPreview.addToCart") || "Zarezerwuj sprzęt"}
+                  </h3>
                 </div>
               </div>
-            )}
-            <div className="rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-sm border border-slate-200/60 dark:border-slate-800 flex flex-col gap-4">
-              <div className="flex items-start gap-3">
-                <User className="w-5 h-5 text-indigo-500 mt-0.5 flex-shrink-0" />
-                <div><h4 className="text-xs uppercase tracking-wider font-extrabold text-slate-400 dark:text-slate-500">{t("productPreview.owner")}</h4><p className="text-sm font-semibold text-slate-800 dark:text-slate-200 mt-0.5">{product.owner?.name || t("welcome.anonymous")}</p></div>
-              </div>
-              {product.labRoom && (
-                <div className="flex items-start gap-3 border-t border-slate-105 dark:border-slate-800/80 pt-3">
-                  <MapPin className="w-5 h-5 text-indigo-500 mt-0.5 flex-shrink-0" />
-                  <div><h4 className="text-xs uppercase tracking-wider font-extrabold text-slate-400 dark:text-slate-500">{t("productPreview.room")}</h4><p className="text-sm font-semibold text-slate-800 dark:text-slate-200 mt-0.5">{product.labRoom}</p></div>
+
+              {itemInCart > 0 && (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/70 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 text-xs font-bold shadow-2xs">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                  <span>
+                    {language === "pl" ? `W Twoim koszyku: ${itemInCart} szt.` : `In your cart: ${itemInCart} pcs`}
+                  </span>
                 </div>
               )}
-              <div className="flex items-start gap-3 border-t border-slate-105 dark:border-slate-800/80 pt-3">
-                <ShoppingCart className="w-5 h-5 text-indigo-500 mt-0.5 flex-shrink-0" />
-                <div><h4 className="text-xs uppercase tracking-wider font-extrabold text-slate-400 dark:text-slate-500">{t("productPreview.inCart")}</h4><p className="text-sm font-semibold text-slate-800 dark:text-slate-200 mt-0.5">{cartQuantities[product._id] || 0} szt.</p></div>
-              </div>
             </div>
-          </div>
-        </div>
 
-        {(hasDescription || hasTags) && (
-          <div className="mt-12 grid gap-6 md:grid-cols-3">
-            {hasDescription && (
-              <div className={`${hasTags ? "md:col-span-2" : "md:col-span-3"} rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-sm border border-slate-200/60 dark:border-slate-800`}>
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2"><Info className="w-5 h-5 text-indigo-500" />{t("productPreview.description")}</h2>
-                <p className="text-slate-650 dark:text-slate-300 text-sm leading-relaxed whitespace-pre-line">{product.description}</p>
+            {/* Controls row */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              {/* Stepper */}
+              <div className="flex items-center justify-between border border-slate-200 dark:border-slate-800 rounded-2xl h-12 bg-slate-50 dark:bg-slate-950/60 p-1 shrink-0 sm:w-44">
+                <button
+                  type="button"
+                  onClick={() => handleLocalQtyChange(localQty - 1)}
+                  disabled={localQty <= 0 || availableStock === 0}
+                  className="w-10 h-full rounded-xl bg-white dark:bg-slate-850 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition disabled:opacity-30 disabled:cursor-not-allowed text-base font-extrabold flex items-center justify-center cursor-pointer shadow-2xs"
+                  aria-label="Zmniejsz ilość"
+                >
+                  −
+                </button>
+                <input
+                  type="number"
+                  min="0"
+                  max={availableStock}
+                  value={localQty}
+                  onChange={(e) => handleLocalQtyChange(e.target.value)}
+                  disabled={availableStock === 0}
+                  className="w-14 text-center bg-transparent border-0 outline-none focus:ring-0 text-base font-black text-slate-900 dark:text-white"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleLocalQtyChange(localQty + 1)}
+                  disabled={localQty >= availableStock || availableStock === 0}
+                  className="w-10 h-full rounded-xl bg-white dark:bg-slate-850 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition disabled:opacity-30 disabled:cursor-not-allowed text-base font-extrabold flex items-center justify-center cursor-pointer shadow-2xs"
+                  aria-label="Zwiększ ilość"
+                >
+                  +
+                </button>
               </div>
-            )}
-            {hasTags && (
-              <div className={`${!hasDescription ? "md:col-span-3" : "md:col-span-1"} rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-sm border border-slate-200/60 dark:border-slate-800`}>
-                <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-3 flex items-center gap-2"><Tag className="w-4 h-4 text-indigo-500" />{t("productPreview.tags")}</h2>
-                <div className="flex flex-wrap gap-1.5 mt-2">{product.tags.map((tag, i) => <span key={i} className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 rounded-lg text-xs font-semibold text-slate-650 dark:text-slate-300">{tag}</span>)}</div>
-              </div>
-            )}
+
+              {/* Action button */}
+              <button
+                type="button"
+                onClick={handleSaveToCart}
+                disabled={availableStock === 0 || (localQty === 0 && itemInCart === 0)}
+                className={`flex-1 h-12 rounded-2xl font-extrabold text-xs uppercase tracking-wider shadow-sm hover:shadow-md transition cursor-pointer flex items-center justify-center gap-2 ${
+                  availableStock === 0
+                    ? "bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed"
+                    : localQty === 0 && itemInCart > 0
+                    ? "bg-red-600 hover:bg-red-700 text-white"
+                    : "bg-indigo-600 hover:bg-indigo-700 text-white"
+                }`}
+              >
+                {availableStock === 0 ? (
+                  <>
+                    <XCircle className="w-4 h-4" />
+                    <span>{language === "pl" ? "Brak w magazynie" : "Out of stock"}</span>
+                  </>
+                ) : localQty === 0 && itemInCart > 0 ? (
+                  <>
+                    <XCircle className="w-4 h-4" />
+                    <span>{language === "pl" ? "Usuń z koszyka" : "Remove from cart"}</span>
+                  </>
+                ) : itemInCart > 0 ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>
+                      {localQty !== itemInCart
+                        ? (language === "pl" ? "Zaktualizuj w koszyku" : "Update in cart")
+                        : (language === "pl" ? "Zapisz w koszyku" : "Save in cart")}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <ShoppingCart className="w-4 h-4" />
+                    <span>{t("productPreview.addToCart") || "Dodaj do koszyka"}</span>
+                  </>
+                )}
+              </button>
+
+              {/* Single, clean Go to cart button */}
+              {totalInCart > 0 && (
+                <button
+                  type="button"
+                  onClick={() => navigate("/cart")}
+                  className="h-12 px-5 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-800 dark:text-slate-200 font-extrabold text-xs flex items-center justify-center gap-2 transition cursor-pointer shrink-0 border border-slate-200/80 dark:border-slate-700/80"
+                >
+                  <ShoppingCart className="w-4 h-4 text-indigo-500" />
+                  <span>{t("productPreview.viewCart") || "Przejdź do koszyka"}</span>
+                  <span className="flex items-center justify-center px-1.5 py-0.5 rounded-full bg-indigo-600 text-white font-black text-[10px]">
+                    {totalInCart}
+                  </span>
+                </button>
+              )}
+            </div>
           </div>
         )}
 
+        {/* 5. Description Block (Rendered ONLY if description exists) */}
+        {hasDescription && (
+          <div className="rounded-[1.8rem] border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm flex flex-col gap-4">
+            <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white flex items-center gap-2.5">
+              <Info className="w-5 h-5 text-indigo-500 shrink-0" />
+              <span>{t("productPreview.description")}</span>
+            </h2>
+
+            <div className="text-sm sm:text-base text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line break-words [overflow-wrap:anywhere]">
+              {product.description}
+            </div>
+          </div>
+        )}
+
+        {/* 6. Technical Specifications / Custom Fields (Rendered ONLY if extra fields with values exist) */}
         {hasExtraFields && (
-          <div className="mt-8 rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-sm border border-slate-200/60 dark:border-slate-800">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2"><Layers className="w-5 h-5 text-indigo-500" />{t("productPreview.additionalData")}</h2>
-            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {Object.entries(product.extraFields).map(([key, val]) => (
-                <div key={key} className="rounded-2xl bg-slate-50 dark:bg-slate-950 p-4 border border-slate-200 dark:border-slate-800/80">
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">{key}</p>
-                  <p className="mt-2 text-sm font-semibold text-slate-700 dark:text-slate-300">{val || "—"}</p>
+          <div className="rounded-[1.8rem] border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm flex flex-col gap-5">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white flex items-center gap-2.5">
+                <Cpu className="w-5 h-5 text-indigo-500 shrink-0" />
+                <span>{language === "pl" ? "Dodatkowe informacje i parametry" : "Additional information"}</span>
+              </h2>
+              <span className="text-xs font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-200/80 dark:border-slate-700/80">
+                {validExtraFields.length} {language === "pl" ? (validExtraFields.length === 1 ? "pozycja" : "pozycje") : "items"}
+              </span>
+            </div>
+
+            <div className="flex flex-col gap-2.5">
+              {validExtraFields.map(([key, val]) => (
+                <div
+                  key={key}
+                  className="rounded-2xl bg-slate-50 dark:bg-slate-950/60 p-4 sm:px-5 border border-slate-200/70 dark:border-slate-800/80 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-6 min-w-0 transition hover:border-indigo-300 dark:hover:border-indigo-800/60"
+                >
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 shrink-0 break-words [overflow-wrap:anywhere]">
+                    {key}
+                  </span>
+                  <div className="text-sm font-bold text-slate-800 dark:text-slate-200 break-words [overflow-wrap:anywhere] sm:text-right whitespace-pre-line">
+                    {String(val)}
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {hasAttachments && (
-          <div className="mt-8 rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-sm border border-slate-200/60 dark:border-slate-800">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2"><FileText className="w-5 h-5 text-indigo-500" />{t("productPreview.attachments")}</h2>
-            <div className="grid gap-4 sm:grid-cols-2">
-              {product.attachments.map((att) => att && (
-                <a key={att.uniqueKey} href={`${API_URL}/uploads/products/${att.filename}`} target="_blank" rel="noopener noreferrer" className="group flex items-center justify-between rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-4 font-semibold text-slate-700 dark:text-slate-350 hover:border-indigo-300 dark:hover:border-indigo-900 hover:bg-indigo-50/20 dark:hover:bg-indigo-950/20 transition duration-300">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">{getFileIcon(att.originalName)}</span>
-                    <span className="text-sm font-bold group-hover:text-indigo-650 dark:group-hover:text-indigo-400 transition-colors">{att.originalName}</span>
+
+
+        {/* 8. Location & Caretaker Block (Rendered ONLY if room or owner exists) */}
+        {hasAssignmentInfo && (
+          <div className="rounded-[1.8rem] border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm flex flex-col gap-4">
+            <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider select-none">
+              {language === "pl" ? "Lokalizacja i opiekun sprzętu" : "Location & caretaker"}
+            </h3>
+
+            <div className={`grid gap-4 ${hasOwner && hasRoom ? "sm:grid-cols-2" : "grid-cols-1"}`}>
+              {/* Owner */}
+              {hasOwner && (
+                <div className="flex items-center justify-between gap-3.5 p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/70 dark:border-slate-800/80 min-w-0">
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/60 dark:border-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                      <User className="w-4 h-4" />
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        {t("productPreview.owner")}
+                      </span>
+                      <span className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                        {product.owner.name}
+                      </span>
+                    </div>
                   </div>
-                  <span className="text-xs text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300 transition-colors font-bold uppercase tracking-wider">{att.size ? `${(att.size / 1024).toFixed(1)} KB` : "View"}</span>
-                </a>
-              ))}
+                  {product.owner?.email && (
+                    <a
+                      href={`mailto:${product.owner.email}`}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 text-xs font-bold transition shrink-0"
+                      title={language === "pl" ? "Wyślij wiadomość do opiekuna" : "Email caretaker"}
+                    >
+                      <Mail className="w-3.5 h-3.5" />
+                      <span>{language === "pl" ? "Kontakt" : "Contact"}</span>
+                    </a>
+                  )}
+                </div>
+              )}
+
+              {/* Room */}
+              {hasRoom && (
+                <div className="flex items-center gap-3.5 p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/70 dark:border-slate-800/80 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/60 dark:border-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                    <MapPin className="w-4 h-4" />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      {t("productPreview.room")}
+                    </span>
+                    <span className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                      {product.labRoom}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
+
+        {/* 8. Tags Block (Rendered ONLY if tags exist) */}
+        {hasTags && (
+          <div className="rounded-[1.8rem] border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm flex flex-col gap-5">
+            {/* Header: Title, counter & search filter */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/60 dark:border-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                  <Tag className="w-4 h-4" />
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                    {language === "pl" ? "Tagi i powiązane technologie" : (t("productPreview.tags") || "Tags")}
+                  </h2>
+                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-full border border-slate-200/80 dark:border-slate-700/80">
+                    {validTags.length}
+                  </span>
+                </div>
+              </div>
+
+              {/* Tag Search input (shown if there are more than 6 tags or an active query) */}
+              {(validTags.length > 6 || tagSearchQuery) && (
+                <div className="relative w-full sm:w-56">
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={tagSearchQuery}
+                    onChange={(e) => setTagSearchQuery(e.target.value)}
+                    placeholder={language === "pl" ? "Filtruj tagi..." : "Filter tags..."}
+                    className="w-full pl-8 pr-7 py-1.5 rounded-xl text-xs bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+                  />
+                  {tagSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setTagSearchQuery("")}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                      title="Wyczyść filtr"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Tags Cloud Container */}
+            <div className={`flex flex-wrap gap-2 ${isTagsExpanded ? "max-h-[360px] overflow-y-auto scrollbar-thin pr-1" : ""}`}>
+              {displayedTags.length > 0 ? (
+                displayedTags.map((tag, i) => (
+                  <button
+                    key={`${tag}-${i}`}
+                    type="button"
+                    onClick={() => {
+                      const targetRoute = token ? "/products" : "/guest-products";
+                      navigate(`${targetRoute}?search=${encodeURIComponent(tag)}`, { state: { search: tag } });
+                    }}
+                    title={language === "pl" ? `Kliknij, aby wyszukać sprzęt z tagiem #${tag}` : `Search equipment with tag #${tag}`}
+                    className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-150 select-none cursor-pointer bg-slate-50 hover:bg-indigo-50/90 dark:bg-slate-950/60 dark:hover:bg-indigo-950/60 text-slate-700 hover:text-indigo-600 dark:text-slate-300 dark:hover:text-indigo-300 border border-slate-200/80 hover:border-indigo-300 dark:border-slate-800 dark:hover:border-indigo-800/80 shadow-2xs hover:shadow-xs hover:scale-[1.02] active:scale-95"
+                  >
+                    <span className="text-indigo-500 dark:text-indigo-400 font-black text-[13px] group-hover:text-indigo-600 dark:group-hover:text-indigo-300">
+                      #
+                    </span>
+                    <span>{tag}</span>
+                    <ArrowUpRight className="w-3 h-3 text-slate-300 dark:text-slate-600 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors shrink-0 -ml-0.5" />
+                  </button>
+                ))
+              ) : (
+                <div className="py-4 text-center w-full text-xs text-slate-400 flex flex-col items-center justify-center gap-1">
+                  <span>{language === "pl" ? `Nie znaleziono tagów pasujących do "${tagSearchQuery}"` : `No tags matching "${tagSearchQuery}"`}</span>
+                  <button
+                    type="button"
+                    onClick={() => setTagSearchQuery("")}
+                    className="text-indigo-600 dark:text-indigo-400 hover:underline font-bold mt-1 cursor-pointer"
+                  >
+                    {language === "pl" ? "Wyczyść wyszukiwanie" : "Clear search"}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Bottom row: Counter info & Expand / Collapse Toggle if many tags */}
+            {showExpandButton && (
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800/80">
+                <span className="text-xs text-slate-400 font-medium">
+                  {isTagsExpanded
+                    ? (language === "pl" ? `Wyświetlono wszystkie ${validTags.length} tagów` : `Showing all ${validTags.length} tags`)
+                    : (language === "pl" ? `Wyświetlono 14 z ${validTags.length} tagów` : `Showing 14 of ${validTags.length} tags`)}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => setIsTagsExpanded(!isTagsExpanded)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200/70 dark:border-indigo-900/50 transition cursor-pointer"
+                >
+                  {isTagsExpanded ? (
+                    <>
+                      <ChevronUp className="w-3.5 h-3.5" />
+                      <span>{language === "pl" ? "Zwiń tagi" : "Show less"}</span>
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="w-3.5 h-3.5" />
+                      <span>
+                        {language === "pl"
+                          ? `Pokaż wszystkie (${validTags.length})`
+                          : `Show all (${validTags.length})`}
+                      </span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 9. Attachments Block (Rendered ONLY if attachments exist) */}
+        {hasAttachments && (
+          <div className="rounded-[1.8rem] border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm flex flex-col gap-4">
+            <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2.5">
+              <FileText className="w-5 h-5 text-indigo-500 shrink-0" />
+              <span>{t("productPreview.attachments")}</span>
+            </h2>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              {validAttachments.map((att) => {
+                return (
+                  <a
+                    key={att.uniqueKey || att.filename}
+                    href={`${API_URL}/uploads/products/${att.filename}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group flex items-center justify-between gap-3 p-4 rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 hover:bg-indigo-50/20 dark:hover:bg-indigo-950/20 hover:border-indigo-300 dark:hover:border-indigo-900 transition min-w-0"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="text-xl shrink-0">{getFileIcon(att.originalName || att.filename)}</span>
+                      <span
+                        className="text-xs font-bold text-slate-700 dark:text-slate-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors truncate max-w-[200px] sm:max-w-[260px]"
+                        title={att.originalName || att.filename}
+                      >
+                        {att.originalName || att.filename}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0 text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">
+                      <span className="text-[10px] font-bold uppercase tracking-wider">
+                        {att.size ? `${(att.size / 1024).toFixed(0)} KB` : "Plik"}
+                      </span>
+                      <Download className="w-3.5 h-3.5" />
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );

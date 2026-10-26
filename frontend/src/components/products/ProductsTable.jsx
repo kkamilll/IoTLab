@@ -1,6 +1,6 @@
 import React from "react";
 import { useLanguage } from "../../context/LanguageContext";
-import { ArrowUpDown, ArrowUp, ArrowDown, Edit2, Eye, Trash2, User, Package, Plus, Minus, ShoppingCart } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, Edit2, Eye, Trash2, User, Package, Plus, Minus, ShoppingCart, Globe, Lock } from "lucide-react";
 
 const ProductsTable = ({
   paginatedProducts,
@@ -12,6 +12,8 @@ const ProductsTable = ({
   user,
   extraColumns,
   removeExtraField,
+  columnConfigs = {},
+  toggleColumnGuestVisibility,
   handlePreview,
   handleEdit,
   handleDelete,
@@ -79,13 +81,44 @@ const ProductsTable = ({
                         </span>
                       </span>
                       {extraColumns.includes(col) && (
-                        <button
-                          onClick={() => removeExtraField(col)}
-                          className="ml-1 px-1.5 py-0.5 bg-red-50 dark:bg-red-950/30 text-red-500 dark:text-red-400 border border-red-100 dark:border-red-900/30 rounded hover:bg-red-100 dark:hover:bg-red-900/50 text-[10px] font-bold transition cursor-pointer"
-                          title={`Remove column "${col}"`}
-                        >
-                          ✕
-                        </button>
+                        <div className="flex items-center gap-1 ml-1.5">
+                          {toggleColumnGuestVisibility && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleColumnGuestVisibility(col);
+                              }}
+                              title={
+                                columnConfigs?.[col.toLowerCase()]
+                                  ? (language === "pl" ? "Widoczna dla gości. Kliknij, aby ukryć przed gośćmi (tylko admin)." : "Visible to guests. Click to make admin only.")
+                                  : (language === "pl" ? "Tylko dla admina. Kliknij, aby udostępnić gościom." : "Admin only. Click to make visible to guests.")
+                              }
+                              className={`p-1 rounded-md transition cursor-pointer select-none border flex items-center justify-center ${
+                                columnConfigs?.[col.toLowerCase()]
+                                  ? "bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/40"
+                                  : "bg-slate-100 text-slate-400 border-slate-200 hover:bg-slate-200 hover:text-slate-600 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700"
+                              }`}
+                            >
+                              {columnConfigs?.[col.toLowerCase()] ? (
+                                <Globe className="w-3.5 h-3.5" />
+                              ) : (
+                                <Lock className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeExtraField(col);
+                            }}
+                            className="px-1.5 py-0.5 bg-red-50 dark:bg-red-950/30 text-red-500 dark:text-red-400 border border-red-100 dark:border-red-900/30 rounded hover:bg-red-100 dark:hover:bg-red-900/50 text-[10px] font-bold transition cursor-pointer"
+                            title={language === "pl" ? `Usuń kolumnę "${col}"` : `Remove column "${col}"`}
+                          >
+                            ✕
+                          </button>
+                        </div>
                       )}
                     </div>
                   </th>
@@ -179,8 +212,17 @@ const ProductsTable = ({
                     case "owner":
                       value = (
                         <div className="flex items-center gap-2">
-                          <div className="w-5 h-5 rounded-full bg-slate-55 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex items-center justify-center">
-                            <User className="w-3 h-3 text-slate-450 dark:text-slate-400" />
+                          <div className="w-5 h-5 rounded-full overflow-hidden bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex items-center justify-center flex-shrink-0 shadow-2xs">
+                            {p.owner?.profileImage ? (
+                              <img
+                                src={`${API_BASE}/uploads/users/${p.owner.profileImage}`}
+                                alt={p.owner?.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                              />
+                            ) : (
+                              <User className="w-3 h-3 text-slate-450 dark:text-slate-400" />
+                            )}
                           </div>
                           <span className="text-xs font-medium text-slate-650 dark:text-slate-350">{p.owner?.name ?? p.owner}</span>
                         </div>

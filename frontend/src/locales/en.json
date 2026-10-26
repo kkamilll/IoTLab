@@ -24,7 +24,7 @@
   },
   "nav": {
     "welcome": "Welcome",
-    "explore": "Explore Collections",
+    "explore": "Collections",
     "announcements": "Announcements & Notes",
     "guestShop": "Guest Shop",
     "orderAsGuest": "Order as Guest",
@@ -44,6 +44,8 @@
   "welcome": {
     "reservationSystem": "Reservation System",
     "subtitle": "Laboratory Room & Equipment Management System",
+    "productCatalog": "Product Catalog",
+    "adminDashboard": "Admin Dashboard",
     "exploreSubtitle": "Select a collection category to view documents and links",
     "noCollections": "No collections available.",
     "notesSubtitle": "Latest updates and notifications from the administration",
@@ -53,7 +55,7 @@
     "previous": "Previous",
     "next": "Next",
     "footerText": "Laboratory Room Management System. All rights reserved.",
-    "latestMaterials": "Latest Materials",
+    "latestMaterials": "Materials",
     "noMaterials": "No materials available yet.",
     "anonymous": "Anonymous",
     "notesDemoBanner": "No announcements or notes in database at this moment."
@@ -193,7 +195,7 @@
     "searchLabel": "Filter"
   },
   "guest": {
-    "title": "Browse Objects",
+    "title": "Product Catalog",
     "subtitle": "Guest Shop",
     "backHome": "Back Home",
     "viewCart": "View Cart",
@@ -358,6 +360,7 @@
     "name": "Name",
     "email": "Email",
     "role": "Role",
+    "profileImage": "Profile Picture",
     "status": "Status",
     "labRooms": "Lab Rooms",
     "productCount": "Supervised Items",

@@ -8,6 +8,7 @@ import Material from "../models/Material.js";
 import Component from "../models/Component.js";
 import bcrypt from "bcrypt";
 import { v4 as uuidv4 } from "uuid";
+import { productEnrichmentData } from "./productEnrichmentData.js";
 
 export const generateMockData = async () => {
   // ─────────────────────────────────────────────
@@ -351,17 +352,21 @@ export const generateMockData = async () => {
     isVisible: true,
   });
 
-  await prodArduino.save();
-  await prodESP32.save();
-  await prodSTM32.save();
-  await prodRaspPi.save();
-  await prodRaspPi5.save();
-  await prodDHT11.save();
-  await prodDHT22.save();
-  await prodUltrasonic.save();
-  await prodServo.save();
-  await prodRelay.save();
-  await prodLoRa.save();
+  const allProds = [
+    prodArduino, prodESP32, prodSTM32, prodRaspPi, prodRaspPi5,
+    prodDHT11, prodDHT22, prodUltrasonic, prodServo, prodRelay, prodLoRa
+  ];
+
+  for (const p of allProds) {
+    if (productEnrichmentData[p.name]) {
+      const enrichment = productEnrichmentData[p.name];
+      p.description = enrichment.description;
+      p.extraFields = enrichment.extraFields;
+      p.labRoom = enrichment.labRoom;
+      p.tags = enrichment.tags;
+    }
+    await p.save();
+  }
 
 
   // ─────────────────────────────────────────────

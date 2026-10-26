@@ -38,6 +38,14 @@ const AuthProvider = ({ children }) => {
     localStorage.setItem("pos-token", jwtToken);
   };
 
+  const updateUser = (userData) => {
+    setUser((prev) => {
+      const updated = { ...(prev || {}), ...userData };
+      localStorage.setItem("pos-user", JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   const logout = () => {
     setUser(null);
     setToken(null);
@@ -46,7 +54,7 @@ const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
+    <AuthContext.Provider value={{ user, token, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

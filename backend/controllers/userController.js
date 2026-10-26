@@ -187,6 +187,12 @@ export const updateUserProfile = async (req, res, next) => {
       if (currentUser && currentUser.profileImage) {
         deleteProfileImageFile(currentUser.profileImage);
       }
+    } else if (req.body.profileImage === "" || req.body.deleteProfileImage === "true") {
+      updateData.profileImage = "";
+      const currentUser = await User.findById(userId);
+      if (currentUser && currentUser.profileImage) {
+        deleteProfileImageFile(currentUser.profileImage);
+      }
     }
 
     if (Object.keys(updateData).length === 0)
@@ -283,6 +289,11 @@ export const updateUser = async (req, res, next) => {
 
     if (req.file) {
       updateData.profileImage = req.file.filename;
+      if (targetUser.profileImage) {
+        deleteProfileImageFile(targetUser.profileImage);
+      }
+    } else if (req.body.profileImage === "" || req.body.deleteProfileImage === "true") {
+      updateData.profileImage = "";
       if (targetUser.profileImage) {
         deleteProfileImageFile(targetUser.profileImage);
       }

@@ -38,3 +38,9 @@ frontend/.env
 *.sln
 *.sw?
 .mongo_data/
+
+# Uploaded user files
+uploads/*
+!uploads/**/.gitkeep
+backend/uploads/*
+!backend/uploads/**/.gitkeep
