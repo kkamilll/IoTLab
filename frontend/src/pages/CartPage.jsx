@@ -40,6 +40,8 @@ const CartPage = () => {
     notes: "",
   });
 
+  const [dateMode, setDateMode] = useState(() => localStorage.getItem("cart_date_mode") || "same");
+
   const [orderDates, setOrderDates] = useState({
     startDate: "",
     endDate: "",
@@ -71,6 +73,33 @@ const CartPage = () => {
     localStorage.setItem("cart", JSON.stringify(newCart));
   };
 
+  const handleDateModeChange = (mode) => {
+    setDateMode(mode);
+    localStorage.setItem("cart_date_mode", mode);
+    if (mode === "same" && orderDates.startDate && orderDates.endDate) {
+      applyDatesToAll(orderDates.startDate, orderDates.endDate);
+    }
+  };
+
+  const handleItemDateChange = (productId, field, value) => {
+    const newCart = cart.map((item) => {
+      if (item._id === productId) {
+        return { ...item, [field]: value };
+      }
+      return item;
+    });
+    updateCart(newCart);
+  };
+
+  const applyDatesToAll = (startDate, endDate) => {
+    const newCart = cart.map((item) => ({
+      ...item,
+      startDate,
+      endDate,
+    }));
+    updateCart(newCart);
+  };
+
   const handleQuantityChange = (productId, delta) => {
     const newCart = cart.map((item) => {
       if (item._id === productId) {
@@ -96,16 +125,21 @@ const CartPage = () => {
   };
 
   const updateAvailability = async () => {
-    if (!orderDates.startDate || !orderDates.endDate) return;
+    if (!cart.length) return;
 
     const newAvailability = {};
     await Promise.all(
       cart.map(async (item) => {
+        const itemStart = dateMode === "separate" ? (item.startDate || orderDates.startDate) : orderDates.startDate;
+        const itemEnd = dateMode === "separate" ? (item.endDate || orderDates.endDate) : orderDates.endDate;
+
+        if (!itemStart || !itemEnd) return;
+
         try {
           const res = await apiClient.post("/products/available", {
             productId: item._id,
-            startDate: orderDates.startDate,
-            endDate: orderDates.endDate,
+            startDate: itemStart,
+            endDate: itemEnd,
           });
           newAvailability[item._id] = res.data.available;
         } catch {
@@ -118,7 +152,7 @@ const CartPage = () => {
 
   useEffect(() => {
     updateAvailability();
-  }, [cart, orderDates]);
+  }, [cart, orderDates, dateMode]);
 
   const handleCheckout = async () => {
     setLoading(true);
@@ -191,47 +225,141 @@ const CartPage = () => {
         return;
       }
 
-      if (!orderDates.startDate || !orderDates.endDate) {
-        showToast(t("cart.selectDatesAlert"), "warning");
-        return;
-      }
-
       const now = new Date();
       now.setHours(0, 0, 0, 0);
-      const start = new Date(orderDates.startDate);
-      start.setHours(0, 0, 0, 0);
-      const end = new Date(orderDates.endDate);
-      end.setHours(0, 0, 0, 0);
 
-      if (start < now) {
-        showToast(t("cart.startDatePastAlert"), "error");
-        return;
+      if (dateMode === "same") {
+        if (!orderDates.startDate || !orderDates.endDate) {
+          showToast(t("cart.selectDatesAlert"), "warning");
+          return;
+        }
+
+        const start = new Date(orderDates.startDate);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(orderDates.endDate);
+        end.setHours(0, 0, 0, 0);
+
+        if (start < now) {
+          showToast(t("cart.startDatePastAlert"), "error");
+          return;
+        }
+        if (end < start) {
+          showToast(t("cart.endDateBeforeStartAlert"), "error");
+          return;
+        }
+
+        const items = cart.map((item) => ({
+          product: item._id,
+          requestedQuantity: item.quantity,
+        }));
+
+        await apiClient.post("/orders/create", {
+          token: captchaToken || "",
+          customer: {
+            ...orderCustomer,
+            phoneNumber: cleanPhone,
+          },
+          items,
+          requestedStartDate: orderDates.startDate,
+          requestedEndDate: orderDates.endDate,
+        });
+
+        showToast(t("cart.orderSuccessAlert"), "success");
+      } else {
+        // Separate dates mode
+        const itemWithoutDates = cart.find((i) => !i.startDate || !i.endDate);
+        if (itemWithoutDates) {
+          showToast(
+            language === "pl"
+              ? `Uzupełnij termin rezerwacji dla produktu „${itemWithoutDates.name}”.`
+              : `Please select rental dates for product "${itemWithoutDates.name}".`,
+            "warning"
+          );
+          return;
+        }
+
+        for (const item of cart) {
+          const s = new Date(item.startDate);
+          s.setHours(0, 0, 0, 0);
+          const e = new Date(item.endDate);
+          e.setHours(0, 0, 0, 0);
+
+          if (s < now) {
+            showToast(
+              language === "pl"
+                ? `Data początkowa dla „${item.name}” nie może być z przeszłości.`
+                : `Start date for "${item.name}" cannot be in the past.`,
+              "error"
+            );
+            return;
+          }
+          if (e < s) {
+            showToast(
+              language === "pl"
+                ? `Data końcowa dla „${item.name}” musi być późniejsza lub równa początkowej.`
+                : `End date for "${item.name}" must be after start date.`,
+              "error"
+            );
+            return;
+          }
+        }
+
+        // Group items by unique date range
+        const groupsMap = new Map();
+        cart.forEach((item) => {
+          const key = `${item.startDate}___${item.endDate}`;
+          if (!groupsMap.has(key)) {
+            groupsMap.set(key, {
+              startDate: item.startDate,
+              endDate: item.endDate,
+              items: [],
+            });
+          }
+          groupsMap.get(key).items.push({
+            product: item._id,
+            requestedQuantity: item.quantity,
+          });
+        });
+
+        const subOrders = Array.from(groupsMap.values()).map((g) => ({
+          items: g.items,
+          requestedStartDate: g.startDate,
+          requestedEndDate: g.endDate,
+        }));
+
+        if (subOrders.length === 1) {
+          await apiClient.post("/orders/create", {
+            token: captchaToken || "",
+            customer: {
+              ...orderCustomer,
+              phoneNumber: cleanPhone,
+            },
+            items: subOrders[0].items,
+            requestedStartDate: subOrders[0].requestedStartDate,
+            requestedEndDate: subOrders[0].requestedEndDate,
+          });
+          showToast(t("cart.orderSuccessAlert"), "success");
+        } else {
+          const res = await apiClient.post("/orders/create", {
+            token: captchaToken || "",
+            customer: {
+              ...orderCustomer,
+              phoneNumber: cleanPhone,
+            },
+            subOrders,
+          });
+          const count = res.data.orders?.length || subOrders.length;
+          showToast(
+            language === "pl"
+              ? `Pomyślnie złożono ${count} zamówienia dla różnych terminów! Szczegóły wysłano na e-mail.`
+              : `Successfully placed ${count} orders for different rental dates! Confirmation sent to your email.`,
+            "success"
+          );
+        }
       }
-      if (end < start) {
-        showToast(t("cart.endDateBeforeStartAlert"), "error");
-        return;
-      }
 
-      const items = cart.map((item) => ({
-        product: item._id,
-        requestedQuantity: item.quantity,
-      }));
-
-      await apiClient.post("/orders/create", {
-        token: captchaToken || "",
-        customer: {
-          ...orderCustomer,
-          phoneNumber: cleanPhone,
-        },
-        items,
-        requestedStartDate: orderDates.startDate,
-        requestedEndDate: orderDates.endDate,
-      });
-
-      showToast(t("cart.orderSuccessAlert"), "success");
       setCart([]);
       localStorage.removeItem("cart");
-      // Navigate back to guest products so user can place more orders
       navigate("/guest-products");
     } catch (error) {
       console.error(error);
@@ -269,9 +397,17 @@ const CartPage = () => {
     const groupedCart = groupByOwner(cart);
     const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
     const totalOwners = Object.keys(groupedCart).length;
-    const canCheckout = cart.length > 0 && orderDates.startDate && orderDates.endDate && !loading;
+    const canCheckout =
+      cart.length > 0 &&
+      !loading &&
+      (dateMode === "same"
+        ? Boolean(orderDates.startDate && orderDates.endDate)
+        : cart.every((i) => i.startDate && i.endDate));
 
-    const isQuantityDisabled = () => !(orderDates?.startDate && orderDates?.endDate);
+    const isQuantityDisabled = () =>
+      dateMode === "same"
+        ? !(orderDates?.startDate && orderDates?.endDate)
+        : false;
 
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 py-8 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
@@ -369,6 +505,10 @@ const CartPage = () => {
               availability={availability}
               orderDates={orderDates}
               setOrderDates={setOrderDates}
+              dateMode={dateMode}
+              setDateMode={handleDateModeChange}
+              handleItemDateChange={handleItemDateChange}
+              applyDatesToAll={applyDatesToAll}
               handleQuantityChange={handleQuantityChange}
               handleRemove={handleRemove}
               isQuantityDisabled={isQuantityDisabled}
@@ -389,6 +529,7 @@ const CartPage = () => {
               handleCustomerChange={handleCustomerChange}
               cart={cart}
               orderDates={orderDates}
+              dateMode={dateMode}
               recaptchaKey={recaptchaKey}
               recaptchaRef={recaptchaRef}
               handleCheckout={handleCheckout}

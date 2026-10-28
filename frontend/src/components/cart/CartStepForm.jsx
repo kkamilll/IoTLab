@@ -43,6 +43,7 @@ const CartStepForm = ({
   handleCustomerChange,
   cart,
   orderDates,
+  dateMode = "same",
   recaptchaKey,
   recaptchaRef,
   handleCheckout,
@@ -65,51 +66,52 @@ const CartStepForm = ({
             <User className="w-4.5 h-4.5 text-indigo-500" />
             {t("cart.customerInfo")}
           </h3>
-          <div className="grid gap-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="flex flex-col gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                {t("cart.firstName")}
-                <input name="firstName" value={orderCustomer.firstName} onChange={handleCustomerChange} className={inputClass} placeholder={language === "pl" ? "np. Jan" : "e.g. John"} required />
-              </label>
-              <label className="flex flex-col gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                {t("cart.lastName")}
-                <input name="lastName" value={orderCustomer.lastName} onChange={handleCustomerChange} className={inputClass} placeholder={language === "pl" ? "np. Kowalski" : "e.g. Doe"} required />
-              </label>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="flex flex-col gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                {t("cart.phoneNumber")}
-                <input name="phoneNumber" value={orderCustomer.phoneNumber} onChange={handleCustomerChange} className={inputClass} placeholder={language === "pl" ? "np. 500600700" : "e.g. 500600700"} required />
-              </label>
-              <label className="flex flex-col gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                {t("cart.email")}
-                <input name="email" type="email" value={orderCustomer.email} onChange={handleCustomerChange} className={inputClass} placeholder={language === "pl" ? "np. student@uczelnia.pl" : "e.g. student@university.edu"} required />
-              </label>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="flex flex-col gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                {t("cart.studentIndex")}
-                <input name="index" value={orderCustomer.index} onChange={handleCustomerChange} className={inputClass} placeholder={language === "pl" ? "np. 123456" : "e.g. 123456"} required />
-              </label>
-              <label className="flex flex-col gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                {t("cart.fieldOfStudy")}
-                <input name="fieldOfStudy" value={orderCustomer.fieldOfStudy} onChange={handleCustomerChange} className={inputClass} placeholder={language === "pl" ? "np. Informatyka" : "e.g. Computer Science"} required />
-              </label>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <label className="flex flex-col gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                {t("cart.yearOfStudy")}
-                <input name="yearOfStudy" type="number" min="1" max="7" value={orderCustomer.yearOfStudy} onChange={handleCustomerChange} className={inputClass} placeholder={language === "pl" ? "np. 3" : "e.g. 3"} required />
-              </label>
-              <label className="flex flex-col gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                {t("cart.semester")}
-                <input name="semester" type="number" min="1" max="14" value={orderCustomer.semester} onChange={handleCustomerChange} className={inputClass} placeholder={language === "pl" ? "np. 5" : "e.g. 5"} required />
-              </label>
-              <label className="flex flex-col gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                {t("cart.specialization")}
-                <input name="specialization" value={orderCustomer.specialization} onChange={handleCustomerChange} className={inputClass} placeholder={language === "pl" ? "np. IoT" : "e.g. IoT"} />
-              </label>
-            </div>
+          <div className="flex flex-col gap-4">
+            <label className="flex flex-col gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              {t("cart.firstName")}
+              <input name="firstName" value={orderCustomer.firstName} onChange={handleCustomerChange} className={inputClass} placeholder={language === "pl" ? "np. Jan" : "e.g. John"} required />
+            </label>
+
+            <label className="flex flex-col gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              {t("cart.lastName")}
+              <input name="lastName" value={orderCustomer.lastName} onChange={handleCustomerChange} className={inputClass} placeholder={language === "pl" ? "np. Kowalski" : "e.g. Doe"} required />
+            </label>
+
+            <label className="flex flex-col gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              {t("cart.phoneNumber")}
+              <input name="phoneNumber" value={orderCustomer.phoneNumber} onChange={handleCustomerChange} className={inputClass} placeholder={language === "pl" ? "np. 500600700" : "e.g. 500600700"} required />
+            </label>
+
+            <label className="flex flex-col gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              {t("cart.email")}
+              <input name="email" type="email" value={orderCustomer.email} onChange={handleCustomerChange} className={inputClass} placeholder={language === "pl" ? "np. student@uczelnia.pl" : "e.g. student@university.edu"} required />
+            </label>
+
+            <label className="flex flex-col gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              {t("cart.studentIndex")}
+              <input name="index" value={orderCustomer.index} onChange={handleCustomerChange} className={inputClass} placeholder={language === "pl" ? "np. 123456" : "e.g. 123456"} required />
+            </label>
+
+            <label className="flex flex-col gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              {t("cart.fieldOfStudy")}
+              <input name="fieldOfStudy" value={orderCustomer.fieldOfStudy} onChange={handleCustomerChange} className={inputClass} placeholder={language === "pl" ? "np. Informatyka" : "e.g. Computer Science"} required />
+            </label>
+
+            <label className="flex flex-col gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              {t("cart.yearOfStudy")}
+              <input name="yearOfStudy" type="number" min="1" max="7" value={orderCustomer.yearOfStudy} onChange={handleCustomerChange} className={inputClass} placeholder={language === "pl" ? "np. 3" : "e.g. 3"} required />
+            </label>
+
+            <label className="flex flex-col gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              {t("cart.semester")}
+              <input name="semester" type="number" min="1" max="14" value={orderCustomer.semester} onChange={handleCustomerChange} className={inputClass} placeholder={language === "pl" ? "np. 5" : "e.g. 5"} required />
+            </label>
+
+            <label className="flex flex-col gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              {t("cart.specialization")}
+              <input name="specialization" value={orderCustomer.specialization} onChange={handleCustomerChange} className={inputClass} placeholder={language === "pl" ? "np. IoT" : "e.g. IoT"} />
+            </label>
+
             <label className="flex flex-col gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               {t("cart.purpose")}
               <textarea
@@ -183,6 +185,12 @@ const CartStepForm = ({
                             {ownerName}
                           </span>
                         )}
+                        {dateMode === "separate" && item.startDate && item.endDate && (
+                          <span className="text-[10px] font-mono font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
+                            <Calendar className="w-3 h-3 text-indigo-500 shrink-0" />
+                            {new Date(item.startDate).toLocaleDateString()} → {new Date(item.endDate).toLocaleDateString()}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -219,14 +227,41 @@ const CartStepForm = ({
             <span className="font-extrabold text-slate-900 dark:text-white truncate max-w-[170px]">{orderCustomer.index || "—"}</span>
           </div>
 
-          <div className="flex items-center gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800 text-xs font-mono font-bold text-slate-700 dark:text-slate-300 mt-1">
-            <Calendar className="w-4 h-4 text-indigo-500 shrink-0" />
-            <span>
-              {orderDates.startDate ? new Date(orderDates.startDate).toLocaleDateString() : "—"}{" "}
-              →{" "}
-              {orderDates.endDate ? new Date(orderDates.endDate).toLocaleDateString() : "—"}
-            </span>
-          </div>
+          {dateMode === "separate" ? (
+            <div className="flex flex-col gap-1.5 mt-1">
+              <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500">
+                {language === "pl" ? "Terminy rezerwacji:" : "Rental periods:"}
+              </span>
+              {Array.from(
+                cart.reduce((map, i) => {
+                  if (i.startDate && i.endDate) {
+                    const k = `${new Date(i.startDate).toLocaleDateString()} → ${new Date(i.endDate).toLocaleDateString()}`;
+                    map.set(k, (map.get(k) || 0) + i.quantity);
+                  }
+                  return map;
+                }, new Map()).entries()
+              ).map(([range, qty]) => (
+                <div key={range} className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800 text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <Calendar className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                    <span className="truncate">{range}</span>
+                  </div>
+                  <span className="text-[10px] font-sans px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 shrink-0 font-extrabold">
+                    {qty} szt.
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800 text-xs font-mono font-bold text-slate-700 dark:text-slate-300 mt-1">
+              <Calendar className="w-4 h-4 text-indigo-500 shrink-0" />
+              <span>
+                {orderDates.startDate ? new Date(orderDates.startDate).toLocaleDateString() : "—"}{" "}
+                →{" "}
+                {orderDates.endDate ? new Date(orderDates.endDate).toLocaleDateString() : "—"}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Bot / Human verification - only if key configured */}

@@ -353,7 +353,7 @@ export const getOrders = asyncHandler(async (req, res, next) => {
 export const createOrder = asyncHandler(async (req, res, next) => {
   if (!req.body) return next(new BadRequestError("Request body is missing"));
 
-  const { token, customer, items, requestedStartDate, requestedEndDate } =
+  const { token, customer, items, requestedStartDate, requestedEndDate, subOrders } =
     req.body || null;
 
   const recaptchaSecret = process.env.RECAPTCHA_SECRET_KEY;
@@ -415,128 +415,150 @@ export const createOrder = asyncHandler(async (req, res, next) => {
     throw new BadRequestError("Phone number must be 9–10 digits");
   }
 
+  const orderBatches = Array.isArray(subOrders) && subOrders.length > 0
+    ? subOrders
+    : [{ items, requestedStartDate, requestedEndDate }];
+
+  if (orderBatches.length === 0 || !orderBatches[0].items?.length) {
+    throw new ValidationError("Order must contain at least one item");
+  }
+
   try {
-    const productIds = items.map((i) => i.product);
-    const products = await Product.find({ _id: { $in: productIds } })
-      .lean();
-    const productMap = {};
-    products.forEach((p) => (productMap[p._id.toString()] = p));
+    const createdOrders = [];
 
-    const enrichedItems = items.map((item) => {
-      const product = productMap[item.product];
-      if (!product)
-        throw new ValidationError(`Produkt ${item.product} nie istnieje`);
-      if (item.requestedQuantity < 1)
-        throw new BadRequestError(`Niepoprawna ilość dla ${product.name}`);
+    for (const batch of orderBatches) {
+      if (!batch.items || !Array.isArray(batch.items) || batch.items.length === 0) {
+        throw new ValidationError("Każda rezerwacja musi zawierać co najmniej jeden produkt");
+      }
 
-      return {
-        ...item,
-        responsibleOwner: product.owner,
+      const productIds = batch.items.map((i) => i.product);
+      const products = await Product.find({ _id: { $in: productIds } }).lean();
+      const productMap = {};
+      products.forEach((p) => (productMap[p._id.toString()] = p));
+
+      const enrichedItems = batch.items.map((item) => {
+        const product = productMap[item.product];
+        if (!product)
+          throw new ValidationError(`Produkt ${item.product} nie istnieje`);
+        if (item.requestedQuantity < 1)
+          throw new BadRequestError(`Niepoprawna ilość dla ${product.name}`);
+
+        return {
+          ...item,
+          responsibleOwner: product.owner,
+          status: "pending",
+        };
+      });
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const start = new Date(batch.requestedStartDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(batch.requestedEndDate);
+      end.setHours(0, 0, 0, 0);
+
+      if (start < today) {
+        throw new ValidationError(`Start date cannot be in the past`);
+      }
+      if (end < start) {
+        throw new ValidationError(`Start date must be before end date`);
+      }
+
+      const customerKey = randomBytes(8).toString("hex");
+      const encryptedCustomerKey = await bcrypt.hash(customerKey, 10);
+
+      const order = new Order({
+        customerKey: encryptedCustomerKey,
+        customer,
+        items: enrichedItems,
+        requestedStartDate: batch.requestedStartDate,
+        requestedEndDate: batch.requestedEndDate,
         status: "pending",
-      };
-    });
+        isNew: true,
+      });
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const start = new Date(requestedStartDate);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(requestedEndDate);
-    end.setHours(0, 0, 0, 0);
+      let successSave = false;
+      let attempt = 0;
+      const maxAttempts = 10;
 
-    if (start < today) {
-      throw new ValidationError(`Start date cannot be in the past`);
-    }
-    if (end < start) {
-      throw new ValidationError(`Start date must be before end date`);
-    }
-
-    const customerKey = randomBytes(8).toString("hex");
-    const encryptedCustomerKey = await bcrypt.hash(customerKey, 10);
-
-    const order = new Order({
-      customerKey: encryptedCustomerKey,
-      customer,
-      items: enrichedItems,
-      requestedStartDate,
-      requestedEndDate,
-      status: "pending",
-      isNew: true,
-    });
-
-    let successSave = false;
-    let attempt = 0;
-    const maxAttempts = 10;
-
-    while (!successSave && attempt < maxAttempts) {
-      try {
-        order.uuid = uuidv4();
-        await order.save();
-        successSave = true;
-      } catch (error) {
-        if (error.code === 11000 && error.keyPattern?.uuid) {
-          console.warn(`UUID exists: ${order.uuid}`);
-          attempt++;
-          continue;
+      while (!successSave && attempt < maxAttempts) {
+        try {
+          order.uuid = uuidv4();
+          await order.save();
+          successSave = true;
+        } catch (error) {
+          if (error.code === 11000 && error.keyPattern?.uuid) {
+            console.warn(`UUID exists: ${order.uuid}`);
+            attempt++;
+            continue;
+          }
+          throw error;
         }
-        throw error;
       }
-    }
 
-    if (!successSave) {
-      throw new ServerError(
-        `Failed to save order after ${maxAttempts} UUID attempts`,
-      );
-    }
-
-    await sendOrderEmail(order, customerKey, order.uuid);
-
-    const ownerIds = [...new Set(enrichedItems.map((i) => i.responsibleOwner?.toString()).filter(Boolean))];
-    if (ownerIds.length > 0) {
-      const owners = await User.find({ _id: { $in: ownerIds } }, "email");
-      for (const owner of owners) {
-        if (owner.email) {
-          await sendOwnerNotificationEmail(owner.email, order);
-        }
-        
-        const ownerItems = enrichedItems.filter(
-          (i) => i.responsibleOwner?.toString() === owner._id.toString()
+      if (!successSave) {
+        throw new ServerError(
+          `Failed to save order after ${maxAttempts} UUID attempts`,
         );
-        const itemDetails = ownerItems
-          .map((item) => {
-            const product = products.find((p) => p._id.toString() === item.product.toString());
-            return `${product ? product.name : "Nieznany produkt"} (ilość: ${item.requestedQuantity})`;
-          })
-          .join(", ");
-
-        const startDateFormatted = new Date(requestedStartDate).toLocaleDateString("pl-PL");
-        const endDateFormatted = new Date(requestedEndDate).toLocaleDateString("pl-PL");
-
-        const richMessage = `Otrzymałeś nowe zamówienie od ${customer.firstName} ${customer.lastName} (${customer.email}).\n` +
-          `Sprzęt: ${itemDetails}.\n` +
-          `Termin: ${startDateFormatted} do ${endDateFormatted}.\n` +
-          `Cel wypożyczenia: ${customer.purpose || "Nie podano"}.`;
-
-        await createNotification({
-          user: owner._id,
-          type: "ORDER_CREATED",
-          title: "Nowe zamówienie",
-          message: richMessage,
-          relatedOrder: order._id,
-        });
       }
-    }
 
-    await logAudit({
-      req,
-      action: "ORDER_CREATED",
-      details: `Nowe zamówienie #${order.uuid?.substring(0, 8) || order._id} złożone przez ${customer.firstName} ${customer.lastName} (${customer.email})`,
-      targetId: order._id,
-      targetType: "Order",
-    });
+      await sendOrderEmail(order, customerKey, order.uuid);
+
+      const ownerIds = [...new Set(enrichedItems.map((i) => i.responsibleOwner?.toString()).filter(Boolean))];
+      if (ownerIds.length > 0) {
+        const owners = await User.find({ _id: { $in: ownerIds } }, "email");
+        for (const owner of owners) {
+          if (owner.email) {
+            await sendOwnerNotificationEmail(owner.email, order);
+          }
+          
+          const ownerItems = enrichedItems.filter(
+            (i) => i.responsibleOwner?.toString() === owner._id.toString()
+          );
+          const itemDetails = ownerItems
+            .map((item) => {
+              const product = products.find((p) => p._id.toString() === item.product.toString());
+              return `${product ? product.name : "Nieznany produkt"} (ilość: ${item.requestedQuantity})`;
+            })
+            .join(", ");
+
+          const startDateFormatted = new Date(batch.requestedStartDate).toLocaleDateString("pl-PL");
+          const endDateFormatted = new Date(batch.requestedEndDate).toLocaleDateString("pl-PL");
+
+          const richMessage = `Otrzymałeś nowe zamówienie od ${customer.firstName} ${customer.lastName} (${customer.email}).\n` +
+            `Sprzęt: ${itemDetails}.\n` +
+            `Termin: ${startDateFormatted} do ${endDateFormatted}.\n` +
+            `Cel wypożyczenia: ${customer.purpose || "Nie podano"}.`;
+
+          await createNotification({
+            user: owner._id,
+            type: "ORDER_CREATED",
+            title: "Nowe zamówienie",
+            message: richMessage,
+            relatedOrder: order._id,
+          });
+        }
+      }
+
+      await logAudit({
+        req,
+        action: "ORDER_CREATED",
+        details: `Nowe zamówienie #${order.uuid?.substring(0, 8) || order._id} złożone przez ${customer.firstName} ${customer.lastName} (${customer.email})`,
+        targetId: order._id,
+        targetType: "Order",
+      });
+
+      createdOrders.push(order);
+    }
 
     return res
       .status(201)
-      .json({ success: true, message: "Order created", order });
+      .json({
+        success: true,
+        message: createdOrders.length > 1 ? "Orders created" : "Order created",
+        order: createdOrders[0],
+        orders: createdOrders,
+      });
   } catch (error) {
     throw error;
   }
