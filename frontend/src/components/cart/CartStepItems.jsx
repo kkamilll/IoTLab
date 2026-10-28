@@ -138,7 +138,7 @@ const CartStepItems = ({
           </div>
 
           <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 {dateMode === "separate"
                   ? (language === "pl" ? "Szablon daty początkowej" : "Default start date")
