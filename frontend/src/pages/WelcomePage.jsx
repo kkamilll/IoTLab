@@ -68,11 +68,6 @@ const TrackOrderBanner = ({ language, navigate }) => {
           <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </div>
-      <p className="mt-2 text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium text-center">
-        {language === "pl"
-          ? "Wprowadź kod UUID zamówienia (np. 23eace12-cf6d-44ad...) otrzymany w e-mailu"
-          : "Enter the order UUID (e.g. 23eace12-cf6d-44ad...) from your confirmation email"}
-      </p>
     </form>
   );
 };
