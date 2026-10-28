@@ -13,6 +13,7 @@ import {
 } from "../errors/CustomErrors.js";
 import Order from "../models/Order.js";
 import asyncHandler from "../middleware/asyncHandler.js";
+import { logAudit } from "../utils/auditLogger.js";
 
 const mapUploadedFiles = (filesArray = [], additionalData = []) => {
   if (!filesArray.length || filesArray.length !== additionalData.length)
@@ -230,7 +231,7 @@ export const getProductsPublic = asyncHandler(async (req, res, next) => {
     .sort({ name: 1 })
     .populate([
       { path: "categories", select: "name" },
-      { path: "owner", select: "name profileImage" },
+      { path: "owner", select: "name email profileImage" },
     ])
     .lean();
 
@@ -274,7 +275,7 @@ export const getProductsPrivate = asyncHandler(async (req, res, next) => {
     .sort({ name: 1 })
     .populate([
       { path: "categories", select: "name" },
-      { path: "owner", select: "name profileImage" },
+      { path: "owner", select: "name email profileImage" },
     ])
     .lean();
 
@@ -296,7 +297,7 @@ export const getProductByIdPublic = asyncHandler(async (req, res, next) => {
     .sort({ name: 1 })
     .populate([
       { path: "categories", select: "name" },
-      { path: "owner", select: "name" },
+      { path: "owner", select: "name email profileImage" },
     ])
     .lean();
   if (product) {
@@ -347,7 +348,7 @@ export const getProductByIdPrivate = asyncHandler(async (req, res, next) => {
 
   const product = await Product.findOne(filter).populate([
     { path: "categories", select: "name" },
-    { path: "owner", select: "name" },
+    { path: "owner", select: "name email profileImage" },
   ]);
   if (!product) {
     return next(new ResourceNotFoundError("Product"));
@@ -367,6 +368,15 @@ export const createProduct = asyncHandler(async (req, res, next) => {
 
     const newProduct = new Product(createData);
     await newProduct.save();
+
+    await logAudit({
+      req,
+      user: req.user,
+      action: "PRODUCT_CREATED",
+      details: `${req.user.name} dodał nowy produkt: ${newProduct.name} (stan magazynowy: ${newProduct.stock})`,
+      targetId: newProduct._id,
+      targetType: "Product",
+    });
 
     return res
       .status(201)
@@ -407,6 +417,8 @@ export const updateProduct = asyncHandler(async (req, res, next) => {
     const product = await Product.findOne(filterProducts);
     if (!product)
       return next(new ResourceNotFoundError("Missing permission or Product"));
+
+    const prevStock = product.stock;
 
     // Handle files (images & attachments)
     const fileFields = [
@@ -479,6 +491,22 @@ export const updateProduct = asyncHandler(async (req, res, next) => {
 
     const updatedProduct = await product.save(); // optimistic concurrency enforced
 
+    let updateDetails = `${req.user.name} zaktualizował produkt ${updatedProduct.name}`;
+    let actionType = "PRODUCT_UPDATED";
+    if (prevStock !== updatedProduct.stock) {
+      updateDetails = `${req.user.name} zmienił stan magazynowy ${updatedProduct.name} z ${prevStock} na ${updatedProduct.stock} szt.`;
+      actionType = "STOCK_CHANGED";
+    }
+
+    await logAudit({
+      req,
+      user: req.user,
+      action: actionType,
+      details: updateDetails,
+      targetId: updatedProduct._id,
+      targetType: "Product",
+    });
+
     // update orders
     if (originalOwner !== newOwner) {
       const filterOrders = {};
@@ -527,6 +555,15 @@ export const archiveProduct = asyncHandler(async (req, res, next) => {
   product.isDeleted = true;
   await product.save();
 
+  await logAudit({
+    req,
+    user: req.user,
+    action: "PRODUCT_ARCHIVED",
+    details: `${req.user.name} przeniósł produkt ${product.name} do archiwum`,
+    targetId: product._id,
+    targetType: "Product",
+  });
+
   return res.status(200).json({ success: true, message: "Product archived" });
 });
 
@@ -541,12 +578,30 @@ export const hardDeleteProduct = asyncHandler(async (req, res, next) => {
     return next(new ResourceNotFoundError("Product"));
   }
 
+  const userId = req.user._id ? req.user._id.toString() : req.user.id?.toString();
+  if (req.user.role !== "admin" && product.owner?.toString() !== userId) {
+    return next(new PermissionError("Nie posiadasz uprawnień do usunięcia tego sprzętu"));
+  }
+
   await product.deleteOne();
+
+  await logAudit({
+    req,
+    user: req.user,
+    action: "PRODUCT_DELETED",
+    details: `${req.user.name} trwale usunął produkt: ${product.name}`,
+    targetId: product._id,
+    targetType: "Product",
+  });
 
   return res.status(200).json({ success: true, message: "Product deleted" });
 });
 
 export const deleteExtraField = asyncHandler(async (req, res, next) => {
+  if (req.user.role !== "admin") {
+    return next(new PermissionError("Dostęp wymaga uprawnień administratora"));
+  }
+
   const { key } = req.params;
   await Product.updateMany({}, { $unset: { [`extraFields.${key}`]: "" } });
   await ColumnConfig.deleteOne({ name: key.toLowerCase() });

@@ -11,9 +11,16 @@ const fileSchema = new mongoose.Schema({
   mimeType: { type: String, required: true } // typ pliku (pdf, image/png itd.)
 }, { timestamps: true });
 
+const textSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  content: { type: String, default: "" }
+}, { timestamps: true });
+
 const componentSchema = new mongoose.Schema({
   name: { type: String, required: true },
+  description: { type: String, default: "" },
   logo: { type: String, default: "" },
+  texts: { type: [textSchema], default: [] },
   links: { type: [linkSchema], default: [] },
   files: { type: [fileSchema], default: [] },
   isDirectLink: { type: Boolean, default: false },

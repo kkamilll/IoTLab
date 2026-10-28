@@ -5,29 +5,60 @@ import { useToast } from "../context/ToastContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useLocation, useNavigate } from "react-router-dom";
 import OrderModal from "../components/orders/OrderModal";
-import OrderGroupCard from "../components/orders/OrderGroupCard";
+import OrderGroupCard, { StatusBadge } from "../components/orders/OrderGroupCard";
 import OrdersCalendar from "../components/orders/OrdersCalendar";
 import PageHeader from "../components/layout/PageHeader";
 import ConfirmModal from "../components/layout/ConfirmModal";
 import FilterBar from "../components/layout/FilterBar";
 import Pagination from "../components/layout/Pagination";
-import { User, Info, Calendar, Hash, Phone, BookOpen, ClipboardList, Clock, CheckCircle2, AlertCircle, ChevronDown, Trash2 } from "lucide-react";
+import {
+  User,
+  Info,
+  Calendar,
+  Hash,
+  Phone,
+  BookOpen,
+  ClipboardList,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  ChevronDown,
+  Trash2,
+  Copy,
+  Check,
+  FileDown,
+  Layers,
+  Package,
+} from "lucide-react";
 
 import { rentalAgreementTemplate } from "../templates/rentalAgreementTemplate";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { generateOrdersReportPDF, savePDF } from "../utils/pdfGenerator";
 
+const getOrderStatus = (order) => {
+  const statuses = order.ownersData?.map((od) => od.status) || [];
+  if (statuses.includes("late")) return "late";
+  if (statuses.includes("pending")) return "pending";
+  if (statuses.includes("changed")) return "changed";
+  if (statuses.includes("approved")) return "approved";
+  if (statuses.includes("prepared")) return "prepared";
+  if (statuses.includes("rented")) return "rented";
+  if (statuses.includes("returned")) return "returned";
+  if (statuses.includes("rejected")) return "rejected";
+  return order.status || "pending";
+};
+
 const getOrderBorderColor = (order) => {
   const statuses = order.ownersData?.map(od => od.status) || [];
-  if (statuses.includes("late")) return "border-l-red-500 dark:border-l-red-400";
-  if (statuses.includes("changed")) return "border-l-amber-500 dark:border-l-amber-400";
-  if (statuses.includes("pending")) return "border-l-yellow-500 dark:border-l-yellow-400";
-  if (statuses.includes("approved") || statuses.includes("prepared")) return "border-l-indigo-500 dark:border-l-indigo-400";
-  if (statuses.includes("rented")) return "border-l-green-500 dark:border-l-green-400";
-  if (statuses.includes("returned")) return "border-l-blue-500 dark:border-l-blue-400";
-  if (statuses.includes("rejected")) return "border-l-slate-300 dark:border-l-slate-700";
-  return "border-l-indigo-650 dark:border-l-indigo-500";
+  if (statuses.includes("late")) return "!border-l-red-500 dark:!border-l-red-400";
+  if (statuses.includes("changed")) return "!border-l-amber-500 dark:!border-l-amber-400";
+  if (statuses.includes("pending")) return "!border-l-yellow-500 dark:!border-l-yellow-400";
+  if (statuses.includes("approved") || statuses.includes("prepared")) return "!border-l-indigo-500 dark:!border-l-indigo-400";
+  if (statuses.includes("rented")) return "!border-l-green-500 dark:!border-l-green-400";
+  if (statuses.includes("returned")) return "!border-l-blue-500 dark:!border-l-blue-400";
+  if (statuses.includes("rejected")) return "!border-l-slate-300 dark:!border-l-slate-700";
+  return "!border-l-indigo-650 dark:!border-l-indigo-500";
 };
 
 const Orders = () => {
@@ -67,27 +98,42 @@ const Orders = () => {
   const [expandedCustomer, setExpandedCustomer] = useState({});
   const [stats, setStats] = useState({ total: 0, pending: 0, rented: 0, late: 0 });
   const [collapsedGroups, setCollapsedGroups] = useState({});
+  const [collapsedOrders, setCollapsedOrders] = useState({});
+  const [copiedOrderId, setCopiedOrderId] = useState(null);
+
+  const isOrderCollapsed = (orderId) => Boolean(collapsedOrders[orderId]);
+
+  const toggleOrderCollapse = (orderId) => {
+    setCollapsedOrders((prev) => ({ ...prev, [orderId]: !prev[orderId] }));
+  };
+
+  const areAllOrdersCollapsed = useMemo(() => {
+    return orders.length > 0 && orders.every((o) => collapsedOrders[o._id]);
+  }, [orders, collapsedOrders]);
+
+  const toggleAllOrders = () => {
+    const shouldCollapse = !areAllOrdersCollapsed;
+    const next = {};
+    orders.forEach((o) => {
+      next[o._id] = shouldCollapse;
+    });
+    setCollapsedOrders(next);
+  };
+
+  const handleCopyOrderId = (e, id) => {
+    e.stopPropagation();
+    if (!id) return;
+    navigator.clipboard.writeText(id);
+    setCopiedOrderId(id);
+    showToast(language === "pl" ? "Skopiowano ID zamówienia" : "Order ID copied", "info");
+    setTimeout(() => setCopiedOrderId(null), 2000);
+  };
 
   const toggleGroupCollapse = (orderId, ownerId) => {
     const key = `${orderId}-${ownerId}`;
-    setCollapsedGroups((prev) => ({ ...prev, [key]: !(prev[key] ?? true) }));
+    setCollapsedGroups((prev) => ({ ...prev, [key]: !(prev[key] ?? false) }));
   };
 
-  const toggleAllGroupsInOrder = (orderId, itemsByOwner, forceExpand) => {
-    setCollapsedGroups((prev) => {
-      const nextState = { ...prev };
-      Object.keys(itemsByOwner).forEach((ownerId) => {
-        nextState[`${orderId}-${ownerId}`] = !forceExpand;
-      });
-      return nextState;
-    });
-  };
-
-  const areAllGroupsExpanded = (orderId, itemsByOwner) => {
-    return Object.keys(itemsByOwner).every(
-      (ownerId) => !(collapsedGroups[`${orderId}-${ownerId}`] ?? true)
-    );
-  };
 
   const toggleCustomer = (orderId) => {
     setExpandedCustomer((prev) => ({ ...prev, [orderId]: !prev[orderId] }));
@@ -412,103 +458,178 @@ const Orders = () => {
   };
 
   return (
-    <div className="w-full min-h-screen bg-slate-50 dark:bg-slate-950/80">
-      <div className="w-full px-4 sm:px-6 md:px-8 py-6 md:py-8 flex flex-col gap-6">
-        <PageHeader
-          title={"📋 " + (language === "pl" ? "Zarządzanie Zamówieniami" : "Order Management")}
-          subtitle={language === "pl" ? "Śledź, przeglądaj, zatwierdzaj i finalizuj wynajem sprzętu" : "Track, review, approve, and finalize equipment rentals"}
-        />
+    <div className="w-full min-h-full flex flex-col gap-6 p-4 sm:p-6 lg:p-8 bg-slate-50/40 dark:bg-slate-950/20 overflow-x-hidden">
+      <PageHeader
+        title={"📋 " + (language === "pl" ? "Zarządzanie Zamówieniami" : "Order Management")}
+        subtitle={language === "pl" ? "Śledź, przeglądaj, zatwierdzaj i finalizuj wynajem sprzętu" : "Track, review, approve, and finalize equipment rentals"}
+      >
+        {/* Toggle Expand / Collapse All */}
+        {orders.length > 0 && viewMode === "list" && (
+          <button
+            type="button"
+            onClick={toggleAllOrders}
+            className="px-3.5 py-2 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition shadow-2xs flex items-center gap-1.5 cursor-pointer"
+            title={areAllOrdersCollapsed ? (language === "pl" ? "Rozwiń wszystkie zamówienia" : "Expand all orders") : (language === "pl" ? "Zwiń wszystkie zamówienia" : "Collapse all orders")}
+          >
+            <Layers className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+            <span>
+              {areAllOrdersCollapsed
+                ? (language === "pl" ? "Rozwiń wszystkie" : "Expand all")
+                : (language === "pl" ? "Zwiń wszystkie" : "Collapse all")}
+            </span>
+          </button>
+        )}
 
-        {/* Panel statystyk */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
-          {/* Wszystkie zamówienia */}
-          <div className="relative overflow-hidden bg-gradient-to-br from-indigo-50 to-indigo-100/50 dark:from-indigo-950/20 dark:to-indigo-900/10 border border-indigo-100 dark:border-indigo-900/30 rounded-2xl p-5 flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-300 group hover:-translate-y-0.5">
-            <div className="flex flex-col gap-1 min-w-0">
-              <span className="text-[11px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-wider select-none">
-                {language === "pl" ? "Wszystkie zamówienia" : "Total Orders"}
-              </span>
-              <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                {stats.total ?? 0}
-              </span>
-            </div>
-            <div className="p-3 bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 rounded-2xl shadow-xs group-hover:scale-110 transition-transform duration-300">
-              <ClipboardList className="w-6 h-6" />
-            </div>
-            <div className="absolute right-0 bottom-0 w-24 h-24 bg-indigo-500/5 dark:bg-indigo-400/5 rounded-full translate-x-8 translate-y-8 select-none pointer-events-none" />
+        {/* View Mode Toggle */}
+        <button
+          type="button"
+          onClick={() => setViewMode(viewMode === "list" ? "calendar" : "list")}
+          className={`px-3.5 py-2 text-xs font-bold rounded-xl border transition shadow-2xs flex items-center gap-1.5 cursor-pointer ${
+            viewMode === "calendar"
+              ? "border-purple-500 bg-purple-500/10 text-purple-700 dark:text-purple-300 font-extrabold"
+              : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/80"
+          }`}
+        >
+          <Calendar className="w-3.5 h-3.5" />
+          <span>{viewMode === "list" ? (language === "pl" ? "Kalendarz" : "Calendar") : (language === "pl" ? "Lista" : "List")}</span>
+        </button>
+
+        {/* PDF Export Button */}
+        <button
+          type="button"
+          onClick={() => generateOrdersReportPDF(orders, t, language)}
+          className="px-3.5 py-2 text-xs font-bold rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition shadow-2xs flex items-center gap-1.5 cursor-pointer"
+        >
+          <FileDown className="w-3.5 h-3.5 text-indigo-500" />
+          <span>{language === "pl" ? "Raport PDF" : "PDF Report"}</span>
+        </button>
+      </PageHeader>
+
+      {/* Panel statystyk - Interactive Filter Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+        {/* Wszystkie zamówienia */}
+        <button
+          type="button"
+          onClick={() => setStatusFilter("")}
+          className={`relative overflow-hidden text-left bg-gradient-to-br from-indigo-50 to-indigo-100/50 dark:from-indigo-950/20 dark:to-indigo-900/10 border rounded-2xl p-5 flex items-center justify-between shadow-2xs hover:shadow-md transition-all duration-200 group cursor-pointer ${
+            statusFilter === ""
+              ? "border-indigo-500 ring-2 ring-indigo-500/40 shadow-md scale-[1.01]"
+              : "border-indigo-100 dark:border-indigo-900/30 hover:-translate-y-0.5"
+          }`}
+        >
+          <div className="flex flex-col gap-1 min-w-0">
+            <span className="text-[11px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-wider select-none flex items-center gap-1.5">
+              <span>{language === "pl" ? "Wszystkie zamówienia" : "Total Orders"}</span>
+              {statusFilter === "" && <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 dark:bg-indigo-400 animate-pulse" />}
+            </span>
+            <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+              {stats.total ?? 0}
+            </span>
           </div>
-
-          {/* Oczekujące */}
-          <div className="relative overflow-hidden bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/20 dark:to-amber-900/10 border border-amber-100 dark:border-amber-900/30 rounded-2xl p-5 flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-300 group hover:-translate-y-0.5">
-            <div className="flex flex-col gap-1 min-w-0">
-              <span className="text-[11px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-wider select-none">
-                {language === "pl" ? "Oczekujące" : "Pending Approval"}
-              </span>
-              <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                {stats.pending ?? 0}
-              </span>
-            </div>
-            <div className="p-3 bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 rounded-2xl shadow-xs group-hover:scale-110 transition-transform duration-300">
-              <Clock className="w-6 h-6" />
-            </div>
-            <div className="absolute right-0 bottom-0 w-24 h-24 bg-amber-500/5 dark:bg-amber-400/5 rounded-full translate-x-8 translate-y-8 select-none pointer-events-none" />
+          <div className="p-3 bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 rounded-2xl shadow-xs group-hover:scale-110 transition-transform duration-200">
+            <ClipboardList className="w-6 h-6" />
           </div>
+          <div className="absolute right-0 bottom-0 w-24 h-24 bg-indigo-500/5 dark:bg-indigo-400/5 rounded-full translate-x-8 translate-y-8 select-none pointer-events-none" />
+        </button>
 
-          {/* Wypożyczone */}
-          <div className="relative overflow-hidden bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/20 dark:to-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl p-5 flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-300 group hover:-translate-y-0.5">
-            <div className="flex flex-col gap-1 min-w-0">
-              <span className="text-[11px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-wider select-none">
-                {language === "pl" ? "Wypożyczone" : "Active Rentals"}
-              </span>
-              <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                {stats.rented ?? 0}
-              </span>
-            </div>
-            <div className="p-3 bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-500 rounded-2xl shadow-xs group-hover:scale-110 transition-transform duration-300">
-              <CheckCircle2 className="w-6 h-6" />
-            </div>
-            <div className="absolute right-0 bottom-0 w-24 h-24 bg-emerald-500/5 dark:bg-emerald-400/5 rounded-full translate-x-8 translate-y-8 select-none pointer-events-none" />
+        {/* Oczekujące */}
+        <button
+          type="button"
+          onClick={() => setStatusFilter(statusFilter === "pending" ? "" : "pending")}
+          className={`relative overflow-hidden text-left bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/20 dark:to-amber-900/10 border rounded-2xl p-5 flex items-center justify-between shadow-2xs hover:shadow-md transition-all duration-200 group cursor-pointer ${
+            statusFilter === "pending"
+              ? "border-amber-500 ring-2 ring-amber-500/40 shadow-md scale-[1.01]"
+              : "border-amber-100 dark:border-amber-900/30 hover:-translate-y-0.5"
+          }`}
+        >
+          <div className="flex flex-col gap-1 min-w-0">
+            <span className="text-[11px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-wider select-none flex items-center gap-1.5">
+              <span>{language === "pl" ? "Oczekujące" : "Pending Approval"}</span>
+              {statusFilter === "pending" && <span className="w-1.5 h-1.5 rounded-full bg-amber-600 dark:bg-amber-400 animate-pulse" />}
+            </span>
+            <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+              {stats.pending ?? 0}
+            </span>
           </div>
+          <div className="p-3 bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 rounded-2xl shadow-xs group-hover:scale-110 transition-transform duration-200">
+            <Clock className="w-6 h-6" />
+          </div>
+          <div className="absolute right-0 bottom-0 w-24 h-24 bg-amber-500/5 dark:bg-amber-400/5 rounded-full translate-x-8 translate-y-8 select-none pointer-events-none" />
+        </button>
 
-          {/* Opóźnione */}
-          <div className={`relative overflow-hidden bg-gradient-to-br border rounded-2xl p-5 flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-300 group hover:-translate-y-0.5 ${
-            (stats.late ?? 0) > 0 
-              ? "from-rose-50 to-rose-100 dark:from-rose-950/30 dark:to-rose-900/20 border-rose-200 dark:border-rose-900/40"
-              : "from-slate-50 to-slate-100/50 dark:from-slate-900/40 dark:to-slate-905/20 border-slate-200 dark:border-slate-800"
-          }`}>
-            <div className="flex flex-col gap-1 min-w-0">
-              <span className={`text-[11px] font-black uppercase tracking-wider select-none ${
-                (stats.late ?? 0) > 0 ? "text-rose-600 dark:text-rose-400" : "text-slate-500 dark:text-slate-400"
-              }`}>
-                {language === "pl" ? "Opóźnione" : "Overdue / Late"}
-              </span>
-              <span className={`text-3xl font-black tracking-tight ${
-                (stats.late ?? 0) > 0 ? "text-rose-700 dark:text-rose-450" : "text-slate-900 dark:text-white"
-              }`}>
-                {stats.late ?? 0}
-              </span>
-            </div>
-            <div className={`p-3 rounded-2xl shadow-xs group-hover:scale-110 transition-transform duration-300 ${
-              (stats.late ?? 0) > 0 
-                ? "bg-white dark:bg-slate-900 text-rose-650 dark:text-rose-400" 
-                : "bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400"
+        {/* Wypożyczone */}
+        <button
+          type="button"
+          onClick={() => setStatusFilter(statusFilter === "rented" ? "" : "rented")}
+          className={`relative overflow-hidden text-left bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/20 dark:to-emerald-900/10 border rounded-2xl p-5 flex items-center justify-between shadow-2xs hover:shadow-md transition-all duration-200 group cursor-pointer ${
+            statusFilter === "rented"
+              ? "border-emerald-500 ring-2 ring-emerald-500/40 shadow-md scale-[1.01]"
+              : "border-emerald-100 dark:border-emerald-900/30 hover:-translate-y-0.5"
+          }`}
+        >
+          <div className="flex flex-col gap-1 min-w-0">
+            <span className="text-[11px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-wider select-none flex items-center gap-1.5">
+              <span>{language === "pl" ? "Wypożyczone" : "Active Rentals"}</span>
+              {statusFilter === "rented" && <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400 animate-pulse" />}
+            </span>
+            <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+              {stats.rented ?? 0}
+            </span>
+          </div>
+          <div className="p-3 bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-500 rounded-2xl shadow-xs group-hover:scale-110 transition-transform duration-200">
+            <CheckCircle2 className="w-6 h-6" />
+          </div>
+          <div className="absolute right-0 bottom-0 w-24 h-24 bg-emerald-500/5 dark:bg-emerald-400/5 rounded-full translate-x-8 translate-y-8 select-none pointer-events-none" />
+        </button>
+
+        {/* Opóźnione */}
+        <button
+          type="button"
+          onClick={() => setStatusFilter(statusFilter === "late" ? "" : "late")}
+          className={`relative overflow-hidden text-left bg-gradient-to-br border rounded-2xl p-5 flex items-center justify-between shadow-2xs hover:shadow-md transition-all duration-200 group cursor-pointer ${
+            statusFilter === "late"
+              ? "border-rose-500 ring-2 ring-rose-500/40 shadow-md scale-[1.01]"
+              : (stats.late ?? 0) > 0 
+              ? "from-rose-50 to-rose-100/50 dark:from-rose-950/30 dark:to-rose-900/20 border-rose-200 dark:border-rose-900/40 hover:-translate-y-0.5"
+              : "from-slate-50 to-slate-100/50 dark:from-slate-900/40 dark:to-slate-900/20 border-slate-200 dark:border-slate-800 hover:-translate-y-0.5"
+          }`}
+        >
+          <div className="flex flex-col gap-1 min-w-0">
+            <span className={`text-[11px] font-black uppercase tracking-wider select-none flex items-center gap-1.5 ${
+              (stats.late ?? 0) > 0 ? "text-rose-600 dark:text-rose-400" : "text-slate-500 dark:text-slate-400"
             }`}>
-              <AlertCircle className="w-6 h-6" />
-            </div>
-            <div className="absolute right-0 bottom-0 w-24 h-24 bg-rose-500/5 dark:bg-rose-400/5 rounded-full translate-x-8 translate-y-8 select-none pointer-events-none" />
+              <span>{language === "pl" ? "Opóźnione" : "Overdue / Late"}</span>
+              {statusFilter === "late" && <span className="w-1.5 h-1.5 rounded-full bg-rose-600 dark:bg-rose-400 animate-pulse" />}
+            </span>
+            <span className={`text-3xl font-black tracking-tight ${
+              (stats.late ?? 0) > 0 ? "text-rose-700 dark:text-rose-400" : "text-slate-900 dark:text-white"
+            }`}>
+              {stats.late ?? 0}
+            </span>
           </div>
-        </div>
+          <div className={`p-3 rounded-2xl shadow-xs group-hover:scale-110 transition-transform duration-200 ${
+            (stats.late ?? 0) > 0 
+              ? "bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400" 
+              : "bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400"
+          }`}>
+            <AlertCircle className="w-6 h-6" />
+          </div>
+          <div className="absolute right-0 bottom-0 w-24 h-24 bg-rose-500/5 dark:bg-rose-400/5 rounded-full translate-x-8 translate-y-8 select-none pointer-events-none" />
+        </button>
+      </div>
 
-        <FilterBar
+      {/* FilterBar */}
+      <FilterBar
         searchValue={emailFilter}
         onSearchChange={(e) => setEmailFilter(e.target.value)}
-        searchPlaceholder={language === "pl" ? "Szukaj po emailu lub ID..." : "Search by email or ID..."}
-        searchLabel={language === "pl" ? "Szukaj (Email / ID):" : "Search (Email / ID):"}
+        searchPlaceholder={language === "pl" ? "Szukaj po emailu, nazwisku lub ID..." : "Search by email, name or ID..."}
+        searchLabel={language === "pl" ? "Szukaj zamówienia:" : "Search orders:"}
       >
         {/* Toggle Advanced Filters Button */}
         <button
           type="button"
           onClick={() => setShowAdvanced(!showAdvanced)}
-          className={`text-xs border rounded-xl px-3.5 py-2 font-bold transition-all duration-200 cursor-pointer flex items-center gap-1.5 shadow-sm h-[38px] ${
+          className={`text-xs border rounded-xl px-3.5 py-2 font-bold transition-all duration-200 cursor-pointer flex items-center gap-1.5 shadow-2xs h-[38px] ${
             showAdvanced
               ? "border-indigo-500 bg-indigo-500/10 text-indigo-650 dark:text-indigo-400 font-extrabold"
               : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-950"
@@ -516,30 +637,6 @@ const Orders = () => {
         >
           <span>{language === "pl" ? "Filtry szczegółowe" : "Advanced filters"}</span>
           <span className="text-[10px] opacity-70">⚡</span>
-        </button>
-
-        {/* View Mode Toggle */}
-        <button
-          type="button"
-          onClick={() => setViewMode(viewMode === "list" ? "calendar" : "list")}
-          className={`text-xs border rounded-xl px-3.5 py-2 font-bold transition-all duration-200 cursor-pointer flex items-center gap-1.5 shadow-sm h-[38px] ${
-            viewMode === "calendar"
-              ? "border-purple-500 bg-purple-500/10 text-purple-650 dark:text-purple-400 font-extrabold"
-              : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-950"
-          }`}
-        >
-          <Calendar className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">{viewMode === "list" ? (language === "pl" ? "Kalendarz" : "Calendar") : (language === "pl" ? "Lista" : "List")}</span>
-        </button>
-
-        {/* PDF Export Button */}
-        <button
-          type="button"
-          onClick={() => generateOrdersReportPDF(orders, t, language)}
-          className="text-xs border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 rounded-xl px-3.5 py-2 font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all duration-200 cursor-pointer flex items-center gap-1.5 shadow-sm h-[38px]"
-        >
-          <span className="hidden sm:inline">{language === "pl" ? "Raport PDF" : "PDF Report"}</span>
-          <span className="text-[12px]">📊</span>
         </button>
       </FilterBar>
 
@@ -824,7 +921,7 @@ const Orders = () => {
         <>
           <div className="flex flex-col gap-6 w-full">
             {orders
-              .map((order) => {
+              .map((order, orderIdx) => {
                 const itemsByOwner = order.items.reduce((acc, item) => {
                   const rawOwnerId = item?.responsibleOwner?._id
                     ? item.responsibleOwner._id.toString()
@@ -865,55 +962,89 @@ const Orders = () => {
                 const reqStart = new Date(order.requestedStartDate).toLocaleDateString("pl-PL");
                 const reqEnd = new Date(order.requestedEndDate).toLocaleDateString("pl-PL");
 
+                const orderStatus = getOrderStatus(order);
+                const isLate = order.ownersData?.some((od) => od.status === "late");
+                const isOrderOpen = !isOrderCollapsed(order._id);
+
+                const rentalDays = order.requestedStartDate && order.requestedEndDate
+                  ? Math.max(1, Math.round((new Date(order.requestedEndDate) - new Date(order.requestedStartDate)) / (1000 * 60 * 60 * 24)))
+                  : null;
+
                 return (
-                  <div key={order._id} className={`bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 border-l-4 ${getOrderBorderColor(order)} shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden`}>
+                  <React.Fragment key={order._id}>
+                    <div className={`bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 border-l-4 ${getOrderBorderColor(order)} shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden`}>
                     {/* Order header */}
-                    <div className="px-5 py-3.5 border-b border-slate-200/60 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 flex flex-col gap-1.5">
-                      {/* Line 1: Student Badge & Name (Left) + Action Toolbar (Right) */}
-                      <div className="flex items-center justify-between gap-3 min-w-0">
-                        {/* Left: Badge, Order # & Full Name */}
-                        <div className="flex items-center gap-2 min-w-0 flex-wrap sm:flex-nowrap">
-                          {order.ownersData?.some(od => od.status === "late") && (
-                            <span className="relative flex h-2.5 w-2.5 shrink-0" title={language === "pl" ? "Opóźniony zwrot!" : "Overdue rental!"}>
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
-                            </span>
+                    <div
+                      onClick={() => toggleOrderCollapse(order._id)}
+                      className="px-4 sm:px-5 py-3.5 bg-slate-50/70 dark:bg-slate-800/40 border-b border-slate-200/60 dark:border-slate-800 cursor-pointer select-none transition-colors hover:bg-slate-100/60 dark:hover:bg-slate-800/70 flex flex-wrap lg:flex-nowrap items-center justify-between gap-3 w-full"
+                    >
+                      {/* Column 1: Indicator, ID, Status (fixed width) */}
+                      <div className="w-full sm:w-auto lg:w-56 xl:w-60 shrink-0 flex items-center gap-2">
+                        {isLate && (
+                          <span className="relative flex h-2.5 w-2.5 shrink-0" title={language === "pl" ? "Opóźniony zwrot!" : "Overdue rental!"}>
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                          </span>
+                        )}
+
+                        {/* Order ID with Copy button */}
+                        <div
+                          onClick={(e) => handleCopyOrderId(e, order.uuid || order._id)}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-mono text-xs font-bold shadow-2xs hover:border-indigo-300 dark:hover:border-indigo-700 transition"
+                          title={language === "pl" ? "Kliknij, aby skopiować pełne ID" : "Click to copy full ID"}
+                        >
+                          <Hash className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                          <span>#{(order.uuid ? order.uuid.slice(0, 8) : order._id.slice(-8)).toUpperCase()}</span>
+                          {copiedOrderId === (order.uuid || order._id) ? (
+                            <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                          ) : (
+                            <Copy className="w-3 h-3 text-slate-400 opacity-60 hover:opacity-100 shrink-0" />
                           )}
-                          <span className="inline-flex items-center gap-1 text-[11px] font-black tracking-wide px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-350 border border-indigo-200/60 dark:border-indigo-900/40 shrink-0 select-all font-mono">
-                            <Hash className="w-3 h-3 text-indigo-500 shrink-0" />
-                            <span>#{(order.uuid ? order.uuid.slice(0, 8) : order._id.slice(-8)).toUpperCase()}</span>
-                          </span>
-                          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-900/40 shrink-0 select-none">
-                            {language === "pl" ? "Student" : "Student"}
-                          </span>
-                          <span className="text-sm font-black text-slate-900 dark:text-white truncate">
-                            {customer?.firstName && customer?.lastName
-                              ? `${customer.firstName} ${customer.lastName}`
-                              : customer?.email || (language === "pl" ? "Nieznany student" : "Unknown customer")}
-                          </span>
                         </div>
 
-                        {/* Right: Action Buttons Toolbar */}
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <span className="inline-flex items-center px-2 py-0.5 text-xs font-extrabold bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-md select-none mr-0.5">
-                            {totalItems} {language === "pl" ? (totalItems === 1 ? "przedmiot" : "przedmioty") : `item${totalItems !== 1 ? "s" : ""}`}
+                        {/* Status Badge */}
+                        <StatusBadge status={orderStatus} />
+                      </div>
+
+                      {/* Column 2: Student Name & Index (flexible width, prominent) */}
+                      <div className="flex-1 min-w-0 sm:min-w-[200px] flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/60 dark:border-indigo-900/40 flex items-center justify-center text-xs font-black text-indigo-600 dark:text-indigo-400 shrink-0">
+                          {customer?.firstName ? customer.firstName[0].toUpperCase() : <User className="w-3.5 h-3.5" />}
+                        </div>
+                        <span className="font-extrabold text-sm text-slate-900 dark:text-white truncate max-w-[180px] sm:max-w-[260px]">
+                          {customer?.firstName && customer?.lastName
+                            ? `${customer.firstName} ${customer.lastName}`
+                            : customer?.email || (language === "pl" ? "Nieznany student" : "Unknown student")}
+                        </span>
+
+                        {customer?.index && (
+                          <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900/30 text-[11px] font-bold font-mono shrink-0">
+                            <span className="opacity-60 mr-1">{language === "pl" ? "Nr:" : "ID:"}</span>{customer.index}
                           </span>
+                        )}
+                      </div>
 
-                          {Object.keys(itemsByOwner).length > 0 && (
-                            <button
-                              type="button"
-                              onClick={() => toggleAllGroupsInOrder(order._id, itemsByOwner, !areAllGroupsExpanded(order._id, itemsByOwner))}
-                              className={`p-1.5 rounded-lg border transition cursor-pointer shadow-2xs ${
-                                areAllGroupsExpanded(order._id, itemsByOwner)
-                                  ? "bg-purple-50 dark:bg-purple-950/40 text-purple-650 dark:text-purple-400 border-purple-200/60 dark:border-purple-900/35"
-                                  : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
-                              }`}
-                              title={areAllGroupsExpanded(order._id, itemsByOwner) ? (language === "pl" ? "Zwiń wszystkie grupy" : "Collapse groups") : (language === "pl" ? "Rozwiń wszystkie grupy" : "Expand groups")}
-                            >
-                              <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${areAllGroupsExpanded(order._id, itemsByOwner) ? "rotate-180" : ""}`} />
-                            </button>
+                      {/* Column 3: Rental Dates & Duration (fixed width) */}
+                      <div className="w-auto lg:w-64 xl:w-72 shrink-0 flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-xs font-medium">
+                          <Calendar className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                          <span className="font-mono">{reqStart} → {reqEnd}</span>
+                          {rentalDays && (
+                            <span className="ml-1 text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/50 text-indigo-650 dark:text-indigo-400 border border-indigo-100/60 dark:border-indigo-900/30">
+                              {rentalDays} {language === "pl" ? (rentalDays === 1 ? "dzień" : "dni") : (rentalDays === 1 ? "day" : "days")}
+                            </span>
                           )}
+                        </span>
+                      </div>
 
+                      {/* Column 4: Items count, Student Info button, Admin Delete, Collapse toggle */}
+                      <div className="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200/40 dark:border-slate-800/80" onClick={(e) => e.stopPropagation()}>
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-extrabold bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg select-none border border-slate-300/40 dark:border-slate-700/50">
+                          <Package className="w-3.5 h-3.5 text-slate-500" />
+                          <span>{totalItems} {language === "pl" ? (totalItems === 1 ? "szt." : "szt.") : "pcs"}</span>
+                        </span>
+
+                        <div className="flex items-center gap-2">
                           <button
                             type="button"
                             onClick={() => toggleCustomer(order._id)}
@@ -922,7 +1053,7 @@ const Orders = () => {
                                 ? "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 border-indigo-200/60 dark:border-indigo-900/35"
                                 : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
                             }`}
-                            title={language === "pl" ? "Pokaż/ukryj dane studenta" : "Toggle customer details"}
+                            title={language === "pl" ? "Szczegóły studenta" : "Student details"}
                           >
                             <User className="w-4 h-4" />
                           </button>
@@ -937,122 +1068,91 @@ const Orders = () => {
                               <Trash2 className="w-4 h-4" />
                             </button>
                           )}
+
+                          <button
+                            type="button"
+                            onClick={() => toggleOrderCollapse(order._id)}
+                            className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer shadow-2xs"
+                            title={isOrderOpen ? (language === "pl" ? "Zwiń zamówienie" : "Collapse order") : (language === "pl" ? "Rozwiń zamówienie" : "Expand order")}
+                          >
+                            <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isOrderOpen ? "rotate-180" : ""}`} />
+                          </button>
                         </div>
-                      </div>
-
-                      {/* Metadata Badges */}
-                      <div className="flex flex-col lg:flex-row items-start lg:items-center gap-2 mt-0.5 text-xs">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono text-[11px] font-bold select-all" title={language === "pl" ? `Pełne ID: ${order.uuid || order._id}` : `Full ID: ${order.uuid || order._id}`}>
-                          <Hash className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                          <span>{language === "pl" ? "Zamówienie" : "Order"} #{(order.uuid ? order.uuid.slice(0, 8) : order._id.slice(-8)).toUpperCase()}</span>
-                        </span>
-
-                        {customer?.email && customer?.firstName && (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium">
-                            <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                            <span>{customer.email}</span>
-                          </span>
-                        )}
-
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-semibold border border-indigo-100 dark:border-indigo-900/30 whitespace-nowrap">
-                          <Calendar className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                          <span>{reqStart} → {reqEnd}</span>
-                        </span>
-
-                        {customer?.fieldOfStudy && (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 font-semibold border border-purple-100 dark:border-purple-900/30 whitespace-nowrap">
-                            🎓 {customer.fieldOfStudy}
-                          </span>
-                        )}
                       </div>
                     </div>
 
-                    {/* Collapsible Customer Details */}
+                    {/* Collapsible Customer Details Drawer */}
                     {expandedCustomer[order._id] && (
-                      <div className="bg-slate-50/40 dark:bg-slate-950/20 border-b border-slate-100 dark:border-slate-800 p-4 transition-all duration-250">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
-                          {/* Order ID / UUID */}
-                          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-xl p-3 shadow-xs flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-500 dark:text-indigo-400">
-                              <Hash className="w-4 h-4" />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                                {language === "pl" ? "Identyfikator" : "Order ID"}
-                              </p>
-                              <p className="text-xs font-mono font-bold text-slate-800 dark:text-slate-100 truncate select-all" title={order.uuid || order._id}>
-                                {order.uuid || order._id}
-                              </p>
-                            </div>
-                          </div>
+                      <div className="bg-slate-50/60 dark:bg-slate-950/40 border-b border-slate-200/60 dark:border-slate-800/80 p-4 transition-all duration-200">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                           {/* Student Index */}
-                          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-xl p-3 shadow-xs flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-500 dark:text-indigo-400">
-                              <Hash className="w-4 h-4" />
+                          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3 shadow-2xs flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 shrink-0">
+                              <User className="w-4 h-4" />
                             </div>
                             <div className="min-w-0">
                               <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                                {t("cart.studentIndex") || "Student Index"}
+                                {t("cart.studentIndex") || (language === "pl" ? "Indeks studenta" : "Student Index")}
                               </p>
-                              <p className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">
+                              <p className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">
                                 {customer?.index || "—"}
                               </p>
                             </div>
                           </div>
 
                           {/* Field of Study */}
-                          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-xl p-3 shadow-xs flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-500 dark:text-blue-400">
+                          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3 shadow-2xs flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 shrink-0">
                               <BookOpen className="w-4 h-4" />
                             </div>
                             <div className="min-w-0">
                               <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                                {t("cart.fieldOfStudy") || "Field of Study"}
+                                {t("cart.fieldOfStudy") || (language === "pl" ? "Kierunek" : "Field of Study")}
                               </p>
-                              <p className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate" title={customer?.fieldOfStudy}>
+                              <p className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate" title={customer?.fieldOfStudy}>
                                 {customer?.fieldOfStudy || "—"}
                               </p>
                             </div>
                           </div>
 
                           {/* Year / Semester */}
-                          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-xl p-3 shadow-xs flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-950/40 text-purple-500 dark:text-purple-400">
+                          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3 shadow-2xs flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 shrink-0">
                               <Calendar className="w-4 h-4" />
                             </div>
                             <div className="min-w-0">
                               <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                                {t("cart.yearOfStudy") || "Year"} / {t("cart.semester") || "Sem"}
+                                {language === "pl" ? "Rok / Semestr" : "Year / Semester"}
                               </p>
-                              <p className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">
-                                {customer?.yearOfStudy ? `${customer.yearOfStudy} yr` : "—"} / {customer?.semester ? `${customer.semester} sem` : "—"}
+                              <p className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">
+                                {customer?.yearOfStudy ? `${customer.yearOfStudy} rok` : "—"} / {customer?.semester ? `${customer.semester} sem.` : "—"}
                               </p>
                             </div>
                           </div>
 
-                          {/* Phone */}
-                          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-xl p-3 shadow-xs flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-500 dark:text-emerald-400">
+                          {/* Contact: Phone & Email */}
+                          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3 shadow-2xs flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 shrink-0">
                               <Phone className="w-4 h-4" />
                             </div>
                             <div className="min-w-0">
                               <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                                {t("cart.phoneNumber") || "Phone"}
+                                {language === "pl" ? "Kontakt" : "Contact"}
                               </p>
-                              <p className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">
-                                {customer?.phoneNumber || "—"}
+                              <p className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">
+                                {customer?.phoneNumber || customer?.email || "—"}
                               </p>
                             </div>
                           </div>
 
-                          {/* Notes / Purpose */}
+                          {/* Purpose / Notes */}
                           {customer?.purpose && (
-                            <div className="col-span-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/85 rounded-xl p-3.5 shadow-xs">
-                              <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                            <div className="col-span-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3 shadow-2xs">
+                              <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
                                 <Info className="w-3.5 h-3.5 text-indigo-500" />
-                                {t("cart.purpose") || "Purpose / Notes"}
+                                <span>{t("cart.purpose") || (language === "pl" ? "Cel wypożyczenia / Uwagi" : "Purpose / Notes")}</span>
                               </p>
-                              <p className="text-xs sm:text-sm text-slate-650 dark:text-slate-350 italic bg-slate-50/50 dark:bg-slate-950/40 p-3 rounded-lg border border-slate-100 dark:border-slate-850 leading-relaxed break-words whitespace-normal">
+                              <p className="text-xs text-slate-700 dark:text-slate-300 italic bg-slate-50/70 dark:bg-slate-950/40 p-2.5 rounded-lg border border-slate-150 dark:border-slate-800 leading-relaxed break-words whitespace-normal">
                                 "{customer.purpose}"
                               </p>
                             </div>
@@ -1061,50 +1161,67 @@ const Orders = () => {
                       </div>
                     )}
 
-                    {/* Order groups */}
-                    <div className="p-3">
-                      {Object.values(itemsByOwner).map((group, idx) => (
-                        <OrderGroupCard
-                          key={idx}
-                          order={order}
-                          group={group}
-                          expanded={expanded}
-                          setExpanded={setExpanded}
-                          canProcessOrder={canProcessOrder}
-                          canRejectOrder={canRejectOrder}
-                          canPrepareOrder={canPrepareOrder}
-                          canRentOrder={canRentOrder}
-                          canReturnOrder={canReturnOrder}
-                          canPrintOrder={canPrintOrder}
-                          handleOpenModal={handleOpenModal}
-                          handleRejectOrder={handleRejectOrder}
-                          handlePrepareOrder={handlePrepareOrder}
-                          handleRentOrder={handleRentOrder}
-                          handleReturnOrder={handleReturnOrder}
-                          downloadRentalAgreement={downloadRentalAgreement}
-                          isCollapsed={collapsedGroups[`${order._id}-${group.owner?._id || "unknown"}`] ?? true}
-                          onToggleCollapse={() => toggleGroupCollapse(order._id, group.owner?._id || "unknown")}
-                        />
-                      ))}
-                    </div>
+                    {/* Order groups & items */}
+                    {isOrderOpen && (
+                      <div className="p-3 sm:p-4 flex flex-col gap-3">
+                        {Object.values(itemsByOwner).map((group, idx) => (
+                          <OrderGroupCard
+                            key={idx}
+                            order={order}
+                            group={group}
+                            expanded={expanded}
+                            setExpanded={setExpanded}
+                            canProcessOrder={canProcessOrder}
+                            canRejectOrder={canRejectOrder}
+                            canPrepareOrder={canPrepareOrder}
+                            canRentOrder={canRentOrder}
+                            canReturnOrder={canReturnOrder}
+                            canPrintOrder={canPrintOrder}
+                            handleOpenModal={handleOpenModal}
+                            handleRejectOrder={handleRejectOrder}
+                            handlePrepareOrder={handlePrepareOrder}
+                            handleRentOrder={handleRentOrder}
+                            handleReturnOrder={handleReturnOrder}
+                            downloadRentalAgreement={downloadRentalAgreement}
+                            isCollapsed={collapsedGroups[`${order._id}-${group.owner?._id || "unknown"}`] ?? false}
+                            onToggleCollapse={() => toggleGroupCollapse(order._id, group.owner?._id || "unknown")}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
-                );
-              })}
+                  {orderIdx < orders.length - 1 && (
+                    <div className="flex items-center gap-3 py-2 px-4 select-none" aria-hidden="true">
+                      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-700 to-transparent" />
+                      <div className="flex items-center gap-1.5 opacity-60">
+                        <span className="w-1 h-1 rounded-full bg-slate-400 dark:bg-slate-600" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400" />
+                        <span className="w-1 h-1 rounded-full bg-slate-400 dark:bg-slate-600" />
+                      </div>
+                      <div className="flex-1 h-px bg-gradient-to-l from-transparent via-slate-300 dark:via-slate-700 to-transparent" />
+                    </div>
+                  )}
+                </React.Fragment>
+              );
+            })}
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 border-t border-slate-200/60 dark:border-slate-800/80 pt-4">
             <div className="flex items-center gap-2">
               <span className="text-xs text-slate-500 font-semibold">{language === "pl" ? "Na stronie:" : "Items per page:"}</span>
-              <select
-                value={limit}
-                onChange={(e) => setLimit(parseInt(e.target.value))}
-                className="text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 pl-3 pr-8 py-1.5 font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 cursor-pointer shadow-sm hover:border-slate-300"
-              >
-                <option value="10">10</option>
-                <option value="20">20</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-              </select>
+              <div className="relative select-none flex items-center">
+                <select
+                  value={limit}
+                  onChange={(e) => setLimit(parseInt(e.target.value))}
+                  className="appearance-none text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 pl-3 pr-8 py-1.5 font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200 cursor-pointer shadow-sm hover:border-slate-350"
+                >
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 absolute right-2.5 pointer-events-none" />
+              </div>
             </div>
             <Pagination
               currentPage={currentPage}
@@ -1148,7 +1265,6 @@ const Orders = () => {
         onConfirm={confirmConfig.onConfirm}
         onCancel={() => setConfirmConfig((prev) => ({ ...prev, isOpen: false }))}
       />
-      </div>
     </div>
   );
 };

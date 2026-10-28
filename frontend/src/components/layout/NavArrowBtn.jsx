@@ -24,7 +24,7 @@ const NavArrowBtn = forwardRef(({
       disabled={disabled}
       aria-label={ariaLabel || (isLeft ? "Previous" : "Next")}
       title={title || (isLeft ? "Poprzednie" : "Następne")}
-      className={`w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full bg-white/95 dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700 text-slate-750 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-750 hover:text-slate-900 dark:hover:text-white hover:border-slate-350 dark:hover:border-slate-600 shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 disabled:opacity-30 disabled:pointer-events-none cursor-pointer backdrop-blur-sm select-none ${className}`}
+      className={`w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-600 shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 disabled:opacity-30 disabled:pointer-events-none cursor-pointer backdrop-blur-sm select-none ${className}`}
       {...props}
     >
       {isLeft ? (

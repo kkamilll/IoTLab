@@ -1,4 +1,5 @@
-import { createContext, useState, useContext } from "react";
+import { createContext, useState, useContext, useEffect } from "react";
+import apiClient from "../api/apiClient";
 
 const AuthContext = createContext();
 
@@ -40,11 +41,30 @@ const AuthProvider = ({ children }) => {
 
   const updateUser = (userData) => {
     setUser((prev) => {
-      const updated = { ...(prev || {}), ...userData };
+      const updated = {
+        ...(prev || {}),
+        ...userData,
+        id: userData?.id || userData?._id || prev?.id || prev?._id,
+      };
       localStorage.setItem("pos-user", JSON.stringify(updated));
       return updated;
     });
   };
+
+  useEffect(() => {
+    if (token) {
+      apiClient
+        .get("/users/profile")
+        .then((res) => {
+          if (res.data?.user) {
+            updateUser(res.data.user);
+          }
+        })
+        .catch(() => {
+          // Token or connection errors handled by axios interceptors
+        });
+    }
+  }, [token]);
 
   const logout = () => {
     setUser(null);

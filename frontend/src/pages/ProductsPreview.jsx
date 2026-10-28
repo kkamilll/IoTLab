@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import apiClient from "../api/apiClient";
 import { useAuth } from "../context/AuthContext";
@@ -40,6 +40,8 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 
+const API_BASE = `${import.meta.env.VITE_API_IP || ""}${import.meta.env.VITE_API_PORT || ""}${import.meta.env.VITE_API_POSTFIX || ""}`;
+
 const ProductPreview = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -76,7 +78,7 @@ const ProductPreview = () => {
       return rawPath;
     }
     const fileName = rawPath.includes("/") || rawPath.includes("\\")
-      ? rawPath.split(/[\/\\]/).pop()
+      ? rawPath.split(/[/\\]/).pop()
       : rawPath;
     if (!fileName) return null;
     return `${API_URL}/uploads/products/${fileName}`;
@@ -129,7 +131,9 @@ const ProductPreview = () => {
             setProduct(res.data.product);
             try {
               sessionStorage.setItem("last_preview_product_id", res.data.product._id);
-            } catch (e) {}
+            } catch {
+              // ignore
+            }
           }
         } else {
           if (isMounted) setError(t("productPreview.productNotFound") || "Obiekt nie został znaleziony");
@@ -333,7 +337,7 @@ const ProductPreview = () => {
 
   const validExtraFields = (product?.extraFields && typeof product.extraFields === "object")
     ? Object.entries(product.extraFields).filter(
-        ([_, val]) => val !== null && val !== undefined && String(val).trim() !== ""
+        ([, val]) => val !== null && val !== undefined && String(val).trim() !== ""
       )
     : [];
   const hasExtraFields = validExtraFields.length > 0;
@@ -720,8 +724,21 @@ const ProductPreview = () => {
               {hasOwner && (
                 <div className="flex items-center justify-between gap-3.5 p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/70 dark:border-slate-800/80 min-w-0">
                   <div className="flex items-center gap-3.5 min-w-0">
-                    <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/60 dark:border-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
-                      <User className="w-4 h-4" />
+                    <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/60 dark:border-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">
+                      {product.owner?.profileImage ? (
+                        <img
+                          src={`${API_BASE}/uploads/users/${product.owner.profileImage}`}
+                          alt={product.owner.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                            if (e.currentTarget.nextElementSibling) {
+                              e.currentTarget.nextElementSibling.classList.remove("hidden");
+                            }
+                          }}
+                        />
+                      ) : null}
+                      <User className={`w-4 h-4 ${product.owner?.profileImage ? "hidden" : ""}`} />
                     </div>
                     <div className="flex flex-col min-w-0">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">

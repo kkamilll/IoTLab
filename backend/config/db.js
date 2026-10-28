@@ -26,6 +26,18 @@ const connectDB = async () => {
         body: "<p>Your verification code is: <b>${VerificationCode}</b></p><p>This code is valid for 15 minutes.</p>",
         isDefault: true,
       },
+      {
+        name: "returnReminder",
+        subject: "Przypomnienie o terminie zwrotu sprzętu - ${orderId}",
+        body: "<p>Witaj ${CustomerName},</p><p>Przypominamy, że zbliża się termin zwrotu sprzętu z Twojego zamówienia <b>#${orderId}</b>.</p><p>Termin zwrotu: <b>${dueDate}</b>.</p><p>Prosimy o terminowe dostarczenie wypożyczonych komponentów do laboratorium.</p>",
+        isDefault: true,
+      },
+      {
+        name: "overdueAlert",
+        subject: "PILNE: Przekroczono termin zwrotu sprzętu - ${orderId}",
+        body: "<p>Witaj ${CustomerName},</p><p style='color: #dc2626;'><b>Uwaga:</b> Minął termin zwrotu wypożyczonego sprzętu w zamówieniu <b>#${orderId}</b> (termin: ${dueDate}).</p><p>Prosimy o <b>natychmiastowy zwrot</b> sprzętu do laboratorium lub niezwłoczny kontakt z opiekunem sprzętu.</p>",
+        isDefault: true,
+      },
     ];
 
     for (const t of defaultTemplates) {

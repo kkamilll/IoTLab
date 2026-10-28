@@ -1,40 +1,63 @@
-import React, { useEffect, useState } from "react"; 
-import { NavLink } from 'react-router-dom';
+import React, { useEffect, useState } from "react";
+import { NavLink } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useLanguage } from "../../context/LanguageContext";
 import { useTheme } from "../../context/ThemeContext";
+import {
+  Home,
+  BarChart3,
+  Package,
+  Tag,
+  Layers,
+  ClipboardList,
+  Users,
+  Bell,
+  StickyNote,
+  Image as ImageIcon,
+  Mail,
+  User as UserIcon,
+  PanelLeft,
+  Sun,
+  Moon,
+  LogOut,
+  ChevronLeft,
+  ChevronRight,
+  Menu,
+  X,
+} from "lucide-react";
 
 const API_BASE = `${import.meta.env.VITE_API_IP || ""}${import.meta.env.VITE_API_PORT || ""}${import.meta.env.VITE_API_POSTFIX || ""}`;
 
-const Sidebar = ({ isCollapsed, toggleCollapse }) => {
+const Sidebar = ({ isCollapsed, toggleCollapse, layoutMode = "horizontal", toggleLayoutMode }) => {
   const { user } = useAuth();
   const { language, setLanguage, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
 
+  // Logically organized: Overview -> Catalog/Inventory -> Operations & Management -> Settings/Profile
   const menuItems = [
-    {name:"Home Page", path: "/", isParent:true, translationKey: "nav.welcome", icon: "🏠"},
-    {name:"Statistics", path: "/admin-dashboard", isParent:true, translationKey: "nav.statistics", icon: "📊"},
-    {name:"Objects", path: "/admin-dashboard/products", isParent:false, translationKey: "nav.objects", icon: "📦"},
-    {name:"Categories", path: "/admin-dashboard/categories", isParent:false, translationKey: "nav.categories", icon: "🏷️"},
-    {name:"Orders", path: "/admin-dashboard/orders", isParent:false, translationKey: "nav.orders", icon: "📋"},
-    {name:"Users", path: "/admin-dashboard/users", isParent:false, translationKey: "nav.users", icon: "👥"},
-    {name:"Notifications", path: "/admin-dashboard/notifications", isParent:false, translationKey: "nav.notifications", icon: "🔔"},
-    {name:"Profile", path: "/admin-dashboard/profile", isParent:false, translationKey: "nav.profile", icon: "👤"},
-    {name:"Notes", path: "/admin-dashboard/notes", isParent:false, translationKey: "nav.notes", icon: "📝"},
-    {name:"Slider", path: "/admin-dashboard/materials", isParent:false, translationKey: "nav.slider", icon: "📸"},
-    {name:"Components", path: "/admin-dashboard/components", isParent:false, translationKey: "nav.components", icon: "📂"},
-    {name: "Templates", path: "/admin-dashboard/templates", isParent:false, translationKey: "nav.templates", icon: "📧"},
+    { name: "Home Page", path: "/", isParent: true, translationKey: "nav.welcome", icon: Home },
+    { name: "Statistics", path: "/admin-dashboard", isParent: true, translationKey: "nav.statistics", icon: BarChart3 },
+    { name: "Objects", path: "/admin-dashboard/products", isParent: false, translationKey: "nav.objects", icon: Package },
+    { name: "Categories", path: "/admin-dashboard/categories", isParent: false, translationKey: "nav.categories", icon: Tag },
+    { name: "Components", path: "/admin-dashboard/components", isParent: false, translationKey: "nav.components", icon: Layers },
+    { name: "Orders", path: "/admin-dashboard/orders", isParent: false, translationKey: "nav.orders", icon: ClipboardList },
+    { name: "Users", path: "/admin-dashboard/users", isParent: false, translationKey: "nav.users", icon: Users },
+    { name: "Notifications", path: "/admin-dashboard/notifications", isParent: false, translationKey: "nav.notifications", icon: Bell },
+    { name: "Notes", path: "/admin-dashboard/notes", isParent: false, translationKey: "nav.notes", icon: StickyNote },
+    { name: "Slider", path: "/admin-dashboard/materials", isParent: false, translationKey: "nav.slider", icon: ImageIcon },
+    { name: "Templates", path: "/admin-dashboard/templates", isParent: false, translationKey: "nav.templates", icon: Mail },
+    { name: "Profile", path: "/admin-dashboard/profile", isParent: false, translationKey: "nav.profile", icon: UserIcon },
   ];
 
   const lecturerItems = menuItems.filter(
-    item => item.name !== "Categories" && item.name !== "Slider" && item.name !== "Components" && item.name !== "Users" && item.name !== "Templates"
+    (item) => item.name !== "Categories" && item.name !== "Slider" && item.name !== "Components" && item.name !== "Users" && item.name !== "Templates"
   );
 
   const customerItems = [
-    {name:"Home Page", path: "/", isParent:true, translationKey: "nav.welcome", icon: "🏠"},
-    {name:"Products", path: "/admin-dashboard", isParent:true, translationKey: "nav.objects", icon: "📦"},
-    {name:"Orders", path: "/admin-dashboard/orders", isParent:false, translationKey: "nav.orders", icon: "📋"},
-    {name:"Notifications", path: "/admin-dashboard/notifications", isParent:false, translationKey: "nav.notifications", icon: "🔔"},
+    { name: "Home Page", path: "/", isParent: true, translationKey: "nav.welcome", icon: Home },
+    { name: "Products", path: "/admin-dashboard", isParent: true, translationKey: "nav.objects", icon: Package },
+    { name: "Orders", path: "/admin-dashboard/orders", isParent: false, translationKey: "nav.orders", icon: ClipboardList },
+    { name: "Notifications", path: "/admin-dashboard/notifications", isParent: false, translationKey: "nav.notifications", icon: Bell },
   ];
 
   const [menuLinks, setMenuLinks] = useState(customerItems);
@@ -52,35 +75,369 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
     }
   }, [user]);
 
+  // Helper to render icon safely
+  const renderIcon = (IconComponent, className = "w-5 h-5 shrink-0") => {
+    if (!IconComponent) return null;
+    if (typeof IconComponent === "string") {
+      return <span className="text-lg shrink-0">{IconComponent}</span>;
+    }
+    return <IconComponent className={className} />;
+  };
+
+  // -------------------------------------------------------------
+  // HORIZONTAL LAYOUT (TOPBAR NAVBAR)
+  // -------------------------------------------------------------
+  if (layoutMode === "horizontal") {
+    return (
+      <>
+        <header className="sticky top-0 z-40 w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/90 dark:border-slate-800 shadow-sm transition-colors duration-200">
+          {/* Row 1: Brand Logo & Top Controls (h-16) */}
+          <div className="w-full px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+            {/* Left: Mobile Toggle & Brand Logo */}
+            <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+              {/* Mobile hamburger button */}
+              <button
+                className="md:hidden flex items-center justify-center w-10 h-10 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-white rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer transition hover:bg-slate-200 dark:hover:bg-slate-750"
+                onClick={() => setIsOpen(!isOpen)}
+                aria-label="Toggle navigation"
+                type="button"
+              >
+                {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </button>
+
+              {/* Logo */}
+              <NavLink to="/admin-dashboard" className="flex items-center group">
+                <div className="flex flex-col">
+                  <span className="text-xl font-black tracking-wider text-slate-900 dark:text-white bg-clip-text bg-gradient-to-r from-blue-500 to-indigo-500 dark:from-blue-400 dark:to-indigo-400 leading-none">
+                    IOTLAB
+                  </span>
+                  <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 tracking-wider uppercase mt-1 leading-none">
+                    {user?.role === "admin" ? "Admin Panel" : user?.role === "lecturer" ? "Lecturer Panel" : "Lab System"}
+                  </span>
+                </div>
+              </NavLink>
+            </div>
+
+            {/* Right: Layout Switcher, Theme, Language, Profile, Logout */}
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+              {/* Layout Switcher button (Horizontal -> Vertical) */}
+              {toggleLayoutMode && (
+                <button
+                  type="button"
+                  onClick={toggleLayoutMode}
+                  title={language === "pl" ? "Przełącz na pionowy pasek boczny" : "Switch to vertical sidebar"}
+                  className="hidden md:flex h-10 px-3 items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-650 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer bg-white dark:bg-slate-900 shadow-2xs text-xs font-semibold"
+                  aria-label="Switch to vertical sidebar"
+                >
+                  <PanelLeft className="w-4 h-4 text-slate-600 dark:text-slate-300" />
+                  <span className="hidden xl:inline">{language === "pl" ? "Pionowy" : "Vertical"}</span>
+                </button>
+              )}
+
+              {/* Theme Toggle Button */}
+              <button
+                onClick={toggleTheme}
+                className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 text-slate-650 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer bg-white dark:bg-slate-900 shadow-2xs"
+                title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                type="button"
+              >
+                {theme === "dark" ? (
+                  <Sun className="h-4.5 w-4.5 text-yellow-400" />
+                ) : (
+                  <Moon className="h-4.5 w-4.5 text-slate-600" />
+                )}
+              </button>
+
+              {/* Language Toggle (PL / EN) */}
+              <div className="flex items-center rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-slate-50 dark:bg-slate-950/60 text-[11px] font-bold h-10 shadow-2xs">
+                <button
+                  onClick={() => setLanguage("pl")}
+                  className={`px-2.5 h-full transition cursor-pointer ${
+                    language === "pl"
+                      ? "bg-indigo-600 text-white font-extrabold"
+                      : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                  }`}
+                  type="button"
+                >
+                  PL
+                </button>
+                <button
+                  onClick={() => setLanguage("en")}
+                  className={`px-2.5 h-full transition cursor-pointer ${
+                    language === "en"
+                      ? "bg-indigo-600 text-white font-extrabold"
+                      : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                  }`}
+                  type="button"
+                >
+                  EN
+                </button>
+              </div>
+
+              {/* User profile capsule */}
+              {user && (
+                <NavLink
+                  to="/admin-dashboard/profile"
+                  className="flex items-center gap-2.5 p-1.5 pr-3 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800 transition shadow-2xs"
+                  title={user.name || user.email}
+                >
+                  <div className="w-8 h-8 rounded-full overflow-hidden border border-indigo-300 dark:border-indigo-700 flex items-center justify-center shrink-0">
+                    {user.profileImage ? (
+                      <img
+                        src={`${API_BASE}/uploads/users/${user.profileImage}`}
+                        alt={user.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                          if (e.currentTarget.nextElementSibling) {
+                            e.currentTarget.nextElementSibling.classList.remove("hidden");
+                          }
+                        }}
+                      />
+                    ) : null}
+                    <span className={`w-full h-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold flex items-center justify-center text-xs ${user.profileImage ? "hidden" : ""}`}>
+                      {(user.name || user.email || "U").slice(0, 2).toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="hidden sm:flex flex-col text-left">
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 max-w-[120px] truncate leading-tight">
+                      {user.name || user.email}
+                    </span>
+                    <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold capitalize leading-none">
+                      {user.role}
+                    </span>
+                  </div>
+                </NavLink>
+              )}
+
+              {/* Logout Button */}
+              <NavLink
+                to="/logout"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 border border-red-200/60 dark:border-red-900/40 text-xs font-bold transition shadow-2xs"
+                title={t("common.logout")}
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="hidden md:inline">{t("common.logout")}</span>
+              </NavLink>
+            </div>
+          </div>
+
+          {/* Row 2: Full-width Horizontal Navigation Bar distributed across the entire screen */}
+          <nav className="hidden md:block w-full border-t border-slate-200/80 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-950/50 px-2 sm:px-3 lg:px-4 py-1.5 overflow-x-auto scrollbar-none">
+            <ul className="flex items-center justify-between gap-1 w-full">
+              {menuLinks.map((item) => (
+                <li key={item.name} className="flex-1 min-w-0 flex items-center justify-center">
+                  <NavLink
+                    end={item.isParent}
+                    to={item.path}
+                    title={t(item.translationKey)}
+                    className={({ isActive }) =>
+                      `w-full flex items-center justify-center gap-1.5 py-2 px-1.5 lg:px-2 rounded-xl text-xs xl:text-sm font-semibold transition-all duration-200 select-none cursor-pointer text-center group ${
+                        isActive
+                          ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/25 font-bold"
+                          : "text-slate-650 dark:text-slate-350 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-800/80 hover:shadow-2xs"
+                      }`
+                    }
+                  >
+                    {renderIcon(item.icon, "w-5 h-5 shrink-0 transition-transform group-hover:scale-110")}
+                    <span className="truncate">{t(item.translationKey)}</span>
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </header>
+
+        {/* Overlay for mobile drawer */}
+        {isOpen && (
+          <div
+            className="fixed inset-0 backdrop-blur-xs bg-slate-950/60 z-50 md:hidden animate-in fade-in duration-200"
+            onClick={() => setIsOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+
+        {/* Mobile Drawer when hamburger clicked */}
+        <div
+          className={`fixed inset-y-0 left-0 h-screen w-72 max-w-[85vw] bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 shadow-2xl z-50 flex flex-col transform transition-transform duration-300 ease-in-out md:hidden ${
+            isOpen ? "translate-x-0" : "-translate-x-full pointer-events-none"
+          }`}
+        >
+          {/* Drawer Top Header */}
+          <div className="h-16 flex items-center justify-between px-5 border-b border-slate-200 dark:border-slate-800 shrink-0">
+            <div className="flex flex-col">
+              <span className="text-xl font-black tracking-wider text-slate-900 dark:text-white bg-clip-text bg-gradient-to-r from-blue-500 to-indigo-500 dark:from-blue-400 dark:to-indigo-400 leading-none">
+                IOTLAB
+              </span>
+              <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 tracking-wider uppercase mt-1 leading-none">
+                {user?.role === "admin" ? "Admin Panel" : user?.role === "lecturer" ? "Lecturer Panel" : "Lab System"}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+              aria-label="Close navigation"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* User profile capsule in drawer */}
+          {user && (
+            <div className="p-4 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-950/40 shrink-0">
+              <NavLink
+                to="/admin-dashboard/profile"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-3 p-1 rounded-xl group transition"
+              >
+                <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-indigo-400/50 shadow-xs flex items-center justify-center shrink-0">
+                  {user.profileImage ? (
+                    <img
+                      src={`${API_BASE}/uploads/users/${user.profileImage}`}
+                      alt={user.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                        if (e.currentTarget.nextElementSibling) {
+                          e.currentTarget.nextElementSibling.classList.remove("hidden");
+                        }
+                      }}
+                    />
+                  ) : null}
+                  <span className={`w-full h-full bg-gradient-to-tr from-indigo-500 to-purple-600 text-white font-bold flex items-center justify-center text-sm ${user.profileImage ? "hidden" : ""}`}>
+                    {(user.name || user.email || "U").slice(0, 2).toUpperCase()}
+                  </span>
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">
+                    {user.name || user.email}
+                  </span>
+                  <span className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 capitalize">
+                    {user.role}
+                  </span>
+                </div>
+              </NavLink>
+            </div>
+          )}
+
+          {/* Nav links */}
+          <nav className="flex-1 overflow-y-auto min-h-0 px-3 py-3 space-y-1">
+            <ul className="space-y-1">
+              {menuLinks.map((item) => (
+                <li key={item.name}>
+                  <NavLink
+                    end={item.isParent}
+                    to={item.path}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition ${
+                        isActive
+                          ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/25 font-bold"
+                          : "text-slate-650 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
+                      }`
+                    }
+                    onClick={() => setIsOpen(false)}
+                  >
+                    {renderIcon(item.icon, "w-5 h-5 shrink-0")}
+                    <span className="truncate">{t(item.translationKey)}</span>
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          {/* Drawer footer controls */}
+          <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex flex-col gap-2.5 shrink-0 bg-white dark:bg-slate-900">
+            {/* Quick action buttons row: Theme + Language */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={toggleTheme}
+                className="flex-1 h-9 flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-650 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-xs font-semibold cursor-pointer bg-slate-50/60 dark:bg-slate-950/40"
+                type="button"
+              >
+                {theme === "dark" ? (
+                  <>
+                    <Sun className="h-4 w-4 text-yellow-400" />
+                    <span>Light</span>
+                  </>
+                ) : (
+                  <>
+                    <Moon className="h-4 w-4 text-slate-600" />
+                    <span>Dark</span>
+                  </>
+                )}
+              </button>
+
+              <div className="flex items-center rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-slate-50/60 dark:bg-slate-950/40 text-[11px] font-bold h-9">
+                <button
+                  onClick={() => setLanguage("pl")}
+                  className={`px-3 h-full transition cursor-pointer ${
+                    language === "pl" ? "bg-indigo-600 text-white font-extrabold" : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                  }`}
+                  type="button"
+                >
+                  PL
+                </button>
+                <button
+                  onClick={() => setLanguage("en")}
+                  className={`px-3 h-full transition cursor-pointer ${
+                    language === "en" ? "bg-indigo-600 text-white font-extrabold" : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                  }`}
+                  type="button"
+                >
+                  EN
+                </button>
+              </div>
+            </div>
+
+            {/* Layout switch button */}
+            {toggleLayoutMode && (
+              <button
+                type="button"
+                onClick={() => {
+                  toggleLayoutMode();
+                  setIsOpen(false);
+                }}
+                className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-750 transition cursor-pointer"
+              >
+                <PanelLeft className="w-4 h-4 text-slate-500" />
+                <span>{language === "pl" ? "Przełącz na układ pionowy" : "Switch to vertical sidebar"}</span>
+              </button>
+            )}
+
+            {/* Logout button */}
+            <NavLink
+              to="/logout"
+              className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 border border-red-200/60 dark:border-red-900/40 font-bold text-xs transition"
+              onClick={() => setIsOpen(false)}
+            >
+              <LogOut className="h-4 w-4" />
+              <span>{t("common.logout")}</span>
+            </NavLink>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // -------------------------------------------------------------
+  // VERTICAL LAYOUT (CLASSIC SIDEBAR)
+  // -------------------------------------------------------------
   return (
     <>
-      {/* Hamburger button */}
+      {/* Mobile Hamburger button */}
       <button
-        className="fixed top-4 left-4 z-50 md:hidden flex flex-col justify-center items-center w-10 h-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white rounded-lg shadow-md gap-1 p-2 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+        className="fixed top-4 left-4 z-50 md:hidden flex items-center justify-center w-10 h-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white rounded-xl shadow-md hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Toggle sidebar"
       >
-        <span
-          className={`block h-0.5 w-6 bg-slate-800 dark:bg-white transform transition duration-300 ${
-            isOpen ? "rotate-45 translate-y-2" : ""
-          }`}
-        />
-        <span
-          className={`block h-0.5 w-6 bg-slate-800 dark:bg-white transition duration-300 ${
-            isOpen ? "opacity-0" : ""
-          }`}
-        />
-        <span
-          className={`block h-0.5 w-6 bg-slate-800 dark:bg-white transform transition duration-300 ${
-            isOpen ? "-rotate-45 -translate-y-2" : ""
-          }`}
-        />
+        {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
       </button>
 
       {/* Sidebar */}
       <div
         className={`fixed top-0 left-0 h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 shadow-xl z-40 flex flex-col transform transition-all duration-300 ease-in-out w-64
-        ${isOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0 ${isCollapsed ? "md:w-20" : "md:w-64"}`}
+        ${isOpen ? "translate-x-0" : "-translate-x-full pointer-events-none md:pointer-events-auto"} md:translate-x-0 ${isCollapsed ? "md:w-20" : "md:w-64"}`}
       >
         <div className="h-16 flex items-center justify-center border-b border-slate-200 dark:border-slate-800 relative">
           <span className="text-2xl font-black tracking-wider text-slate-900 dark:text-white bg-clip-text bg-gradient-to-r from-blue-500 to-indigo-500 dark:from-blue-400 dark:to-indigo-400">
@@ -101,7 +458,7 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
             title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
             type="button"
           >
-            {isCollapsed ? "▶" : "◀"}
+            {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </button>
         </div>
 
@@ -116,13 +473,13 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
                     `flex items-center py-2.5 rounded-xl transition-all duration-200 text-sm ${
                       isActive 
                         ? "bg-indigo-600 text-white font-semibold shadow-md dark:shadow-lg dark:shadow-indigo-900/30" 
-                        : "text-slate-600 dark:text-slate-400 hover:text-slate-950 hover:bg-slate-100 dark:hover:text-white dark:hover:bg-slate-800/60"
+                        : "text-slate-650 dark:text-slate-400 hover:text-slate-950 hover:bg-slate-100 dark:hover:text-white dark:hover:bg-slate-800/60"
                     } ${isCollapsed ? "md:justify-center md:px-2 px-4" : "px-4"}`
                   }
                   onClick={() => setIsOpen(false)}
                 >
-                  <span className="text-lg flex-shrink-0" title={isCollapsed ? t(item.translationKey) : undefined}>
-                    {item.icon}
+                  <span className="flex-shrink-0" title={isCollapsed ? t(item.translationKey) : undefined}>
+                    {renderIcon(item.icon, "w-5 h-5")}
                   </span>
                   <span className={`font-medium ml-3 transition-all ${isCollapsed ? "md:hidden" : ""}`}>
                     {t(item.translationKey)}
@@ -146,6 +503,17 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
             <>
               {/* Desktop Collapsed View */}
               <div className="hidden md:flex flex-col gap-2.5 items-center">
+                {/* Layout Switcher Button (Compact) */}
+                {toggleLayoutMode && (
+                  <button
+                    onClick={toggleLayoutMode}
+                    className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 text-slate-650 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer bg-white dark:bg-slate-900"
+                    title={language === "pl" ? "Przełącz na układ poziomy" : "Switch to horizontal navbar"}
+                    type="button"
+                  >
+                    <PanelLeft className="w-4.5 h-4.5 text-slate-650 dark:text-slate-350" />
+                  </button>
+                )}
                 {/* Theme Toggle Button (Compact) */}
                 <button
                   onClick={toggleTheme}
@@ -154,13 +522,9 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
                   type="button"
                 >
                   {theme === "dark" ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4.5 w-4.5 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 9h-1m14.071-5.071l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M14 12a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
+                    <Sun className="h-4.5 w-4.5 text-yellow-400" />
                   ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4.5 w-4.5 text-slate-650" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                    </svg>
+                    <Moon className="h-4.5 w-4.5 text-slate-650" />
                   )}
                 </button>
 
@@ -181,15 +545,25 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
                   onClick={() => setIsOpen(false)}
                   title={t("common.logout")}
                 >
-                  <svg xmlns="http://www.w3.org/2500/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7" />
-                  </svg>
+                  <LogOut className="h-4 w-4" />
                 </NavLink>
               </div>
 
               {/* Mobile Expanded View */}
               <div className="flex md:hidden flex-col gap-3">
                 <div className="flex items-center gap-2">
+                  {/* Layout Switcher Button */}
+                  {toggleLayoutMode && (
+                    <button
+                      onClick={toggleLayoutMode}
+                      className="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 text-slate-650 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer bg-white dark:bg-slate-900 shrink-0"
+                      title={language === "pl" ? "Przełącz na układ poziomy" : "Switch to horizontal navbar"}
+                      type="button"
+                    >
+                      <PanelLeft className="w-4 h-4 text-slate-650 dark:text-slate-350" />
+                    </button>
+                  )}
+
                   {/* Theme Toggle Button */}
                   <button
                     onClick={toggleTheme}
@@ -199,16 +573,12 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
                   >
                     {theme === "dark" ? (
                       <>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 9h-1m14.071-5.071l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M14 12a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
+                        <Sun className="h-4 w-4 text-yellow-500" />
                         <span>Light</span>
                       </>
                     ) : (
                       <>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-slate-650" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                        </svg>
+                        <Moon className="h-4 w-4 text-slate-650" />
                         <span>Dark</span>
                       </>
                     )}
@@ -246,6 +616,7 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
                   className="flex items-center justify-center px-4 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white text-sm font-semibold transition-all duration-200"
                   onClick={() => setIsOpen(false)}
                 >
+                  <LogOut className="h-4 w-4 mr-1.5" />
                   {t("common.logout")}
                 </NavLink>
               </div>
@@ -253,6 +624,18 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
           ) : (
             <>
               <div className="flex items-center gap-2">
+                {/* Layout Switcher Button */}
+                {toggleLayoutMode && (
+                  <button
+                    onClick={toggleLayoutMode}
+                    className="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 text-slate-650 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer bg-white dark:bg-slate-900 shrink-0"
+                    title={language === "pl" ? "Przełącz na układ poziomy" : "Switch to horizontal navbar"}
+                    type="button"
+                  >
+                    <PanelLeft className="w-4 h-4 text-slate-650 dark:text-slate-350" />
+                  </button>
+                )}
+
                 {/* Theme Toggle Button */}
                 <button
                   onClick={toggleTheme}
@@ -262,16 +645,12 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
                 >
                   {theme === "dark" ? (
                     <>
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 9h-1m14.071-5.071l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M14 12a2 2 0 11-4 0 2 2 0 014 0z" />
-                      </svg>
+                      <Sun className="h-4 w-4 text-yellow-500" />
                       <span>Light</span>
                     </>
                   ) : (
                     <>
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-slate-650" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                      </svg>
+                      <Moon className="h-4 w-4 text-slate-650" />
                       <span>Dark</span>
                     </>
                   )}
@@ -306,15 +685,17 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
 
               <NavLink
                 to="/logout"
-                className="flex items-center justify-center px-4 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white text-sm font-semibold transition-all duration-200"
+                className="flex items-center justify-center px-4 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white text-sm font-semibold transition-all duration-200 gap-1.5"
                 onClick={() => setIsOpen(false)}
               >
+                <LogOut className="h-4 w-4" />
                 {t("common.logout")}
               </NavLink>
             </>
           )}
         </div>
 
+        {/* User Card in Vertical Sidebar Bottom */}
         <div className={`border-t border-slate-200 dark:border-slate-800 text-xs bg-slate-50 dark:bg-slate-950/40 text-slate-600 dark:text-slate-400 transition-all duration-300 flex items-center justify-center min-h-[4rem] ${isCollapsed ? "md:p-2 p-3.5" : "p-3.5"}`}>
           {user ? (
             isCollapsed ? (
@@ -326,13 +707,17 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
                       src={`${API_BASE}/uploads/users/${user.profileImage}`}
                       alt={user.name}
                       className="w-full h-full object-cover"
-                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                        if (e.currentTarget.nextElementSibling) {
+                          e.currentTarget.nextElementSibling.classList.remove("hidden");
+                        }
+                      }}
                     />
-                  ) : (
-                    <span className="w-full h-full bg-indigo-550/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold flex items-center justify-center text-[11px]">
-                      {(user.name || user.email || "U").slice(0, 2).toUpperCase()}
-                    </span>
-                  )}
+                  ) : null}
+                  <span className={`w-full h-full bg-indigo-550/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold flex items-center justify-center text-[11px] ${user.profileImage ? "hidden" : ""}`}>
+                    {(user.name || user.email || "U").slice(0, 2).toUpperCase()}
+                  </span>
                 </div>
                 {/* Mobile Expanded Avatar Details */}
                 <div className="flex md:hidden items-center gap-3 w-full">
@@ -342,13 +727,17 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
                         src={`${API_BASE}/uploads/users/${user.profileImage}`}
                         alt={user.name}
                         className="w-full h-full object-cover"
-                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                          if (e.currentTarget.nextElementSibling) {
+                            e.currentTarget.nextElementSibling.classList.remove("hidden");
+                          }
+                        }}
                       />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs">
-                        {(user.name || user.email || "U").slice(0, 2).toUpperCase()}
-                      </div>
-                    )}
+                    ) : null}
+                    <div className={`w-full h-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs ${user.profileImage ? "hidden" : ""}`}>
+                      {(user.name || user.email || "U").slice(0, 2).toUpperCase()}
+                    </div>
                   </div>
                   <div className="flex flex-col min-w-0 text-left">
                     <p className="font-bold text-slate-800 dark:text-slate-200 truncate">{user.name || user.email}</p>
@@ -364,13 +753,17 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
                       src={`${API_BASE}/uploads/users/${user.profileImage}`}
                       alt={user.name}
                       className="w-full h-full object-cover"
-                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                        if (e.currentTarget.nextElementSibling) {
+                          e.currentTarget.nextElementSibling.classList.remove("hidden");
+                        }
+                      }}
                     />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs">
-                      {(user.name || user.email || "U").slice(0, 2).toUpperCase()}
-                    </div>
-                  )}
+                  ) : null}
+                  <div className={`w-full h-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs ${user.profileImage ? "hidden" : ""}`}>
+                    {(user.name || user.email || "U").slice(0, 2).toUpperCase()}
+                  </div>
                 </div>
                 <div className="flex flex-col min-w-0 text-left flex-1">
                   <p className="font-bold text-slate-800 dark:text-slate-200 truncate">{user.name || user.email}</p>

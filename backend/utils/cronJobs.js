@@ -1,8 +1,20 @@
 import cron from 'node-cron';
 import Order from '../models/Order.js';
+import Notification from '../models/Notification.js';
 import { sendReturnReminderEmail } from './sendEmail.js';
+import { performDatabaseBackup } from './backupService.js';
 
 export const startCronJobs = () => {
+  // Daily database backup (mongodump .gz to backups/, deleting copies > 30 days) at 02:00 AM
+  cron.schedule('0 2 * * *', async () => {
+    console.log('[Cron Job] Running daily database backup...');
+    try {
+      await performDatabaseBackup();
+    } catch (err) {
+      console.error('[Cron Job] Database backup failed:', err);
+    }
+  });
+
   // Run every day at 08:00 AM
   cron.schedule('0 8 * * *', async () => {
     console.log('Running daily cron job for rental reminders...');
@@ -75,6 +87,25 @@ export const startCronJobs = () => {
       console.log(`Cron job completed. Sent ${lateCount} overdue emails and ${reminderCount} reminder emails.`);
     } catch (error) {
       console.error('Error in daily cron job:', error);
+    }
+  });
+
+  // Cleanup read notifications older than 7 days daily at 03:00 AM
+  cron.schedule('0 3 * * *', async () => {
+    try {
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const result = await Notification.deleteMany({
+        isRead: true,
+        $or: [
+          { readAt: { $lte: sevenDaysAgo } },
+          { readAt: null, updatedAt: { $lte: sevenDaysAgo } },
+        ],
+      });
+      if (result.deletedCount > 0) {
+        console.log(`[Notification Cleanup] Auto-deleted ${result.deletedCount} read notifications older than 7 days.`);
+      }
+    } catch (error) {
+      console.error('[Notification Cleanup] Error cleaning old read notifications:', error);
     }
   });
 

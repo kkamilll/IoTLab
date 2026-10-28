@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import apiClient from "../api/apiClient";
 import ProductModal from "../components/products/ProductModal";
@@ -9,20 +9,39 @@ import { generateProductsPDF } from "../utils/pdfGenerator";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { useLanguage } from "../context/LanguageContext";
-import { buildTree, getDescendantCategoryIds, getCategoryDepth, getSortedHierarchicalCategories, isCategoryVisible } from "../utils/categoryUtils";
+import { buildTree, getDescendantCategoryIds, getSortedHierarchicalCategories, isCategoryVisible } from "../utils/categoryUtils";
 import CategoryTree from "../components/categories/CategoryTree";
 import PageHeader from "../components/layout/PageHeader";
 import Btn from "../components/layout/Btn";
 import Pagination from "../components/layout/Pagination";
-import { FileDown, Plus, ShoppingCart, LayoutGrid, Search, ChevronDown, ChevronRight, Globe, Lock } from "lucide-react";
+import {
+  FileDown,
+  Plus,
+  ShoppingCart,
+  LayoutGrid,
+  Search,
+  ChevronDown,
+  ChevronRight,
+  Globe,
+  Lock,
+  Layers,
+  User,
+  Users,
+  SlidersHorizontal,
+  Check,
+  X,
+  Filter,
+  RotateCcw,
+} from "lucide-react";
 
 const MEGA_BYTE = 1024 * 1024;
 const MAX_FILE_SIZE = 50 * MEGA_BYTE;
 const MAX_FILE_NAME_LENGTH = 15;
 const EXTENSION_OFFSET = 3;
+const API_BASE = `${import.meta.env.VITE_API_IP || ""}${import.meta.env.VITE_API_PORT || ""}${import.meta.env.VITE_API_POSTFIX || ""}`;
 
 const Products = () => {
-  const { user, token } = useAuth();
+  const { user } = useAuth();
   const isAdmin = user?.role === "admin";
   const navigate = useNavigate();
   const location = useLocation();
@@ -60,12 +79,68 @@ const Products = () => {
   const [categories, setCategories] = useState([]);
   const [activeCategories, setActiveCategories] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
-  const [hiddenColumns, setHiddenColumns] = useState(["description", "categories", "owner"]);
+  const [hiddenColumns, setHiddenColumns] = useState(["description", "owner"]);
   const [columnsDropdownOpen, setColumnsDropdownOpen] = useState(false);
   const [categoriesDropdownOpen, setCategoriesDropdownOpen] = useState(false);
   const [ownersDropdownOpen, setOwnersDropdownOpen] = useState(false);
   const [ownerSearch, setOwnerSearch] = useState("");
   const [expandedCategories, setExpandedCategories] = useState([]);
+
+  const categoriesDropdownRef = useRef(null);
+  const ownersDropdownRef = useRef(null);
+  const columnsDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (categoriesDropdownRef.current && !categoriesDropdownRef.current.contains(event.target)) {
+        setCategoriesDropdownOpen(false);
+      }
+      if (ownersDropdownRef.current && !ownersDropdownRef.current.contains(event.target)) {
+        setOwnersDropdownOpen(false);
+      }
+      if (columnsDropdownRef.current && !columnsDropdownRef.current.contains(event.target)) {
+        setColumnsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, []);
+
+  const categoryCounts = useMemo(() => {
+    const counts = {};
+    if (!products || !categories) return counts;
+    products.forEach((p) => {
+      const directCatIds = new Set((p.categories || []).map((cat) => (cat._id || cat).toString()));
+      categories.forEach((cat) => {
+        const catIdStr = cat._id.toString();
+        const descendantIds = new Set(getDescendantCategoryIds(catIdStr, categories).map((id) => id.toString()));
+        descendantIds.add(catIdStr);
+        const matches = Array.from(directCatIds).some((id) => descendantIds.has(id));
+        if (matches) {
+          counts[catIdStr] = (counts[catIdStr] || 0) + 1;
+        }
+      });
+    });
+    return counts;
+  }, [products, categories]);
+
+  const ownerCounts = useMemo(() => {
+    const counts = {};
+    if (!products) return counts;
+    products.forEach((p) => {
+      const ownerId = p.owner?._id || p.owner;
+      if (ownerId) {
+        const oIdStr = ownerId.toString();
+        counts[oIdStr] = (counts[oIdStr] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [products]);
   const [isAddColModalOpen, setIsAddColModalOpen] = useState(false);
   const [newColName, setNewColName] = useState("");
 
@@ -113,6 +188,10 @@ const Products = () => {
       setOwnerFilter(location.state.ownerId);
       navigate(location.pathname, { replace: true, state: {} });
     }
+    if (location.state?.categoryId) {
+      setActiveCategories([location.state.categoryId]);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
   }, [location, navigate]);
 
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
@@ -132,23 +211,13 @@ const Products = () => {
 
   const allColumns = [
     "name",
-    "description",
+    "categories",
     "total",
     "for rent",
-    "categories",
     "owner",
+    "description",
     ...extraColumns,
   ];
-
-  const allCategories = Object.values(
-    // create an array of objects from object of objects
-    products
-      .flatMap((p) => p.categories || []) // flatten array products into array of all categories
-      .reduce((acc, cat) => {
-        acc[cat._id] = cat;
-        return acc;
-      }, {}), // create object of objects from array, without duplicates with same field _id
-  );
 
   // category tree
   const normalizedCategories = useMemo(
@@ -171,7 +240,7 @@ const Products = () => {
     fetchUsers();
     fetchColumnConfigs();
 
-    setCartQuantities((prev) => {
+    setCartQuantities(() => {
       const cart = JSON.parse(localStorage.getItem("cart")) || [];
       const newQuantities = {};
       cart.forEach(
@@ -193,21 +262,50 @@ const Products = () => {
   }, [products]);
 
   useEffect(() => {
-    let filtered = products.filter((p) => {
-      const searchLower = searchTerm.toLowerCase();
+    const searchLower = searchTerm.trim().toLowerCase();
 
+    let filtered = products.filter((p) => {
+      if (!searchLower) return true;
+
+      // Nazwa produktu
+      if (p.name && p.name.toLowerCase().includes(searchLower)) return true;
+
+      // Opis
+      if (p.description && p.description.toLowerCase().includes(searchLower)) return true;
+
+      // Tagi
+      if (p.tags?.some((tag) => tag.toLowerCase().includes(searchLower))) return true;
+
+      // Sala laboratoryjna
+      if (p.labRoom && p.labRoom.toLowerCase().includes(searchLower)) return true;
+
+      // Wersja
+      if (p.version && p.version.toLowerCase().includes(searchLower)) return true;
+
+      // Nazwy kategorii (PL i EN)
       if (
-        p.name.toLowerCase().includes(searchLower) ||
-        (p.description && p.description.toLowerCase().includes(searchLower))
+        p.categories?.some((cat) => {
+          const cId = (cat._id || cat).toString();
+          const found = categories.find((c) => c._id.toString() === cId);
+          const namePl = (cat.name || found?.name || "").toLowerCase();
+          const nameEn = (cat.nameEn || found?.nameEn || "").toLowerCase();
+          return namePl.includes(searchLower) || nameEn.includes(searchLower);
+        })
       )
         return true;
 
-      if (p.tags?.some((tag) => tag.toLowerCase().includes(searchLower)))
-        return true;
+      // Nazwa opiekuna
+      const pOwnerId = (p.owner?._id || p.owner)?.toString();
+      const ownerObj =
+        typeof p.owner === "object" && p.owner?.name
+          ? p.owner
+          : users.find((u) => u._id.toString() === pOwnerId);
+      if (ownerObj?.name && ownerObj.name.toLowerCase().includes(searchLower)) return true;
 
+      // Dodatkowe pola dynamiczne (extraFields)
       if (
-        Object.values(p.extraFields || {}).some((val) =>
-          val.toString().toLowerCase().includes(searchLower),
+        Object.values(p.extraFields || {}).some(
+          (val) => val != null && val.toString().toLowerCase().includes(searchLower),
         )
       )
         return true;
@@ -218,18 +316,22 @@ const Products = () => {
     // OR filter dla wielu kategorii (uwzględniając dzieci/podkategorie)
     if (activeCategories.length > 0) {
       const targetCategoryIds = new Set([
-        ...activeCategories,
-        ...activeCategories.flatMap(catId => getDescendantCategoryIds(catId, categories))
+        ...activeCategories.map((id) => id.toString()),
+        ...activeCategories.flatMap((catId) =>
+          getDescendantCategoryIds(catId, categories).map((id) => id.toString()),
+        ),
       ]);
       filtered = filtered.filter((p) =>
-        p.categories?.some((cat) => targetCategoryIds.has(cat._id))
+        p.categories?.some((cat) =>
+          targetCategoryIds.has((cat._id || cat).toString()),
+        ),
       );
     }
 
     if (ownerFilter) {
       filtered = filtered.filter((p) => {
-        const pOwnerId = p.owner?._id || p.owner;
-        return pOwnerId === ownerFilter;
+        const pOwnerId = (p.owner?._id || p.owner)?.toString();
+        return pOwnerId === ownerFilter.toString();
       });
     }
 
@@ -237,6 +339,8 @@ const Products = () => {
       filtered.sort((a, b) => {
         let valA = a[sortConfig.key] ?? a.extraFields?.[sortConfig.key] ?? "";
         let valB = b[sortConfig.key] ?? b.extraFields?.[sortConfig.key] ?? "";
+        if (typeof valA === "string") valA = valA.toLowerCase();
+        if (typeof valB === "string") valB = valB.toLowerCase();
         if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
         if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
         return 0;
@@ -244,7 +348,8 @@ const Products = () => {
     }
 
     setFilteredProducts(filtered);
-  }, [products, searchTerm, sortConfig, activeCategories, ownerFilter]);
+    setCurrentPage(1);
+  }, [products, searchTerm, sortConfig, activeCategories, ownerFilter, categories, users]);
 
   const fetchCategories = async () => {
     try {
@@ -320,7 +425,7 @@ const Products = () => {
           : `Column "${col}" is now ${nextVal ? "visible to guests" : "admin only"}.`,
         "success"
       );
-    } catch (err) {
+    } catch {
       showToast(
         language === "pl" ? "Błąd zmiany widoczności kolumny" : "Failed to change column visibility",
         "error"
@@ -417,7 +522,7 @@ const Products = () => {
       description: product.description || "",
       stockTotal: product.stockTotal?.toString() || "",
       stockForRent: product.stockForRent?.toString() || "",
-      extraFields: { ...product.extraFields } || {},
+      extraFields: product.extraFields ? { ...product.extraFields } : {},
       categories:
         (product?.categories || []).map((cat) => cat._id.toString()) || [],
       tags: product?.tags || [],
@@ -534,7 +639,11 @@ const Products = () => {
   const handleQuantityChange = (productId, value, product) => {
     let qty = parseInt(value, 10);
     if (isNaN(qty) || qty < 0) qty = 0;
-    if (qty > getAvailableStockForProduct(product)) qty = getAvailableStockForProduct(product);
+    const maxQty = getAvailableStockForProduct(product);
+    if (qty > maxQty) qty = maxQty;
+
+    const previousQty = cartQuantities[productId] || 0;
+    if (qty === previousQty) return;
 
     setCartQuantities((prev) => ({ ...prev, [productId]: qty }));
 
@@ -552,6 +661,28 @@ const Products = () => {
     }
 
     localStorage.setItem("cart", JSON.stringify(cart));
+
+    if (qty > previousQty) {
+      const prodName = product?.name ? `: ${product.name}` : "";
+      showToast(
+        language === "pl"
+          ? (previousQty === 0
+              ? `Dodano do koszyka${prodName}`
+              : `Zwiększono ilość w koszyku (${qty})${prodName}`)
+          : (previousQty === 0
+              ? `Added to cart${prodName}`
+              : `Cart updated (${qty})${prodName}`),
+        "success"
+      );
+    } else if (qty < previousQty && qty === 0) {
+      const prodName = product?.name ? `: ${product.name}` : "";
+      showToast(
+        language === "pl"
+          ? `Usunięto z koszyka${prodName}`
+          : `Removed from cart${prodName}`,
+        "info"
+      );
+    }
   };
 
   const addExtraField = () => {
@@ -667,7 +798,7 @@ const Products = () => {
     });
   };
 
-  const handleSearch = (e) => setSearchTerm(e.target.value.toLowerCase());
+  const handleSearch = (e) => setSearchTerm(e.target.value);
 
   const handleSort = (key) => {
     if (sortConfig.key === key) {
@@ -688,7 +819,7 @@ const Products = () => {
     try {
       const cleanedExtraFields = Object.fromEntries(
         Object.entries(formData.extraFields).filter(
-          ([key, value]) => value != null && value !== "",
+          ([, value]) => value != null && value !== "",
         ),
       );
 
@@ -846,7 +977,9 @@ const Products = () => {
     if (!productId) return;
     try {
       sessionStorage.setItem("last_preview_product_id", productId);
-    } catch (e) {}
+    } catch {
+      // ignore
+    }
     navigate(`/admin-dashboard/preview?id=${productId}`, { state: { productId } });
   };
 
@@ -876,44 +1009,60 @@ const Products = () => {
           subtitle={t("products.subtitle")}
         >
         <Btn variant={selectedProductIds.length > 0 ? "primary" : "secondary"} onClick={generatePDF}>
-          <FileDown className="w-4 h-4" />
-          {selectedProductIds.length > 0
-            ? `${t("products.exportPdf")} (${selectedProductIds.length})`
-            : t("products.exportPdf")
-          }
+          <FileDown className="w-4 h-4 shrink-0" />
+          <span>
+            {selectedProductIds.length > 0
+              ? `${t("products.exportPdf")} (${selectedProductIds.length})`
+              : t("products.exportPdf")
+            }
+          </span>
         </Btn>
         <Btn variant="dark" onClick={addExtraField}>
-          <LayoutGrid className="w-4 h-4" />
-          {t("products.addColumn")}
+          <LayoutGrid className="w-4 h-4 shrink-0" />
+          <span>{t("products.addColumn")}</span>
         </Btn>
-        <Btn variant="success" onClick={() => navigate("/cart")} className="relative flex items-center gap-2">
+        <Btn variant="success" onClick={() => navigate("/cart")}>
+          <ShoppingCart className="w-4 h-4 shrink-0" />
           <span>{t("products.goToCart")}</span>
-          <span className="flex items-center justify-center w-5.5 h-5.5 rounded-full bg-white text-emerald-600 font-extrabold text-xs shadow-sm border border-emerald-100/50">
+          <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-emerald-600 font-extrabold text-[11px] shadow-xs shrink-0 leading-none">
             {totalInCart}
           </span>
         </Btn>
         <Btn variant="primary" onClick={() => { setEditProduct(null); setOpenModal(true); }}>
-          <Plus className="w-4 h-4" />
-          {t("products.addObject")}
+          <Plus className="w-4 h-4 shrink-0" />
+          <span>{t("products.addObject")}</span>
         </Btn>
       </PageHeader>
 
       {/* Search & Filters */}
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
+        <div className="flex flex-col lg:flex-row gap-3 items-center justify-between">
+          {/* Global Search Input */}
           <div className="relative w-full lg:max-w-md">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 w-4 h-4" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 w-4 h-4 pointer-events-none" />
             <input
               type="text"
-              placeholder={t("products.searchPlaceholder")}
-              className="border border-slate-200 dark:border-slate-800 pl-10 pr-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm w-full transition"
+              value={searchTerm}
+              placeholder={t("products.searchPlaceholder") || (language === "pl" ? "Szukaj obiektów po nazwie, sali, tagach..." : "Search objects...")}
+              className="h-10 border border-slate-200 dark:border-slate-800 pl-10 pr-9 rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 shadow-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-xs sm:text-sm w-full transition"
               onChange={handleSearch}
             />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                title={language === "pl" ? "Wyczyść wyszukiwanie" : "Clear search"}
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+          {/* Filter Dropdown Buttons */}
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 w-full lg:w-auto">
             {/* Filter by Category */}
-            <div className="relative inline-block text-left w-full sm:w-60">
+            <div ref={categoriesDropdownRef} className="relative inline-block text-left w-full sm:w-auto">
               <button
                 type="button"
                 onClick={() => {
@@ -921,36 +1070,100 @@ const Products = () => {
                   setColumnsDropdownOpen(false);
                   setOwnersDropdownOpen(false);
                 }}
-                className="inline-flex justify-between items-center w-full rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm px-4 py-2.5 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-850 focus:outline-none transition cursor-pointer"
+                className={`inline-flex justify-between items-center h-10 w-full sm:w-56 px-3.5 rounded-xl border text-xs sm:text-sm font-semibold transition shadow-xs cursor-pointer select-none ${
+                  activeCategories.length > 0
+                    ? "border-indigo-500/40 bg-indigo-50/60 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 ring-2 ring-indigo-500/10"
+                    : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-850 hover:border-slate-300 dark:hover:border-slate-700"
+                }`}
               >
-                <span>{t("products.filterByCategory")}</span>
-                <svg
-                  className={`ml-2 h-4 w-4 text-slate-400 transform transition-transform duration-200 ${categoriesDropdownOpen ? "rotate-180" : ""}`}
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M5.23 7.21a.75.75 0 011.06.02L10 11.293l3.71-4.06a.75.75 0 111.08 1.04l-4.25 4.65a.75.75 0 01-1.08 0L5.25 8.27a.75.75 0 01-.02-1.06z"
-                    clipRule="evenodd"
-                  />
-                </svg>
+                <div className="flex items-center gap-2 min-w-0">
+                  <Layers className={`w-4 h-4 shrink-0 ${activeCategories.length > 0 ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 dark:text-slate-500"}`} />
+                  <span className="truncate">
+                    {activeCategories.length === 0
+                      ? (t("products.filterByCategory") || (language === "pl" ? "Filtruj wg kategorii" : "Filter by category"))
+                      : activeCategories.length === 1
+                        ? (categories.find(c => c._id === activeCategories[0])?.name || t("products.filterByCategory"))
+                        : `${language === "pl" ? "Kategorie" : "Categories"} (${activeCategories.length})`}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0 ml-1">
+                  {activeCategories.length > 0 && (
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveCategories([]);
+                      }}
+                      className="p-0.5 rounded-full hover:bg-indigo-200/50 dark:hover:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 hover:text-red-600 transition"
+                      title={language === "pl" ? "Wyczyść kategorie" : "Clear categories"}
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </span>
+                  )}
+                  <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${categoriesDropdownOpen ? "rotate-180" : ""}`} />
+                </div>
               </button>
 
               {categoriesDropdownOpen && (
-                <div className="absolute mt-2 w-full rounded-xl shadow-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 z-30 flex flex-col max-h-72 w-64 py-1.5">
-                  <div className="p-2 border-b border-slate-100 dark:border-slate-800">
-                    <input
-                      type="text"
-                      placeholder={t("products.searchCategoryPlaceholder") || "Szukaj kategorii..."}
-                      value={categorySearch}
-                      onChange={(e) => setCategorySearch(e.target.value)}
-                      className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                    />
+                <div className="absolute left-0 mt-2 rounded-2xl shadow-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800/90 z-50 flex flex-col max-h-88 w-72 sm:w-80 py-2 max-w-[calc(100vw-2rem)] animate-in fade-in zoom-in-95 duration-100">
+                  {/* Category Header Actions */}
+                  <div className="flex items-center justify-between px-3.5 pb-2 border-b border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                      <Layers className="w-3.5 h-3.5 text-indigo-500" />
+                      <span>{language === "pl" ? "Kategorie" : "Categories"}</span>
+                    </span>
+                    <div className="flex items-center gap-2 text-[11px] font-semibold">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const allCatIds = categories.map((c) => c._id);
+                          setActiveCategories(allCatIds);
+                        }}
+                        className="text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                      >
+                        {language === "pl" ? "Wszystkie" : "All"}
+                      </button>
+                      {activeCategories.length > 0 && (
+                        <>
+                          <span className="text-slate-300 dark:text-slate-700">•</span>
+                          <button
+                            type="button"
+                            onClick={() => setActiveCategories([])}
+                            className="text-red-500 hover:underline cursor-pointer"
+                          >
+                            {language === "pl" ? "Wyczyść" : "Clear"}
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
-                  <ul className="py-1 overflow-y-auto flex-1">
+
+                  {/* Search Input with inline clear */}
+                  <div className="p-2.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-950/20">
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder={t("products.searchCategoryPlaceholder") || (language === "pl" ? "Szukaj kategorii..." : "Search categories...")}
+                        value={categorySearch}
+                        onChange={(e) => setCategorySearch(e.target.value)}
+                        className="w-full text-xs pl-8 pr-7 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-2xs font-medium"
+                      />
+                      {categorySearch && (
+                        <button
+                          type="button"
+                          onClick={() => setCategorySearch("")}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded-full cursor-pointer"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Category Tree List */}
+                  <ul className="py-1 overflow-y-auto flex-1 max-h-56 divide-y divide-slate-100/50 dark:divide-slate-800/40">
                     {getSortedHierarchicalCategories(categories)
                       .filter((category) =>
                         category.name.toLowerCase().includes(categorySearch.toLowerCase()) ||
@@ -960,51 +1173,58 @@ const Products = () => {
                         const isVisible = !categorySearch ? isCategoryVisible(category, categories, expandedCategories) : true;
                         if (!isVisible) return null;
 
-                        const hasChildren = categories.some(c => {
+                        const hasChildren = categories.some((c) => {
                           const pId = c.parent?._id || c.parent;
                           return pId?.toString() === category._id.toString();
                         });
                         const isExpanded = expandedCategories.includes(category._id.toString());
+                        const isChecked = activeCategories.includes(category._id);
+                        const itemCount = categoryCounts[category._id.toString()] || 0;
 
                         return (
                           <li key={category._id} style={{ paddingLeft: `${(category.depth ?? 0) * 12}px` }}>
-                            <div className="flex items-center gap-1.5 px-4 py-1 hover:bg-slate-50 dark:hover:bg-slate-800 transition">
-                              {hasChildren ? (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleCategoryExpand(category._id);
-                                  }}
-                                  className="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-350 transition cursor-pointer flex items-center justify-center"
-                                  title={isExpanded ? "Collapse" : "Expand"}
-                                >
-                                  {isExpanded ? (
-                                    <ChevronDown className="w-3.5 h-3.5" />
-                                  ) : (
-                                    <ChevronRight className="w-3.5 h-3.5" />
-                                  )}
-                                </button>
-                              ) : (
-                                <span className="w-6 h-6 flex-shrink-0" />
-                              )}
-                              <label className="flex items-center gap-2.5 py-1 text-xs text-slate-650 dark:text-slate-300 cursor-pointer transition font-medium flex-1 select-none">
-                                <input
-                                  type="checkbox"
-                                  value={category._id}
-                                  checked={activeCategories.includes(category._id)}
-                                  onChange={(e) => {
-                                    const { checked } = e.target;
-                                    setActiveCategories((prev) =>
-                                      checked
-                                        ? [...prev, category._id]
-                                        : prev.filter((id) => id !== category._id),
-                                    );
-                                  }}
-                                  className="accent-indigo-650 w-3.5 h-3.5 rounded"
-                                />
-                                <span>{language === "en" && category.nameEn ? category.nameEn : category.name}</span>
-                              </label>
+                            <div className={`flex items-center justify-between px-3 py-1.5 mx-1 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition ${isChecked ? "bg-indigo-50/50 dark:bg-indigo-950/30" : ""}`}>
+                              <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                {hasChildren ? (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleCategoryExpand(category._id);
+                                    }}
+                                    className="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition cursor-pointer flex items-center justify-center shrink-0"
+                                    title={isExpanded ? "Zwiń" : "Rozwiń"}
+                                  >
+                                    {isExpanded ? (
+                                      <ChevronDown className="w-3.5 h-3.5" />
+                                    ) : (
+                                      <ChevronRight className="w-3.5 h-3.5" />
+                                    )}
+                                  </button>
+                                ) : (
+                                  <span className="w-5.5 h-5.5 shrink-0" />
+                                )}
+                                <label className="flex items-center gap-2 py-0.5 text-xs text-slate-700 dark:text-slate-200 cursor-pointer font-semibold flex-1 truncate select-none">
+                                  <input
+                                    type="checkbox"
+                                    value={category._id}
+                                    checked={isChecked}
+                                    onChange={(e) => {
+                                      const { checked } = e.target;
+                                      setActiveCategories((prev) =>
+                                        checked
+                                          ? [...prev, category._id]
+                                          : prev.filter((id) => id !== category._id),
+                                      );
+                                    }}
+                                    className="accent-indigo-600 w-3.5 h-3.5 rounded shrink-0 cursor-pointer"
+                                  />
+                                  <span className="truncate">{language === "en" && category.nameEn ? category.nameEn : category.name}</span>
+                                </label>
+                              </div>
+                              <span className="ml-2 text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-slate-700/50 shrink-0">
+                                {itemCount}
+                              </span>
                             </div>
                           </li>
                         );
@@ -1015,48 +1235,110 @@ const Products = () => {
             </div>
 
             {/* Filter by Owner */}
-            <div className="relative inline-block text-left w-full sm:w-60">
-              <button
-                type="button"
-                onClick={() => {
-                  setOwnersDropdownOpen((prev) => !prev);
-                  setCategoriesDropdownOpen(false);
-                  setColumnsDropdownOpen(false);
-                }}
-                className="inline-flex justify-between items-center w-full rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm px-4 py-2.5 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-850 focus:outline-none transition cursor-pointer"
-              >
-                <span className="truncate">
-                  {ownerFilter
-                    ? `${t("products.columns.owner") || "Opiekun"}: ${users.find((u) => u._id === ownerFilter)?.name || ownerFilter}`
-                    : (language === "pl" ? "Filtruj wg opiekuna" : "Filter by owner")}
-                </span>
-                <svg
-                  className={`ml-2 h-4 w-4 text-slate-400 transform transition-transform duration-200 ${ownersDropdownOpen ? "rotate-180" : ""}`}
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M5.23 7.21a.75.75 0 011.06.02L10 11.293l3.71-4.06a.75.75 0 111.08 1.04l-4.25 4.65a.75.75 0 01-1.08 0L5.25 8.27a.75.75 0 01-.02-1.06z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </button>
+            <div ref={ownersDropdownRef} className="relative inline-block text-left w-full sm:w-auto">
+              {(() => {
+                const selectedOwner = users.find((u) => u._id === ownerFilter);
+                const triggerAvatar = selectedOwner?.profileImage ? `${API_BASE}/uploads/users/${selectedOwner.profileImage}` : null;
+
+                return (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOwnersDropdownOpen((prev) => !prev);
+                      setCategoriesDropdownOpen(false);
+                      setColumnsDropdownOpen(false);
+                    }}
+                    className={`inline-flex justify-between items-center h-10 w-full sm:w-56 px-3.5 rounded-xl border text-xs sm:text-sm font-semibold transition shadow-xs cursor-pointer select-none ${
+                      ownerFilter
+                        ? "border-indigo-500/40 bg-indigo-50/60 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 ring-2 ring-indigo-500/10"
+                        : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-850 hover:border-slate-300 dark:hover:border-slate-700"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      {triggerAvatar ? (
+                        <img
+                          src={triggerAvatar}
+                          alt={selectedOwner.name}
+                          className="w-4.5 h-4.5 rounded-full object-cover shrink-0 border border-indigo-200 dark:border-indigo-800"
+                        />
+                      ) : (
+                        <User className={`w-4 h-4 shrink-0 ${ownerFilter ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 dark:text-slate-500"}`} />
+                      )}
+                      <span className="truncate">
+                        {selectedOwner
+                          ? selectedOwner.name
+                          : (t("products.filterByOwner") || (language === "pl" ? "Filtruj wg opiekuna" : "Filter by owner"))}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0 ml-1">
+                      {ownerFilter && (
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOwnerFilter("");
+                          }}
+                          className="p-0.5 rounded-full hover:bg-indigo-200/50 dark:hover:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 hover:text-red-600 transition"
+                          title={language === "pl" ? "Wyczyść opiekuna" : "Clear owner"}
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </span>
+                      )}
+                      <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${ownersDropdownOpen ? "rotate-180" : ""}`} />
+                    </div>
+                  </button>
+                );
+              })()}
 
               {ownersDropdownOpen && (
-                <div className="absolute mt-2 w-full rounded-xl shadow-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 z-30 flex flex-col max-h-72 w-64 py-1.5">
-                  <div className="p-2 border-b border-slate-100 dark:border-slate-800">
-                    <input
-                      type="text"
-                      placeholder={language === "pl" ? "Szukaj opiekuna..." : "Search owner..."}
-                      value={ownerSearch}
-                      onChange={(e) => setOwnerSearch(e.target.value)}
-                      className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                    />
+                <div className="absolute left-0 mt-2 rounded-2xl shadow-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800/90 z-50 flex flex-col max-h-88 w-72 sm:w-80 py-2 max-w-[calc(100vw-2rem)] animate-in fade-in zoom-in-95 duration-100 overflow-hidden">
+                  {/* Owner Header */}
+                  <div className="flex items-center justify-between px-3.5 pb-2 border-b border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                      <User className="w-3.5 h-3.5 text-indigo-500" />
+                      <span>{language === "pl" ? "Opiekunowie" : "Owners"}</span>
+                    </span>
+                    {ownerFilter ? (
+                      <button
+                        type="button"
+                        onClick={() => setOwnerFilter("")}
+                        className="text-[11px] font-semibold text-red-500 hover:underline cursor-pointer"
+                      >
+                        {language === "pl" ? "Wyczyść" : "Clear"}
+                      </button>
+                    ) : (
+                      <span className="text-slate-400 dark:text-slate-500 text-[11px] font-medium">
+                        {users.length} {language === "pl" ? "osób" : "users"}
+                      </span>
+                    )}
                   </div>
-                  <ul className="py-1 overflow-y-auto flex-1 max-h-56">
+
+                  {/* Search Input with inline clear */}
+                  <div className="p-2.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-950/20">
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder={t("products.searchOwnerPlaceholder") || (language === "pl" ? "Szukaj opiekuna..." : "Search owner...")}
+                        value={ownerSearch}
+                        onChange={(e) => setOwnerSearch(e.target.value)}
+                        className="w-full text-xs pl-8 pr-7 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-2xs font-medium"
+                      />
+                      {ownerSearch && (
+                        <button
+                          type="button"
+                          onClick={() => setOwnerSearch("")}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded-full cursor-pointer"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Owner List */}
+                  <ul className="py-1 px-1.5 overflow-y-auto overflow-x-hidden flex-1 max-h-56">
                     <li>
                       <button
                         type="button"
@@ -1064,41 +1346,100 @@ const Products = () => {
                           setOwnerFilter("");
                           setOwnersDropdownOpen(false);
                         }}
-                        className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition cursor-pointer"
+                        className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center justify-between ${
+                          !ownerFilter
+                            ? "text-indigo-650 dark:text-indigo-400 bg-indigo-50/60 dark:bg-indigo-950/40"
+                            : "text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/60"
+                        }`}
                       >
-                        {language === "pl" ? "Wszyscy opiekunowie" : "All owners"}
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 shrink-0 border border-slate-200/60 dark:border-slate-700/60">
+                            <Users className="w-3.5 h-3.5" />
+                          </div>
+                          <span className="truncate">{t("products.allOwners") || (language === "pl" ? "Wszyscy opiekunowie" : "All owners")}</span>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0 ml-2">
+                          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-slate-700/50">
+                            {products.length}
+                          </span>
+                          {!ownerFilter && <Check className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />}
+                        </div>
                       </button>
                     </li>
                     {users
                       .filter((u) => u.name.toLowerCase().includes(ownerSearch.toLowerCase()))
-                      .map((u) => (
-                        <li key={u._id}>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setOwnerFilter(u._id);
-                              setOwnersDropdownOpen(false);
-                            }}
-                            className={`w-full text-left px-4 py-2 text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition cursor-pointer flex items-center justify-between ${
-                              ownerFilter === u._id
-                                ? "text-indigo-650 dark:text-indigo-400 font-bold bg-indigo-50/20 dark:bg-indigo-950/20"
-                                : "text-slate-650 dark:text-slate-300"
-                            }`}
-                          >
-                            <span>{u.name}</span>
-                            {ownerFilter === u._id && (
-                              <span className="text-indigo-650 dark:text-indigo-400 font-bold">✓</span>
-                            )}
-                          </button>
-                        </li>
-                      ))}
+                      .map((u) => {
+                        const isSelected = ownerFilter === u._id;
+                        const count = ownerCounts[u._id] || 0;
+                        const initials = u.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .filter(Boolean)
+                          .slice(0, 2)
+                          .join("")
+                          .toUpperCase() || "U";
+                        const profileImgUrl = u.profileImage ? `${API_BASE}/uploads/users/${u.profileImage}` : null;
+
+                        return (
+                          <li key={u._id}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOwnerFilter(isSelected ? "" : u._id);
+                                setOwnersDropdownOpen(false);
+                              }}
+                              className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center justify-between ${
+                                isSelected
+                                  ? "text-indigo-650 dark:text-indigo-400 bg-indigo-50/60 dark:bg-indigo-950/40"
+                                  : "text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/60"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 border overflow-hidden ${
+                                  isSelected
+                                    ? "border-indigo-600 ring-2 ring-indigo-500/25"
+                                    : "border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800"
+                                }`}>
+                                  {profileImgUrl ? (
+                                    <img
+                                      src={profileImgUrl}
+                                      alt={u.name}
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = "none";
+                                        if (e.currentTarget.nextElementSibling) {
+                                          e.currentTarget.nextElementSibling.classList.remove("hidden");
+                                        }
+                                      }}
+                                    />
+                                  ) : null}
+                                  <span className={`text-[10px] font-bold ${profileImgUrl ? "hidden" : ""} ${
+                                    isSelected
+                                      ? "bg-indigo-600 text-white w-full h-full flex items-center justify-center"
+                                      : "bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 w-full h-full flex items-center justify-center"
+                                  }`}>
+                                    {initials}
+                                  </span>
+                                </div>
+                                <span className="truncate">{u.name}</span>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0 ml-2">
+                                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-slate-700/50">
+                                  {count}
+                                </span>
+                                {isSelected && <Check className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />}
+                              </div>
+                            </button>
+                          </li>
+                        );
+                      })}
                   </ul>
                 </div>
               )}
             </div>
 
             {/* Show Columns */}
-            <div className="relative inline-block text-left w-full sm:w-60">
+            <div ref={columnsDropdownRef} className="relative inline-block text-left w-full sm:w-auto">
               <button
                 type="button"
                 onClick={() => {
@@ -1106,70 +1447,77 @@ const Products = () => {
                   setCategoriesDropdownOpen(false);
                   setOwnersDropdownOpen(false);
                 }}
-                className="inline-flex justify-between items-center w-full rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm px-4 py-2.5 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-850 focus:outline-none transition cursor-pointer"
+                className="inline-flex justify-between items-center h-10 w-full sm:w-56 px-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-850 hover:border-slate-300 dark:hover:border-slate-700 transition shadow-xs cursor-pointer select-none"
               >
-                <span>
-                  {columnsDropdownOpen ? t("products.hideColumns") : t("products.showColumns")}
-                </span>
-                <svg
-                  className={`ml-2 h-4 w-4 text-slate-400 transform transition-transform duration-200 ${columnsDropdownOpen ? "rotate-180" : ""}`}
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M5.23 7.21a.75.75 0 011.06.02L10 11.293l3.71-4.06a.75.75 0 111.08 1.04l-4.25 4.65a.75.75 0 01-1.08 0L5.25 8.27a.75.75 0 01-.02-1.06z"
-                    clipRule="evenodd"
-                  />
-                </svg>
+                <div className="flex items-center gap-2 min-w-0">
+                  <SlidersHorizontal className="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" />
+                  <span className="truncate">
+                    {columnsDropdownOpen ? t("products.hideColumns") : t("products.showColumns")}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0 ml-1">
+                  <span className="px-1.5 py-0.5 rounded-md bg-slate-150 dark:bg-slate-800 text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                    {allColumns.filter((c) => !hiddenColumns.includes(c)).length}/{allColumns.length}
+                  </span>
+                  <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${columnsDropdownOpen ? "rotate-180" : ""}`} />
+                </div>
               </button>
 
               {columnsDropdownOpen && (
-                <div className="absolute mt-2 rounded-xl shadow-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 z-30 overflow-y-auto max-h-80 w-72 py-1.5 flex flex-col">
+                <div className="absolute right-0 mt-2 rounded-2xl shadow-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800/90 z-50 overflow-y-auto max-h-88 w-72 sm:w-80 py-2 flex flex-col max-w-[calc(100vw-2rem)] animate-in fade-in zoom-in-95 duration-100">
                   {/* Dropdown Header Actions */}
-                  <div className="flex justify-between items-center px-4 py-2 border-b border-slate-100 dark:border-slate-800 text-[10px] font-bold text-slate-400">
-                    <span>{t("products.columnsHeader")}</span>
-                    <div className="flex gap-2">
+                  <div className="flex justify-between items-center px-3.5 pb-2 border-b border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                      <SlidersHorizontal className="w-3.5 h-3.5 text-indigo-500" />
+                      <span>{t("products.columnsHeader") || (language === "pl" ? "Kolumny" : "Columns")}</span>
+                    </span>
+                    <div className="flex items-center gap-2 text-[11px] font-semibold">
                       <button
                         type="button"
                         onClick={() => setHiddenColumns([])}
-                        className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 transition cursor-pointer"
+                        className="text-indigo-600 hover:underline dark:text-indigo-400 cursor-pointer"
                       >
                         {t("products.columnsShowAll") || "Pokaż wszystkie"}
                       </button>
-                      <span>•</span>
+                      <span className="text-slate-300 dark:text-slate-700">•</span>
                       <button
                         type="button"
-                        onClick={() => setHiddenColumns(allColumns.filter(c => c !== "name"))}
-                        className="text-red-550 hover:text-red-700 transition cursor-pointer"
+                        onClick={() => setHiddenColumns(["description", "owner"])}
+                        className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:underline cursor-pointer"
                       >
-                        {t("products.columnsReset") || "Reset"}
+                        {language === "pl" ? "Domyślne" : "Default"}
                       </button>
                     </div>
                   </div>
 
                   <ul className="py-1 overflow-y-auto">
                     {/* Standard Columns Group */}
-                    <div className="px-4 py-1 text-[9px] font-extrabold text-slate-400 uppercase tracking-wider select-none bg-slate-50/55 dark:bg-slate-950/20">
-                      {t("products.columnsStandardGroup") || "STANDARD"}
+                    <div className="px-3.5 py-1.5 text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider select-none bg-slate-50/60 dark:bg-slate-950/40 border-b border-slate-100 dark:border-slate-800/60 flex items-center justify-between">
+                      <span>{t("products.columnsStandardGroup") || "STANDARDOWE"}</span>
+                      <span className="text-[10px] font-bold text-slate-400">
+                        {allColumns.filter((c) => !extraColumns.includes(c) && !hiddenColumns.includes(c)).length}/{allColumns.filter((c) => !extraColumns.includes(c)).length}
+                      </span>
                     </div>
                     {allColumns
-                      .filter(col => !extraColumns.includes(col))
+                      .filter((col) => !extraColumns.includes(col))
                       .map((col) => {
                         const colTrans = t(`products.columns.${col}`);
                         const displayName = colTrans.startsWith("products.columns.") ? col : colTrans;
+                        const isChecked = !hiddenColumns.includes(col);
                         return (
                           <li key={col}>
-                            <label className="flex items-center gap-2.5 px-4 py-1.5 text-xs text-slate-650 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition font-medium">
+                            <label className={`flex items-center gap-2.5 px-3.5 py-1.5 mx-1 rounded-lg text-xs font-semibold cursor-pointer transition select-none ${
+                              isChecked
+                                ? "text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800/60"
+                                : "text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/60"
+                            }`}>
                               <input
                                 type="checkbox"
-                                checked={!hiddenColumns.includes(col)}
+                                checked={isChecked}
                                 onChange={() => toggleColumn(col)}
-                                className="accent-indigo-650 w-3.5 h-3.5 rounded"
+                                className="accent-indigo-600 w-3.5 h-3.5 rounded cursor-pointer"
                               />
-                              <span>{displayName}</span>
+                              <span className="truncate">{displayName}</span>
                             </label>
                           </li>
                         );
@@ -1178,27 +1526,32 @@ const Products = () => {
                     {/* Custom Columns Group */}
                     {extraColumns.length > 0 && (
                       <>
-                        <div className="px-4 py-1.5 text-[9px] font-extrabold text-slate-400 uppercase tracking-wider select-none bg-slate-50/55 dark:bg-slate-950/20 border-t border-slate-100 dark:border-slate-800 mt-1 flex items-center justify-between">
-                          <span>{t("products.columnsCustomGroup") || "CUSTOM"}</span>
-                          <span className="text-[8px] font-normal text-slate-400 lowercase">
-                            {language === "pl" ? "widoczność" : "visibility"}
+                        <div className="px-3.5 py-1.5 text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider select-none bg-slate-50/60 dark:bg-slate-950/40 border-y border-slate-100 dark:border-slate-800/60 mt-1 flex items-center justify-between">
+                          <span>{t("products.columnsCustomGroup") || "DODATKOWE"}</span>
+                          <span className="text-[10px] font-bold text-slate-400">
+                            {extraColumns.filter((c) => !hiddenColumns.includes(c)).length}/{extraColumns.length}
                           </span>
                         </div>
                         {extraColumns.map((col) => {
                           const isGuest = Boolean(columnConfigs[col.toLowerCase()]);
+                          const isChecked = !hiddenColumns.includes(col);
                           return (
-                            <li key={col} className="flex items-center justify-between px-4 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 transition">
-                              <label className="flex items-center gap-2.5 text-xs text-slate-650 dark:text-slate-300 cursor-pointer font-medium flex-1 truncate select-none">
+                            <li key={col} className={`flex items-center justify-between px-3.5 py-1.5 mx-1 rounded-lg transition ${
+                              isChecked ? "hover:bg-slate-50 dark:hover:bg-slate-800/60" : "hover:bg-slate-50/50 dark:hover:bg-slate-850/40"
+                            }`}>
+                              <label className={`flex items-center gap-2.5 text-xs font-semibold cursor-pointer flex-1 truncate select-none ${
+                                isChecked ? "text-slate-800 dark:text-slate-100" : "text-slate-400 dark:text-slate-500"
+                              }`}>
                                 <input
                                   type="checkbox"
-                                  checked={!hiddenColumns.includes(col)}
+                                  checked={isChecked}
                                   onChange={() => toggleColumn(col)}
-                                  className="accent-indigo-650 w-3.5 h-3.5 rounded"
+                                  className="accent-indigo-600 w-3.5 h-3.5 rounded cursor-pointer"
                                 />
-                                <span className="truncate max-w-[110px]" title={col}>{col}</span>
+                                <span className="truncate max-w-[130px]" title={col}>{col}</span>
                               </label>
 
-                              {/* Guest vs Admin visibility toggle button (compact icon-only) */}
+                              {/* Guest vs Admin visibility toggle button */}
                               <button
                                 type="button"
                                 onClick={(e) => {
@@ -1232,56 +1585,86 @@ const Products = () => {
         </div>
 
         {/* Active Filters Display */}
-        {(activeCategories.length > 0 || ownerFilter) && (
-          <div className="flex flex-wrap gap-2 items-center bg-slate-100/50 dark:bg-slate-900/35 border border-slate-200/50 dark:border-slate-800/80 p-3 rounded-2xl transition">
-            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider pl-1 select-none">
-              {language === "pl" ? "Aktywne filtry:" : "Active filters:"}
-            </span>
+        {(searchTerm || activeCategories.length > 0 || ownerFilter) && (
+          <div className="flex flex-wrap gap-2 items-center bg-slate-100/60 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 p-2.5 sm:p-3 rounded-2xl transition">
+            <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1 select-none">
+              <Filter className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+              <span>{language === "pl" ? "Aktywne filtry:" : "Active filters:"}</span>
+            </div>
+
+            {searchTerm && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold shadow-xs">
+                <span className="text-slate-400 text-[10px] uppercase font-bold">{language === "pl" ? "Szukaj:" : "Search:"}</span>
+                <span className="max-w-[120px] truncate">"{searchTerm}"</span>
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm("")}
+                  className="hover:text-red-500 transition cursor-pointer font-bold pl-0.5"
+                  title="Usuń filtr wyszukiwania"
+                >
+                  ✕
+                </button>
+              </span>
+            )}
+
             {activeCategories.map((catId) => {
               const category = categories.find((c) => c._id === catId);
               return (
                 <span
                   key={catId}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-55 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-100/40 dark:border-indigo-900/30 rounded-lg text-xs font-semibold shadow-sm"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-900/60 rounded-lg text-xs font-semibold shadow-xs"
                 >
-                  {language === "en" && category?.nameEn ? category.nameEn : (category?.name || catId)}
+                  <span className="max-w-[120px] truncate">
+                    {language === "en" && category?.nameEn ? category.nameEn : (category?.name || catId)}
+                  </span>
                   <button
                     type="button"
                     onClick={() => handleCategorySelect(catId)}
-                    className="hover:text-red-505 transition cursor-pointer font-bold pl-0.5"
-                    title="Remove filter"
+                    className="hover:text-red-500 transition cursor-pointer font-bold pl-0.5"
+                    title="Usuń kategorię"
                   >
                     ✕
                   </button>
                 </span>
               );
             })}
+
             {ownerFilter && (
-              <span
-                className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-55 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-100/40 dark:border-indigo-900/30 rounded-lg text-xs font-semibold shadow-sm"
-              >
-                <span className="opacity-75">{language === "pl" ? "Opiekun: " : "Owner: "}</span>
-                {users.find((u) => u._id === ownerFilter)?.name || ownerFilter}
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-900/60 rounded-lg text-xs font-semibold shadow-xs">
+                <span className="text-indigo-400 text-[10px] uppercase font-bold">{language === "pl" ? "Opiekun:" : "Owner:"}</span>
+                <span className="max-w-[120px] truncate">
+                  {users.find((u) => u._id === ownerFilter)?.name || ownerFilter}
+                </span>
                 <button
                   type="button"
                   onClick={() => setOwnerFilter("")}
-                  className="hover:text-red-505 transition cursor-pointer font-bold pl-0.5"
-                  title="Remove owner filter"
+                  className="hover:text-red-500 transition cursor-pointer font-bold pl-0.5"
+                  title="Usuń filtr opiekuna"
                 >
                   ✕
                 </button>
               </span>
             )}
-            <button
-              type="button"
-              onClick={() => {
-                setActiveCategories([]);
-                setOwnerFilter("");
-              }}
-              className="text-xs font-bold text-red-550 dark:text-red-400 hover:text-red-700 dark:hover:text-red-350 ml-2 transition cursor-pointer"
-            >
-              {language === "pl" ? "Wyczyść wszystko" : "Clear all"}
-            </button>
+
+            <div className="flex items-center gap-2 ml-auto">
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                {language === "pl"
+                  ? `Wyniki: ${filteredProducts.length} z ${products.length}`
+                  : `Results: ${filteredProducts.length} of ${products.length}`}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchTerm("");
+                  setActiveCategories([]);
+                  setOwnerFilter("");
+                }}
+                className="inline-flex items-center gap-1 text-xs font-bold text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition cursor-pointer ml-1"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>{language === "pl" ? "Wyczyść wszystko" : "Clear all"}</span>
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -1330,20 +1713,23 @@ const Products = () => {
         {/* Items per page selector */}
         <div className="flex items-center gap-2 text-xs font-bold text-slate-550 dark:text-slate-400">
           <span>{t("products.itemsPerPage") || "Elementów na stronie:"}</span>
-          <select
-            value={itemsPerPage}
-            onChange={(e) => {
-              setItemsPerPage(Number(e.target.value));
-              setCurrentPage(1);
-            }}
-            className="rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500/20"
-          >
-            <option value={5}>5</option>
-            <option value={10}>10</option>
-            <option value={25}>25</option>
-            <option value={50}>50</option>
-            <option value={100}>100</option>
-          </select>
+          <div className="relative select-none flex items-center">
+            <select
+              value={itemsPerPage}
+              onChange={(e) => {
+                setItemsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="appearance-none rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 pl-3 pr-8 py-1.5 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer"
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 absolute right-2.5 pointer-events-none" />
+          </div>
         </div>
 
         {/* Pagination Component */}

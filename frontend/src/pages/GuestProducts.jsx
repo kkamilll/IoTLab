@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import apiClient from "../api/apiClient";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
+import { useToast } from "../context/ToastContext";
 import {
   Search,
   Filter,
@@ -17,6 +18,7 @@ import {
   Eye,
   HelpCircle,
   ChevronDown,
+  ChevronUp,
   ChevronsUpDown,
   Folder,
   FolderOpen,
@@ -51,7 +53,7 @@ const getImageUrl = (product) => {
   }
 
   const fileName = rawPath.includes("/") || rawPath.includes("\\")
-    ? rawPath.split(/[\/\\]/).pop()
+    ? rawPath.split(/[/\\]/).pop()
     : rawPath;
 
   if (!fileName) return null;
@@ -60,6 +62,7 @@ const getImageUrl = (product) => {
 
 const GuestProducts = () => {
   const { t, language } = useLanguage();
+  const { showToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
   const { menuCategory } = useParams();
@@ -234,7 +237,6 @@ const GuestProducts = () => {
     ...extraColumns,
     "available",
   ];
-  const hiddenColumns = [];
 
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(cart));
@@ -244,7 +246,9 @@ const GuestProducts = () => {
     if (!productId) return;
     try {
       sessionStorage.setItem("last_preview_product_id", productId);
-    } catch (e) {}
+    } catch {
+      // ignore
+    }
     navigate(`/preview?id=${productId}`, { state: { productId } });
   };
 
@@ -289,7 +293,7 @@ const GuestProducts = () => {
     fetchProducts();
     fetchCategories();
 
-    setCartQuantities((prev) => {
+    setCartQuantities(() => {
       const cart = JSON.parse(localStorage.getItem("cart")) || [];
       const newQuantities = {};
       cart.forEach(
@@ -364,9 +368,38 @@ const GuestProducts = () => {
 
   const handleQuantityChange = (productId, value, product) => {
     let qty = parseInt(value, 10);
-    if (isNaN(qty) || qty < 0) qty = 0;
     const maxQty = product.stockForRent || 0;
-    if (qty > maxQty) qty = maxQty;
+
+    if (maxQty <= 0) {
+      showToast(
+        language === "pl"
+          ? `Produkt „${product?.name || ""}” jest chwilowo niedostępny do wypożyczenia.`
+          : `Product "${product?.name || ""}" is currently out of stock for rent.`,
+        "error"
+      );
+      return;
+    }
+
+    if (isNaN(qty) || qty < 0) qty = 0;
+
+    let hitMax = false;
+    if (qty > maxQty) {
+      qty = maxQty;
+      hitMax = true;
+    }
+
+    const previousQty = cartQuantities[productId] || 0;
+    if (qty === previousQty) {
+      if (hitMax) {
+        showToast(
+          language === "pl"
+            ? `Osiągnięto limit magazynowy: maksymalnie ${maxQty} szt. dla „${product?.name || "produktu"}”.`
+            : `Stock limit reached: maximum ${maxQty} pcs for "${product?.name || "product"}".`,
+          "warning"
+        );
+      }
+      return;
+    }
 
     setCart((prevCart) => {
       const existingIndex = prevCart.findIndex(
@@ -387,6 +420,44 @@ const GuestProducts = () => {
     });
 
     setCartQuantities((prev) => ({ ...prev, [productId]: qty }));
+
+    const prodName = product?.name ? ` „${product.name}”` : "";
+
+    if (hitMax) {
+      showToast(
+        language === "pl"
+          ? `Osiągnięto limit magazynowy (${maxQty} szt.) dla${prodName}.`
+          : `Stock limit reached (${maxQty} pcs) for${prodName}.`,
+        "warning"
+      );
+    } else if (qty > previousQty) {
+      showToast(
+        language === "pl"
+          ? (previousQty === 0
+              ? `Dodano do koszyka:${prodName} (ilość: ${qty} szt.)`
+              : `Zwiększono ilość w koszyku:${prodName} (łącznie: ${qty} szt.)`)
+          : (previousQty === 0
+              ? `Added to cart:${prodName} (qty: ${qty} pcs)`
+              : `Cart updated:${prodName} (total: ${qty} pcs)`),
+        "success"
+      );
+    } else if (qty < previousQty) {
+      if (qty === 0) {
+        showToast(
+          language === "pl"
+            ? `Usunięto z koszyka:${prodName}`
+            : `Removed from cart:${prodName}`,
+          "info"
+        );
+      } else {
+        showToast(
+          language === "pl"
+            ? `Zmniejszono ilość w koszyku:${prodName} (pozostało: ${qty} szt.)`
+            : `Decreased quantity in cart:${prodName} (${qty} pcs remaining)`,
+          "info"
+        );
+      }
+    }
   };
 
   const getAvailableStockForProduct = (product) =>
@@ -454,18 +525,29 @@ const GuestProducts = () => {
               </div>
 
               <button
-                onClick={() => navigate("/cart")}
-              className="rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2 text-xs font-bold text-white shadow-md hover:shadow-lg transition duration-100 cursor-pointer flex items-center gap-2"
-            >
-              <ShoppingCart className="w-4 h-4" />
-              {t("guest.viewCart")}
-              <span className="bg-indigo-700 text-white font-black px-2 py-0.5 rounded-md text-[10px]">
-                {cart.reduce((sum, item) => sum + item.quantity, 0)}
-              </span>
-            </button>
+                onClick={() => {
+                  const total = cart.reduce((sum, item) => sum + item.quantity, 0);
+                  if (total === 0) {
+                    showToast(
+                      language === "pl"
+                        ? "Twój koszyk jest pusty. Wybierz sprzęt z katalogu, aby przejść do rezerwacji."
+                        : "Your cart is empty. Select equipment from the catalog to book.",
+                      "info"
+                    );
+                  }
+                  navigate("/cart");
+                }}
+                className="rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2 text-xs font-bold text-white shadow-md hover:shadow-lg transition duration-100 cursor-pointer flex items-center gap-2"
+              >
+                <ShoppingCart className="w-4 h-4" />
+                {t("guest.viewCart")}
+                <span className="bg-indigo-700 text-white font-black px-2 py-0.5 rounded-md text-[10px]">
+                  {cart.reduce((sum, item) => sum + item.quantity, 0)}
+                </span>
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
         {/* Filters Card */}
         <div className="w-full rounded-[1.8rem] border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col gap-5">
@@ -486,6 +568,10 @@ const GuestProducts = () => {
                   onClick={() => {
                     setActiveCategory("");
                     setSearchTerm("");
+                    showToast(
+                      language === "pl" ? "Zresetowano filtry katalogu" : "Catalog filters reset",
+                      "info"
+                    );
                   }}
                   className="text-xs font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 cursor-pointer ml-1"
                 >
@@ -787,9 +873,32 @@ const GuestProducts = () => {
             {t("guest.loading")}
           </div>
         ) : filteredProducts.length === 0 ? (
-          <div className="rounded-[1.8rem] border border-dashed border-slate-350 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/20 p-16 text-center text-slate-450 dark:text-slate-505 font-semibold select-none flex flex-col items-center gap-2">
-            <AlertTriangle className="w-10 h-10 text-slate-400" />
-            {t("guest.noProducts")}
+          <div className="rounded-[1.8rem] border border-dashed border-slate-350 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/20 p-16 text-center text-slate-450 dark:text-slate-505 font-semibold select-none flex flex-col items-center gap-3">
+            <AlertTriangle className="w-10 h-10 text-amber-500/80" />
+            <h4 className="text-base font-bold text-slate-800 dark:text-slate-200">
+              {t("guest.noProducts") || (language === "pl" ? "Brak produktów spełniających kryteria" : "No products matching criteria")}
+            </h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm">
+              {language === "pl"
+                ? "Nie znaleziono sprzętu dla wybranej kategorii lub wyszukiwanej frazy. Spróbuj zmienić parametry wyszukiwania."
+                : "No equipment found for the selected category or search phrase. Try changing search parameters."}
+            </p>
+            {(activeCategory || searchTerm) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveCategory("");
+                  setSearchTerm("");
+                  showToast(
+                    language === "pl" ? "Zresetowano filtry katalogu" : "Catalog filters reset",
+                    "info"
+                  );
+                }}
+                className="mt-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition cursor-pointer active:scale-95"
+              >
+                {language === "pl" ? "Pokaż wszystkie produkty" : "Show all products"}
+              </button>
+            )}
           </div>
         ) : viewMode === "grid" ? (
           /* Premium Product Cards Grid View */
@@ -911,14 +1020,27 @@ const GuestProducts = () => {
                         </button>
 
                         {/* Interactive Pill */}
-                        <div className="flex items-center border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden bg-white dark:bg-slate-950">
+                        <div className={`flex items-center border rounded-xl overflow-hidden transition-all duration-200 ${
+                          inCartQty > 0 ? "qty-stepper-active" : "qty-stepper-idle"
+                        }`}>
                           <button
                             type="button"
-                            onClick={() => handleQuantityChange(p._id, inCartQty - 1, p)}
-                            disabled={inCartQty <= 0}
-                            className="p-1.5 text-slate-600 dark:text-slate-350 hover:bg-slate-55 dark:hover:bg-slate-900 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer leading-none"
+                            onClick={() => {
+                              if (inCartQty <= 0) {
+                                showToast(
+                                  language === "pl"
+                                    ? `Produkt „${p.name}” nie znajduje się w koszyku (ilość wynosi 0).`
+                                    : `Product "${p.name}" is not in your cart (quantity is 0).`,
+                                  "info"
+                                );
+                                return;
+                              }
+                              handleQuantityChange(p._id, inCartQty - 1, p);
+                            }}
+                            className={`qty-stepper-btn ${inCartQty <= 0 ? "qty-capped" : ""}`}
+                            title={language === "pl" ? "Zmniejsz ilość" : "Decrease quantity"}
                           >
-                            <Minus className="w-3 h-3" />
+                            <Minus className="w-3.5 h-3.5" />
                           </button>
                           
                           <input
@@ -927,16 +1049,36 @@ const GuestProducts = () => {
                             max={availableQty}
                             value={inCartQty}
                             onChange={(e) => handleQuantityChange(p._id, e.target.value, p)}
-                            className="w-10 text-center text-xs font-extrabold text-slate-800 dark:text-slate-200 bg-transparent border-0 outline-none select-none appearance-none"
+                            className="qty-stepper-val"
                           />
 
                           <button
                             type="button"
-                            onClick={() => handleQuantityChange(p._id, inCartQty + 1, p)}
-                            disabled={inCartQty >= availableQty}
-                            className="p-1.5 text-slate-600 dark:text-slate-350 hover:bg-slate-55 dark:hover:bg-slate-900 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer leading-none"
+                            onClick={() => {
+                              if (availableQty <= 0) {
+                                showToast(
+                                  language === "pl"
+                                    ? `Produkt „${p.name}” jest chwilowo niedostępny w magazynie (0 szt.).`
+                                    : `Product "${p.name}" is currently out of stock for rent.`,
+                                  "error"
+                                );
+                                return;
+                              }
+                              if (inCartQty >= availableQty) {
+                                showToast(
+                                  language === "pl"
+                                    ? `Osiągnięto limit magazynowy: dostępne jest tylko ${availableQty} szt. dla „${p.name}”.`
+                                    : `Stock limit reached: only ${availableQty} pcs available for "${p.name}".`,
+                                  "warning"
+                                );
+                                return;
+                              }
+                              handleQuantityChange(p._id, inCartQty + 1, p);
+                            }}
+                            className={`qty-stepper-btn ${inCartQty >= availableQty || availableQty <= 0 ? "qty-capped" : ""}`}
+                            title={language === "pl" ? "Zwiększ ilość" : "Increase quantity"}
                           >
-                            <Plus className="w-3 h-3" />
+                            <Plus className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </div>
@@ -1068,14 +1210,27 @@ const GuestProducts = () => {
 
                         {/* List quantity picker */}
                         <td className="p-4 text-center">
-                          <div className="inline-flex items-center border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden bg-white dark:bg-slate-950">
+                          <div className={`inline-flex items-center border rounded-xl overflow-hidden transition-all duration-200 ${
+                            inCartQty > 0 ? "qty-stepper-active" : "qty-stepper-idle"
+                          }`}>
                             <button
                               type="button"
-                              onClick={() => handleQuantityChange(p._id, inCartQty - 1, p)}
-                              disabled={inCartQty <= 0}
-                              className="p-1.5 text-slate-600 dark:text-slate-350 hover:bg-slate-55 dark:hover:bg-slate-900 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer leading-none"
+                              onClick={() => {
+                                if (inCartQty <= 0) {
+                                  showToast(
+                                    language === "pl"
+                                      ? `Produkt „${p.name}” nie znajduje się w koszyku (ilość wynosi 0).`
+                                      : `Product "${p.name}" is not in your cart (quantity is 0).`,
+                                    "info"
+                                  );
+                                  return;
+                                }
+                                handleQuantityChange(p._id, inCartQty - 1, p);
+                              }}
+                              className={`qty-stepper-btn ${inCartQty <= 0 ? "qty-capped" : ""}`}
+                              title={language === "pl" ? "Zmniejsz ilość" : "Decrease quantity"}
                             >
-                              <Minus className="w-3 h-3" />
+                              <Minus className="w-3.5 h-3.5" />
                             </button>
                             
                             <input
@@ -1084,16 +1239,36 @@ const GuestProducts = () => {
                               max={availableQty}
                               value={inCartQty}
                               onChange={(e) => handleQuantityChange(p._id, e.target.value, p)}
-                              className="w-10 text-center text-xs font-extrabold text-slate-800 dark:text-slate-200 bg-transparent border-0 outline-none select-none appearance-none"
+                              className="qty-stepper-val"
                             />
 
                             <button
                               type="button"
-                              onClick={() => handleQuantityChange(p._id, inCartQty + 1, p)}
-                              disabled={inCartQty >= availableQty}
-                              className="p-1.5 text-slate-600 dark:text-slate-350 hover:bg-slate-55 dark:hover:bg-slate-900 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer leading-none"
+                              onClick={() => {
+                                if (availableQty <= 0) {
+                                  showToast(
+                                    language === "pl"
+                                      ? `Produkt „${p.name}” jest chwilowo niedostępny w magazynie (0 szt.).`
+                                      : `Product "${p.name}" is currently out of stock for rent.`,
+                                    "error"
+                                  );
+                                  return;
+                                }
+                                if (inCartQty >= availableQty) {
+                                  showToast(
+                                    language === "pl"
+                                      ? `Osiągnięto limit magazynowy: dostępne jest tylko ${availableQty} szt. dla „${p.name}”.`
+                                      : `Stock limit reached: only ${availableQty} pcs available for "${p.name}".`,
+                                    "warning"
+                                  );
+                                  return;
+                                }
+                                handleQuantityChange(p._id, inCartQty + 1, p);
+                              }}
+                              className={`qty-stepper-btn ${inCartQty >= availableQty || availableQty <= 0 ? "qty-capped" : ""}`}
+                              title={language === "pl" ? "Zwiększ ilość" : "Increase quantity"}
                             >
-                              <Plus className="w-3 h-3" />
+                              <Plus className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         </td>

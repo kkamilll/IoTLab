@@ -19,11 +19,14 @@ export function generateVerificationOtpEmailTemplate(otpCode) {
 }
 
 export const orderTemplates = {
-  newOrder: ({ order, customerKey, uuid }) => `
+  newOrder: ({ order, customerKey, uuid }) => {
+    const orderId = uuid || order.uuid || order._id;
+    const shortId = (orderId.toString().length > 8 ? orderId.toString().slice(0, 8) : orderId.toString()).toUpperCase();
+    return `
     Hello ${order.customer.firstName} ${order.customer.lastName},
 
-    Your order ${order._id} has been received!
-    You can see status of the order on ${process.env.FRONTEND_IP}${process.env.FRONTEND_PORT}${process.env.FRONTEND_ORDER_PATH}/${uuid} with password: ${customerKey}
+    Your order #${shortId} (ID: ${orderId}) has been received!
+    You can see status of the order on ${process.env.FRONTEND_IP}${process.env.FRONTEND_PORT}${process.env.FRONTEND_ORDER_PATH}/${orderId} with password: ${customerKey}
 
     Items:
     ${order.items.map(
@@ -34,12 +37,16 @@ export const orderTemplates = {
     End Date: ${order.requestedEndDate.toDateString()}
 
     Thank you for your order!
-  `,
+  `;
+  },
 
-  updateOrder: ({ order }) => `
+  updateOrder: ({ order }) => {
+    const orderId = order.uuid || order._id;
+    const shortId = (orderId.toString().length > 8 ? orderId.toString().slice(0, 8) : orderId.toString()).toUpperCase();
+    return `
     Hello ${order.customer.firstName} ${order.customer.lastName},
 
-    Your order ${order._id} has been updated.
+    Your order #${shortId} (ID: ${orderId}) has been updated.
 
     Current Items:
     ${order.items.map(
@@ -50,5 +57,6 @@ export const orderTemplates = {
     End Date: ${order.requestedEndDate.toDateString()}
 
     Thank you!
-  `,
+  `;
+  },
 };

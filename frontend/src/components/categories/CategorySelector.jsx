@@ -66,8 +66,8 @@ export default function CategorySelector({
   };
 
   return (
-    <div>
-      <div className="p-4 border rounded max-w-md max-h-96 overflow-y-auto">
+    <div className="w-full">
+      <div className="p-3 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl w-full max-h-52 overflow-y-auto shadow-2xs">
         <CategoryTree
           categoryTree={categoryTree}
           selectedIds={formData.categories}
@@ -77,21 +77,23 @@ export default function CategorySelector({
         />
       </div>
 
-      <div className="mt-3 flex items-center gap-2">
-        <span className="text-sm font-medium">Auto-collapse:</span>
-        <label className="relative inline-flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            className="sr-only peer"
-            checked={autoCollapse}
-            onChange={() => setAutoCollapse(!autoCollapse)}
+      <div className="mt-2.5 flex items-center justify-between px-1">
+        <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+          Automatyczne zwijanie podkategorii (Auto-collapse)
+        </span>
+        <button
+          type="button"
+          onClick={() => setAutoCollapse(!autoCollapse)}
+          className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+            autoCollapse ? "bg-indigo-600" : "bg-slate-300 dark:bg-slate-700"
+          }`}
+        >
+          <span
+            className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+              autoCollapse ? "translate-x-4" : "translate-x-0"
+            }`}
           />
-          <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 transition-colors"></div>
-          <div
-            className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow-md transform transition-transform 
-          ${autoCollapse ? "translate-x-5" : "translate-x-0"}`}
-          ></div>
-        </label>
+        </button>
       </div>
     </div>
   );

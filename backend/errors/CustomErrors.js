@@ -23,7 +23,7 @@ export class BadRequestError extends AppError {
 }
 
 export class DuplicateKeyError extends AppError {
-  constructor({ field, value }) {
+  constructor({ field = "field", value = "value" } = {}) {
     super(`Duplicate ${field}: "${value}"`, 409, LOG_LEVELS.WARN);
     this.field = field;
     this.value = value;
@@ -55,7 +55,10 @@ export class ConflictError extends AppError {
 }
 
 export class ServerError extends AppError {
-  constructor({ message, statusCode = 500, logLevel = LOG_LEVELS.ERROR }) {
-    super(message || 'Server error', statusCode, logLevel);
+  constructor(arg = "Server error", statusCode = 500, logLevel = LOG_LEVELS.ERROR) {
+    const message = typeof arg === "object" && arg !== null ? (arg.message || "Server error") : (arg || "Server error");
+    const code = typeof arg === "object" && arg !== null && arg.statusCode ? arg.statusCode : statusCode;
+    const level = typeof arg === "object" && arg !== null && arg.logLevel ? arg.logLevel : logLevel;
+    super(message, code, level);
   }
 }

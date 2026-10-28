@@ -18,6 +18,7 @@ import User from "../models/User.js";
 import { v4 as uuidv4 } from "uuid";
 import { randomBytes } from "crypto";
 import asyncHandler from "../middleware/asyncHandler.js";
+import { logAudit } from "../utils/auditLogger.js";
 
 
 
@@ -200,7 +201,7 @@ export const getOrderStats = asyncHandler(async (req, res, next) => {
         },
       },
       { $sort: { totalQuantity: -1 } },
-      { $limit: 5 },
+      { $limit: parseInt(req.query.limit) || 25 },
     ]);
     response.topProducts[status] = topProducts;
   }
@@ -255,9 +256,11 @@ export const getOrders = asyncHandler(async (req, res, next) => {
 
   if (email) {
     const searchTerm = email.startsWith("#") ? email.slice(1) : email;
+    const isObjectId = mongoose.Types.ObjectId.isValid(searchTerm);
     filter.$or = [
       { "customer.email": { $regex: searchTerm, $options: "i" } },
-      { uuid: { $regex: searchTerm, $options: "i" } }
+      { uuid: { $regex: searchTerm, $options: "i" } },
+      ...(isObjectId ? [{ _id: new mongoose.Types.ObjectId(String(searchTerm)) }] : [])
     ];
   }
   if (index) {
@@ -300,7 +303,7 @@ export const getOrders = asyncHandler(async (req, res, next) => {
       .sort({ [sortBy]: sortOrder })
       .skip(skip)
       .limit(limit)
-      .populate({ path: "items.responsibleOwner", select: "name email" })
+      .populate({ path: "items.responsibleOwner", select: "name email profileImage" })
       .populate({
         path: "items.product",
         select: "name stockTotal stockForRent stockRentedOut owner tags",
@@ -523,6 +526,14 @@ export const createOrder = asyncHandler(async (req, res, next) => {
       }
     }
 
+    await logAudit({
+      req,
+      action: "ORDER_CREATED",
+      details: `Nowe zamówienie #${order.uuid?.substring(0, 8) || order._id} złożone przez ${customer.firstName} ${customer.lastName} (${customer.email})`,
+      targetId: order._id,
+      targetType: "Order",
+    });
+
     return res
       .status(201)
       .json({ success: true, message: "Order created", order });
@@ -604,6 +615,16 @@ export const updateOrder = asyncHandler(async (req, res, next) => {
 
       const prevStatus = item.status;
       if (prevStatus === itemUpdate.newStatus) continue;
+
+      if (req.user.role !== "admin") {
+        const itemOwnerId = item.responsibleOwner?._id
+          ? item.responsibleOwner._id.toString()
+          : item.responsibleOwner?.toString();
+        const currentUserId = req.user._id ? req.user._id.toString() : req.user.id?.toString();
+        if (itemOwnerId && itemOwnerId !== currentUserId) {
+          throw new PermissionError("Nie posiadasz uprawnień do edycji przedmiotów przypisanych do innego opiekuna");
+        }
+      }
 
       if (["approved", "prepared", "rented"].includes(itemUpdate.newStatus)) {
         const itemOwnerId = item.responsibleOwner?.toString();
@@ -744,6 +765,15 @@ export const updateOrder = asyncHandler(async (req, res, next) => {
       });
     }
 
+    await logAudit({
+      req,
+      user: req.user,
+      action: "ORDER_STATUS_CHANGED",
+      details: `Użytkownik ${req.user.name} zaktualizował zamówienie #${order.uuid?.substring(0, 8) || order._id}: ${statusMsg}`,
+      targetId: order._id,
+      targetType: "Order",
+    });
+
     return res.status(200).json({ success: true, order });
   } catch (error) {
     throw error;
@@ -805,6 +835,15 @@ export const hardDeleteOrder = asyncHandler(async (req, res, next) => {
 
   await order.deleteOne();
 
+  await logAudit({
+    req,
+    user: req.user,
+    action: "ORDER_DELETED",
+    details: `Admin ${req.user.name} trwale usunął zamówienie #${order.uuid?.substring(0, 8) || order._id}`,
+    targetId: order._id,
+    targetType: "Order",
+  });
+
   return res
     .status(200)
     .json({ success: true, message: "Order deleted and stock updated" });
@@ -822,8 +861,11 @@ export const getCustomerOrder = asyncHandler(async (req, res, next) => {
       .status(401)
       .json({ success: false, message: "Missing access code" });
 
-  const order = await Order.findOne({ uuid: orderUUID })
-    .populate({ path: "items.responsibleOwner", select: "name" })
+  const isObjectId = mongoose.Types.ObjectId.isValid(orderUUID);
+  const order = await Order.findOne(
+    isObjectId ? { $or: [{ uuid: orderUUID }, { _id: orderUUID }] } : { uuid: orderUUID }
+  )
+    .populate({ path: "items.responsibleOwner", select: "name email profileImage" })
     .populate({ path: "items.product", select: "name" })
     .lean();
   if (!order)
@@ -856,7 +898,10 @@ export const customerUpdateOrder = asyncHandler(async (req, res, next) => {
 
   const { ownerId, customerApproval } = req.body;
 
-  const order = await Order.findById(orderId);
+  const isObjectId = mongoose.Types.ObjectId.isValid(orderId);
+  const order = await Order.findOne(
+    isObjectId ? { $or: [{ _id: orderId }, { uuid: orderId }] } : { uuid: orderId }
+  );
   if (!order)
     return res
       .status(404)
@@ -884,6 +929,14 @@ export const customerUpdateOrder = asyncHandler(async (req, res, next) => {
 
   await order.save();
 
+  await logAudit({
+    req,
+    action: customerApproval ? "ORDER_CUSTOMER_APPROVED" : "ORDER_CUSTOMER_REJECTED",
+    details: `Klient ${customerApproval ? "zaakceptował" : "odrzucił"} propozycję terminu w zamówieniu #${order.uuid?.substring(0, 8) || order._id}`,
+    targetId: order._id,
+    targetType: "Order",
+  });
+
   return res.status(200).json({ success: true, order });
 });
 
@@ -892,8 +945,9 @@ export const downloadPDF = asyncHandler(async (req, res, next) => {
   if (!base64Data || !filename) {
     return next(new BadRequestError("Missing base64Data or filename"));
   }
+  const cleanFilename = filename.toLowerCase().endsWith(".pdf") ? filename : `${filename}.pdf`;
   const buffer = Buffer.from(base64Data, "base64");
   res.setHeader("Content-Type", "application/pdf");
-  res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(filename)}"`);
+  res.setHeader("Content-Disposition", `attachment; filename="${cleanFilename}"`);
   return res.send(buffer);
 });

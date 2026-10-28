@@ -8,10 +8,10 @@ import Btn from "../components/layout/Btn";
 
 /** Quick "Track your order" input bar for guest pages */
 const TrackOrderBar = ({ language, navigate }) => {
-  const [uuid, setUuid] = useState("");
+  const [orderId, setOrderId] = useState("");
   const handleGo = (e) => {
     e.preventDefault();
-    const trimmed = uuid.trim();
+    const trimmed = orderId.trim();
     if (!trimmed) return;
     navigate(`/orderPreview/${trimmed}`);
   };
@@ -22,9 +22,9 @@ const TrackOrderBar = ({ language, navigate }) => {
     >
       <input
         type="text"
-        value={uuid}
-        onChange={(e) => setUuid(e.target.value)}
-        placeholder={language === "pl" ? "🔍 UUID zamówienia — śledź status..." : "🔍 Order UUID — track your order..."}
+        value={orderId}
+        onChange={(e) => setOrderId(e.target.value)}
+        placeholder={language === "pl" ? "🔍 ID zamówienia — śledź status..." : "🔍 Order ID — track your order..."}
         className="flex-1 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 px-3.5 py-3 text-xs font-semibold text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 hover:border-slate-350 dark:hover:border-slate-700 transition shadow-sm"
       />
       <button

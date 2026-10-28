@@ -11,7 +11,7 @@ const Pagination = ({ currentPage, totalPages, onPrev, onNext, onPage }) => {
   if (totalPages <= 1) return null;
 
   return (
-    <div className="flex justify-center items-center gap-2 py-4 border-t border-slate-100 bg-slate-50/20">
+    <div className="flex justify-center items-center gap-2.5 bg-transparent">
       <Btn
         onClick={onPrev}
         disabled={currentPage === 1}
@@ -34,7 +34,7 @@ const Pagination = ({ currentPage, totalPages, onPrev, onNext, onPage }) => {
         ))}
 
       {!onPage && (
-        <span className="text-slate-500 text-xs font-semibold">
+        <span className="text-slate-600 dark:text-slate-300 text-xs font-bold px-2 select-none">
           {t("common.page")} {currentPage} / {totalPages}
         </span>
       )}

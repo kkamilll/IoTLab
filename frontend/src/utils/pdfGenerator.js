@@ -2,36 +2,29 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { robotoNormalBase64 } from "./robotoFont";
 
-const getBaseURL = () => {
-  const ip = import.meta.env.VITE_API_IP || "";
-  const port = import.meta.env.VITE_API_PORT || "";
-  const postfix = import.meta.env.VITE_API_POSTFIX || "";
-  return `${ip}${port}${postfix}`;
-};
-
 export const savePDF = (doc, filename) => {
-  const base64Data = doc.output("datauristring").split(",")[1];
-
-  const form = document.createElement("form");
-  form.method = "POST";
-  form.action = `${getBaseURL()}/orders/download-pdf`;
-  form.style.display = "none";
-
-  const inputData = document.createElement("input");
-  inputData.type = "hidden";
-  inputData.name = "base64Data";
-  inputData.value = base64Data;
-  form.appendChild(inputData);
-
-  const inputName = document.createElement("input");
-  inputName.type = "hidden";
-  inputName.name = "filename";
-  inputName.value = filename;
-  form.appendChild(inputName);
-
-  document.body.appendChild(form);
-  form.submit();
-  document.body.removeChild(form);
+  const safeFilename = filename.toLowerCase().endsWith(".pdf") ? filename : `${filename}.pdf`;
+  try {
+    doc.save(safeFilename);
+  } catch (err) {
+    console.warn("doc.save failed, falling back to Blob link download:", err);
+    try {
+      const blob = doc.output("blob");
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = safeFilename;
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 500);
+    } catch (fallbackErr) {
+      console.error("Failed to save PDF:", fallbackErr);
+    }
+  }
 };
 
 export const generateProductsPDF = (filteredProducts, allColumns, hiddenColumns, t) => {
@@ -67,8 +60,9 @@ export const generateProductsPDF = (filteredProducts, allColumns, hiddenColumns,
     })
   ];
 
-  const rows = filteredProducts.map((p, i) =>
-    visibleColumns.map(col => {
+  const numberedRows = filteredProducts.map((p, idx) => [
+    idx + 1,
+    ...visibleColumns.map(col => {
       switch (col) {
         case "total": return p.stockTotal ?? 0;
         case "for rent": return p.stockForRent ?? 0;
@@ -79,17 +73,20 @@ export const generateProductsPDF = (filteredProducts, allColumns, hiddenColumns,
         default: return p[col] ?? p.extraFields?.[col] ?? "";
       }
     })
-  );
-
-  const numberedRows = rows.map((row, idx) => [idx + 1, ...row]);
+  ]);
 
   // Automatyczne dopasowanie kolumn i zawijanie tekstu
-  const columnStyles = {};
-  headers.forEach((h, i) => {
-    if (h === "name") columnStyles[i] = { cellWidth: 50 };
-    else if (h === "description") columnStyles[i] = { cellWidth: 70 };
-    else if (h === "#") columnStyles[i] = { cellWidth: 10 };
-    else columnStyles[i] = { cellWidth: 'auto' };
+  const columnStyles = {
+    0: { cellWidth: 10, halign: "center" }, // "#"
+  };
+  visibleColumns.forEach((col, idx) => {
+    const colIndex = idx + 1;
+    if (col === "name") columnStyles[colIndex] = { cellWidth: 50 };
+    else if (col === "description") columnStyles[colIndex] = { cellWidth: 65 };
+    else if (col === "categories") columnStyles[colIndex] = { cellWidth: 40 };
+    else if (col === "total" || col === "for rent") columnStyles[colIndex] = { cellWidth: 20, halign: "center" };
+    else if (col === "owner") columnStyles[colIndex] = { cellWidth: 30 };
+    else columnStyles[colIndex] = { cellWidth: "auto" };
   });
 
   autoTable(doc, {

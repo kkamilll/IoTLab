@@ -11,7 +11,7 @@ import {
 
 export const getCollections = async (req, res, next) => {
   try {
-    const collections = await Component.find().populate("author", "name email").lean();
+    const collections = await Component.find().populate("author", "name email profileImage").lean();
     res.status(200).json({ success: true, data: collections });
   } catch (error) {
     next(error);
@@ -24,7 +24,7 @@ export const getCollectionById = async (req, res, next) => {
     if (!mongoose.Types.ObjectId.isValid(collectionId))
       return next(new BadRequestError("Invalid collection ID"));
 
-    const collection = await Component.findById(collectionId).populate("author", "name email").lean();
+    const collection = await Component.findById(collectionId).populate("author", "name email profileImage").lean();
     if (!collection) return next(new ResourceNotFoundError("Collection"));
 
     res.status(200).json({ success: true, data: collection });
@@ -37,20 +37,23 @@ export const getCollectionById = async (req, res, next) => {
 // Dodaj kategorię
 export const createCollection = async (req, res, next) => {
   try {
-    const { name, logo, isDirectLink, directUrl } = req.body;
+    const { name, description, logo, isDirectLink, directUrl } = req.body;
     const userId = req.user._id;
     if (!name) return next(new BadRequestError("Collection name required"));
 
     const collection = new Component({
       name,
+      description: description ? String(description).trim() : "",
       logo,
+      texts: [],
       files: [],
+      links: [],
       author: userId,
       isDirectLink: Boolean(isDirectLink),
       directUrl: directUrl ? String(directUrl).trim() : "",
     });
     await collection.save();
-    await collection.populate("author", "name email");
+    await collection.populate("author", "name email profileImage");
 
     res.status(201).json({ success: true, data: collection });
   } catch (error) {
@@ -185,7 +188,7 @@ export const deleteFile = async (req, res, next) => {
 export const editCollection = async (req, res, next) => {
   try {
     const { collectionId } = req.params;
-    const { name, logo, isDirectLink, directUrl } = req.body;
+    const { name, description, logo, isDirectLink, directUrl } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(collectionId))
       return next(new BadRequestError("Invalid collection ID"));
@@ -196,6 +199,7 @@ export const editCollection = async (req, res, next) => {
     if (!collection) return next(new ResourceNotFoundError("Collection"));
 
     collection.name = name;
+    if (description !== undefined) collection.description = String(description).trim();
     if (logo !== undefined) collection.logo = logo;
     if (isDirectLink !== undefined) collection.isDirectLink = Boolean(isDirectLink);
     if (directUrl !== undefined) collection.directUrl = directUrl ? String(directUrl).trim() : "";
@@ -203,6 +207,78 @@ export const editCollection = async (req, res, next) => {
     await collection.save();
 
     res.status(200).json({ success: true, data: collection });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const addText = async (req, res, next) => {
+  try {
+    const { collectionId } = req.params;
+    const { title, content } = req.body;
+
+    if (!title || !title.trim()) {
+      return next(new BadRequestError("Text title is required"));
+    }
+
+    const collection = await Component.findById(collectionId);
+    if (!collection) return next(new ResourceNotFoundError("Collection"));
+
+    const newText = {
+      title: title.trim(),
+      content: content ? String(content).trim() : "",
+    };
+
+    if (!collection.texts) collection.texts = [];
+    collection.texts.push(newText);
+    await collection.save();
+
+    const createdText = collection.texts[collection.texts.length - 1];
+    res.status(201).json({ success: true, data: createdText });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateText = async (req, res, next) => {
+  try {
+    const { collectionId, textId } = req.params;
+    const { title, content } = req.body;
+
+    if (!title || !title.trim()) {
+      return next(new BadRequestError("Text title is required"));
+    }
+
+    const collection = await Component.findById(collectionId);
+    if (!collection) return next(new ResourceNotFoundError("Collection"));
+
+    const textItem = collection.texts?.id(textId);
+    if (!textItem) return next(new ResourceNotFoundError("Text item"));
+
+    textItem.title = title.trim();
+    if (content !== undefined) textItem.content = String(content).trim();
+
+    await collection.save();
+
+    res.status(200).json({ success: true, message: "Text updated", data: textItem });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteText = async (req, res, next) => {
+  try {
+    const { collectionId, textId } = req.params;
+
+    const collection = await Component.findById(collectionId);
+    if (!collection) return next(new ResourceNotFoundError("Collection"));
+
+    if (collection.texts) {
+      collection.texts = collection.texts.filter((t) => t._id.toString() !== textId);
+      await collection.save();
+    }
+
+    res.status(200).json({ success: true, message: "Text deleted" });
   } catch (error) {
     next(error);
   }

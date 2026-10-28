@@ -35,7 +35,10 @@ export const getTemplates = async (req, res, next) => {
         const filter = {};
         if (name) filter.name = name;
         if (isDefault != undefined && isDefault != '') filter.isDefault = isDefault === 'true';
-        if (subject) filter.subject = new RegExp(subject, 'i');
+        if (subject) {
+            const escaped = subject.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            filter.subject = new RegExp(escaped, 'i');
+        }
 
         const templates = await Template.find(filter)
             .sort({ createdAt: -1, name: -1 }).lean();

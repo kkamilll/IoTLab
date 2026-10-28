@@ -19,8 +19,11 @@ import materialRoutes from "./routes/materialRoutes.js";
 import componentRoutes from "./routes/componentRoutes.js";
 import templateRoutes from "./routes/templateRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
+import auditRoutes from "./routes/auditRoutes.js";
 
 import fileRoutes from "./routes/fileRoutes.js";
+
+import helmet from "helmet";
 
 import { errorHandler } from "./middleware/errorHandler.js";
 import { startCronJobs } from "./utils/cronJobs.js";
@@ -29,14 +32,13 @@ dotenv.config();
 
 const app = express();
 
-// HTTP request Logger
-const accessLogStream = fs.createWriteStream(
-  path.join(process.cwd(), "access.log"),
-  { flags: "a" },
+// Security Headers with Helmet
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    contentSecurityPolicy: false,
+  })
 );
-morgan.token("remote-user", (req) => (req.user ? req.user._id : "-")); // user id
-morgan.token("date", () => new Date().toLocaleString("en-GB")); // local time zone
-app.use(morgan("combined", { stream: accessLogStream }));
 
 const allowedOrigins = [
   "http://localhost:5173",
@@ -49,15 +51,27 @@ const allowedOrigins = [
 
 app.use(
   cors({
-    origin: "*",
+    origin: (origin, callback) => {
+      // Allow requests with no origin (e.g. mobile apps, curl, Postman)
+      if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== "production") {
+        return callback(null, true);
+      }
+      return callback(null, false);
+    },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+      "x-order-secret",
+      "Accept-Language",
+    ],
     credentials: true,
   }),
 );
 
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ limit: "50mb", extended: true }));
+app.use(express.json({ limit: "15mb" }));
+app.use(express.urlencoded({ limit: "15mb", extended: true }));
 
 // handle wrong JSON requests
 app.use((err, req, res, next) => {
@@ -67,7 +81,7 @@ app.use((err, req, res, next) => {
       message: "Invalid JSON payload",
     });
   }
-  next();
+  next(err);
 });
 
 app.use("/uploads", express.static("uploads"));
@@ -83,13 +97,15 @@ app.use("/materials", materialRoutes);
 app.use("/components", componentRoutes);
 app.use("/templates", templateRoutes);
 app.use("/notifications", notificationRoutes);
-
-app.use(errorHandler);
+app.use("/audit-logs", auditRoutes);
 
 // Global 404 handler (for any route that doesn't match)
 app.use((req, res) => {
   res.status(404).json({ success: false, message: "Route not found" });
 });
+
+// Global error handler
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 3500;
 

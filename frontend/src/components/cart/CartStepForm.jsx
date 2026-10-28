@@ -1,6 +1,42 @@
 import React from "react";
-import { User } from "lucide-react";
+import { User, Package, Calendar } from "lucide-react";
 import ReCAPTCHA from "react-google-recaptcha";
+
+const API_BASE = `${import.meta.env.VITE_API_IP || ""}${import.meta.env.VITE_API_PORT || ""}${import.meta.env.VITE_API_POSTFIX || ""}`;
+
+const getImageUrl = (item) => {
+  if (item?.image) {
+    if (typeof item.image === "string") {
+      if (item.image.startsWith("http://") || item.image.startsWith("https://")) return item.image;
+      const fName = item.image.split(/[/\\]/).pop();
+      return `${API_BASE}/uploads/products/${fName}`;
+    }
+  }
+  if (!item || !item.images || !Array.isArray(item.images) || item.images.length === 0) {
+    return null;
+  }
+  const imgObj = item.images.find((i) => i && (i.isVisible || i.visible)) || item.images[0];
+  if (!imgObj) return null;
+
+  let rawPath = "";
+  if (typeof imgObj === "string") {
+    rawPath = imgObj;
+  } else if (typeof imgObj === "object") {
+    rawPath = imgObj.filename || imgObj.path || imgObj.url || imgObj.src || imgObj.originalName || "";
+  }
+
+  if (!rawPath) return null;
+  if (rawPath.startsWith("http://") || rawPath.startsWith("https://")) {
+    return rawPath;
+  }
+
+  const fileName = rawPath.includes("/") || rawPath.includes("\\")
+    ? rawPath.split(/[/\\]/).pop()
+    : rawPath;
+
+  if (!fileName) return null;
+  return `${API_BASE}/uploads/products/${fileName}`;
+};
 
 const CartStepForm = ({
   orderCustomer,
@@ -17,7 +53,7 @@ const CartStepForm = ({
   language,
 }) => {
   const inputClass =
-    "text-xs border border-slate-200 dark:border-slate-850 rounded-xl bg-slate-50/50 dark:bg-slate-950/40 px-3.5 py-2.5 font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 hover:border-slate-350 dark:hover:border-slate-700 transition w-full shadow-xs";
+    "text-xs border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50/50 dark:bg-slate-950 px-3.5 py-2.5 font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 hover:border-slate-300 dark:hover:border-slate-600 transition w-full shadow-xs";
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,_1fr)_360px] items-start w-full">
@@ -25,7 +61,7 @@ const CartStepForm = ({
       <div className="flex flex-col gap-6 min-w-0">
         {/* Customer Details Form */}
         <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
-          <h3 className="text-sm font-bold text-slate-850 dark:text-white mb-4 flex items-center gap-2 select-none border-b border-slate-100 dark:border-slate-800/85 pb-3">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2 select-none border-b border-slate-100 dark:border-slate-800 pb-3">
             <User className="w-4.5 h-4.5 text-indigo-500" />
             {t("cart.customerInfo")}
           </h3>
@@ -81,7 +117,7 @@ const CartStepForm = ({
                 value={orderCustomer.purpose}
                 onChange={handleCustomerChange}
                 rows={3}
-                className="text-xs border border-slate-200 dark:border-slate-850 rounded-xl bg-slate-50/50 dark:bg-slate-950/40 px-3.5 py-2.5 font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 hover:border-slate-350 dark:hover:border-slate-700 transition w-full resize-none shadow-xs"
+                className="text-xs border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50/50 dark:bg-slate-950 px-3.5 py-2.5 font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 hover:border-slate-300 dark:hover:border-slate-600 transition w-full resize-none shadow-xs"
                 placeholder={language === "pl" ? "Podaj cel rezerwacji / przeznaczenie wypożyczanego sprzętu..." : "Provide the purpose of the reservation / intended use of the rented equipment..."}
                 required
               />
@@ -90,19 +126,73 @@ const CartStepForm = ({
         </div>
 
         {/* Items Recap */}
-        <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col gap-3">
-          <h3 className="text-sm font-bold text-slate-850 dark:text-white border-b border-slate-105 dark:border-slate-800 pb-3 flex items-center gap-2 select-none">
-            <span>📦</span> {language === "pl" ? "Przegląd rezerwowanych obiektów" : "Selected items review"}
-          </h3>
-          <div className="divide-y divide-slate-100 dark:divide-slate-800/85">
-            {cart.map((item) => (
-              <div key={item._id} className="py-2.5 flex justify-between items-center text-xs">
-                <span className="font-bold text-slate-800 dark:text-slate-200">{item.name}</span>
-                <span className="font-mono font-extrabold text-[10px] bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 px-2.5 py-1 rounded-lg text-slate-600 dark:text-slate-450 select-none">
-                  {item.quantity} szt.
-                </span>
-              </div>
-            ))}
+        <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm flex flex-col gap-3">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 select-none">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <Package className="w-4 h-4 text-indigo-500" />
+              <span>{language === "pl" ? "Przegląd rezerwowanych obiektów" : "Selected items review"}</span>
+            </h3>
+            <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900/30">
+              {cart.length} {language === "pl" ? (cart.length === 1 ? "pozycja" : "pozycji") : "items"}
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-2.5 max-h-80 overflow-y-auto pr-1">
+            {cart.map((item) => {
+              const imgUrl = getImageUrl(item);
+              const categoryName = item.category?.name || (typeof item.category === "string" ? item.category : null) || item.categories?.[0]?.name;
+              const ownerName = item.owner?.name;
+
+              return (
+                <div
+                  key={item._id}
+                  className="p-3 rounded-xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/60 dark:bg-slate-950/40 flex items-center justify-between gap-3 shadow-2xs hover:border-slate-200 dark:hover:border-slate-700 transition"
+                >
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="w-11 h-11 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700/60 overflow-hidden flex items-center justify-center shrink-0">
+                      {imgUrl ? (
+                        <img
+                          src={imgUrl}
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                            if (e.currentTarget.nextElementSibling) {
+                              e.currentTarget.nextElementSibling.style.display = "flex";
+                            }
+                          }}
+                        />
+                      ) : null}
+                      <div className={`w-full h-full flex items-center justify-center ${imgUrl ? "hidden" : ""}`}>
+                        <Package className="w-5 h-5 text-slate-400" />
+                      </div>
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <p className="font-extrabold text-xs sm:text-sm text-slate-800 dark:text-slate-100 truncate" title={item.name}>
+                        {item.name}
+                      </p>
+                      <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                        {categoryName && (
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                            {categoryName}
+                          </span>
+                        )}
+                        {ownerName && (
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 border border-indigo-100/40 dark:border-indigo-900/30 truncate max-w-[160px]">
+                            {ownerName}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <span className="shrink-0 font-mono font-bold text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-xl text-slate-800 dark:text-slate-200 shadow-2xs select-none">
+                    {item.quantity} szt.
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -111,44 +201,43 @@ const CartStepForm = ({
       <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col gap-4 sticky top-6">
         <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 select-none">{t("cart.orderDetails")}</h3>
 
-        <div className="flex flex-col gap-3 text-xs font-semibold text-slate-650 dark:text-slate-350 pb-4 border-b border-slate-100 dark:border-slate-800">
-          <div className="flex justify-between items-center">
-            <span className="text-slate-500 dark:text-slate-400">{language === "pl" ? "Osoba" : "Customer"}:</span>
-            <span className="font-extrabold text-slate-900 dark:text-white truncate max-w-[150px]">
+        <div className="flex flex-col gap-3 text-xs font-semibold text-slate-600 dark:text-slate-300 pb-4 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex justify-between items-center gap-2">
+            <span className="text-slate-500 dark:text-slate-400 shrink-0">{language === "pl" ? "Osoba" : "Customer"}:</span>
+            <span className="font-extrabold text-slate-900 dark:text-white truncate max-w-[170px]" title={orderCustomer.firstName || orderCustomer.lastName ? `${orderCustomer.firstName} ${orderCustomer.lastName}` : ""}>
               {orderCustomer.firstName || orderCustomer.lastName ? `${orderCustomer.firstName} ${orderCustomer.lastName}` : "—"}
             </span>
           </div>
-          <div className="flex justify-between items-center">
-            <span className="text-slate-500 dark:text-slate-400">{t("cart.email")}:</span>
-            <span className="font-extrabold text-slate-900 dark:text-white truncate max-w-[150px]" title={orderCustomer.email}>
+          <div className="flex justify-between items-center gap-2">
+            <span className="text-slate-500 dark:text-slate-400 shrink-0">{t("cart.email")}:</span>
+            <span className="font-extrabold text-slate-900 dark:text-white truncate max-w-[170px]" title={orderCustomer.email}>
               {orderCustomer.email || "—"}
             </span>
           </div>
-          <div className="flex justify-between items-center">
-            <span className="text-slate-500 dark:text-slate-400">{t("cart.studentIndex")}:</span>
-            <span className="font-extrabold text-slate-900 dark:text-white">{orderCustomer.index || "—"}</span>
+          <div className="flex justify-between items-center gap-2">
+            <span className="text-slate-500 dark:text-slate-400 shrink-0">{t("cart.studentIndex")}:</span>
+            <span className="font-extrabold text-slate-900 dark:text-white truncate max-w-[170px]">{orderCustomer.index || "—"}</span>
           </div>
 
-          <div className="text-[10px] leading-relaxed bg-slate-50 dark:bg-slate-950/40 p-3 rounded-xl border border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400 mt-1 font-mono">
-            <span className="font-sans block font-bold text-slate-400 uppercase tracking-wider text-[8px] mb-1">{language === "pl" ? "Wybrany termin" : "Selected dates"}</span>
-            <span>Pocz: {new Date(orderDates.startDate).toLocaleDateString()}</span>
-            <span className="block mt-0.5">Koniec: {new Date(orderDates.endDate).toLocaleDateString()}</span>
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800 text-xs font-mono font-bold text-slate-700 dark:text-slate-300 mt-1">
+            <Calendar className="w-4 h-4 text-indigo-500 shrink-0" />
+            <span>
+              {orderDates.startDate ? new Date(orderDates.startDate).toLocaleDateString() : "—"}{" "}
+              →{" "}
+              {orderDates.endDate ? new Date(orderDates.endDate).toLocaleDateString() : "—"}
+            </span>
           </div>
         </div>
 
-        {/* Bot / Human verification */}
-        <div className="flex flex-col gap-2">
-          <span className="text-[10px] font-bold text-slate-450 dark:text-slate-500 uppercase tracking-wider select-none">{t("cart.verification")}</span>
-          {recaptchaKey ? (
+        {/* Bot / Human verification - only if key configured */}
+        {recaptchaKey && (
+          <div className="flex flex-col gap-2">
+            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider select-none">{t("cart.verification")}</span>
             <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-2 flex justify-center scale-90 sm:scale-100 origin-center shadow-inner">
               <ReCAPTCHA ref={recaptchaRef} sitekey={recaptchaKey} />
             </div>
-          ) : (
-            <div className="rounded-xl border border-amber-200/50 dark:border-amber-900/30 bg-amber-50/50 dark:bg-amber-950/10 p-3 text-[10px] text-amber-800 dark:text-amber-350 font-semibold select-none leading-relaxed italic">
-              {t("cart.recaptchaNotConfigured")}
-            </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800/80">

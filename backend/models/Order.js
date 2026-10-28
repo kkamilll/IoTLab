@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { randomUUID } from "crypto";
 import { productOwnerMap, createOwnersData } from "../services/orderService.js";
 
 import { AppError, ValidationError, ConflictError, ServerError } from '../errors/CustomErrors.js'
@@ -53,7 +54,7 @@ const statusHistorySchema = new mongoose.Schema({
 }, { _id: false });
 
 const orderSchema = new mongoose.Schema({
-  uuid: { type: String, required: true, unique: true, default: () => require("crypto").randomUUID() },
+  uuid: { type: String, required: true, unique: true, default: () => randomUUID() },
   customerKey: { type: String, required: true },
 
   customer: { type: orderCustomerSchema, required: true },

@@ -11,13 +11,17 @@ const notificationSchema = new mongoose.Schema(
     title: { type: String, required: true },
     message: { type: String, required: true },
     isRead: { type: Boolean, default: false },
+    readAt: { type: Date, default: null },
     relatedOrder: { type: mongoose.Schema.Types.ObjectId, ref: "Order" },
     relatedProduct: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
   },
   { timestamps: true }
 );
 
-// Auto-delete notifications after 30 days
+// Auto-delete read notifications after 7 days (7 * 24 * 60 * 60 seconds)
+notificationSchema.index({ readAt: 1 }, { expireAfterSeconds: 7 * 24 * 60 * 60 });
+
+// Auto-delete any remaining notifications after 30 days
 notificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 30 * 24 * 60 * 60 });
 
 const Notification = mongoose.model("Notification", notificationSchema);

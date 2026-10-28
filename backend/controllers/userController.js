@@ -14,6 +14,8 @@ import {
   ResourceNotFoundError,
   ServerError,
 } from "../errors/CustomErrors.js";
+import { isStrongPassword, PASSWORD_COMPLEXITY_ERROR } from "../utils/passwordValidator.js";
+import { logAudit } from "../utils/auditLogger.js";
 
 const deleteProfileImageFile = (filename) => {
   if (!filename) return;
@@ -118,6 +120,10 @@ export const createUser = async (req, res, next) => {
       }
     }
 
+    if (password && !isStrongPassword(password)) {
+      return next(new BadRequestError(PASSWORD_COMPLEXITY_ERROR));
+    }
+
     const newUserData = {
       name,
       email,
@@ -133,6 +139,15 @@ export const createUser = async (req, res, next) => {
 
     const newUser = new User({ ...newUserData });
     await newUser.save();
+
+    await logAudit({
+      req,
+      user: req.user,
+      action: "USER_CREATED",
+      details: `Utworzono użytkownika: ${newUser.name} (${newUser.email}) z rolą ${newUser.role}`,
+      targetId: newUser._id,
+      targetType: "User",
+    });
 
     return res
       .status(201)
@@ -167,7 +182,12 @@ export const updateUserProfile = async (req, res, next) => {
     const updateData = {};
     if (name?.trim()) updateData.name = name;
     if (email?.trim()) updateData.email = email;
-    if (password?.trim()) updateData.password = await bcrypt.hash(password, 10);
+    if (password?.trim()) {
+      if (!isStrongPassword(password)) {
+        return next(new BadRequestError(PASSWORD_COMPLEXITY_ERROR));
+      }
+      updateData.password = await bcrypt.hash(password, 10);
+    }
     
     if (labRooms) {
       if (typeof labRooms === "string") {
@@ -202,9 +222,18 @@ export const updateUserProfile = async (req, res, next) => {
       new: true,
       runValidators: true,
     })
-      .select("_id name email role isActive profileImage")
+      .select("_id name email role isActive profileImage labRooms")
       .lean();
     if (!user) return next(new ResourceNotFoundError("User"));
+
+    await logAudit({
+      req,
+      user: req.user,
+      action: "USER_PROFILE_UPDATED",
+      details: `Użytkownik ${user.name} (${user.email}) zaktualizował swój profil`,
+      targetId: user._id,
+      targetType: "User",
+    });
 
     return res
       .status(200)
@@ -232,7 +261,12 @@ export const updateUser = async (req, res, next) => {
     const updateData = {};
     if (name?.trim()) updateData.name = name;
     if (email?.trim()) updateData.email = email;
-    if (password?.trim()) updateData.password = await bcrypt.hash(password, 10);
+    if (password?.trim()) {
+      if (!isStrongPassword(password)) {
+        return next(new BadRequestError(PASSWORD_COMPLEXITY_ERROR));
+      }
+      updateData.password = await bcrypt.hash(password, 10);
+    }
     if (role?.trim()) updateData.role = role;
     
     if (labRooms) {
@@ -307,6 +341,23 @@ export const updateUser = async (req, res, next) => {
       .lean();
     if (!updatedUser) return next(new ResourceNotFoundError("User"));
 
+    let updateDetails = `Admin ${req.user.name} zaktualizował użytkownika ${updatedUser.name} (${updatedUser.email})`;
+    if (targetUser.role !== updatedUser.role) {
+      updateDetails += ` (rola: ${targetUser.role} → ${updatedUser.role})`;
+    }
+    if (targetUser.isActive !== updatedUser.isActive) {
+      updateDetails += ` (${updatedUser.isActive ? "aktywowano konto" : "zablokowano konto"})`;
+    }
+
+    await logAudit({
+      req,
+      user: req.user,
+      action: targetUser.role !== updatedUser.role ? "USER_ROLE_CHANGED" : "USER_UPDATED",
+      details: updateDetails,
+      targetId: updatedUser._id,
+      targetType: "User",
+    });
+
     return res
       .status(200)
       .json({
@@ -374,6 +425,15 @@ export const deleteUser = async (req, res, next) => {
     if (deletedUser.profileImage) {
       deleteProfileImageFile(deletedUser.profileImage);
     }
+
+    await logAudit({
+      req,
+      user: req.user,
+      action: "USER_DELETED",
+      details: `Admin ${req.user.name} usunął konto użytkownika: ${deletedUser.name} (${deletedUser.email})`,
+      targetId: deletedUser._id,
+      targetType: "User",
+    });
 
     return res
       .status(200)

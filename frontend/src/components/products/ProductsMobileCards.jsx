@@ -24,7 +24,7 @@ const getImageUrl = (product) => {
   }
 
   const fileName = rawPath.includes("/") || rawPath.includes("\\")
-    ? rawPath.split(/[\/\\]/).pop()
+    ? rawPath.split(/[/\\]/).pop()
     : rawPath;
 
   if (!fileName) return null;
@@ -51,28 +51,29 @@ const ProductsMobileCards = ({
       {paginatedProducts.map(product => (
         <div
           key={product._id}
-          className="border border-slate-100 dark:border-slate-800/80 rounded-2xl shadow-xs p-5 bg-white dark:bg-slate-900 flex flex-col gap-3.5 hover:shadow-sm cursor-pointer transition-all duration-200"
-          onClick={(e) => {
-            if (e.target.closest("button, select, input, option, a")) {
-              return;
-            }
-            handlePreview(product._id);
-          }}
+          className="border border-slate-100 dark:border-slate-800/80 rounded-2xl shadow-xs p-5 bg-white dark:bg-slate-900 flex flex-col gap-3.5 hover:shadow-sm transition-all duration-200"
         >
           {/* Name & Thumbnail */}
           <div className="flex justify-between items-center py-1 border-b border-slate-100 dark:border-slate-800/60 last:border-b-0 min-w-0">
             <span className="font-bold text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-wider">{t("products.columns.name")}:</span>
-            <label 
-              className="flex items-center gap-2 max-w-[75%] min-w-0 justify-end cursor-pointer select-none"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <input
-                type="checkbox"
-                checked={selectedProductIds.includes(product._id)}
-                onChange={() => handleToggleSelect(product._id)}
-                className="w-3.5 h-3.5 rounded accent-indigo-650 cursor-pointer shrink-0"
-              />
-              <div className="flex items-center gap-2 min-w-0">
+            <div className="flex items-center gap-2 max-w-[75%] min-w-0 justify-end">
+              <label 
+                className="flex items-center cursor-pointer select-none p-1"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedProductIds.includes(product._id)}
+                  onChange={() => handleToggleSelect(product._id)}
+                  className="w-3.5 h-3.5 rounded accent-indigo-650 cursor-pointer shrink-0"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => handlePreview(product._id)}
+                className="flex items-center gap-2 min-w-0 cursor-pointer text-left focus:outline-none group/title"
+                title={`${product.name} (${t("products.preview") || "Podgląd"})`}
+              >
                 {(() => {
                   const imgUrl = getImageUrl(product);
                   return imgUrl ? (
@@ -80,7 +81,7 @@ const ProductsMobileCards = ({
                       <img
                         src={imgUrl}
                         alt={product.name}
-                        className="w-8 h-8 rounded-lg object-cover border border-slate-200 dark:border-slate-700 shrink-0"
+                        className="w-8 h-8 rounded-lg object-cover border border-slate-200 dark:border-slate-700 shrink-0 group-hover/title:scale-105 transition-transform"
                         onError={(e) => {
                           e.currentTarget.style.display = "none";
                           const fallback = e.currentTarget.nextElementSibling;
@@ -100,11 +101,11 @@ const ProductsMobileCards = ({
                     </div>
                   );
                 })()}
-                <span className="text-indigo-650 dark:text-indigo-400 font-bold truncate text-sm text-right" title={product.name}>
+                <span className="text-indigo-650 dark:text-indigo-400 font-bold truncate text-sm text-right group-hover/title:underline" title={product.name}>
                   {product.name}
                 </span>
-              </div>
-            </label>
+              </button>
+            </div>
           </div>
 
           {/* Description */}
@@ -175,11 +176,15 @@ const ProductsMobileCards = ({
                     src={`${API_BASE}/uploads/users/${product.owner.profileImage}`}
                     alt={product.owner?.name}
                     className="w-full h-full object-cover"
-                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      if (e.currentTarget.nextElementSibling) {
+                        e.currentTarget.nextElementSibling.classList.remove('hidden');
+                      }
+                    }}
                   />
-                ) : (
-                  <User className="w-2.5 h-2.5 text-slate-450 dark:text-slate-400" />
-                )}
+                ) : null}
+                <User className={`w-2.5 h-2.5 text-slate-450 dark:text-slate-400 ${product.owner?.profileImage ? 'hidden' : ''}`} />
               </div>
               <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate">{product.owner?.name ?? product.owner}</span>
             </div>
@@ -191,12 +196,14 @@ const ProductsMobileCards = ({
               <ShoppingCart className="w-3.5 h-3.5 text-indigo-650 dark:text-indigo-400" />
               <span>{t("products.toCart") || "Do koszyka:"}</span>
             </div>
-            <div className="flex border border-slate-200 dark:border-slate-800 rounded-full overflow-hidden h-10 w-full bg-slate-50/80 dark:bg-slate-950/80 transition-all focus-within:ring-2 focus-within:ring-indigo-500/20">
+            <div className={`flex border rounded-full overflow-hidden h-10 w-full transition-all ${
+              (cartQuantities[product._id] || 0) > 0 ? "qty-stepper-active" : "qty-stepper-idle"
+            }`}>
               <button
                 onClick={() =>
                   handleQuantityChange(product._id, (cartQuantities[product._id] || 0) - 1, product)
                 }
-                className="w-1/4 h-full bg-transparent hover:bg-slate-200 dark:hover:bg-slate-850 transition text-slate-500 dark:text-slate-400 text-base font-bold cursor-pointer flex items-center justify-center"
+                className="qty-stepper-btn !w-1/4 !h-full"
                 disabled={(cartQuantities[product._id] || 0) <= 0}
               >
                 <Minus className="w-4 h-4" />
@@ -217,7 +224,7 @@ const ProductsMobileCards = ({
                 onClick={() =>
                   handleQuantityChange(product._id, (cartQuantities[product._id] || 0) + 1, product)
                 }
-                className="w-1/4 h-full bg-transparent hover:bg-slate-200 dark:hover:bg-slate-850 transition text-slate-500 dark:text-slate-450 text-base font-bold cursor-pointer flex items-center justify-center"
+                className="qty-stepper-btn !w-1/4 !h-full"
                 disabled={
                   (cartQuantities[product._id] || 0) >= getAvailableStockForProduct(product)
                 }

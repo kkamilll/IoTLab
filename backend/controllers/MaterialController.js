@@ -6,7 +6,7 @@ import asyncHandler from "../middleware/asyncHandler.js";
 // Get all materials with author
 export const getMaterials = asyncHandler(async (req, res, next) => {
   const materials = await Material.find()
-    .populate("author", "name email role")
+    .populate("author", "name email role profileImage")
     .sort({ order: 1 });
 
   res.status(200).json({ success: true, data: materials });
@@ -28,7 +28,7 @@ export const addMaterial = asyncHandler(async (req, res, next) => {
   });
 
   await newMaterial.save();
-  if (newMaterial.author) await newMaterial.populate("author", "name email");
+  if (newMaterial.author) await newMaterial.populate("author", "name email role profileImage");
 
   res.status(201).json({ success: true, data: newMaterial });
 });

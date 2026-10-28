@@ -15,14 +15,13 @@ import CartStepForm from "../components/cart/CartStepForm";
 
 const normalizePhoneNumber = (phone) => {
   if (!phone) return "";
-  let cleaned = String(phone).trim().replace(/[\s\-\(\)\.]/g, "");
+  let cleaned = String(phone).trim().replace(/[\s\-().]/g, "");
   if (cleaned.startsWith("+48")) cleaned = cleaned.slice(3);
   else if (cleaned.startsWith("0048")) cleaned = cleaned.slice(4);
   return cleaned;
 };
 
 const phoneRegex = /^\d{9,10}$/;
-const isValidDate = (date) => date instanceof Date && !isNaN(date.getTime());
 
 const CartPage = () => {
   const [cart, setCart] = useState([]);
@@ -274,9 +273,6 @@ const CartPage = () => {
 
     const isQuantityDisabled = () => !(orderDates?.startDate && orderDates?.endDate);
 
-    const inputClass =
-      "text-xs border border-slate-200 dark:border-slate-850 rounded-xl bg-slate-50/50 dark:bg-slate-950/40 px-3.5 py-2.5 font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 hover:border-slate-350 dark:hover:border-slate-700 transition w-full shadow-xs";
-
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 py-8 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
         <div className="mx-auto max-w-7xl flex flex-col gap-6">
@@ -284,8 +280,12 @@ const CartPage = () => {
           {/* Header Toolbar */}
           <div className="rounded-[1.8rem] border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-6 transition duration-200">
             <div>
-              <h1 className="text-3xl font-black text-slate-900 dark:text-white">{t("cart.title")}</h1>
-              <p className="mt-1 text-xs text-slate-550 dark:text-slate-400">{t("cart.subtitle")}</p>
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-black text-slate-900 dark:text-white">{t("cart.title")}</h1>
+                <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900/30">
+                  {totalItems} {totalItems !== 1 ? t("cart.items") : t("cart.item")}
+                </span>
+              </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
@@ -300,22 +300,22 @@ const CartPage = () => {
               </button>
 
               {/* Language Switcher */}
-              <div className="flex items-center rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-slate-55 dark:bg-slate-900 text-[10px] font-bold h-10 p-0.5">
+              <div className="flex items-center rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-slate-100 dark:bg-slate-900 text-[10px] font-bold h-10 p-0.5">
                 <button
                   onClick={() => setLanguage("pl")}
-                  className={`px-3 h-full uppercase transition rounded-lg cursor-pointer font-extrabold ${language === "pl" ? "bg-indigo-650 text-white shadow-xs" : "text-slate-505 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-250"}`}
+                  className={`px-3 h-full uppercase transition rounded-lg cursor-pointer font-extrabold ${language === "pl" ? "bg-indigo-600 text-white shadow-xs" : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"}`}
                   type="button"
                 >PL</button>
                 <button
                   onClick={() => setLanguage("en")}
-                  className={`px-3 h-full uppercase transition rounded-lg cursor-pointer font-extrabold ${language === "en" ? "bg-indigo-650 text-white shadow-xs" : "text-slate-505 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-250"}`}
+                  className={`px-3 h-full uppercase transition rounded-lg cursor-pointer font-extrabold ${language === "en" ? "bg-indigo-600 text-white shadow-xs" : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"}`}
                   type="button"
                 >EN</button>
               </div>
 
               <button
                 onClick={() => navigate(-1)}
-                className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 hover:bg-slate-105 dark:bg-slate-900 dark:hover:bg-slate-800 px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-350 shadow-sm transition duration-100 cursor-pointer flex items-center gap-1.5"
+                className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 shadow-sm transition duration-100 cursor-pointer flex items-center gap-1.5"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 {t("common.back")}
@@ -335,11 +335,11 @@ const CartPage = () => {
               <div className="flex flex-col items-center">
                 <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-200 shadow-sm border ${checkoutStep >= 1
                     ? "bg-indigo-600 text-white border-indigo-600 ring-4 ring-indigo-500/10"
-                    : "bg-slate-105 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700"
+                    : "bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700"
                   }`}>
                   {checkoutStep > 1 ? <Check className="w-4 h-4" /> : "1"}
                 </div>
-                <span className={`text-[9px] uppercase font-black tracking-wider mt-2 transition ${checkoutStep === 1 ? "text-indigo-650 dark:text-indigo-400" : "text-slate-400 dark:text-slate-550"
+                <span className={`text-[9px] uppercase font-black tracking-wider mt-2 transition ${checkoutStep === 1 ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 dark:text-slate-400"
                   }`}>
                   {language === "pl" ? "Koszyk i Termin" : "Cart & Date"}
                 </span>
@@ -349,11 +349,11 @@ const CartPage = () => {
               <div className="flex flex-col items-center">
                 <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-200 shadow-sm border ${checkoutStep >= 2
                     ? "bg-indigo-600 text-white border-indigo-600 ring-4 ring-indigo-500/10"
-                    : "bg-slate-105 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700"
+                    : "bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700"
                   }`}>
                   {checkoutStep > 2 ? <Check className="w-4 h-4" /> : "2"}
                 </div>
-                <span className={`text-[9px] uppercase font-black tracking-wider mt-2 transition ${checkoutStep === 2 ? "text-indigo-650 dark:text-indigo-400" : "text-slate-400 dark:text-slate-550"
+                <span className={`text-[9px] uppercase font-black tracking-wider mt-2 transition ${checkoutStep === 2 ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 dark:text-slate-400"
                   }`}>
                   {language === "pl" ? "Dane klienta" : "Customer details"}
                 </span>

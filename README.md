@@ -1,197 +1,259 @@
 # 🔬 IoT Lab — Laboratory Inventory & Reservation System
+### System Zarządzania Inwentarzem i Rezerwacją Sprzętu Laboratoryjnego
 
-[![React](https://img.shields.io/badge/React-19.1-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
 [![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
 [![Node.js](https://img.shields.io/badge/Node.js-18+-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![Express.js](https://img.shields.io/badge/Express-5.x-000000?style=for-the-badge&logo=express&logoColor=white)](https://expressjs.com/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose_8-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+[![Security: Helmet & RateLimit](https://img.shields.io/badge/Security-Helmet_%26_RateLimit-E11D48?style=for-the-badge&logo=shield)](https://helmetjs.github.io/)
 [![License: Educational](https://img.shields.io/badge/License-PUT_Educational-005696?style=for-the-badge)](https://put.poznan.pl/)
 
-> 🎓 **Laboratory Inventory Management & Hardware Reservation Platform**  
-> *Developed as an Engineering Thesis at Poznań University of Technology (Politechnika Poznańska — PUT).*
+> 🎓 **Projekt zrealizowany w ramach pracy inżynierskiej na Politechnice Poznańskiej (PUT)**  
+> *Developed as an Engineering Thesis at Poznań University of Technology.*
 
 ---
 
-## ⚡ Quick Start (3 Minutes)
+## ⚡ Szybki Start / Quick Start (3 Minuty)
 
-Ready-to-run setup commands for Windows PowerShell (or Bash):
+Komendy dla terminala **PowerShell** (Windows) lub **Bash** (Linux/macOS):
 
-```powershell
-# 1. Clone the repository
+```bash
+# 1. Klonowanie repozytorium / Clone repo
 git clone https://github.com/kkamilll/IoTLab.git
 cd IoTLab
 
-# 2. Copy environment templates
-Copy-Item .env.example .env
-Copy-Item frontend/.env.example frontend/.env
+# 2. Skopiowanie plików konfiguracyjnych / Copy env templates
+cp .env.example .env
+cp frontend/.env.example frontend/.env
 
-# 3. Install backend dependencies and seed mock database
+# 3. Instalacja zależności backendu i zasilenie bazy danych danymi testowymi
 npm install
-npm run db:seed    # Populates MongoDB with demo hardware, users & orders
+npm run db:seed    # Tworzy konta, obiekty, zamówienia, szablony i karuzelę
 
-# 4. Install frontend dependencies
+# 4. Instalacja zależności frontendu
 cd frontend
 npm install
 cd ..
 ```
 
-### Start Development Servers (2 Separate Terminals):
+### Uruchomienie Serwerów Developerskich (2 osobne terminale):
 
-```powershell
-# Terminal 1 — Backend API (port 3500, from IoTLab root directory):
+```bash
+# Terminal 1 — Serwer Backend REST API (port 3500, z katalogu głównego IoTLab):
 npm run dev
 
-# Terminal 2 — Frontend UI (port 5173, from frontend directory):
+# Terminal 2 — Serwer Frontend Vite (port 5173, z podkatalogu frontend):
 cd frontend
 npm run dev
 ```
 
-The application will be live immediately at:  
-👉 **Client Interface:** [http://localhost:5173](http://localhost:5173)  
-👉 **REST API Backend:** [http://localhost:3500](http://localhost:3500)
+Aplikacja jest dostępna pod adresami:  
+👉 **Frontend (Klient & Panel):** [http://localhost:5173](http://localhost:5173)  
+👉 **Backend (REST API):** [http://localhost:3500](http://localhost:3500)
 
 ---
 
-## 📑 Table of Contents
+## 📑 Spis Treści / Table of Contents
 
-- [Overview](#-overview)
-- [System Architecture](#-system-architecture)
-- [Key Features](#-key-features)
-- [Role-Based Access Control](#-role-based-access-control)
-- [Order Lifecycle](#-order-lifecycle)
-- [Tech Stack](#-tech-stack)
-- [Project Structure & Important Architecture Notes](#-project-structure--architecture-notes)
-- [Detailed Setup Guide](#-detailed-setup-guide)
-  - [Prerequisites](#prerequisites)
-  - [1. Backend & Root Configuration](#1-backend--root-configuration)
-  - [2. Frontend Configuration](#2-frontend-configuration)
-  - [3. Database Initialization & Seeding](#3-database-initialization--seeding)
-  - [4. Running the Dev Servers](#4-running-the-dev-servers)
-- [Test Credentials](#-test-credentials)
-- [REST API Endpoints Reference](#-rest-api-endpoints-reference)
-- [Application Routes](#-application-routes)
-- [NPM Scripts Reference](#-npm-scripts-reference)
-- [Troubleshooting & FAQ](#-troubleshooting--faq)
-- [License & Academic Credits](#-license--academic-credits)
-
----
-
-## 📖 Overview
-
-**IoTLab** is an end-to-end web management platform designed to streamline the reservation, tracking, and auditing of laboratory equipment (microcontrollers such as Arduino, Raspberry Pi, ESP32, sensors, development kits, and discrete electronic components) in university environments.
-
-- **For Students & Guests:** Intuitive hardware catalog with rich dynamic attributes, cart-based checkout without mandatory account registration, calendar date reservation (`DD/MM/YYYY`), real-time private order tracking via UUID & secret PIN, and interactive negotiation of pickup/return dates.
-- **For Academic Staff & Administrators:** Multi-room inventory allocation, interactive visual timeline calendar preventing overlapping reservations, one-click PDF rental agreement generation, and automated in-app and email notifications.
+- [🇵🇱 Opis Systemu (Polski)](#-opis-systemu-w-języku-polskim)
+- [🇬🇧 System Overview (English)](#-system-overview)
+- [🏗️ Architektura Systemu](#️-architektura-systemu)
+- [✨ Kluczowe Funkcjonalności & Moduły](#-kluczowe-funkcjonalności--moduły)
+  - [1. Sklep Gościa & Wypożyczenia Bez Konta](#1-sklep-gościa--rezerwacje-bez-konta)
+  - [2. Panel Zamówień & Kalendarz Osi Czasu](#2-panel-zamówień--kalendarz-osi-czasu)
+  - [3. Uprawnienia Ról (Administrator vs Wykładowca)](#3-uprawnienia-ról-administrator-vs-wykładowca)
+  - [4. Bezpieczeństwo & Ochrona Przed Atakami](#4-bezpieczeństwo--ochrona-przed-atakami)
+  - [5. Dziennik Audytu & Historia Aktywności (Audit Log)](#5-dziennik-audytu--historia-aktywności-audit-log)
+  - [6. Automatyczny Backup Bazy Danych](#6-automatyczny-backup-bazy-danych)
+  - [7. Centrum Powiadomień z Auto-czyszczeniem](#7-centrum-powiadomień-z-auto-czyszczeniem)
+  - [8. Edytowalne Szablony E-mail z Podglądem Na Żywo](#8-edytowalne-szablony-e-mail-z-podglądem-na-żywo)
+  - [9. Karuzela / Slider & Tablica Ogłoszeń](#9-karuzela--slider--tablica-ogłoszeń)
+  - [10. Nowoczesny Widok Profilu & Tryb Ciemny](#10-nowoczesny-widok-profilu--tryb-ciemny)
+- [👥 Matryca Uprawnień (RBAC)](#-matryca-uprawnień-rbac)
+- [🔄 Cykl Życia Zamówienia (Workflow)](#-cykl-życia-zamówienia-workflow)
+- [💻 Stos Technologiczny](#-stos-technologiczny)
+- [📁 Struktura Katalogów Projektu](#-struktura-katalogów-projektu)
+- [🚀 Szczegółowa Konfiguracja Środowiska](#-szczegółowa-konfiguracja-środowiska)
+- [🔑 Dane Kont Testowych](#-dane-kont-testowych)
+- [📡 Dokumentacja Endpointów REST API](#-dokumentacja-endpointów-rest-api)
+- [🗺️ Trasy Aplikacji (Routing)](#️-trasy-aplikacji-routing)
+- [📜 Skrypty NPM](#-skrypty-npm)
+- [❓ FAQ & Rozwiązywanie Problemów](#-faq--rozwiązywanie-problemów)
+- [📄 Licencja i Informacje Akademickie](#-licencja-i-informacje-akademickie)
 
 ---
 
-## 🏗️ System Architecture
+## 🇵🇱 Opis Systemu (W Języku Polskim)
+
+**IoTLab** to kompleksowa platforma internetowa wspomagająca zarządzanie inwentarzem sprzętowym, rezerwacjami, wydawaniem oraz ewidencją aparatury elektronicznej i mikrokontrolerów w laboratoriach uczelnianych (np. Politechniki Poznańskiej).
+
+Aplikacja rozwiązuje kluczowe problemy uczelnianych wypożyczalni:
+1. **Dla studentów i gości:** Umożliwia wygodne przeglądanie sprzętu, koszykowe składanie rezerwacji na wybrane dni (`DD/MM/YYYY`) bez konieczności zakładania konta, natychmiastowe śledzenie stanu zamówienia za pomocą unikalnego kodu UUID i kodu PIN oraz negocjowanie terminów odbioru/zwrotu.
+2. **Dla wykładowców i opiekunów sal:** Prezentuje sprzęt i zamówienia przypisane ściśle do ich sal laboratoryjnych (`labRooms`). Pozwala weryfikować dostępność w interaktywnym kalendarzu terminów, procesować rezerwacje krok po kroku oraz generować umowy wypożyczenia w formacie PDF jednym kliknięciem.
+3. **Dla administratorów:** Daje pełną kontrolę nad globalnym stanem inwentarza, użytkownikami, uprawnieniami, salami, szablonami powiadomień e-mail, sliderem, tablicą ogłoszeń, audytem aktywności oraz automatycznymi kopiami zapasowymi bazy.
+
+---
+
+## 🇬🇧 System Overview
+
+**IoTLab** is an end-to-end laboratory inventory management and hardware reservation platform designed to streamline the lifecycle of electronic equipment, development kits (Arduino, Raspberry Pi, ESP32, STM32, sensors, actuators, bench tools) across university facilities.
+
+- **Students & Guests:** Cart checkout without mandatory account registration, day-based calendar date reservations (`DD/MM/YYYY`), real-time private order tracking via UUID & secret PIN, and schedule negotiation.
+- **Academic Staff & Faculty:** Lab room inventory segregation, interactive timeline calendar preventing double-booking, safe status transitions, and automated PDF rental agreements.
+- **Administrators:** Global management of categories, components, users, roles, email templates with live visual sandbox, announcement boards, audit logging, automatic database backups, and carousel slider media.
+
+---
+
+## 🏗️ Architektura Systemu
 
 ```mermaid
 graph TD
-    subgraph Client ["Client Browser (Frontend)"]
-        UI[React 19 + Tailwind CSS v4 + Vite]
+    subgraph Klient ["Warstwa Klienta (Frontend - React 19 + Vite 6)"]
+        UI[Interfejs Użytkownika / TailwindCSS v4]
         Router[React Router v7]
-        State[Auth / Theme / Language Context]
-        PDFClient[jsPDF Rental Contract Generator]
+        State[Context: Auth, Theme Light/Dark, Language PL/EN, Toast]
+        PDF[Generator Umów Wypożyczenia PDF jsPDF]
     end
 
-    subgraph Server ["Backend API (Node.js & Express 5)"]
-        API[Express Router & Controllers]
-        AuthMid[JWT Authentication & RBAC Middleware]
+    subgraph Serwer ["Warstwa Serwera (Backend - Node.js & Express 5)"]
+        API[Express Router & Kontrolery]
+        Security[Helmet Headers & Rate Limiter]
+        AuthMid[Autoryzacja JWT & RBAC Middleware]
+        Audit[Audit Logger - logAudit]
         UploadMid[Multer File Upload Service]
-        Cron[Node-Cron Scheduled Reminders]
-        Mailer[Nodemailer Dispatcher]
+        Cron[Node-Cron: Auto-czyszczenie, Przypomnienia, Backup Bazy]
+        Mailer[Nodemailer - 5 Szablonów HTML z Bazy]
     end
 
-    subgraph Storage ["Database & File Storage"]
-        MongoDB[(MongoDB 8.x + Mongoose)]
-        Uploads[Local Media Assets /uploads]
+    subgraph Baza ["Warstwa Danych & Plików"]
+        Mongo[(Baza Danych MongoDB 8 + Mongoose)]
+        Uploads[Katalog Plików /uploads: Zdjęcia, Awatary, Karty PDF]
+        Backups[Katalog Kopii /backups: Archiwa .tar.gz]
     end
 
-    UI -->|HTTP / REST JSON| API
+    UI -->|REST API JSON / Bearer JWT| Security
+    Security --> API
     Router --> UI
     API --> AuthMid
+    API --> Audit
+    Audit --> Mongo
     API --> UploadMid
-    API --> MongoDB
-    Cron --> MongoDB
+    API --> Mongo
+    Cron --> Mongo
+    Cron --> Backups
     API --> Mailer
     API --> Uploads
-    PDFClient -.-> UI
+    PDF -.-> UI
 ```
 
 ---
 
-## ✨ Key Features
+## ✨ Kluczowe Funkcjonalności & Moduły
 
-### 📦 Dynamic Inventory & Hardware Catalog
-- **Custom Extra Fields:** Dynamic schema support per category or item (e.g., supply voltage, pinout specifications, communication protocols like I2C/SPI, package type).
-- **Hierarchical Categories & Tags:** Nested category hierarchy with intuitive management and filtering.
-- **Component Bundles & Bench Kits:** Aggregate discrete electronic parts and accessories into structured laboratory kits.
-- **Live Search & Multi-Filter:** Instant client/server filtering by title, assigned room, lecturer, stock status, and custom tags.
-- **Printable Inventory Audits:** One-click generation of printable equipment inventory audit sheets in PDF format.
+### 1. Sklep Gościa & Rezerwacje Bez Konta
+- **Katalog sprzętu:** Filtrowanie po kategoriach, dostępności, parametrach technicznych i opiekunie.
+- **Koszyk 2-krokowy:** Wybór przedziału dat rezerwacji (`DD/MM/YYYY`), zabezpieczenie kodem Captcha, dane kontaktowe.
+- **Prywatny tracker zamówienia:** Unikalny link `http://localhost:5173/orderPreview/:uuid` zabezpieczony wygenerowanym hasłem PIN wysyłanym w e-mailu.
+- **Negocjacja terminu:** Klient może zaakceptować lub odrzucić alternatywny termin zaproponowany przez wykładowcę.
 
-### 🛒 Seamless Guest Checkout & Tracking
-- **Account-Free Requests:** Students and visiting researchers submit hardware checkout requests directly via a streamlined 2-step cart.
-- **Day-Based Date Reservations:** Clean calendar day selection (`DD/MM/YYYY`) without confusing hourly constraints, supporting single-day and multi-day bookings.
-- **Bot Protection:** Form verification using SVG Captchas and optional Google reCAPTCHA v2.
-- **Private Order Tracker:** Every order is issued a cryptographically secure UUID and a private PIN access code delivered via email.
-- **Interactive Schedule Negotiation:** Students can review, approve, or decline alternative pickup and return dates proposed by the lecturer.
+### 2. Panel Zamówień & Kalendarz Osi Czasu
+- **Grupowanie zamówień (`OrderGroupCard`):** Zamówienia pogrupowane według klientów, terminów i sal laboratoryjnych.
+- **Dedykowany modal procesowania (`Procesuj`):** Bezpieczne przejścia stanów (Zatwierdź, Przygotuj, Wypożycz z generowaniem umowy PDF, Zwróć, Odrzuć).
+- **Interaktywny kalendarz wypożyczeń (`BigCalendarModal`):** Wizualny podgląd obłożenia sprzętu eliminujący kolizje rezerwacji.
+- **Generowanie umowy PDF:** Jeden klik tworzy gotową do podpisu umowę wypożyczenia sprzętu ze specyfikacją, danymi wypożyczającego i regulaminem.
 
-### 📅 Order Management & Interactive Calendar
-- **Interactive Timeline Calendar:** Visual schedule built with `React Big Calendar` displaying hardware occupancy across lab rooms and date windows.
-- **Real-Time Stock Forecasting:** Algorithmic calculation of overlapping reservation intervals to guarantee zero double-booking.
-- **Automated Rental Agreements (PDF):** Automatically generates legally binding rental contracts populated with student details, asset serial numbers, terms of service, and signature sections.
-- **Safe State Transitions:** Enforced confirmation dialogs for critical workflow steps (Approve, Prepare, Rent, Return, Reject).
+### 3. Uprawnienia Ról (Administrator vs Wykładowca)
+- **Izolacja sal wykładowców:** Wykładowca po zalogowaniu widzi wyłącznie zamówienia i sprzęt przypisany do jego sal laboratoryjnych (`labRooms`).
+- **Globalny nadzór administratora:** Administrator posiada pełny dostęp do wszystkich sal, zasobów i konfiguracji systemu.
 
-### 🔔 Notifications & Automated Communication
-- **In-App Notification Hub:** Real-time alert notifications for faculty members whenever equipment in their assigned rooms is requested.
-- **Automated Email Dispatch:** Modular HTML email dispatch (`Nodemailer`) supporting dynamic runtime placeholders (`${CustomerName}`, `${orderId}`, `${orderLink}`, `${orderPassword}`, `${startDate}`, `${endDate}`).
-- **Template Management:** Built-in email template editor allowing administrators to customize layouts or revert to production defaults.
+### 4. Bezpieczeństwo & Ochrona Przed Atakami
+- **Ochrona przed brute-force (`express-rate-limit`):** Krytyczne punkty uwierzytelniania (`/auth/login`, `/auth/forgot-password`, `/auth/reset-password`) są zabezpieczone limitem maksymalnie 5 prób na 15 minut z danego adresu IP.
+- **Nagłówki bezpieczeństwa HTTP (`helmet`):** Zabezpieczenie przed atakami XSS, clickjackingiem, MIME-sniffingiem i wstrzykiwaniem obcych skryptów.
+- **Polityka silnych haseł:** Wymóg min. 8 znaków, co najmniej jednej wielkiej litery i co najmniej jednej cyfry, weryfikowany synchronicznie na backendzie (`passwordValidator.js`) i w interfejsie użytkownika.
+- **Szyfrowanie haseł:** Bezpieczne hashowanie algorytmem `bcrypt` z generowaną solą.
 
-### 🎨 User Experience (UX/UI)
-- **Dark & Light Mode:** Native responsive theming powered by TailwindCSS v4 variables.
-- **Internationalization (i18n):** Instant on-the-fly language switching between English (EN) and Polish (PL).
-- **Public Announcement Board:** Administrator bulletin board for broadcasting lab maintenance, opening hours, and news directly on the home page.
+### 5. Dziennik Audytu & Historia Aktywności (Audit Log)
+- **Kolekcja `AuditLog` w MongoDB:** Każda kluczowa zmiana w systemie jest automatycznie rejestrowana w bazie danych.
+- **Szczegółowy ślad rewizyjny:** Zapisywane są: identyfikator użytkownika dokonującego zmiany, rola, akcja (np. `ORDER_STATUS_CHANGED`, `STOCK_UPDATED`, `TEMPLATE_UPDATED`, `USER_CREATED`), typ i ID modyfikowanego obiektu, szczegóły w formacie JSON oraz adres IP klienta.
+
+### 6. Automatyczny Backup Bazy Danych
+- **Cykliczne zrzuty (`backupService.js`):** Zadanie w tle (`node-cron`) uruchamiane codziennie o godzinie 02:00 w nocy wykonuje pełny zrzut bazy MongoDB za pomocą `mongodump` ze skompresowanym archiwum `.gz`.
+- **Automatyczna retencja kopii:** Skrypt weryfikuje zawartość katalogu `backups/` i automatycznie usuwa archiwa starsze niż 30 dni, optymalizując przestrzeń dyskową serwera.
+
+### 7. Centrum Powiadomień z Auto-czyszczeniem
+- **Top 4 Karty KPI:** Wszystkie powiadomienia, Nieprzeczytane, Nowe zamówienia, Systemowe.
+- **Automatyczne usuwanie przeczytanych powiadomień:** Zadanie w tle (`node-cron`) automatycznie usuwa przeczytane powiadomienia starsze niż 7 dni.
+- **Błyskawiczne akcje:** „Oznacz wszystkie jako przeczytane” oraz „Usuń przeczytane”.
+
+### 8. Edytowalne Szablony E-mail z Podglądem Na Żywo
+- **Obsługa 5 kluczowych szablonów w bazie danych:**
+  - `newOrder` – potwierdzenie złożenia zamówienia (z linkiem i kodem PIN).
+  - `updateOrder` – informacja o zmianie statusu wypożyczenia.
+  - `resetPassword` – jednorazowy 6-cyfrowy kod OTP do resetu hasła.
+  - `returnReminder` – automatyczne przypomnienie o zbliżającym się terminie zwrotu sprzętu.
+  - `overdueAlert` – ponaglenie w przypadku przekroczenia terminu wypożyczenia.
+- **Interaktywny modal podglądu (Live Preview Modal):**
+  - Wizualna symulacja nagłówków klienta pocztowego (*Od, Do, Temat*).
+  - Prawdziwa wyrenderowana ramka e-mail IoTLab (`#4f46e5`) z podstawionymi danymi testowymi (`Jan Kowalski`, `#ORD-2026-98421`, link, kod `849 201`).
+  - Zakładki: Podgląd wizualny, Kod HTML, Zestawienie zmiennych.
+- **Kompozytor ze split-view:** Podgląd na żywo podczas pisania, przycisk „Wczytaj szablon wzorcowy”, klikalne pastylki wstawiania zmiennych oraz walidator wymaganych placeholderów.
+- **Ochrona szablonów domyślnych:** Zabezpieczenie przed przypadkowym usunięciem szablonu domyślnego.
+
+### 9. Karuzela / Slider & Tablica Ogłoszeń
+- **Slider na stronie głównej:** Drag & drop zmiana kolejności slajdów, walidacja minimalnych wymiarów (min. 800×600 px), linki docelowe i modal powiększenia lightbox.
+- **Ogłoszenia i Notatki:** Publikowanie ważnych komunikatów laboratoryjnych (np. godziny otwarcia, przerwa serwisowa) widocznych na stronie głównej z oznaczeniem ważności.
+
+### 10. Nowoczesny Widok Profilu & Tryb Ciemny
+- **Pełny Dark Mode:** Zintegrowany przełącznik motywu (jasny / ciemny) zapamiętywany w pamięci przeglądarki i zsynchronizowany na wszystkich stronach, modalach i formularzach.
+- **Karty profilowe ułożone jedno pod drugim (`max-w-4xl mx-auto`):**
+  1. *Wizytówka profilowa (Hero)* – duży awatar, status online, odznaka roli i licznik sal.
+  2. *Dane osobowe i logowanie* – imię, nazwisko, e-mail, opis uprawnień.
+  3. *Zdjęcie profilowe* – uploader z natychmiastowym podglądem i usuwaniem zdjęcia.
+  4. *Bezpieczeństwo i hasło* – szyfrowanie bcrypt, walidator siły hasła i formularz zmiany hasła.
+  5. *Pokoje laboratoryjne* – interaktywny edytor przypisanych sal laboratoryjnych.
 
 ---
 
-## 👥 Role-Based Access Control
+## 👥 Matryca Uprawnień (RBAC)
 
-| Permission / Action | Student / Guest | Lecturer (Room Supervisor) | Administrator |
-|:---|:---:|:---:|:---:|
-| Browse public equipment catalog | ✅ | ✅ | ✅ |
-| Submit reservation request via cart | ✅ | ✅ | ✅ |
-| Track private order via UUID & PIN | ✅ | ✅ | ✅ |
-| Manage assigned room inventory & items | ❌ | ✅ | ✅ |
-| Receive in-app reservation alerts | ❌ | ✅ | ✅ |
-| Approve / Prepare / Hand out / Return orders | ❌ | ✅ | ✅ |
-| Generate Rental Agreement PDFs | ❌ | ✅ | ✅ |
-| View reservation timeline calendar | ❌ | ✅ | ✅ |
-| Manage user accounts & room assignments | ❌ | ❌ | ✅ |
-| Edit dynamic categories & email templates | ❌ | ❌ | ✅ |
-| Publish announcements on home page | ❌ | ❌ | ✅ |
+| Funkcjonalność | Student / Gość | Wykładowca (Opiekun Sali) | Administrator |
+| :--- | :---: | :---: | :---: |
+| Przeglądanie publicznego katalogu sprzętu | ✅ | ✅ | ✅ |
+| Składanie rezerwacji przez koszyk (bez logowania) | ✅ | ✅ | ✅ |
+| Śledzenie rezerwacji przez link UUID + kod PIN | ✅ | ✅ | ✅ |
+| Zarządzanie sprzętem w **przypisanych salach** | ❌ | ✅ | ✅ |
+| Procesowanie zamówień w **przypisanych salach** | ❌ | ✅ | ✅ |
+| Otrzymywanie powiadomień o nowych rezerwacjach | ❌ | ✅ | ✅ |
+| Generowanie umów wypożyczenia w formacie PDF | ❌ | ✅ | ✅ |
+| Podgląd kalendarza terminów i osi czasu | ❌ | ✅ | ✅ |
+| Dostęp do sprzętu i zamówień **wszystkich sal** | ❌ | ❌ | ✅ |
+| Zarządzanie kontami użytkowników i rolami | ❌ | ❌ | ✅ |
+| Zarządzanie kategoriami i zestawami komponentów | ❌ | ❌ | ✅ |
+| Edycja szablonów wiadomości e-mail (5 typów) | ❌ | ❌ | ✅ |
+| Zarządzanie slajdami karuzeli głównej | ❌ | ❌ | ✅ |
+| Podgląd logów audytowych (Audit Log) | ❌ | ❌ | ✅ |
 
 ---
 
-## 🔄 Order Lifecycle
+## 🔄 Cykl Życia Zamówienia (Workflow)
 
 ```mermaid
 flowchart TD
-    A([🛒 Student submits cart order]) --> B[Status: Pending]
-    B -->|Generate UUID & PIN| C[Automated confirmation email sent to student]
-    B -->|In-app alert| D{Lecturer Review}
+    A([🛒 Student składa zamówienie w koszyku]) --> B[Status: Pending / Oczekujące]
+    B -->|Generowanie UUID i hasła PIN| C[Automatyczny e-mail potwierdzający do studenta]
+    B -->|Powiadomienie in-app| D{Weryfikacja przez Wykładowcę}
     
-    D -->|Reject request| E[Status: Rejected]
-    D -->|Adjust dates / Approve| F[Status: Approved]
+    D -->|Odrzucenie rezerwacji| E[Status: Rejected / Odrzucone]
+    D -->|Zatwierdzenie / Zmiana dat| F[Status: Approved / Zatwierdzone]
     
-    F --> G[Status: Prepared / Items gathered in lab]
-    G --> H[Sign Rental PDF contract & hand out hardware]
-    H --> I[Status: Rented / Hardware checked out]
+    F --> G[Status: Prepared / Sprzęt skompletowany w sali]
+    G --> H[Podpisanie umowy PDF & wydanie sprzętu]
+    H --> I[Status: Rented / Wypożyczone]
     
-    I --> J[Hardware returned & inspected]
-    J --> K([Status: Returned / Restored to stock])
+    I --> J[Zwrot sprzętu i inspekcja techniczna]
+    J --> K([Status: Returned / Zwrócone do magazynu])
 
     style A fill:#4f46e5,stroke:#312e81,color:#fff
     style B fill:#f59e0b,stroke:#b45309,color:#fff
@@ -202,359 +264,283 @@ flowchart TD
     style E fill:#ef4444,stroke:#b91c1c,color:#fff
 ```
 
-| Status | Actor | Description |
-|:---|:---|:---|
-| **Pending** | Student / System | Cart order submitted; automated email dispatched containing order UUID and secret PIN. |
-| **Approved** | Lecturer | Lab supervisor verifies component availability and accepts or reschedules reservation dates. |
-| **Prepared** | Lecturer / Staff | Hardware items are physically gathered, tested, and marked ready for student pickup. |
-| **Rented** | Student & Lecturer | Rental Agreement PDF is printed/signed; equipment is officially checked out of the lab. |
-| **Returned** | Lecturer | Hardware is inspected for physical defects and returned; stock counts restore automatically. |
-| **Rejected** | Lecturer | Request declined if components are unavailable, broken, or in conflict with class schedules. |
-
 ---
 
-## 💻 Tech Stack
+## 💻 Stos Technologiczny
 
 ### Frontend
 - **Framework:** [React 19](https://react.dev/) + [Vite 6](https://vitejs.dev/)
-- **Styling:** [TailwindCSS v4](https://tailwindcss.com/) + CSS Design Tokens
-- **UI Components & Icons:** [Material UI (MUI)](https://mui.com/) (`@mui/material`, `@mui/x-date-pickers`), [Lucide React](https://lucide.dev/), [React Icons](https://react-icons.github.io/react-icons/)
+- **Stylowanie:** [TailwindCSS v4](https://tailwindcss.com/) + CSS Design Tokens
+- **Tryb Ciemny:** `ThemeContext` (przełączanie motywów Light/Dark z persystencją w `localStorage`)
 - **Routing:** [React Router v7](https://reactrouter.com/)
-- **Calendar & Dates:** [React Big Calendar](https://jquense.github.io/react-big-calendar/) + [Date-fns](https://date-fns.org/)
+- **Ikony:** [Lucide React](https://lucide.dev/)
+- **Kalendarz:** [React Big Calendar](https://jquense.github.io/react-big-calendar/) + [Date-fns](https://date-fns.org/)
 - **Drag & Drop:** `@dnd-kit/core`, `@dnd-kit/sortable`
-- **Client-Side PDF Engine:** [jsPDF](https://github.com/parallax/jsPDF) + `jspdf-autotable`
-- **Charts:** [Recharts](https://recharts.org/)
+- **Generowanie PDF:** [jsPDF](https://github.com/parallax/jsPDF) + `jspdf-autotable`
+- **Wielojęzyczność:** Dedykowany kontekst i18n (`pl.json`, `en.json`)
 
 ### Backend
-- **Runtime:** [Node.js](https://nodejs.org/) (ES Modules)
-- **API Framework:** [Express 5](https://expressjs.com/)
-- **Database:** [MongoDB](https://www.mongodb.com/) with [Mongoose 8](https://mongoosejs.com/) ODM
-- **Authentication:** JSON Web Tokens (`jsonwebtoken`) + `bcrypt`
-- **Email Delivery:** [Nodemailer](https://nodemailer.com/) (SMTP / Gmail App Passwords)
-- **File Uploads:** `multer`
-- **Scheduled Tasks:** `node-cron`
-- **Logging & Security:** `morgan`, `cors`, `svg-captcha`
+- **Środowisko:** [Node.js 18+](https://nodejs.org/) (ES Modules)
+- **Framework REST API:** [Express 5](https://expressjs.com/)
+- **Baza Danych:** [MongoDB](https://www.mongodb.com/) z ODM [Mongoose 8](https://mongoosejs.com/)
+- **Bezpieczeństwo:**
+  - `helmet` — bezpieczne nagłówki HTTP chroniące przed atakami XSS i clickjackingiem.
+  - `express-rate-limit` — limitowanie żądań do endpointów logowania i resetu hasła (ochrona przed brute-force).
+  - `passwordValidator.js` — walidacja złożoności haseł (min. 8 znaków, cyfra, wielka litera).
+  - `bcrypt` — bezpieczne hashowanie haseł.
+  - `jsonwebtoken` — bezstanowe tokeny sesyjne JWT.
+- **Audyt Zmian:** Model `AuditLog` rejestrujący kluczowe operacje systemowe.
+- **Kopie Zapasowe:** `backupService.js` z cyklicznym zrzutem `mongodump` (`.gz`) i retencją 30 dni.
+- **Wysyłka Poczty:** [Nodemailer](https://nodemailer.com/) (SMTP / Gmail App Passwords) z 5 szablonami z bazy danych.
+- **Obsługa Plików:** `multer` (katalog `/uploads`)
+- **Zadania Cykliczne:** `node-cron` (auto-czyszczenie powiadomień, przypomnienia o zwrotach, backup bazy)
 
 ---
 
-## 📁 Project Structure & Architecture Notes
+## 📁 Struktura Katalogów Projektu
 
 > [!IMPORTANT]
-> **Repository Architecture Overview:**  
-> - **Root Directory (`/`):** Manages configuration files, database migration scripts, and the **Backend API dependencies** (`package.json`).
-> - **Frontend Directory (`/frontend`):** Houses the standalone React + Vite single-page application with its own dedicated `package.json`.
-> - **Backend Directory (`/backend`):** Contains the Express server controllers, routes, Mongoose models, and services executed by the root package.
+> **Struktura repozytorium:**  
+> - **Katalog główny (`/`):** Pliki konfiguracyjne, środowiskowe, skrypty bazy danych oraz zależności serwera Express (`package.json`).
+> - **Katalog frontendu (`/frontend`):** Samodzielna aplikacja React + Vite z własnym `package.json`.
+> - **Katalog backendu (`/backend`):** Kontrolery, modele Mongoose, middleware, serwisy pocztowe i routery.
+> - **Katalog kopii (`/backups`):** Automatycznie tworzone archiwa zrzutów bazy MongoDB.
 
 ```plaintext
 IoTLab/
-├── .env                      # Backend environment variables (PORT, MONGO_URI, JWT_SECRET, SMTP)
-├── .env.example              # Backend environment template
-├── package.json              # BACKEND dependencies and database scripts
-├── README.md                 # Complete project documentation
+├── .env                      # Zmienne środowiskowe backendu (PORT, MONGO_URI, JWT_SECRET, SMTP)
+├── .env.example              # Szablon zmiennych backendu
+├── package.json              # Zależności BACKENDU i skrypty bazodanowe
+├── README.md                 # Dokumentacja projektu
 │
-├── backend/                  # Server-side source code (Node.js & Express)
-│   ├── config/               # Database connection setup (db.js)
-│   ├── controllers/          # Business logic (Order, Product, User, Category, etc.)
-│   ├── errors/               # Custom HTTP error hierarchy
-│   ├── middleware/           # JWT authentication, RBAC authorization, file upload
-│   ├── models/               # Mongoose schemas (User, Product, Order, Template, etc.)
-│   ├── routes/               # Express REST API route endpoints
-│   ├── services/             # Background services (mail dispatch, notifications)
-│   ├── utils/                # Mock data generators, PDF templates, cron routines
-│   ├── init.js               # Clean production database reset script
-│   ├── seed.js               # Development demo data seeding script
-│   └── server.js             # Express API entry point (port 3500)
+├── backups/                  # Automatyczne archiwa bazy danych mongodump (.gz)
 │
-├── frontend/                 # Client-side source code (React + Vite)
-│   ├── .env                  # Frontend environment variables (VITE_API_IP, VITE_API_PORT, VITE_API_BASE_URL)
-│   ├── .env.example          # Frontend environment template
+├── backend/                  # Kod źródłowy API (Node.js & Express)
+│   ├── config/               # Połączenie z MongoDB (db.js)
+│   ├── controllers/          # Logika biznesowa (Order, Product, User, Category, Template, etc.)
+│   ├── errors/               # Niestandardowa hierarchia błędów HTTP (CustomErrors.js)
+│   ├── middleware/           # Autoryzacja JWT, RBAC, obsługa uploadu plików Multer
+│   ├── models/               # Schematy Mongoose (User, Product, Order, Template, Note, Material, AuditLog)
+│   ├── routes/               # Endpointy Express REST API
+│   ├── services/             # Serwisy systemowe (backupService.js)
+│   ├── utils/                # Wysyłka e-maili, auditLogger, passwordValidator, mockData, captche
+│   ├── init.js               # Skrypt czyszczący bazę (inicjalizacja konta admina i szablonów)
+│   ├── seed.js               # Skrypt zasilający pełnymi danymi demonstracyjnymi
+│   └── server.js             # Główny punkt wejścia serwera API (port 3500) z Helmet i RateLimiter
+│
+├── frontend/                 # Kod źródłowy klienta (React 19 + Vite 6)
+│   ├── .env                  # Zmienne frontendu (VITE_API_IP, VITE_API_PORT, VITE_API_BASE_URL)
+│   ├── .env.example          # Szablon zmiennych frontendu
 │   ├── src/
-│   │   ├── api/              # Axios instance configured with auto JWT header injection
-│   │   ├── components/       # Reusable UI modules (Orders, Products, Cart, Auth, Layout)
-│   │   ├── context/          # State providers (Auth, Language, Theme, Toast)
-│   │   ├── pages/            # Application views (Dashboard, Orders, Catalog, etc.)
-│   │   ├── utils/            # PDF generators, i18n localization dicts, route guards
-│   │   ├── App.jsx           # Main React Router v7 configuration
-│   │   └── main.jsx          # React DOM entry point
-│   ├── public/               # Static assets & public icons
-│   └── package.json          # FRONTEND dependencies
+│   │   ├── api/              # Klient Axios z automatyczną obsługą nagłówków JWT
+│   │   ├── components/       # Komponenty wielokrotnego użytku (layout, orders, modals)
+│   │   ├── context/          # Dostawcy stanu (AuthContext, ThemeContext, LanguageContext, ToastContext)
+│   │   ├── locales/          # Słowniki tłumaczeń (pl.json, en.json)
+│   │   ├── pages/            # Widoki aplikacji (Orders, Products, Users, Templates, Profile, etc.)
+│   │   ├── utils/            # Generatory PDF, formatowania dat, walidatory haseł
+│   │   ├── App.jsx           # Konfiguracja routingu React Router v7
+│   │   └── main.jsx          # Punkt wejścia aplikacji React
+│   ├── public/               # Zasoby statyczne
+│   └── package.json          # Zależności FRONTENDU
 │
-└── uploads/                  # Uploaded equipment photos and documentation files
+└── uploads/                  # Przechowywalnia przesłanych zdjęć sprzętu i awatarów
 ```
 
 ---
 
-## 🚀 Detailed Setup Guide
+## 🚀 Szczegółowa Konfiguracja Środowiska
 
-### Prerequisites
-1. **Node.js**: Version `v18.0.0` or higher ([Download Node.js](https://nodejs.org/)).
-2. **MongoDB**: Local MongoDB instance running on port `27017` (e.g. as a Windows Service) or a [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) cluster.
-3. **Package Manager**: `npm` (bundled with Node.js).
+### Wymagania wstępne:
+1. **Node.js**: Wersja `v18.0.0` lub wyższa ([Pobierz Node.js](https://nodejs.org/)).
+2. **MongoDB**: Lokalna instancja MongoDB działająca na porcie `27017` (np. jako usługa Windows) lub klaster [MongoDB Atlas](https://www.mongodb.com/cloud/atlas).
+3. **MongoDB Database Tools** (opcjonalnie dla kopii zapasowych): Narzędzie `mongodump` zainstalowane w ścieżce systemowej dla automatycznego backupu.
+4. **NPM**: Domyślny menedżer pakietów Node.js.
 
----
+### 1. Konfiguracja Backendu (`/.env`):
+```env
+PORT=3500
+MONGO_URI=mongodb://127.0.0.1:27017/iotlab_db
+JWT_SECRET=super_tajny_klucz_jwt_iotlab_2026
 
-### 1. Backend & Root Configuration
+# Poczta wychodząca Nodemailer (opcjonalnie do realnej wysyłki e-maili):
+SMTP_HOST=smtp.gmail.com
+SMTP_SERVICE=gmail
+SMTP_PORT=587
+SMTP_MAIL=twoj_email@gmail.com
+SMTP_PASSWORD=twoje_haslo_aplikacji_gmail
+```
 
-1. Open your terminal in the root `IoTLab` directory:
-   ```bash
-   cd IoTLab
-   ```
-2. Install backend dependencies:
-   ```bash
-   npm install
-   ```
-3. Create the root `.env` file (or copy from `.env.example`):
-   ```env
-   # Express Server Port
-   PORT=3500
+### 2. Konfiguracja Frontendu (`/frontend/.env`):
+```env
+VITE_API_IP=http://localhost:
+VITE_API_PORT=3500
+VITE_API_POSTFIX=
+VITE_API_BASE_URL=http://localhost:3500
+```
 
-   # MongoDB Connection String
-   MONGO_URI=mongodb://127.0.0.1:27017/iotlab_db
-
-   # JWT Secret Key for token signing
-   JWT_SECRET=your_secure_jwt_secret_key_2026
-
-   # Email Delivery Configuration (Nodemailer)
-   SMTP_HOST=smtp.gmail.com
-   SMTP_SERVICE=gmail
-   SMTP_PORT=587
-   SMTP_MAIL=your_email@gmail.com
-   SMTP_PASSWORD=your_gmail_app_password
-   ```
-
----
-
-### 2. Frontend Configuration
-
-1. Navigate to the `frontend` directory:
-   ```bash
-   cd frontend
-   ```
-2. Install frontend dependencies:
-   ```bash
-   npm install
-   ```
-3. Create the `frontend/.env` file (or copy from `frontend/.env.example`):
-   ```env
-   VITE_API_IP=http://localhost:
-   VITE_API_PORT=3500
-   VITE_API_POSTFIX=
-   VITE_API_BASE_URL=http://localhost:3500
-   ```
-4. Return to the root folder:
-   ```bash
-   cd ..
-   ```
-
----
-
-### 3. Database Initialization & Seeding
-
-Choose one of the following commands (executed from the root `IoTLab` directory):
-
-#### Option A: Seed Mock Data (Recommended for Development & Testing)
-Populates the database with 4 user accounts, 6 hardware categories, 11 lab components, 5 test orders across all lifecycle states, and default email templates:
+### 3. Zasilenie Bazy Danych Danymi Testowymi:
+W głównym katalogu `IoTLab` uruchom:
 ```bash
 npm run db:seed
 ```
-
-#### Option B: Clean Production Initialization
-Clears existing collections and initializes only the Administrator account (`admin@gmail.com` / `admin`) and system email templates:
-```bash
-npm run db:init
-```
+> Komenda utworzy konta użytkowników, kategorie, sprzęt laboratoryjny, zamówienia w różnych stanach, 5 szablonów wiadomości e-mail oraz slajdy karuzeli.
 
 ---
 
-### 4. Running the Dev Servers
+## 🔑 Dane Kont Testowych
 
-Run both servers concurrently in two separate terminal windows:
+Po wykonaniu `npm run db:seed` w bazie dostępne są następujące konta:
 
-#### Terminal 1 — Backend API:
-```bash
-npm run dev
-```
-> Starts nodemon watching `backend/server.js` on:  
-> **http://localhost:3500**
+| Rola w systemie | Adres E-mail | Hasło startowe | Przypisane Sale Laboratoryjne | Uprawnienia |
+| :--- | :--- | :--- | :--- | :--- |
+| **Administrator** | `admin@gmail.com` | `admin` | Sala 101, 102, 201, 301 | **Pełny dostęp do całego systemu i audytu** |
+| **Wykładowca 1** | `lecturer1@gmail.com` | `password` | Sala 101, 102 | Tylko zamówienia i sprzęt z sal 101, 102 |
+| **Wykładowca 2** | `lecturer2@gmail.com` | `password` | Sala 201 | Tylko zamówienia i sprzęt z sali 201 |
+| **Wykładowca 3** | `lecturer3@gmail.com` | `password` | Sala 301 | Tylko zamówienia i sprzęt z sali 301 |
 
-#### Terminal 2 — Frontend Client:
-```bash
-cd frontend
-npm run dev
-```
-> Starts the Vite development server on:  
-> **http://localhost:5173**
+> [!NOTE]
+> Przy zmianie hasła w profilu lub przez procedurę resetu hasła obowiązuje **polityka bezpieczeństwa**: hasło musi mieć min. 8 znaków, co najmniej jedną wielką literę oraz co najmniej jedną cyfrę (np. `Admin2026!`).
 
 ---
 
-## 🔑 Test Credentials
+## 📡 Dokumentacja Endpointów REST API
 
-After running `npm run db:seed`, the following accounts are pre-configured:
+Główny adres serwera: `http://localhost:3500`
 
-| System Role | Email Address | Password | Assigned Lab Rooms |
-|:---|:---|:---|:---|
-| **Administrator** | `admin@gmail.com` | `admin` | Room 101, Room 102 *(Full System Access)* |
-| **Lecturer 1** | `lecturer1@gmail.com` | `password` | Equipment assigned to Lecturer 1's room |
-| **Lecturer 2** | `lecturer2@gmail.com` | `password` | Equipment assigned to Lecturer 2's room |
-| **Lecturer 3** | `lecturer3@gmail.com` | `password` | Equipment assigned to Lecturer 3's room |
-
----
-
-## 📡 REST API Endpoints Reference
-
-All endpoints are hosted at `http://localhost:3500`.
-
-| Category | HTTP Method | Endpoint | Required Role | Description |
-|:---|:---:|:---|:---:|:---|
-| **Auth** | `POST` | `/auth/login` | Public | Authenticates credentials and returns JWT session token |
-| | `POST` | `/auth/forgot-password` | Public | Generates and sends a 15-minute password reset verification code |
-| | `POST` | `/auth/reset-password` | Public | Resets user password using the verification code |
-| **Orders** | `POST` | `/orders/create` | Public | Submits a new guest cart reservation request |
-| | `GET` | `/orders/customerOrder/:orderUUID`| Public | Fetches order summary for student tracking |
-| | `POST` | `/orders/customerUpdate/:orderId` | Public (PIN) | Student accepts or declines proposed reservation dates |
-| | `GET` | `/orders` | Lecturer / Admin | Paginated list of reservations with multi-filtering |
-| | `PUT` | `/orders/updateOrder/:orderId` | Lecturer / Admin | Updates order statuses and assigned reservation dates |
-| | `GET` | `/orders/stats` | Lecturer / Admin | Returns aggregated reservation analytics |
-| | `GET` | `/orders/statuses` | Lecturer / Admin | Returns all valid order status definitions |
-| | `POST` | `/orders/download-pdf` | Lecturer / Admin | Generates and downloads rental agreement PDF |
-| | `DELETE`| `/orders/:orderId` | Lecturer / Admin | Permanently deletes an order record |
-| **Products** | `GET` | `/products/public` | Public | Retrieves all active equipment available for guest reservation |
-| | `GET` | `/products/publicId/:productId` | Public | Retrieves public details for a single product |
-| | `POST` | `/products/available` | Public | Calculates real-time available stock across given reservation dates |
-| | `GET` | `/products/private` | Lecturer / Admin | Full inventory view filtered by room assignment |
-| | `GET` | `/products/privateId/:productId` | Lecturer / Admin | Full product specifications including private attachments |
-| | `POST` | `/products/create` | Lecturer / Admin | Adds a new piece of equipment (with image and attachment uploads) |
-| | `PUT` | `/products/:productId` | Lecturer / Admin | Updates hardware specifications and stock counts |
-| | `DELETE`| `/products/:productId` | Lecturer / Admin | Soft/hard deletes a product from the database |
-| | `POST` | `/products/stockStatus` | Lecturer / Admin | Detailed stock breakdown (reserved vs rented vs in-demand) |
-| | `DELETE`| `/products/extraField/:key` | Lecturer / Admin | Removes a dynamic extra attribute field across all products |
-| **Categories**| `GET` | `/categories/public` | Public | Fetches category tree for public navigation |
-| | `GET` | `/categories/private` | Lecturer / Admin | Fetches category hierarchy for management |
-| | `POST` | `/categories/create` | Administrator | Adds a new category |
-| | `PATCH` | `/categories/:categoryId` | Administrator | Updates category name and details |
-| | `DELETE`| `/categories/:categoryId` | Administrator | Deletes a category |
-| **Users** | `GET` | `/users/profile` | Authenticated | Retrieves current user profile data |
-| | `PUT` | `/users/profile` | Authenticated | Updates current user profile details and password |
-| | `GET` | `/users` | Administrator | Retrieves faculty member list and room allocations |
-| | `POST` | `/users/create` | Administrator | Registers a new lecturer or administrator account |
-| | `PUT` | `/users/:userId` | Administrator | Updates user credentials and room assignments |
-| | `DELETE`| `/users/:userId` | Administrator | Deletes a user account |
-| **Notifications** | `GET` | `/notifications` | Lecturer / Admin | Retrieves in-app alerts for pending orders and updates |
-| | `PATCH` | `/notifications/read-all` | Lecturer / Admin | Marks all user notifications as read |
-| | `PATCH` | `/notifications/:id/read` | Lecturer / Admin | Marks a single notification as read |
-| | `DELETE`| `/notifications` | Lecturer / Admin | Clears all user notifications |
-| **Templates** | `GET` | `/templates` | Administrator | Retrieves all customizable HTML email templates |
-| | `GET` | `/templates/names` | Administrator | Retrieves template identifier names |
-| | `GET` | `/templates/:templateId` | Administrator | Fetches single template content |
-| | `POST` | `/templates/create` | Administrator | Creates a new email template |
-| | `PUT` | `/templates/update/:templateId` | Administrator | Saves modifications to email template content |
-| | `DELETE`| `/templates/delete/:templateId` | Administrator | Deletes a custom email template |
-| **Notes** | `GET` | `/notes` | Public | Fetches announcements displayed on the landing page |
-| | `POST` | `/notes/create` | Lecturer / Admin | Publishes a new bulletin announcement |
-| | `PUT` | `/notes/:noteId` | Lecturer / Admin | Updates announcement content |
-| | `DELETE`| `/notes/:noteId` | Lecturer / Admin | Removes an announcement |
-| **Materials** | `GET` | `/materials` | Public | Fetches landing page hero carousel banner slides |
-| | `POST` | `/materials` | Administrator | Uploads new slide media |
-| | `PATCH` | `/materials/reorder` | Administrator | Reorders banner slide display order |
-| | `PATCH` | `/materials/:id` | Administrator | Updates banner slide link |
-| | `DELETE`| `/materials/:id` | Administrator | Deletes a banner slide |
-| **Components** | `GET` | `/components` | Public | Lists laboratory component kits and bundles |
-| | `GET` | `/components/:collectionId`| Public | Fetches component bundle details and files |
-| | `POST` | `/components/create` | Administrator | Creates a component bundle collection |
-| | `POST` | `/components/:collectionId/links` | Administrator | Adds external documentation link to a bundle |
-| | `POST` | `/components/:collectionId/files` | Administrator | Attaches reference files to a bundle |
+| Moduł | Metoda | Ścieżka | Wymagana Rola / Zabezpieczenie | Opis |
+| :--- | :---: | :--- | :---: | :--- |
+| **Auth** | `POST` | `/auth/login` | Publiczny (Rate Limiter: max 5 / 15 min) | Logowanie i generowanie tokena JWT |
+| | `POST` | `/auth/forgot-password` | Publiczny (Rate Limiter: max 5 / 15 min) | Generowanie 6-cyfrowego kodu weryfikacyjnego OTP |
+| | `POST` | `/auth/reset-password` | Publiczny (Rate Limiter: max 5 / 15 min) | Reset hasła kodem OTP (walidacja siły hasła) |
+| **Orders** | `POST` | `/orders/create` | Publiczny | Składanie nowej rezerwacji przez gościa w koszyku |
+| | `GET` | `/orders/customerOrder/:orderUUID`| Publiczny | Pobieranie danych zamówienia dla studenta |
+| | `POST` | `/orders/customerUpdate/:orderId` | Publiczny (kod PIN)| Akceptacja/odrzucenie negocjowanego terminu |
+| | `GET` | `/orders` | Wykładowca / Admin | Pobieranie zamówień (filtrowane salami wykładowcy) |
+| | `PUT` | `/orders/updateOrder/:orderId` | Wykładowca / Admin | Zmiana statusu rezerwacji i terminów (rejestrowana w AuditLog) |
+| | `GET` | `/orders/stats` | Wykładowca / Admin | Statystyki i metryki zamówień |
+| | `POST` | `/orders/download-pdf` | Wykładowca / Admin | Pobranie umowy wypożyczenia PDF |
+| | `DELETE`| `/orders/:orderId` | Administrator | Trwałe usunięcie rekordu zamówienia |
+| **Products** | `GET` | `/products/public` | Publiczny | Sprzęt dostępny do rezerwacji dla gości |
+| | `POST` | `/products/available` | Publiczny | Obliczanie wolnych sztuk w wybranym przedziale dat |
+| | `GET` | `/products/private` | Wykładowca / Admin | Pełna lista inwentarza (filtrowana salami) |
+| | `POST` | `/products/create` | Wykładowca / Admin | Dodanie nowego obiektu sprzętowego |
+| | `PUT` | `/products/:productId` | Wykładowca / Admin | Aktualizacja parametrów i stanów magazynowych |
+| | `DELETE`| `/products/:productId` | Wykładowca / Admin | Usunięcie sprzętu z ewidencji |
+| **Users** | `GET` | `/users/profile` | Uwierzytelniony | Pobranie danych profilu zalogowanego użytkownika |
+| | `PUT` | `/users/profile` | Uwierzytelniony | Aktualizacja profilu, sal, zdjęcia i hasła |
+| | `GET` | `/users` | Administrator | Pobranie listy użytkowników kadry dydaktycznej |
+| | `POST` | `/users/create` | Administrator | Rejestracja nowego wykładowcy lub administratora |
+| | `PUT` | `/users/:userId` | Administrator | Modyfikacja konta i przypisania sal |
+| | `DELETE`| `/users/:userId` | Administrator | Usunięcie konta użytkownika |
+| **Templates** | `GET` | `/templates` | Administrator | Lista 5 szablonów e-mail (`newOrder`, `updateOrder`, etc.) |
+| | `GET` | `/templates/names` | Administrator | Lista zarejestrowanych typów szablonów systemowych |
+| | `GET` | `/templates/:templateId` | Administrator | Szczegóły szablonu e-mail |
+| | `POST` | `/templates/create` | Administrator | Utworzenie nowego szablonu |
+| | `PUT` | `/templates/update/:templateId` | Administrator | Zapisanie zmian w szablonie (rejestrowane w AuditLog) |
+| | `DELETE`| `/templates/delete/:templateId` | Administrator | Usunięcie szablonu (z blokadą domyślnych) |
+| **Notifications** | `GET` | `/notifications` | Wykładowca / Admin | Lista powiadomień użytkownika |
+| | `PATCH` | `/notifications/read-all` | Wykładowca / Admin | Oznaczenie wszystkich jako przeczytane |
+| | `DELETE`| `/notifications/read` | Wykładowca / Admin | Usunięcie przeczytanych powiadomień |
+| **Notes** | `GET` | `/notes` | Publiczny | Lista ogłoszeń na stronie głównej |
+| | `POST` | `/notes/create` | Wykładowca / Admin | Publikacja ogłoszenia laboratoryjnego |
+| | `PUT` | `/notes/:noteId` | Wykładowca / Admin | Edycja ogłoszenia |
+| | `DELETE`| `/notes/:noteId` | Wykładowca / Admin | Usunięcie ogłoszenia |
+| **Materials** | `GET` | `/materials` | Publiczny | Lista slajdów karuzeli głównej |
+| | `POST` | `/materials` | Administrator | Przesłanie nowego zdjęcia slajdu |
+| | `PATCH` | `/materials/reorder` | Administrator | Zapisanie nowej kolejności slajdów |
+| | `DELETE`| `/materials/:id` | Administrator | Usunięcie slajdu z karuzeli |
 
 ---
 
-## 🗺️ Application Routes
+## 🗺️ Trasy Aplikacji (Routing)
 
-### Public Zone (Students & Guests)
-- `/` — Landing page featuring lab news, announcements, carousel banners, and quick order tracking.
-- `/mainguest` — Student portal with category cards and hardware navigation.
-- `/guest-products/:menuCategory?` — Searchable hardware catalog with dynamic attribute filters and cart drawer.
-- `/cart` — Two-step guest checkout, calendar date selection (`DD/MM/YYYY`), and verification.
-- `/orderPreview/:orderUUID` — Dedicated order tracking page (requires private PIN validation).
-- `/components/:collectionId` — Public view of component kits, bundle parts, and documentation.
-- `/preview` — Equipment specification preview modal.
-- `/forgot-password` — Password reset workflow for faculty members.
-- `/login` — Faculty and administrative authentication gateway.
+### Strefa Publiczna (Studenci & Goście):
+- `/` — Strona główna z karuzelą slajdów, ogłoszeniami i wyszukiwarką zamówień.
+- `/mainguest` — Portal kafelkowy wyboru kategorii urządzeń.
+- `/guest-products/:menuCategory?` — Katalog aparatury z filtrami i wysuwanym koszykiem.
+- `/cart` — Dwuetapowa rezerwacja koszykowa z wyborem dat i zabezpieczeniem Captcha.
+- `/orderPreview/:orderUUID` — Panel śledzenia zamówienia dla studenta (dostęp kodem PIN).
+- `/login` — Bramka logowania dla kadry laboratoryjnej (z zabezpieczeniem rate-limit).
+- `/forgot-password` — Procedura odzyskiwania hasła za pomocą jednorazowego kodu OTP.
 
-### Administrative Zone (`/admin-dashboard`)
-- `/admin-dashboard` — Main metrics overview, occupancy charts, and activity log.
-- `/admin-dashboard/orders` — Order status management table and interactive reservation calendar.
-- `/admin-dashboard/products` — Equipment catalog management, stock control, and dynamic field configuration.
-- `/admin-dashboard/profile` — Faculty profile settings, contact info, and password change.
-- `/admin-dashboard/notes` — Laboratory announcements and bulletin board management.
-- `/admin-dashboard/notifications` — In-app notification center for pending requests and status changes.
-- `/admin-dashboard/categories` *(Admin Only)* — Hierarchical category and tag management.
-- `/admin-dashboard/users` *(Admin Only)* — Staff user accounts and laboratory room assignments.
-- `/admin-dashboard/materials` *(Admin Only)* — Hero banner slides and media carousel management.
-- `/admin-dashboard/components` *(Admin Only)* — Component kits and laboratory bundle management.
-- `/admin-dashboard/templates` *(Admin Only)* — Email notification template visual editor.
+### Strefa Administracyjna (`/admin-dashboard`):
+- `/admin-dashboard` — Pulpit główny, analityka wypożyczeń i statystyki.
+- `/admin-dashboard/orders` — Tabela zamówień z podziałem na statusy i interaktywnym kalendarzem.
+- `/admin-dashboard/products` — Ewidencja sprzętu laboratoryjnego i stanów magazynowych.
+- `/admin-dashboard/users` *(Tylko Admin)* — Zarządzanie kontami użytkowników i przypisaniami sal.
+- `/admin-dashboard/notifications` — Centrum powiadomień z auto-czyszczeniem starszych wpisów.
+- `/admin-dashboard/notes` — Tablica ogłoszeń laboratoryjnych publikowanych na stronie startowej.
+- `/admin-dashboard/slider` *(Tylko Admin)* — Menedżer karuzeli zdjęć z funkcją przeciągania (drag & drop).
+- `/admin-dashboard/templates` *(Tylko Admin)* — Edytor szablonów e-mail z podglądem na żywo, walidacją i 5 typami powiadomień.
+- `/admin-dashboard/profile` — Mój profil (dane osobowe, zmiana hasła z walidacją siły, sale i awatar).
 
 ---
 
-## 📜 NPM Scripts Reference
+## 📜 Skrypty NPM
 
-### Root Directory (`/`):
-| Script | Command | Purpose |
-|:---|:---|:---|
-| `npm run dev` | `nodemon backend/server.js` | Launches the Express API server with automatic hot-reload. |
-| `npm run db:seed` | `node backend/seed.js` | Clears and populates MongoDB with complete mock data. |
-| `npm run db:init` | `node backend/init.js` | Resets MongoDB with only default admin and email templates. |
-| `npm run db:start` | `mongod --dbpath .mongo_data` | Manually starts local Windows MongoDB daemon instance. |
+### Katalog główny (`/`):
+| Skrypt | Komenda | Działanie |
+| :--- | :--- | :--- |
+| `npm run dev` | `nodemon backend/server.js` | Uruchamia serwer API Express z automatycznym przeładowaniem. |
+| `npm run db:seed` | `node backend/seed.js` | Czyści i zasila bazę pełnymi danymi demonstracyjnymi. |
+| `npm run db:init` | `node backend/init.js` | Inicjalizuje czystą bazę z kontem administratora i szablonami. |
+| `npm run db:start` | `mongod --dbpath .mongo_data` | Ręczne uruchomienie bazy MongoDB w katalogu lokalnym. |
 
-### Frontend Directory (`/frontend`):
-| Script | Command | Purpose |
-|:---|:---|:---|
-| `npm run dev` | `vite --host` | Starts the Vite development web server (`http://localhost:5173`). |
-| `npm run build` | `vite build` | Compiles optimized production bundle into `dist/`. |
-| `npm run preview` | `vite preview` | Locally serves and previews the production build. |
-| `npm run lint` | `eslint .` | Runs ESLint analysis across client codebase. |
+### Katalog frontendu (`/frontend`):
+| Skrypt | Komenda | Działanie |
+| :--- | :--- | :--- |
+| `npm run dev` | `vite --host` | Uruchamia serwer developerski Vite (`http://localhost:5173`). |
+| `npm run build` | `vite build` | Buduje zoptymalizowaną paczkę produkcyjną w `frontend/dist/`. |
+| `npm run preview` | `vite preview` | Lokalny podgląd zbudowanej paczki produkcyjnej. |
+| `npm run lint` | `eslint .` | Uruchamia analizę statyczną kodu ESLint. |
 
 ---
 
-## ❓ Troubleshooting & FAQ
+## ❓ FAQ & Rozwiązywanie Problemów
 
 <details>
-<summary><b>1. Products fail to load on the home page or catalog?</b></summary>
+<summary><b>1. Sprzęt lub zamówienia nie wyświetlają się w aplikacji?</b></summary>
 
-- **Issue 1:** Missing `frontend/.env` file.  
-  *Fix:* Copy `frontend/.env.example` to `frontend/.env` and verify `VITE_API_PORT=3500`.
-- **Issue 2:** The MongoDB database has not been populated.  
-  *Fix:* Execute `npm run db:seed` in the root project folder.
+- Upewnij się, że usługa MongoDB działa (`Get-Service -Name MongoDB` w PowerShell).
+- Wykonaj `npm run db:seed` w głównym katalogu projektu, aby załadować przykładowe dane.
+- Upewnij się, że oba pliki `.env` (w root i w `frontend/.env`) zostały utworzone.
 </details>
 
 <details>
-<summary><b>2. Error: Connection failed / MongoServerError: connect ECONNREFUSED?</b></summary>
+<summary><b>2. Wykładowca nie widzi niektórych zamówień w panelu?</b></summary>
 
-- Ensure your MongoDB server is active.
-- On Windows, verify the service status with PowerShell:  
-  `Get-Service -Name MongoDB`
-- If it is stopped, start it via:  
-  `Start-Service -Name MongoDB`
-- Alternatively, start a local data directory instance with `npm run db:start`.
+- Jest to zamierzone zachowanie systemu kontroli dostępu: wykładowca ma wgląd wyłącznie w sprzęt i zamówienia przypisane do sal laboratoryjnych (`labRooms`), do których posiada uprawnienia.
+- Zaloguj się na konto administratora (`admin@gmail.com` / `admin`), aby widzieć wszystkie zamówienia ze wszystkich sal.
 </details>
 
 <details>
-<summary><b>3. Error: 'vite' is not recognized as an internal or external command?</b></summary>
+<summary><b>3. Komunikat o zbyt wielu próbach logowania (Rate Limit)?</b></summary>
 
-- This occurs when client dependencies have not been installed.
-- Navigate to the frontend directory and run:  
-  `cd frontend && npm install`
+- System chroni endpointy `/auth/login`, `/auth/forgot-password` oraz `/auth/reset-password` limitem 5 zapytań na 15 minut na adres IP.
+- Odczekaj 15 minut lub zrestartuj serwer backendowy w trybie deweloperskim.
 </details>
 
 <details>
-<summary><b>4. How do I enable real outbound emails for reservations?</b></summary>
+<summary><b>4. Błąd: 'vite' is not recognized as an internal or external command?</b></summary>
 
-- In the root `.env` file, supply your SMTP credentials (such as Google Workspace or Gmail):
-  - `SMTP_MAIL=your_email@gmail.com`
-  - `SMTP_PASSWORD=your_gmail_app_password` *(Generated in Google Account: Security -> 2-Step Verification -> App Passwords).*
+- Zależności frontendu nie zostały zainstalowane. Wejdź do katalogu `frontend` i wykonaj:
+  ```bash
+  cd frontend
+  npm install
+  ```
+</details>
+
+<details>
+<summary><b>5. Jak skonfigurować wysyłanie prawdziwych e-maili?</b></summary>
+
+- W pliku `.env` w katalogu głównym wpisz dane konta SMTP (np. Gmail):
+  - `SMTP_MAIL=twoj_adres@gmail.com`
+  - `SMTP_PASSWORD=twoje_haslo_aplikacji` *(generowane w ustawieniach konta Google -> Bezpieczeństwo -> Weryfikacja dwuetapowa -> Hasła aplikacji).*
 </details>
 
 ---
 
-## 📄 License & Academic Credits
+## 📄 Licencja i Informacje Akademickie
 
-Developed as an **Engineering Thesis** for academic and laboratory purposes at **Poznań University of Technology** (*Politechnika Poznańska — PUT*).  
-All rights reserved for educational and research use.
+Projekt przygotowany w ramach pracy inżynierskiej na **Politechnice Poznańskiej** (*Poznań University of Technology — PUT*).  
+Wszelkie prawa zastrzeżone do celów edukacyjnych i badawczych.

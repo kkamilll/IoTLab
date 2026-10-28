@@ -66,7 +66,7 @@ export const updateNote = asyncHandler(async (req, res, next) => {
   if (important !== undefined) note.important = !!important;
 
   await note.save();
-  await note.populate("author", "name email");
+  await note.populate("author", "name email role profileImage");
   res.status(200).json({ success: true, data: note });
 });
 

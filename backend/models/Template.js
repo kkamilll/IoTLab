@@ -1,12 +1,20 @@
 import mongoose from "mongoose";
 
-const TEMPLATE_TYPES = ["newOrder", "updateOrder", "resetPassword"];
+const TEMPLATE_TYPES = [
+    "newOrder",
+    "updateOrder",
+    "resetPassword",
+    "returnReminder",
+    "overdueAlert",
+];
 
 const TEMPLATE_TYPE_VARIABLE_MAP = {
     newOrder: ["orderId", "CustomerName", "orderLink", "orderPassword"],
     updateOrder: ["orderId", "CustomerName"],
     resetPassword: ["VerificationCode"],
-}
+    returnReminder: ["orderId", "CustomerName"],
+    overdueAlert: ["orderId", "CustomerName"],
+};
 
 const templateSchema = new mongoose.Schema({
     name: { type: String, enum: TEMPLATE_TYPES, required: true },

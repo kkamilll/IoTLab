@@ -4,7 +4,8 @@ import { DuplicateKeyError } from '../errors/CustomErrors.js'
 
 export function errorHandler(error, req, res, next) {
   if (error instanceof MongoServerError && error.code === 11000) {
-    const [field, value] = Object.entries(error.keyValue)[0];
+    const entries = error.keyValue ? Object.entries(error.keyValue) : [];
+    const [field, value] = entries.length > 0 ? entries[0] : ["field", "value"];
     error = new DuplicateKeyError({ field, value });
   }
 

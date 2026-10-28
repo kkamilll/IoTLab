@@ -4,9 +4,12 @@ export function buildTree(categories) {
 
   categories.forEach(cat =>
     map.set(cat._id.toString(), {
+      ...cat,
       _id: cat._id.toString(),
       name: cat.name,
+      nameEn: cat.nameEn || "",
       description: cat.description || "",
+      descriptionEn: cat.descriptionEn || "",
       parent: cat.parent ? cat.parent.toString() : null,
       children: [],
       isVisible: cat.isVisible || false

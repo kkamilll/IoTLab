@@ -58,7 +58,7 @@ export const rentalAgreementTemplate = ({ customerInfo, items, startDate, endDat
 
     <ol style="margin: 20px 0; padding: 0 0 0 20px; font-size: 12px;">
       <li>The above-mentioned items were borrowed for the purpose of: <b>${customerInfo?.purpose || '—'}</b>.</li>
-      <li>I agree to return the requested items by: <b>${endDate || '—'}</b>.</li>
+      <li>Rental period: <b>${startDate ? `${startDate} — ${endDate || '—'}` : (endDate || '—')}</b>.</li>
       <li>In the event of loss of the borrowed equipment, I agree to repurchase it.</li>
     </ol>
 
