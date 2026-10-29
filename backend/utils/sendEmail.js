@@ -109,6 +109,15 @@ export const sendEmail = async (email, subject, message) => {
   }
 };
 
+const getFrontendUrl = () => {
+  if (process.env.FRONTEND_URL) return process.env.FRONTEND_URL.replace(/\/+$/, "");
+  if (process.env.FRONTEND_IP) {
+    const port = process.env.FRONTEND_PORT ? `:${process.env.FRONTEND_PORT}` : "";
+    return `${process.env.FRONTEND_IP}${port}`.replace(/\/+$/, "");
+  }
+  return "http://localhost:5173";
+};
+
 export const sendOrderEmail = async (order, customerKey = null, uuid = null) => {
   try {
     if (!order) throw new ResourceNotFoundError("Missing order");
@@ -120,7 +129,8 @@ export const sendOrderEmail = async (order, customerKey = null, uuid = null) => 
 
     const orderId = order._id.toString();
     const CustomerName = `${order.customer.firstName} ${order.customer.lastName}`;
-    const orderLink = `${process.env.FRONTEND_IP}${process.env.FRONTEND_PORT}${process.env.FRONTEND_ORDER_PATH}/${uuid || order.uuid}`;
+    const frontendUrl = getFrontendUrl();
+    const orderLink = `${frontendUrl}/orderPreview/${uuid || order.uuid}`;
     const orderPassword = customerKey;
     const startDate = new Date(order.requestedStartDate).toLocaleDateString("pl-PL");
     const endDate = new Date(order.requestedEndDate).toLocaleDateString("pl-PL");
@@ -182,7 +192,7 @@ export const sendOwnerNotificationEmail = async (ownerEmail, order) => {
       <p>Zaloguj się do panelu administratora, aby sprawdzić szczegóły i zatwierdzić zamówienie.</p>
       <br/>
       <div style="text-align: center;">
-        <a href="${process.env.FRONTEND_IP}${process.env.FRONTEND_PORT}/admin-dashboard/orders" 
+        <a href="${getFrontendUrl()}/admin-dashboard/orders" 
            style="display: inline-block; padding: 12px 24px; background-color: #4f46e5; color: white; border-radius: 8px; text-decoration: none; font-weight: bold; box-shadow: 0 2px 4px rgba(79, 70, 229, 0.3);">
           Przejdź do zamówień
         </a>
@@ -205,10 +215,8 @@ export const sendReturnReminderEmail = async (email, order, isLate = false) => {
     const CustomerName = `${order.customer.firstName} ${order.customer.lastName}`;
     const rawDueDate = order.assignedEndDate || order.requestedEndDate;
     const dueDate = rawDueDate ? new Date(rawDueDate).toLocaleDateString("pl-PL") : "wkrótce";
-    const frontendUrl = process.env.FRONTEND_IP
-      ? `${process.env.FRONTEND_IP}${process.env.FRONTEND_PORT ? `:${process.env.FRONTEND_PORT}` : ""}`
-      : "http://localhost:5173";
-    const orderLink = `${frontendUrl}${process.env.FRONTEND_ORDER_PATH || "/order"}/${order.uuid || order._id}`;
+    const frontendUrl = getFrontendUrl();
+    const orderLink = `${frontendUrl}/orderPreview/${order.uuid || order._id}`;
 
     const templateVariables = { orderId, CustomerName, dueDate, orderLink };
 

@@ -26,7 +26,7 @@ export const orderTemplates = {
     Hello ${order.customer.firstName} ${order.customer.lastName},
 
     Your order #${shortId} (ID: ${orderId}) has been received!
-    You can see status of the order on ${process.env.FRONTEND_IP}${process.env.FRONTEND_PORT}${process.env.FRONTEND_ORDER_PATH}/${orderId} with password: ${customerKey}
+    You can see status of the order on ${(process.env.FRONTEND_URL || (process.env.FRONTEND_IP ? `${process.env.FRONTEND_IP}${process.env.FRONTEND_PORT ? `:${process.env.FRONTEND_PORT}` : ""}` : "http://localhost:5173"))}/orderPreview/${orderId} with password: ${customerKey}
 
     Items:
     ${order.items.map(

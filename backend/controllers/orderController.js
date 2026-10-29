@@ -469,6 +469,7 @@ export const createOrder = asyncHandler(async (req, res, next) => {
 
       const order = new Order({
         customerKey: encryptedCustomerKey,
+        accessCode: customerKey,
         customer,
         items: enrichedItems,
         requestedStartDate: batch.requestedStartDate,
@@ -502,14 +503,24 @@ export const createOrder = asyncHandler(async (req, res, next) => {
         );
       }
 
-      await sendOrderEmail(order, customerKey, order.uuid);
+      let emailSent = false;
+      try {
+        await sendOrderEmail(order, customerKey, order.uuid);
+        emailSent = true;
+      } catch (mailError) {
+        console.error(`[SMTP ERROR] Could not send confirmation email for order #${order.uuid}:`, mailError.message);
+      }
 
       const ownerIds = [...new Set(enrichedItems.map((i) => i.responsibleOwner?.toString()).filter(Boolean))];
       if (ownerIds.length > 0) {
         const owners = await User.find({ _id: { $in: ownerIds } }, "email");
         for (const owner of owners) {
           if (owner.email) {
-            await sendOwnerNotificationEmail(owner.email, order);
+            try {
+              await sendOwnerNotificationEmail(owner.email, order);
+            } catch (ownerMailErr) {
+              console.error(`[SMTP ERROR] Could not send owner notification email:`, ownerMailErr.message);
+            }
           }
           
           const ownerItems = enrichedItems.filter(
@@ -548,7 +559,11 @@ export const createOrder = asyncHandler(async (req, res, next) => {
         targetType: "Order",
       });
 
-      createdOrders.push(order);
+      createdOrders.push({
+        ...order.toObject(),
+        plainCustomerKey: customerKey,
+        emailSent,
+      });
     }
 
     return res
@@ -558,6 +573,14 @@ export const createOrder = asyncHandler(async (req, res, next) => {
         message: createdOrders.length > 1 ? "Orders created" : "Order created",
         order: createdOrders[0],
         orders: createdOrders,
+        orderKeys: createdOrders.map((o) => ({
+          uuid: o.uuid,
+          accessCode: o.plainCustomerKey,
+          startDate: o.requestedStartDate,
+          endDate: o.requestedEndDate,
+          itemCount: o.items.length,
+          emailSent: o.emailSent,
+        })),
       });
   } catch (error) {
     throw error;

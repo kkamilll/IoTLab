@@ -56,6 +56,7 @@ const statusHistorySchema = new mongoose.Schema({
 const orderSchema = new mongoose.Schema({
   uuid: { type: String, required: true, unique: true, default: () => randomUUID() },
   customerKey: { type: String, required: true },
+  accessCode: { type: String, default: "" },
 
   customer: { type: orderCustomerSchema, required: true },
   items: { type: [orderItemSchema], required: true, validate: [arr => arr.length > 0, "Order must have at least one item"] },

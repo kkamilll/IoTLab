@@ -13,6 +13,8 @@ import {
   Clock,
   Archive,
   ChevronDown,
+  Key,
+  Copy,
 } from "lucide-react";
 
 const toDateInputString = (isoString) => {
@@ -125,6 +127,19 @@ const OrderModal = ({
                     : editGroup?.customerInfo?.email || "—"}
                 </span>
               </span>
+
+              {editGroup?.accessCode && (
+                <span
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 font-medium border border-amber-200/60 dark:border-amber-900/40 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/60 transition"
+                  onClick={() => navigator.clipboard.writeText(editGroup.accessCode)}
+                  title={language === "pl" ? "Kliknij, aby skopiować kod studenta" : "Click to copy student code"}
+                >
+                  <Key className="w-3.5 h-3.5 text-amber-500" />
+                  <span className="opacity-70">{language === "pl" ? "Kod studenta:" : "Access Code:"}</span>
+                  <span className="font-mono font-extrabold">{editGroup.accessCode}</span>
+                  <Copy className="w-3 h-3 opacity-60 ml-0.5" />
+                </span>
+              )}
             </div>
           </div>
 

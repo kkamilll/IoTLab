@@ -87,9 +87,7 @@ const CartStepItems = ({
   }, [cart]);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,_1fr)_360px] items-start w-full">
-      {/* LEFT – Dates Selection & Cart Items */}
-      <div className="flex flex-col gap-6 min-w-0">
+    <div className="flex flex-col gap-6 w-full">
         {/* Date Selection Card */}
         <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
@@ -481,10 +479,9 @@ const CartStepItems = ({
             </div>
           ))}
         </div>
-      </div>
 
-      {/* RIGHT SIDEBAR – Summary Period */}
-      <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col gap-4 sticky top-6">
+      {/* Summary Period */}
+      <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col gap-4">
         <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 select-none">{t("cart.summary")}</p>
         <h2 className="text-2xl font-black text-slate-900 dark:text-white">
           {totalItems} {totalItems !== 1 ? t("cart.items") : t("cart.item")}

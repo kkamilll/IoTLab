@@ -9,7 +9,7 @@ import { useToast } from "../context/ToastContext";
 
 
 import ReCAPTCHA from "react-google-recaptcha";
-import { Calendar, User, ArrowLeft, ArrowRight, Trash2, Plus, Minus, Check, ShoppingCart, Moon, Sun, AlertTriangle, Info, HelpCircle } from "lucide-react";
+import { Calendar, User, ArrowLeft, ArrowRight, Trash2, Plus, Minus, Check, ShoppingCart, Moon, Sun, AlertTriangle, Info, HelpCircle, Copy } from "lucide-react";
 import CartStepItems from "../components/cart/CartStepItems";
 import CartStepForm from "../components/cart/CartStepForm";
 
@@ -25,6 +25,15 @@ const phoneRegex = /^\d{9,10}$/;
 
 const CartPage = () => {
   const [cart, setCart] = useState([]);
+  const [orderSuccessData, setOrderSuccessData] = useState(null);
+  const [copiedKey, setCopiedKey] = useState(null);
+
+  const handleCopyText = (text, key) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
+  };
   const [checkoutStep, setCheckoutStep] = useState(1); // 1 = Items & Dates, 2 = Customer details
   const [availability, setAvailability] = useState({});
   const [orderCustomer, setOrderCustomer] = useState({
@@ -228,6 +237,8 @@ const CartPage = () => {
       const now = new Date();
       now.setHours(0, 0, 0, 0);
 
+      let createdOrderKeys = [];
+
       if (dateMode === "same") {
         if (!orderDates.startDate || !orderDates.endDate) {
           showToast(t("cart.selectDatesAlert"), "warning");
@@ -253,7 +264,7 @@ const CartPage = () => {
           requestedQuantity: item.quantity,
         }));
 
-        await apiClient.post("/orders/create", {
+        const res = await apiClient.post("/orders/create", {
           token: captchaToken || "",
           customer: {
             ...orderCustomer,
@@ -264,6 +275,7 @@ const CartPage = () => {
           requestedEndDate: orderDates.endDate,
         });
 
+        createdOrderKeys = res.data?.orderKeys || [];
         showToast(t("cart.orderSuccessAlert"), "success");
       } else {
         // Separate dates mode
@@ -328,7 +340,7 @@ const CartPage = () => {
         }));
 
         if (subOrders.length === 1) {
-          await apiClient.post("/orders/create", {
+          const res = await apiClient.post("/orders/create", {
             token: captchaToken || "",
             customer: {
               ...orderCustomer,
@@ -338,6 +350,7 @@ const CartPage = () => {
             requestedStartDate: subOrders[0].requestedStartDate,
             requestedEndDate: subOrders[0].requestedEndDate,
           });
+          createdOrderKeys = res.data?.orderKeys || [];
           showToast(t("cart.orderSuccessAlert"), "success");
         } else {
           const res = await apiClient.post("/orders/create", {
@@ -348,19 +361,31 @@ const CartPage = () => {
             },
             subOrders,
           });
+          createdOrderKeys = res.data?.orderKeys || [];
           const count = res.data.orders?.length || subOrders.length;
           showToast(
             language === "pl"
-              ? `Pomyślnie złożono ${count} zamówienia dla różnych terminów! Szczegóły wysłano na e-mail.`
-              : `Successfully placed ${count} orders for different rental dates! Confirmation sent to your email.`,
+              ? `Pomyślnie złożono ${count} zamówienia dla różnych terminów!`
+              : `Successfully placed ${count} orders for different rental dates!`,
             "success"
           );
         }
       }
 
+      // Automatically store secrets in localStorage for instant access
+      createdOrderKeys.forEach((k) => {
+        if (k.uuid && k.accessCode) {
+          localStorage.setItem(`order-secret-${k.uuid}`, k.accessCode);
+        }
+      });
+
+      setOrderSuccessData({
+        orders: createdOrderKeys,
+        customerEmail: orderCustomer.email,
+      });
+
       setCart([]);
       localStorage.removeItem("cart");
-      navigate("/guest-products");
     } catch (error) {
       console.error(error);
       showToast(error.response?.data?.message || error.message || "Order error", "error");
@@ -369,6 +394,149 @@ const CartPage = () => {
       setLoading(false);
     }
   };
+
+  if (orderSuccessData) {
+    const allEmailsSent = orderSuccessData.orders.every((o) => o.emailSent !== false);
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
+        <div className="mx-auto max-w-2xl flex flex-col gap-6 animate-in fade-in zoom-in-95 duration-200">
+          
+          {/* Header Card */}
+          <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 shadow-sm text-center flex flex-col items-center gap-3">
+            <div className="w-16 h-16 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/60 dark:border-emerald-800/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 mb-1 shadow-sm">
+              <Check className="w-8 h-8 stroke-[3]" />
+            </div>
+
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
+              {language === "pl" ? "Zamówienie zostało złożone!" : "Order placed successfully!"}
+            </h1>
+
+            <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md leading-relaxed">
+              {language === "pl"
+                ? "Dziękujemy za złożenie rezerwacji sprzętu. Poniżej znajdują się Twoje dane dostępowe oraz bezpośrednie linki do podglądu zamówienia."
+                : "Thank you for your reservation. Below are your secret access credentials and quick links to review your order."}
+            </p>
+
+            {/* Email info alert */}
+            <div className={`mt-3 w-full p-3.5 rounded-2xl border text-xs font-semibold flex items-center gap-2.5 text-left ${
+              allEmailsSent
+                ? "bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-200/60 dark:border-emerald-900/40 text-emerald-800 dark:text-emerald-300"
+                : "bg-amber-50/70 dark:bg-amber-950/30 border-amber-200/60 dark:border-amber-900/40 text-amber-800 dark:text-amber-300"
+            }`}>
+              {allEmailsSent ? (
+                <>
+                  <Check className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                  <span>
+                    {language === "pl"
+                      ? "Potwierdzenie wraz z kodem dostępu wysłaliśmy na e-mail: "
+                      : "Confirmation and access code sent to: "}
+                    <strong>{orderSuccessData.customerEmail}</strong>
+                  </span>
+                </>
+              ) : (
+                <>
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <span>
+                    {language === "pl"
+                      ? "Twoje zamówienie zostało pomyślnie zapisane w systemie! Zapisz poniższy kod dostępu lub dodaj stronę do zakładek."
+                      : "Your order is securely saved in the system! Please save the access code below to track your order."}
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* List of Orders */}
+          <div className="flex flex-col gap-4">
+            {orderSuccessData.orders.map((ord, idx) => (
+              <div
+                key={ord.uuid || idx}
+                className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col gap-4"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-3">
+                  <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-100/50 dark:border-indigo-900/35 self-start">
+                    {language === "pl" ? `Rezerwacja #${idx + 1}` : `Reservation #${idx + 1}`}
+                  </span>
+                  {ord.startDate && ord.endDate && (
+                    <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
+                      <Calendar className="w-3.5 h-3.5 text-indigo-500" />
+                      <span>
+                        {new Date(ord.startDate).toLocaleDateString()} → {new Date(ord.endDate).toLocaleDateString()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-3 text-xs">
+                  {/* UUID */}
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-slate-800 flex flex-col gap-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">UUID</span>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-mono font-bold text-slate-800 dark:text-slate-200 truncate" title={ord.uuid}>
+                        {ord.uuid ? `${ord.uuid.slice(0, 16)}...` : "—"}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyText(ord.uuid, `uuid-${idx}`)}
+                        className="p-1 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition cursor-pointer"
+                        title={language === "pl" ? "Kopiuj UUID" : "Copy UUID"}
+                      >
+                        {copiedKey === `uuid-${idx}` ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Secret Access Code */}
+                  <div className="p-3 rounded-xl bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/40 flex flex-col gap-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                      {language === "pl" ? "Kod dostępu (hasło)" : "Secret Access Code"}
+                    </span>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-mono font-extrabold text-indigo-700 dark:text-indigo-300 tracking-wider">
+                        {ord.accessCode || "••••••••"}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyText(ord.accessCode, `code-${idx}`)}
+                        className="p-1 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 transition cursor-pointer"
+                        title={language === "pl" ? "Kopiuj kod" : "Copy code"}
+                      >
+                        {copiedKey === `code-${idx}` ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => navigate(`/orderPreview/${ord.uuid}`)}
+                  className="w-full mt-1 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-md hover:shadow-lg transition cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <span>{language === "pl" ? "Przejdź do podglądu zamówienia" : "Go to order preview"}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* Return button */}
+          <div className="flex justify-center pt-2">
+            <button
+              type="button"
+              onClick={() => {
+                setOrderSuccessData(null);
+                navigate(token ? "/admin-dashboard/products" : "/guest-products");
+              }}
+              className="px-6 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 shadow-sm transition cursor-pointer flex items-center gap-2"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>{language === "pl" ? "Wróć do katalogu sprzętu" : "Back to catalog"}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!cart.length) {
     return (
@@ -411,7 +579,7 @@ const CartPage = () => {
 
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 py-8 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
-        <div className="mx-auto max-w-7xl flex flex-col gap-6">
+        <div className="mx-auto max-w-5xl flex flex-col gap-6">
 
           {/* Header Toolbar */}
           <div className="rounded-[1.8rem] border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-6 transition duration-200">
